@@ -69,15 +69,24 @@ design-taste-frontend, emil-design-eng, high-end-visual-design, redesign-existin
 4. `maximosovsky/readme-guidelines` — public README kontrol listesi
 5. `KnifeLemon/Filee` — çevrimdışı, sürükle-bırak, çok formatlı dönüştürücü → UX referansı
 
-### Kurulum komutları (onay sonrası, proje kapsamı)
+### Kurulum (yapıldı, 2026-10-21 — proje kapsamı)
+
+Kurulu: i-have-adhd · no-ai-slop · shadcn · frontend-design · tdd · reverse-engineer-anything (`.claude/skills/`, kilit: `skills-lock.json`).
+skills.sh güvenlik taraması: hepsi "Safe/Low Risk"; rea skill'i "Med Risk" (tersine mühendislik içeriği nedeniyle beklenen), shadcn 1 uyarı
+(skill her yüklendiğinde `npx shadcn@latest info` çalıştırır).
 
 ```bash
-npx skills add ayghri/i-have-adhd -a claude-code
-npx skills add shadcn-ui/ui -s shadcn -a claude-code
-npx skills add anthropics/skills -s frontend-design -a claude-code
-npx skills add mattpocock/skills -s tdd -a claude-code
-npx rea-agents setup
+npx skills add <repo> -s <skill> -a claude-code --copy -y
 ```
+
+rea MCP **yalnız bu projede** (local scope; global `rea setup` yerine):
+
+```powershell
+claude mcp add --scope local rea -- cmd.exe /d /c npx -y rea-agents@6.7.0 mcp
+```
+
+Güncelleme: `npx skills update -p` (skill'ler) · rea için kayıt sürümü elle yükseltilir (`claude mcp remove rea -s local` → yeni sürümle tekrar ekle).
+ECC: şimdilik kurulmadı (kapsam ve hook çakışması); M1 sonrası seçmeli değerlendirilecek.
 
 ---
 

@@ -5,10 +5,14 @@ Planning docs are in Turkish; code, identifiers and commit messages are in Engli
 
 ## Start every session
 
-1. Read `NOW.md` (state + the single next action).
+1. Read `NOW.md` (state + the single next action) and the newest `handoff/HANDOFF-*.md` if one exists.
 2. Read the matching milestone in `docs/ROADMAP.md`.
-3. Work on ONE micro-task.
+3. Work on ONE micro-task. Multi-task work runs through the factory workflow (`fabrika` skill, guide: `docs/FABRIKA.md`):
+   plan → KAPI-1 (user approves the wave) → code → review → verify → KAPI-2 (user checks it in the app/game).
 4. When done: update `NOW.md` ("Son kazanım", "Sıradaki tek adım"), then commit.
+
+Locked paths (agents never write; the hook enforces it): `fixtures/samples/**`, `LICENSE`, `.claude/settings*.json`, `.claude/hooks/`, `.claude/araclar/`.
+Evidence command: `bash .claude/araclar/kontrol.sh [rust|web]` (exit 0 pass · 1 fail · 3 nothing to run).
 
 ## Output style (i-have-adhd rules)
 

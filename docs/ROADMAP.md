@@ -39,7 +39,7 @@ Kurallar:
 
 ### Grup A — Kararlar ve araçlar
 1. [ ] **M0-1 Kararlar** 👤 ⏱10 dk ▶ NOW.md'yi aç ✅ kararlar.md'de ADR-008…012 "Kabul"
-2. [ ] **M0-2 Skill + rea + fabrika kurulumu** ⏱30 dk ▶ kurulum talimatı ✅ 6 skill proje kapsamında, fabrika kancaları testten geçti, rea MCP kayıtlı
+2. [x] **M0-2 Skill + rea + fabrika kurulumu** ⏱30 dk ▶ kurulum talimatı ✅ 6 skill proje kapsamında, fabrika kancaları testten geçti, rea MCP kayıtlı — *kanıt: koruma.sh 18/18, status line + bağlam uyarısı çalıştı, `claude mcp get rea` → Connected (2026-10-21)*
 3. [ ] **M0-3 İş birliği mesajı** 👤 ⏱5 dk ▶ [taslağı](research/outreach-rpgsaveeditor.md) oku ✅ Discussion linki NOW.md'de
 4. [ ] **M0-4 Rust araç zinciri** ⏱20 dk ▶ `winget install Rustlang.Rustup` ✅ `cargo --version` çalışıyor; MSVC Build Tools ve WebView2 doğrulandı
 5. [ ] **M0-5 Monorepo iskeleti** ⏱30 dk ▶ pnpm + cargo workspace dosyaları ✅ `pnpm tauri dev` pencere açıyor

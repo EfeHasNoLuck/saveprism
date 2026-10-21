@@ -2,11 +2,11 @@
 
 > Her oturumda ilk okunan dosya. Tek ekran. Her görev sonunda güncellenir.
 
-**Faz:** M0 öncesi — araştırma ve plan tamam (2026-10-21)
+**Faz:** M0 — temel kurulum (2026-10-21)
 
-**Son kazanım:** Pazar taraması bitti → tüm motorları kapsayan, yerel, açık kaynak bir masaüstü editör yok; inşa kararı ve tam yol haritası hazır.
+**Son kazanım:** M0-2 bitti → fabrika kiti SaveLens'e uyarlanıp kuruldu (koruma kancası 18/18 test geçti), 6 skill proje kapsamında, rea MCP yalnız bu projede bağlı. Teşhis Raporu plana işlendi (M3/M4/M8).
 
-**Sıradaki tek adım:** Aşağıdaki 5 kararı ver. ⏱ ≈10 dk
+**Sıradaki tek adım:** Claude Code'u bu klasörde yeniden başlat (kancalar, ajanlar ve status line açılışta yüklenir), sonra aşağıdaki 4 kararı ver. ⏱ ≈10 dk
 
 ---
 
@@ -16,7 +16,6 @@
 2. **Doküman dili** — öneri: iç plan TR, public yüzey EN + TR ([ADR-008](docs/architecture/kararlar.md))
 3. **RPGSaveEditor ile iş birliği** — mesajı sen mi göndereceksin? ([taslak](docs/research/outreach-rpgsaveeditor.md))
 4. **Çekirdek Rust** — Rust araç zincirini kurmama onay ([ADR-002](docs/architecture/kararlar.md))
-5. **Skill/MCP kurulumu** — rea + 4 çekirdek skill, proje kapsamında ([liste](docs/research/04-skills-ve-adhd-is-akisi.md))
 
 ---
 
@@ -27,6 +26,7 @@
 | Araştırma | ✅ [01 Pazar](docs/research/01-pazar-taramasi.md) · [02 Formatlar](docs/research/02-format-ve-kutuphane-atlasi.md) · [03 rea](docs/research/03-rea-oyun-kitabi.md) · [04 Skills/ADHD](docs/research/04-skills-ve-adhd-is-akisi.md) |
 | Mimari | ✅ [MIMARI.md](docs/architecture/MIMARI.md) · [kararlar.md](docs/architecture/kararlar.md) |
 | Yol haritası | ✅ [ROADMAP.md](docs/ROADMAP.md) |
+| Çalışma düzeni | ✅ [Fabrika](docs/FABRIKA.md) (CEO + alt ajanlar, KAPI-1/KAPI-2) · TASKS.md · handoff/ · 6 skill + rea MCP |
 | Kod | ⏳ M0-5'te başlar |
 | GitHub | ⏳ Yerel repo; public'e alma M5-5'te, senin onayınla |
 

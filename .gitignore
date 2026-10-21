@@ -21,3 +21,13 @@ Thumbs.db
 .idea/
 .vscode/*
 !.vscode/extensions.json
+
+# Fabrika: yerel durum ve geçici dosyalar (kartlar, raporlar, münazaralar ve handoff commit'lenir)
+.fabrika/durum/*
+!.fabrika/durum/.gitkeep
+.fabrika/gecici/
+.fabrika/diff/*
+!.fabrika/diff/.gitkeep
+.fabrika/raporlar/*.log
+.fabrika/raporlar/*.xml
+.claude/settings.local.json

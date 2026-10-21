@@ -14,3 +14,8 @@ fixtures/** binary
 *.png binary
 *.ico binary
 *.icns binary
+
+# Kancalar ve araçlar bash/python ile çalışır: CRLF olursa Windows'ta bozulur ("$'\r': command not found")
+*.sh  text eol=lf
+*.py  text eol=lf
+*.env text eol=lf
