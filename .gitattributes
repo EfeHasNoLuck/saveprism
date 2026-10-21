@@ -1,0 +1,16 @@
+* text=auto eol=lf
+
+# Save fixtures must stay byte-exact (round-trip tests compare raw bytes)
+fixtures/** binary
+
+*.sav binary
+*.es3 binary
+*.save binary
+*.rpgsave binary
+*.rmmzsave binary
+*.rvdata2 binary
+*.rvdata binary
+*.rxdata binary
+*.png binary
+*.ico binary
+*.icns binary
