@@ -165,15 +165,51 @@ Kaydettikten sonra: yazılan dosya yeniden çözülür ve düzenlenen değerler 
 1. **AI için kopyala:** seçili alt ağaç → temiz JSON (opsiyonel `$type` ipuçları), JSONPath bilgisi, tahmini token sayısı, hazır komut şablonu: *"Yalnız değerleri değiştir; anahtarları ve yapıyı koru; RFC 6902 JSON Patch döndür."*
 2. **AI'dan içe aktar:** tam JSON veya JSON Patch → fark önizlemesi → tip denetimi (`type_hint`) → uygula (geri alınabilir).
 3. **CLI:** `savelens inspect | decode | encode | patch | keys` — kararlı JSON şemalı çıktılar; ajanlar ve script'ler için.
-4. **MCP (sonra):** aynı çekirdek; araçlar `open_save`, `query`, `apply_patch`, `save`. Yazma her zaman kullanıcı onaylı.
+4. **MCP (sonra):** aynı çekirdek; araçlar `open_save`, `query`, `apply_patch`, `save`, `get_last_diagnostic`. Yazma her zaman kullanıcı onaylı.
+5. **Hata anında:** Teşhis Raporu (3.8) aynı köprüyü kullanır — kopyala, AI'a sor, önerilen tarifi doğrula.
 
-### 3.8 Anahtar kasası ve Anahtar Bulucu
+### 3.8 Teşhis Raporu (XMCL'den ilham)
+
+Bir şey ters gittiğinde kullanıcı "neden?" sorusunun cevabını tek ekranda görür, kopyalar ya da bir AI'a sorar.
+
+**Tetikleyiciler**
+1. Dosya tanınmadı (Detector güven puanı eşiğin altında)
+2. Şifre/anahtar doğrulaması başarısız
+3. Round-trip eşleşmedi (dosya salt-okunur açıldı)
+4. Codec hatası veya uygulama çöküşü (Rust panic hook + React ErrorBoundary)
+
+**İçerik** (Markdown + makine okunur JSON, ikisi aynı veriden)
+
+| Bölüm | Ne var |
+|---|---|
+| Ortam | Uygulama sürümü, işletim sistemi, WebView sürümü |
+| Dosya | Ad (maskeli), boyut, uzantı, ilk 64 bayt hex, entropi |
+| Tespit izi | Denenen her katman: güven puanı, reddedilme nedeni |
+| Hata zinciri | Hata + nedenler (Rust `Error` source zinciri) |
+| Log | Son 200 satır (`tauri-plugin-log`) |
+
+- Kayıt **içeriği varsayılan olarak girmez**; kullanıcı isterse alt ağaç ekler.
+- Maskeleme otomatik: `C:\Users\<ad>` → `%USERPROFILE%`, Steam ID, e-posta, makine adı.
+- Gönderilmeden önce önizleme; hiçbir şey otomatik gönderilmez, ağ çağrısı yok.
+
+**Eylemler**
+1. **Kopyala** — Markdown olarak panoya.
+2. **AI'a sor** — üç seviye:
+   - Seviye 1: rapor + hazır soru panoya kopyalanır, kullanıcı istediği sohbeti açar (kurulum yok).
+   - Seviye 2: bağlı ajan — MCP aracı `get_last_diagnostic` ile Claude Code raporu kendisi okur (M8).
+   - Seviye 3: kullanıcının kendi API anahtarı (isteğe bağlı, her gönderimde onay).
+3. **Önerilen tarifi dene** — AI cevabındaki tarif bloğu (ör. `["encoding.base64", "compression.zlib", "format.json"]`) ayrıştırılır, diske yazmadan bellekte denenir, round-trip testinden geçerse "işe yaradı ✓" + profile kaydet.
+4. **GitHub issue'su aç** — "format isteği" şablonu açılır; rapor kullanıcı tarafından panodan yapıştırılır (URL'ye veri konmaz).
+
+**Farkımız:** XMCL logu gösterip AI'a sorduruyor; biz ayrıca AI'ın önerisini makinede **doğruluyoruz**.
+
+### 3.9 Anahtar kasası ve Anahtar Bulucu
 
 - **Kasa:** yerel `keys.toml` — oyun → motor → anahtar → kanıt (dosya, yöntem, tarih).
 - **Bulucu:** motor tespiti → aday üretimi (Mono: `#US` user strings; IL2CPP: string literal; Godot: GDScript) → aday doğrulama (ES3: PBKDF2 + AES + düz metin sezgisi) → kasaya yaz.
 - Topluluk profilleri başlangıçta anahtarı değil **bulma yöntemini** taşır (ADR-009).
 
-### 3.9 Motor tespiti ve kayıt bulucu
+### 3.10 Motor tespiti ve kayıt bulucu
 
 | İz (oyun klasöründe) | Motor |
 |---|---|
@@ -188,7 +224,7 @@ Kaydettikten sonra: yazılan dosya yeniden çözülür ve düzenlenen değerler 
 
 Varsayılan kayıt yolları: `%LOCALAPPDATA%\<Oyun>\Saved\SaveGames` (UE) · `%USERPROFILE%\AppData\LocalLow\<Şirket>\<Ürün>` (Unity) · `%APPDATA%\RenPy\…` ve `game/saves` (Ren'Py) · `%APPDATA%\Godot\app_userdata\<Proje>` (Godot).
 
-### 3.10 Oyun profilleri (topluluk eklentisi = veri)
+### 3.11 Oyun profilleri (topluluk eklentisi = veri)
 
 ```toml
 [game]
@@ -243,7 +279,9 @@ savelens/
 │  ├─ locales/            # i18n
 │  └─ src-tauri/          # Tauri host (komutlar → core)
 ├─ profiles/              # oyun profilleri (TOML)
-├─ fixtures/              # izinli örnek kayıtlar + beklenen JSON
+├─ fixtures/
+│  ├─ samples/            # izinli örnek kayıtlar (bayt-kesin; ajanlara kilitli)
+│  └─ expected/           # beklenen JSON / tarif çıktıları
 ├─ docs/
 └─ .github/               # CI, şablonlar
 ```

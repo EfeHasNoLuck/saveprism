@@ -11,6 +11,7 @@ Kurallar:
 2. Kapsam dışı fikir → NOW.md "Park alanı" (veya GitHub `later` etiketi).
 3. Her görev bitince NOW.md güncellenir ve commit atılır.
 4. Tahminler M1 sonunda gerçek sürelere göre düzeltilir.
+5. Çok görevli işler fabrika akışıyla yürür: `fabrikayı başlat: M1 Grup A` → dalga planı → KAPI-1 → kod → denetim → KAPI-2 ([FABRIKA.md](FABRIKA.md)).
 
 ---
 
@@ -21,8 +22,8 @@ Kurallar:
 | M0 | Temel | `pnpm tauri dev` → boş ama temalı, iki dilli pencere; CI yeşil | 1 oturum |
 | M1 | Çekirdek + CLI | `savelens decode file1.rpgsave` → JSON → geri, **bayt-bayt aynı** | 2–3 oturum |
 | M2 | İlk motorlar | ES3 (şifreli dahil), GVAS, RPG Maker MV/MZ altın testlerle | 3–4 oturum |
-| M3 | Masaüstü MVP | Dosyayı sürükle → altını değiştir → kaydet (yedekli, doğrulamalı) | 3–4 oturum |
-| M4 | Arama + AI köprüsü | "AI için kopyala" → Claude'da düzenle → Patch yapıştır → fark → uygula | 2–3 oturum |
+| M3 | Masaüstü MVP | Dosyayı sürükle → altını değiştir → kaydet (yedekli, doğrulamalı); tanınmayan dosyada Teşhis Raporu | 4–5 oturum |
+| M4 | Arama + AI köprüsü | "AI için kopyala" → Claude'da düzenle → Patch yapıştır → fark → uygula; AI'ın önerdiği tarif otomatik doğrulanıyor | 3–4 oturum |
 | M5 | İlk public sürüm v0.1.0 | GitHub Release: `.exe`/`.msi`, `.dmg`, AppImage + otomatik güncelleme | 2 oturum + 👤 onay |
 | M6 | Format genişleme | PlayerPrefs, Godot, GameMaker, Ren'Py (oku → yaz → imzala), Twine | 4–6 oturum |
 | M7 | Anahtar Bulucu + Profiller | Oyun klasörünü seç → motor, kayıtlar ve ES3 parolası otomatik | 3–4 oturum |
@@ -38,7 +39,7 @@ Kurallar:
 
 ### Grup A — Kararlar ve araçlar
 1. [ ] **M0-1 Kararlar** 👤 ⏱10 dk ▶ NOW.md'yi aç ✅ kararlar.md'de ADR-008…012 "Kabul"
-2. [ ] **M0-2 Skill + rea kurulumu** ⏱10 dk ▶ `npx rea-agents setup` ✅ Claude Code'da rea araçları ve 4 skill görünüyor
+2. [ ] **M0-2 Skill + rea + fabrika kurulumu** ⏱30 dk ▶ kurulum talimatı ✅ 6 skill proje kapsamında, fabrika kancaları testten geçti, rea MCP kayıtlı
 3. [ ] **M0-3 İş birliği mesajı** 👤 ⏱5 dk ▶ [taslağı](research/outreach-rpgsaveeditor.md) oku ✅ Discussion linki NOW.md'de
 4. [ ] **M0-4 Rust araç zinciri** ⏱20 dk ▶ `winget install Rustlang.Rustup` ✅ `cargo --version` çalışıyor; MSVC Build Tools ve WebView2 doğrulandı
 5. [ ] **M0-5 Monorepo iskeleti** ⏱30 dk ▶ pnpm + cargo workspace dosyaları ✅ `pnpm tauri dev` pencere açıyor
@@ -68,7 +69,7 @@ Kurallar:
 7. [ ] **M1-7 Round-trip koruması + rapor** ⏱30 dk ✅ eşleşmeyen dosya salt-okunur işaretleniyor
 8. [ ] **M1-8 Güvenli yazma modülü** ⏱45 dk ✅ yedek halkası + atomik değiştirme + doğrulama testli
 9. [ ] **M1-9 Girdi sınırları + ilk fuzz hedefi** ⏱30 dk ✅ sıkıştırma bombası testi panik yerine hata döndürüyor
-10. [ ] **M1-10 Fixture düzeni + altın test koşucusu** ⏱30 dk ✅ `fixtures/<motor>/<ad>` ekleyince test otomatik koşuyor
+10. [ ] **M1-10 Fixture düzeni + altın test koşucusu** ⏱30 dk ✅ `fixtures/samples/<motor>/<ad>` ekleyince test otomatik koşuyor
 
 ---
 
@@ -85,7 +86,7 @@ Kurallar:
 
 ### Grup B — Gerçek veri
 6. [ ] **M2-6 Palworld `PlZ` kabuğu** ⏱45 dk ✅ zlib kabuklu GVAS açılıyor (`PlM`/Oodle → Park)
-7. [ ] **M2-7 Fixture toplama** 👤 ⏱30 dk ▶ sahip olduğun oyunlardan her motor için 2 kayıt ✅ `fixtures/` altında, kişisel veri temizlenmiş
+7. [ ] **M2-7 Fixture toplama** 👤 ⏱30 dk ▶ sahip olduğun oyunlardan her motor için 2 kayıt ✅ `fixtures/samples/` altında, kişisel veri temizlenmiş (bu klasör ajanlara kilitli; dosyaları sen koyarsın)
 8. [ ] **M2-8 Benchmark** ⏱30 dk ✅ ≥50 MB GVAS açılış süresi ölçüldü, NOW.md'ye yazıldı
 
 ---
@@ -108,18 +109,30 @@ Kurallar:
 9. [ ] **M3-9 Ham JSON (Monaco, alt ağaç)** ⏱45 dk
 10. [ ] **M3-10 Boş ekran + hata metinleri** ⏱30 dk ✅ 3 adımlı boş ekran; hatalar "Neden + Çözüm"
 
+### Grup C — Teşhis Raporu v1
+11. [ ] **M3-11 Rapor modeli + maskeleme** ⏱60 dk ✅ tespit izi, hata zinciri, hex başlık; kullanıcı adı/Steam ID/e-posta maskeli (birim testli)
+12. [ ] **M3-12 Rapor ekranı + Kopyala** ⏱45 dk ✅ tanınmayan dosyada rapor açılıyor; Markdown panoya
+13. [ ] **M3-13 Çökme yakalama** ⏱30 dk ✅ Rust panic hook + React ErrorBoundary aynı raporu üretiyor
+
 ---
 
 ## M4 — Arama + AI köprüsü
 
 **Hedef:** bulmak ve AI ile düzenlemek kolay. **Demo:** AI ile yapılan değişiklik fark önizlemesinden geçip uygulanıyor.
 
+### Grup A — Bulmak
 1. [ ] **M4-1 Arama motoru (Rust, sorgu sözdizimi)** ⏱90 dk ✅ metin/regex/sayı/yol sorguları
 2. [ ] **M4-2 Tablo görünümü** ⏱60 dk ✅ nesne dizileri tablo olarak düzenlenebiliyor
 3. [ ] **M4-3 Kayıt karşılaştırma** ⏱60 dk ✅ değişen / artan / azalan filtreleri
+
+### Grup B — AI ile düzenlemek
 4. [ ] **M4-4 AI için kopyala** ⏱45 dk ✅ alt ağaç + token tahmini + komut şablonu panoya
 5. [ ] **M4-5 AI'dan içe aktar** ⏱90 dk ✅ JSON veya JSON Patch → fark → tip denetimi → uygula
 6. [ ] **M4-6 Ctrl+K komut paleti** ⏱30 dk
+
+### Grup C — Teşhis Raporu v2 (AI'a sor)
+7. [ ] **M4-7 "AI'a sor" seviye 1** ⏱30 dk ✅ rapor + hazır soru panoya; "format isteği" issue şablonu açılıyor
+8. [ ] **M4-8 Önerilen tarifi dene** ⏱90 dk ✅ AI cevabındaki tarif bloğu bellekte deneniyor; round-trip geçerse profile kaydediliyor
 
 ---
 
@@ -173,7 +186,7 @@ Sonrası (Park): SignPath başvurusu, winget manifesti.
 
 ## M8 — Topluluk & AI-native (sürekli)
 
-1. `savelens-mcp` — MCP sunucusu (yazma her zaman onaylı)
+1. `savelens-mcp` — MCP sunucusu (yazma her zaman onaylı); `get_last_diagnostic` = Teşhis Raporu seviye 2
 2. Weblate entegrasyonu + 3 yeni dil
 3. GitHub Pages sitesi + canlı "format destek tablosu"
 4. RPG Maker XP/VX/VXA (`alox-48`), NRBF, RPG Maker 2000/2003, Wolf RPG, Palworld `PlM` (lisans 🔎)
