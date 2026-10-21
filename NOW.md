@@ -6,7 +6,7 @@
 
 **Son kazanım:** M0-11 bitti → proje adı **SavePrism** (ADR-011), tüm dokümanlar yeniden adlandırıldı. Karşılaştırma: [05-naming.md §6](docs/research/05-naming.md).
 
-**Sıradaki tek adım:** Claude uygulamasını yeniden başlat (Rust PATH), sonra `fabrikayı başlat: M0 Grup B`. ⏱ 2 dk
+**Sıradaki tek adım:** D1 dalgası koşuyor (M0-5, M0-9, M0-10) → bitince CEO doğrular, sonra KAPI-2: `pnpm dev` ile pencereyi aç. ⏱ ~45 dk
 
 ---
 
