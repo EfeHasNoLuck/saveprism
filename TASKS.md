@@ -203,7 +203,7 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
 
 ### D5 — Dedektör, CLI, sınırlar, altın test · KAPI-1: onaylandı 2026-10-21 · Bağımlı: D4 (M1-5, M1-9, M1-10 boru hattında M1-8 beklenirken; M1-6 M1-8 sonrası)
 
-- [~] **M1-5 Detector v0**
+- [x] **M1-5 Detector v0**
   - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 0/3
   - Sahip: `crates/saveprism-core/src/detect.rs` · `crates/saveprism-codecs/tests/detect.rs` · `.fabrika/raporlar/M1-5.md`
   - Okur: MIMARI §3.1, §3.3 · `crates/saveprism-core/src/{codec,registry,pipeline,limits}.rs`
@@ -211,7 +211,7 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
   - Kabul: sniff sırası + deneme-çözme + geri izleme; katman ve deneme sayısı sınırlı; hiçbiri uymazsa SP-DET hatası · testler (girdiler
     testte katmanlarla üretilir): JSON, base64(JSON), gzip(JSON), lz-string(JSON) (base64 sanılmaz), base64(gzip(JSON)) → doğru tarif
   - Doğrulama: CEO `kontrol.sh rust`
-  - Denetim: denetci (dalga) · Kanıt: —
+  - Denetim: dalga-şefi denetçisi (1 YUKSEK + 1 ORTA düzeltildi) · Kanıt: Rust kontrolü 3/3; tests/detect.rs 7 test (JSON, base64, gzip, zlib, lz-string, base64+gzip, rastgele) + core 146 (2026-10-21) · açık DUSUK: ön cephe bellek bütçesi (16 × max_decoded) → M1-6 dalgasında düzeltilecek
 
 - [ ] **M1-6 `saveprism inspect | decode | encode`**
   - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 0/3
@@ -232,9 +232,9 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
   - Kabul: gzip/zlib bombası, aşırı derin JSON, aşırı büyük girdi → panik yerine SP hatası · proptest: rastgele bayt her decode'a ve
     dedektöre → panik yok · `fuzz/` hedefleri (detect, json, layers) · fuzz.yml: haftalık + elle + `crates/**` push'unda, Linux, 60 sn/hedef
   - Doğrulama: CEO `kontrol.sh rust` · fuzz işi GitHub'da bir kez yeşil
-  - Denetim: denetci (dalga) · Kanıt: —
+  - Denetim: dalga-şefi denetçisi (1 YUKSEK + 1 ORTA düzeltildi) · Kanıt: tests/limits.rs 7 test yeşil (bombalar, derinlik, girdi, düğüm, proptest) · fuzz/ ve fuzz.yml yazıldı; yerelde nightly yok, fuzz koşusu ilk push'ta GitHub'da (2026-10-21)
 
-- [~] **M1-10 Fixture düzeni + altın test koşucusu**
+- [x] **M1-10 Fixture düzeni + altın test koşucusu**
   - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 0/3
   - Sahip: `crates/saveprism-codecs/tests/golden.rs` · `fixtures/expected/**` · `fixtures/synthetic/**` · `fixtures/README.md` ·
     `.fabrika/raporlar/M1-10.md`
@@ -244,7 +244,7 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
     `fixtures/expected/<yol>.toml`'da · beklenti yoksa test nasıl üretileceğini yazarak düşer · `SAVEPRISM_BLESS=1` beklentileri yazar ·
     sentetik düz JSON örnekleri (sıkışık, 2 boşluk, CRLF)
   - Doğrulama: CEO `kontrol.sh rust` · yeni dosya ekleyince test kendiliğinden koşuyor
-  - Denetim: denetci (dalga) · Kanıt: —
+  - Denetim: dalga-şefi denetçisi (1 YUKSEK + 1 ORTA düzeltildi) · Kanıt: beklenti yokken 4 dosyada anlaşılır mesajla düştü, `SAVEPRISM_BLESS=1` sonrası geçti; CEO beklentileri inceledi: 3 exact, tabs.json semantic (tek satırlık iç dizi = karışık biçim, doğru sonuç) (2026-10-21)
 
 - [ ] **[ben] Gerçek RPG Maker MV kaydı** → `fixtures/samples/rpgmaker/` (kilitli klasör; D5 doğrulamasından önce)
 

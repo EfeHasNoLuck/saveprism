@@ -10,10 +10,10 @@
 
 | Symptom | First look | Then |
 |---|---|---|
-| File not recognized | Detector (`crates/saveprism-core/src/detect/`) | Diagnostic Report "detection trace" |
+| File not recognized | Detector (`crates/saveprism-core/src/detect.rs`) | Diagnostic Report "detection trace" |
 | Opens read-only ("round-trip mismatch") | Codec `encode` + saved `Params` for that format | Golden fixture for the format |
 | Wrong password / key | `crates/saveprism-codecs/src/crypto/`, key vault (`crates/saveprism-keys/`) | `docs/research/02-format-ve-kutuphane-atlasi.md` (scheme) |
-| Save broken after writing | Safe-write module (`crates/saveprism-core/src/io/`) | Backup ring in the app data dir |
+| Save broken after writing | Safe-write module (`crates/saveprism-core/src/io.rs`) | Backup ring in the app data dir |
 | UI freezes on a big file | IPC paging (`apps/desktop/src-tauri/src/commands/`) | Virtual tree (`apps/desktop/src/tree/`) |
 | Wrong text / missing translation | `apps/desktop/locales/<lang>/` | i18n setup (`apps/desktop/src/i18n/`) |
 | Crash with error code `SP-…` | Error prefix table (§3) | `QUALITY.md` §1 |
@@ -25,15 +25,16 @@
 |---|---|---|
 | Workspace ✅ | `Cargo.toml` · `package.json` · `pnpm-workspace.yaml` · `clippy.toml` · `rust-toolchain.toml` | Members, shared lints (no unwrap/expect/panic/unsafe), release profile, root scripts |
 | License policy ✅ | `deny.toml` · `.github/workflows/deny.yml` | Allowed licenses, advisories, sources |
-| Core model ✅ (stub) | `crates/saveprism-core/` | SaveDoc, Codec trait, Recipe, Detector, patching, round-trip guard, safe write (M1) |
-| Codecs | `crates/saveprism-codecs/` | json, layers, es3, gvas, rpgmaker, godot, playerprefs, renpy… |
+| Core model ✅ | `crates/saveprism-core/src/` | `doc` SaveDoc · `codec` Layer/Codec · `recipe` · `params` · `pipeline` · `detect` · `guard` (round-trip) · `io` (safe write, M1-8) · `limits` · `error` |
+| Codecs ✅ | `crates/saveprism-codecs/src/` | `json/` (parse, write, profile) · `layers/` (base64, gzip, zlib, lzstring) · later es3, gvas, rpgmaker, godot… |
 | Keys | `crates/saveprism-keys/` | Key vault, key finder |
 | CLI | `crates/saveprism-cli/` | `saveprism` command |
 | Desktop host ✅ | `apps/desktop/src-tauri/` | Tauri commands → core (`core_version`), window, CSP, capabilities |
 | Desktop UI ✅ | `apps/desktop/src/` | React UI: `App.tsx` shell · `theme/` (M0-6) · `i18n/` (M0-7) |
 | Community ✅ | `CONTRIBUTING.md` · `SECURITY.md` · `DISCLAIMER.md` · `CODE_OF_CONDUCT.md` · `.github/ISSUE_TEMPLATE/` | Contributor rules, reporting, scope |
 | Profiles | `profiles/` | Game profiles (TOML) |
-| Fixtures | `fixtures/samples/` (locked) · `fixtures/expected/` | Golden corpus |
+| Fixtures ✅ | `fixtures/samples/` (locked) · `fixtures/synthetic/` · `fixtures/expected/` | Golden corpus: `crates/saveprism-codecs/tests/golden.rs`; bless with `SAVEPRISM_BLESS=1` |
+| Fuzzing ✅ | `fuzz/` (outside the workspace) · `.github/workflows/fuzz.yml` | Targets detect, json, layers; limit tests in `crates/saveprism-codecs/tests/limits.rs` |
 
 ## 3. Error code prefixes
 

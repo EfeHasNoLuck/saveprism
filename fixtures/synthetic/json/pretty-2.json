@@ -1,0 +1,23 @@
+{
+  "name": "Çağrı'nın kaydı",
+  "level": 7,
+  "ratio": 1.0,
+  "items": [
+    {
+      "id": 1,
+      "tags": [
+        "ığdır",
+        "İstanbul"
+      ]
+    },
+    {
+      "id": 2,
+      "tags": []
+    }
+  ],
+  "stats": {
+    "hp": 88.25,
+    "alive": false,
+    "note": null
+  }
+}

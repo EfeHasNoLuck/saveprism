@@ -49,19 +49,11 @@ mod tests {
         assert!(!VERSION.is_empty());
     }
 
-    // guard is implemented (M1-7) and covered by its own tests in guard.rs,
-    // so only the two remaining signature-only stubs are checked here.
+    // guard (M1-7) and detect (M1-5) are implemented and covered by their own tests,
+    // so only the remaining signature-only stub, safe_write, is checked here.
     #[test]
-    fn the_two_signature_stubs_report_not_implemented() {
-        use super::{Limits, Registry, codes};
-
-        let reg = Registry::default();
-        let limits = Limits::default();
-
-        let detect =
-            super::detect::detect(b"", &reg, &limits, &super::detect::DetectOptions::default())
-                .unwrap_err();
-        assert_eq!(detect.code(), codes::CORE_NOT_IMPLEMENTED);
+    fn the_safe_write_stub_reports_not_implemented() {
+        use super::codes;
 
         let opts = super::io::WriteOptions::new(std::path::PathBuf::from("backups"));
         let write = super::io::safe_write(

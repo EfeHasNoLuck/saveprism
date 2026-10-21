@@ -1,0 +1,37 @@
+[package]
+name = "saveprism-fuzz"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+saveprism-core = { path = "../crates/saveprism-core" }
+saveprism-codecs = { path = "../crates/saveprism-codecs" }
+
+# Not part of the main workspace (the root Cargo.toml excludes `fuzz`).
+[workspace]
+
+[[bin]]
+name = "detect"
+path = "fuzz_targets/detect.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "json"
+path = "fuzz_targets/json.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "layers"
+path = "fuzz_targets/layers.rs"
+test = false
+doc = false
+bench = false

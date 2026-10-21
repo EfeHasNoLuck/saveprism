@@ -1,0 +1,20 @@
+{
+	"name": "Şeyma'nın kaydı",
+	"level": 15,
+	"ratio": 1.0,
+	"items": [
+		{
+			"id": 1,
+			"tags": ["ağaç", "göl"]
+		},
+		{
+			"id": 2,
+			"tags": []
+		}
+	],
+	"stats": {
+		"hp": 64.75,
+		"alive": true,
+		"note": null
+	}
+}
