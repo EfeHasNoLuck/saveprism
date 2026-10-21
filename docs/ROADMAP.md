@@ -69,9 +69,9 @@ Kurallar:
 5. [x] **M1-5 Detector v0** ⏱45 dk ✅ magic + deneme-çözme ile doğru katman zinciri ve güven puanı — *kanıt: 7 entegrasyon testi, lz-string base64 sanılmıyor (2026-10-21)*
 
 ### Grup B — CLI ve güvenlik
-6. [ ] **M1-6 `saveprism inspect | decode | encode`** ⏱45 dk ✅ demo komutu çalışıyor
+6. [x] **M1-6 `saveprism inspect | decode | encode`** ⏱45 dk ✅ demo komutu çalışıyor — *kanıt: orijinal JS lz-string ile üretilen 4 MV kaydı decode → encode birebir aynı (2026-10-22)*
 7. [x] **M1-7 Round-trip koruması + rapor** ⏱30 dk ✅ eşleşmeyen dosya salt-okunur işaretleniyor — *kanıt: guard.rs testleri (birebir/anlamsal/farklı, `editable`) yeşil (2026-10-21)*
-8. [ ] **M1-8 Güvenli yazma modülü** ⏱45 dk ✅ yedek halkası + atomik değiştirme + doğrulama testli
+8. [x] **M1-8 Güvenli yazma modülü** ⏱45 dk ✅ yedek halkası + atomik değiştirme + doğrulama testli — *kanıt: tests/io.rs 8 test; üstüne yazmada her zaman yedek (karar A), 30 gün (2026-10-22)*
 9. [~] **M1-9 Girdi sınırları + ilk fuzz hedefi** ⏱30 dk ✅ sıkıştırma bombası testi panik yerine hata döndürüyor — *bomba/derinlik/girdi testleri yeşil; fuzz koşusu GitHub'da bekliyor*
 10. [x] **M1-10 Fixture düzeni + altın test koşucusu** ⏱30 dk ✅ `fixtures/samples/<motor>/<ad>` ekleyince test otomatik koşuyor — *kanıt: sentetik 4 dosya, bless akışı çalışıyor (2026-10-21)*
 
@@ -101,7 +101,8 @@ Kurallar:
 
 ### Grup A — Görünüm
 1. [ ] **M3-1 Tauri komutları + tauri-specta bağları** ⏱60 dk ✅ open/children/edit/save TS'ten tipli çağrılıyor
-2. [ ] **M3-2 Uygulama düzeni** ⏱60 dk ✅ kenar çubuğu, sekmeler, denetçi, durum çubuğu
+2. [ ] **M3-2 Uygulama düzeni** ⏱60 dk ✅ kenar çubuğu, sekmeler, denetçi, durum çubuğu — *kullanıcı (2026-10-22): ilk mockup fazla
+   karmaşık; hedef saveeditonline.com kadar kolay anlaşılır bir ekran (önce yeni mockup, onaydan sonra kod)*
 3. [ ] **M3-3 Tembel sanal ağaç** ⏱90 dk ✅ 1M düğümlü belgede akıcı kaydırma
 4. [ ] **M3-4 Tipe göre değer editörleri** ⏱60 dk ✅ int genişliği/aralık denetimi, float, bool, string
 5. [ ] **M3-5 Geri al / yinele + bekleyen değişiklikler** ⏱45 dk ✅ Ctrl+Z / Ctrl+Y

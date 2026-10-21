@@ -30,6 +30,13 @@ guard = "exact"
 A fixture without an expectation, or with a differing one, fails the test and prints the file path,
 the expected value and the found value.
 
+## Provenance of synthetic files
+
+| Folder | Made with | How |
+|---|---|---|
+| `synthetic/json/` | hand-written | Plain JSON in common serializer styles. `tabs.json` mixes tab indentation with a one-line inner array on purpose; its expected verdict is `semantic`. |
+| `synthetic/rpgmaker-mv/` | [lz-string](https://github.com/pieroxy/lz-string) 1.5.0 (MIT), Node.js | `LZString.compressToBase64(JSON.stringify(data))`, the call RPG Maker MV uses for `.rpgsave` files. Data is invented (no real player data). Each file was checked with the library's own `decompressFromBase64` before writing (2026-10-22). These files come from the original JavaScript library, not from our code, so they are an independent check of the LZ-String layer. |
+
 ## Personal data
 
 Before adding a real save, remove personal data: user names (also inside paths and file names), Steam IDs,

@@ -157,7 +157,7 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
 ### D4 — Katmanlar, JSON, koruma, güvenli yazma · KAPI-1: onaylandı 2026-10-21 (M1-8 yedek politikası: A, kullanıcı 2026-10-21 "A seçeneği ile ilerleyelim") · Bağımlı: D3 doğrulandı
 
 - [x] **M1-3 Katmanlar: Base64, GZip, zlib, LZ-String**
-  - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 1/3 (ilk derleme: clippy + test verisi; CEO kararı: aynı motor/effort)
+  - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 2/3 (1: ilk derleme; 2: bağımsız JS dosyasında lz-str dolgusu 1 bayt fazla, 2026-10-22; CEO kararı: aynı motor/effort)
   - Sahip: `crates/saveprism-codecs/src/layers/**` · `.fabrika/raporlar/M1-3.md`
   - Okur: MIMARI §3.1, §3.3, §3.4 · `crates/saveprism-core/src/{codec,params,limits,error}.rs`
   - Bağımlı: D3
@@ -167,6 +167,8 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
     `read_bounded` ile (aşım → `CORE_LIMIT_DECODED`, panik yok) · her katman parametreleriyle round-trip testi
   - Doğrulama: CEO `kontrol.sh rust`
   - Denetim: dalga-şefi denetçisi (KRITIK 1 + YUKSEK 1 derleme kırıcı, düzeltildi; kalan DUSUK) + Codex ikinci göz (1 YUKSEK lz-string varyantı, 2 ORTA; turu 3 ile düzeltildi) · Kanıt: Rust kontrolü 3/3, codecs 72 + core 139 test, cargo deny 0 (2026-10-21)
+    · turu 4 (2026-10-22): orijinal JS ile üretilen kayıtlarda `lz-str` base64 dolgusu 1 bayt fazlaydı → JS kuralı; 8 JS vektörü testi +
+    4 `.rpgsave` decode → encode birebir aynı; toplam 255 test, Rust kontrolü 3/3
 
 - [x] **M1-4 Biçim koruyan JSON codec**
   - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 1/3 (ilk derleme: kartın üs eşiği hatası + test verisi; CEO kararı: aynı motor/effort)
@@ -223,6 +225,8 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
     için decode → encode bayt-bayt aynı
   - Doğrulama: CEO demo komutları sentetik dosyayla · Sen gerçek MV kaydınla (KAPI-2)
   - Denetim: dalga denetçisi (KRITIK/YUKSEK yok) · Kanıt: Rust kontrolü 3/3 (fmt, clippy, test) + sentetik demo: base64 kaydı decode→encode bayt-bayt aynı, üstüne yazmada yedek oluştu (2026-10-22) · açık: 2 ORTA (CLI doğrulama kapanı hata kodu, Unix izin kaybı), 5 DUSUK → .fabrika/raporlar/D5b-denetim.md
+    · bağımsız doğrulama (kullanıcının oyunu yok, 2026-10-22): `lz-string` 1.5.0 (orijinal JS) ile üretilen 4 MV kaydı `saveprism decode` →
+    `saveprism encode` → `cmp` birebir aynı; `inspect` iki adımda `exact` (M1-3 turu 4 sonrası)
 
 - [~] **M1-9 Girdi sınırları + ilk fuzz hedefi**
   - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 0/3
@@ -246,7 +250,8 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
   - Doğrulama: CEO `kontrol.sh rust` · yeni dosya ekleyince test kendiliğinden koşuyor
   - Denetim: dalga-şefi denetçisi (1 YUKSEK + 1 ORTA düzeltildi) · Kanıt: beklenti yokken 4 dosyada anlaşılır mesajla düştü, `SAVEPRISM_BLESS=1` sonrası geçti; CEO beklentileri inceledi: 3 exact, tabs.json semantic (tek satırlık iç dizi = karışık biçim, doğru sonuç) (2026-10-21)
 
-- [ ] **[ben] Gerçek RPG Maker MV kaydı** → `fixtures/samples/rpgmaker/` (kilitli klasör; D5 doğrulamasından önce)
+- [x] **[ben] Gerçek RPG Maker MV kaydı** → kullanıcı (2026-10-22): "hiç bir oyunum yok, test için bir yerden veri çekebilir miyiz?" →
+  yerine `fixtures/synthetic/rpgmaker-mv/` (orijinal `lz-string` 1.5.0 ile, kullanıcı onayıyla indirildi; kaynak `fixtures/README.md`)
 
 ---
 

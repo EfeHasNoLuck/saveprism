@@ -251,12 +251,28 @@ impl Variant {
     }
 }
 
+/// Compresses with the `lz_str` crate, then normalises the padding to what the original
+/// JavaScript library emits: the base64 variant is padded with `=` to a multiple of 4 (a
+/// remainder of 1 gives `===`), the URI variant is never padded. The crate pads differently.
 fn compress(text: &str, variant: Variant) -> Vec<u8> {
-    match variant {
+    let packed = match variant {
         Variant::Base64 => lz_str::compress_to_base64(text),
         Variant::Uri => lz_str::compress_to_encoded_uri_component(text),
+    };
+    let mut bytes = packed.into_bytes();
+    while bytes.last() == Some(&b'=') {
+        bytes.pop();
     }
-    .into_bytes()
+    if variant == Variant::Base64 {
+        let padding: &[u8] = match bytes.len() % 4 {
+            1 => b"===",
+            2 => b"==",
+            3 => b"=",
+            _ => b"",
+        };
+        bytes.extend_from_slice(padding);
+    }
+    bytes
 }
 
 /// Converts UTF-16 units to UTF-8. The UTF-8 length is computed and checked with `check`
@@ -386,11 +402,7 @@ impl Layer for LzStringLayer {
             )
             .with_source(source)
         })?;
-        let packed = match variant {
-            Variant::Base64 => lz_str::compress_to_base64(text),
-            Variant::Uri => lz_str::compress_to_encoded_uri_component(text),
-        };
-        Ok(packed.into_bytes())
+        Ok(compress(text, variant))
     }
 }
 
@@ -406,6 +418,49 @@ mod tests {
         LzStringLayer.decode(input, &mut ctx)
     }
 
+    fn pack(text: &str, variant: Variant) -> String {
+        String::from_utf8(compress(text, variant)).unwrap()
+    }
+
+    /// Vectors produced by the original JavaScript library (lz-string 1.5.0).
+    #[test]
+    fn javascript_vectors_match() {
+        let twenty_a = "a".repeat(20);
+        let vectors: [(&str, &str, &str); 8] = [
+            ("a", "IZA=", "IZA"),
+            ("ab", "IYIyA===", "IYIyA"),
+            ("hello", "BYUwNmD2Q===", "BYUwNmD2Q"),
+            ("hello world", "BYUwNmD2AEDukCcwBMg=", "BYUwNmD2AEDukCcwBMg"),
+            (
+                "Şeyma 🌙",
+                "nqAFMJ4LYIYASDwbhMfaA===",
+                "nqAFMJ4LYIYASDwbhMfaA",
+            ),
+            (
+                "{\"gold\":1250}",
+                "N4Ig5g9gNgJiBcBGATAVgAwF8g==",
+                "N4Ig5g9gNgJiBcBGATAVgAwF8g",
+            ),
+            (twenty_a.as_str(), "IY1/kA==", "IY1-kA"),
+            ("SavePrism", "MoQwbgpgCgTglgZwLZA=", "MoQwbgpgCgTglgZwLZA"),
+        ];
+        for (text, base64, uri) in vectors {
+            let mut hints = Params::new();
+            for (variant, expected) in [(Variant::Base64, base64), (Variant::Uri, uri)] {
+                assert_eq!(pack(text, variant), expected, "{text:?}");
+                hints.set("variant", variant.name());
+                let limits = Limits::default();
+                let mut ctx = DecodeCtx::new(&limits).with_step(0, hints.clone());
+                let (inner, params) = LzStringLayer.decode(expected.as_bytes(), &mut ctx).unwrap();
+                assert_eq!(inner, text.as_bytes());
+                assert_eq!(
+                    LzStringLayer.encode(&inner, &params).unwrap(),
+                    expected.as_bytes()
+                );
+            }
+        }
+    }
+
     fn check_round_trip(text: &str, packed: &str) {
         let limits = Limits::default();
         let (inner, params) = decode_with(packed.as_bytes(), &limits).unwrap();
@@ -417,7 +472,7 @@ mod tests {
     proptest! {
         #[test]
         fn base64_round_trip(text in "\\PC{0,200}") {
-            let packed = lz_str::compress_to_base64(&text);
+            let packed = pack(&text, Variant::Base64);
             let limits = Limits::default();
             let (inner, params) = decode_with(packed.as_bytes(), &limits).unwrap();
             prop_assert_eq!(&inner, text.as_bytes());
@@ -427,7 +482,7 @@ mod tests {
 
         #[test]
         fn uri_round_trip(text in "\\PC{0,200}") {
-            let packed = lz_str::compress_to_encoded_uri_component(&text);
+            let packed = pack(&text, Variant::Uri);
             let limits = Limits::default();
             let mut hints = Params::new();
             hints.set("variant", "uri");
@@ -448,14 +503,14 @@ mod tests {
             "{\"gold\":1234,\"name\":\"Ünïcödé 日本語 😀\"}",
             "abababababababababab",
         ] {
-            check_round_trip(text, &lz_str::compress_to_base64(text));
+            check_round_trip(text, &pack(text, Variant::Base64));
         }
     }
 
     #[test]
     fn uri_variant_is_guessed_and_kept() {
         let text = "the quick brown fox jumps over the lazy dog, the quick brown fox";
-        let packed = lz_str::compress_to_encoded_uri_component(text);
+        let packed = pack(text, Variant::Uri);
         check_round_trip(text, &packed);
         let limits = Limits::default();
         let (_, params) = decode_with(packed.as_bytes(), &limits).unwrap();
@@ -466,7 +521,7 @@ mod tests {
     fn ambiguous_uri_text_comes_back_unchanged() {
         // A URI text without '-' or '$' whose length is a multiple of 4 looks like base64.
         let packed = (0..5000)
-            .map(|i| lz_str::compress_to_encoded_uri_component(&format!("item {i} item {i}")))
+            .map(|i| pack(&format!("item {i} item {i}"), Variant::Uri))
             .find(|p| p.len() % 4 == 0 && !p.contains(['-', '$', '/', '=']))
             .unwrap();
         let limits = Limits::default();
@@ -492,7 +547,7 @@ mod tests {
     #[test]
     fn utf8_size_is_checked_before_allocation() {
         let text = "日".repeat(100); // 100 UTF-16 units, 300 UTF-8 bytes
-        let packed = lz_str::compress_to_base64(&text);
+        let packed = pack(&text, Variant::Base64);
         let with_budget = |bytes: u64| Limits {
             max_decoded_bytes: bytes,
             ratio_floor_bytes: 1 << 40,
@@ -507,7 +562,7 @@ mod tests {
     #[test]
     fn quadratic_input_hits_the_decoded_limit() {
         let text = "a".repeat(10_000);
-        let packed = lz_str::compress_to_base64(&text);
+        let packed = pack(&text, Variant::Base64);
         assert!(packed.len() < 1_000);
 
         // With the default limits it decompresses.

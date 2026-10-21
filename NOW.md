@@ -2,13 +2,12 @@
 
 > Her oturumda ilk okunan dosya. Tek ekran. Her görev sonunda güncellenir.
 
-**Faz:** M1 — çekirdek + CLI, planlama (2026-10-21)
+**Faz:** M1 — çekirdek + CLI, kapanış (2026-10-22)
 
-**Son kazanım:** M1 kodu tamam: güvenli yazma (yedek A), CLI (`saveprism inspect|decode|encode`) ve dedektör bellek düzeltmesi; Rust kontrolü 3/3,
-sentetik kayıtta decode→encode bayt-bayt aynı (2026-10-22). Kalan: senin gerçek kayıt denemen (KAPI-2) + fuzz koşusu (push).
+**Son kazanım:** M1 demosu geçti → orijinal JS `lz-string` ile üretilen 4 RPG Maker MV kaydı `saveprism decode` → `saveprism encode` ile
+birebir aynı (önce 1 bayt fazla `=` dolgusu çıktı, düzeltildi). 255 test, Rust kontrolü 3/3.
 
-**Sıradaki tek adım:** gerçek RPG Maker MV kaydını `fixtures/samples/rpgmaker/` altına koy; sonra `saveprism decode k.rpgsave -o f.json` →
-`saveprism encode f.json --recipe f.recipe.toml -o out.rpgsave` ve `fc /b k.rpgsave out.rpgsave` aynı çıkmalı. ⏱ ~10 dk
+**Sıradaki tek adım:** M1'in son açığı: fuzz testinin GitHub'da bir kez koşması (push için kullanıcı onayı). Sonra M2 planı. ⏱ push ~5 dk
 
 ---
 
@@ -42,8 +41,8 @@ sentetik kayıtta decode→encode bayt-bayt aynı (2026-10-22). Kalan: senin ger
 
 - **Oyun vitrini** ("Hangi oyunda kullandın?" + çalışan oyunlar listesi, 18+ sansürlü) — araştırma bitti → `docs/research/06-game-showcase-feasibility.md` §8;
   kullanıcı girdisi (2026-10-21): ayarlarda 18+ anahtarı + yaş sorusu, internet yalnız kişi isterse, oyun görselleri isteniyor (yeni karar D6). M7'den önce değil.
-- **Düzenleme ekranı mockup'ı (A/B)** — hazır: https://claude.ai/artifact/GKHiaZcNuLQjNXiSKrK3ou (A klasik üç panel, B odak görünümü;
-  hazırlayanın önerisi: B varsayılan + A'nın ağacı/denetçisi çekmecede). Kullanıcının seçimi bekleniyor → M3-2 düzenine girdi
+- **Düzenleme ekranı** — kullanıcı (2026-10-22): A/B mockup'ını "hiç beğenmedim ya daha kolay anlaşılabilir bişi lazım bize
+  https://www.saveeditonline.com/ çok kolay anlaşılıyordu" → M3-2'de o sadelikte yeni tasarım (yalnız UX'ten ders; kod/metin kopyalanmaz)
 
 - Web (WASM) sürümü
 - MCP sunucusu
