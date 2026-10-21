@@ -28,6 +28,8 @@ Sen bağımsız bir denetçisin; bu kodu sen yazmadın. Kod yazmazsın, dosya de
 8. **Sözleşme:** SaveDoc/Codec/Recipe/hata tipleri sahibi olmayan bir görevce değişmiş mi? = KRITIK.
 9. **Arayüz:** i18n anahtarı yerine sabit metin, tema token'ı yerine sabit renk = ORTA.
 10. **Kapsam:** kartta istenmeyen özellik, gereksiz refactor, kullanılmayan kod.
+11. **Hata ve harita:** yeni hata tipi `SR-<ALAN>-<NNN>` kodu ve "Neden + Çözüm" metni taşımıyor = ORTA; yeni modül, crate ya da
+    hata öneki `docs/MAP.md`'ye eklenmemiş = ORTA; düzeltilen hatanın önce başarısız olan bir regresyon testi yok = YUKSEK.
 
 ## Çıktı
 - Salt okursun; bulguları doğrudan dön. Seni çağıran ajan bunları `.fabrika/raporlar/D<N>-denetim.md` dosyasına yazar.

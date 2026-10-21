@@ -1,19 +1,18 @@
-# Taslak — RPGSaveEditor'e iş birliği mesajı
+# Outreach note — RPGSaveEditor (send after v0.1)
 
-> **Ne zaman:** NOW.md karar #3 "evet" ise. **Nereye:** github.com/truongthang2211/RPGSaveEditor → Discussions (yoksa Issues).
-> **Gönderen:** sen (Claude mesajı senin adına göndermez). ⏱ 5 dk.
+> **When:** after Save-R v0.1.0 is public (M5-5), not before. A working release makes this a note between peers, not a request.
+> **Where:** github.com/truongthang2211/RPGSaveEditor → Discussions (or Issues if Discussions is off).
+> **Who sends:** the maintainer, from their own account. ⏱ 5 min.
+> **Tone:** thanks + heads-up + open door. No ask that needs a "yes" for us to continue.
 
 ---
 
-**Title:** Collaboration idea: a shared, engine-agnostic save codec library?
+**Title:** Hello from Save-R — a multi-engine save editor (thanks + an open door)
 
-Hi! First of all, thank you for RPGSaveEditor — the lossless Marshal/pickle writers, the search syntax and the save comparison feature are excellent.
+Hi! I maintain [Save-R](<release link>), an MIT-licensed, cross-platform save editor focused on many engines (Unreal GVAS, Easy Save 3 including encrypted files, Unity PlayerPrefs, Godot and more).
 
-I'm planning an MIT-licensed, cross-platform (Windows/macOS/Linux) save editor that focuses on the engines RPGSaveEditor doesn't cover today: Unreal GVAS, encrypted Easy Save 3, Unity PlayerPrefs/BinaryFormatter and Godot. Before building, I wanted to ask you directly:
+RPGSaveEditor was one of the best references we found for RPG Maker and Ren'Py — the lossless writers and the save comparison feature are great work. <If adapted: "We adapted parts of your Apache-2.0 format code; your copyright headers are kept and the project is credited in our README and About screen.">
 
-1. Would you be open to collaborating on a shared, engine-agnostic codec library (decode → tree → lossless re-encode) that both apps could use?
-2. If we adapt parts of your Apache-2.0 format code (for example the pickle writer), we will keep your copyright headers and NOTICE, mark our changes, and credit RPGSaveEditor prominently in the README and About screen. Is there anything else you'd like us to do?
-
-No pressure either way — we're also happy to simply point RPG Maker users to RPGSaveEditor.
+Our scopes are different, so this is just a hello. If you ever want to share test fixtures or compare notes on formats, the door is open on our side. Either way, we point RPG Maker users to RPGSaveEditor in our docs.
 
 Thanks!

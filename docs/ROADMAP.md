@@ -38,9 +38,9 @@ Kurallar:
 **Hedef:** gerçek ama boş bir uygulama ve yeşil CI. **Demo:** pencere açılıyor, tema ve dil değişiyor, ilk PR'da CI yeşil.
 
 ### Grup A — Kararlar ve araçlar
-1. [ ] **M0-1 Kararlar** 👤 ⏱10 dk ▶ NOW.md'yi aç ✅ kararlar.md'de ADR-008…012 "Kabul"
+1. [~] **M0-1 Kararlar** 👤 ⏱10 dk ▶ NOW.md'yi aç ✅ kararlar.md'de ADR-008…012 "Kabul" — *ADR-008, 010, 011 kabul; ADR-002 (Rust) A/B bekliyor*
 2. [x] **M0-2 Skill + rea + fabrika kurulumu** ⏱30 dk ▶ kurulum talimatı ✅ 6 skill proje kapsamında, fabrika kancaları testten geçti, rea MCP kayıtlı — *kanıt: koruma.sh 18/18, status line + bağlam uyarısı çalıştı, `claude mcp get rea` → Connected (2026-10-21)*
-3. [ ] **M0-3 İş birliği mesajı** 👤 ⏱5 dk ▶ [taslağı](research/outreach-rpgsaveeditor.md) oku ✅ Discussion linki NOW.md'de
+3. [x] **M0-3 Risk kaydı + kalite stratejisi + kod haritası** ⏱45 dk ✅ [RISKS.md](RISKS.md), [QUALITY.md](architecture/QUALITY.md), [MAP.md](MAP.md) — *iş birliği notu M5-6'ya taşındı (ADR-010)*
 4. [ ] **M0-4 Rust araç zinciri** ⏱20 dk ▶ `winget install Rustlang.Rustup` ✅ `cargo --version` çalışıyor; MSVC Build Tools ve WebView2 doğrulandı
 5. [ ] **M0-5 Monorepo iskeleti** ⏱30 dk ▶ pnpm + cargo workspace dosyaları ✅ `pnpm tauri dev` pencere açıyor
 
@@ -50,6 +50,10 @@ Kurallar:
 8. [ ] **M0-8 CI** ⏱40 dk ▶ `.github/workflows/ci.yml` ✅ fmt/clippy/test + typecheck/lint/vitest — Windows, Linux, macOS yeşil
 9. [ ] **M0-9 Topluluk dosyaları** ⏱30 dk ▶ CONTRIBUTING iskeleti ✅ CONTRIBUTING, CODE_OF_CONDUCT, SECURITY, DISCLAIMER, issue/PR şablonları
 10. [ ] **M0-10 cargo-deny lisans politikası** ⏱15 dk ▶ `deny.toml` ✅ GPL bağımlılık eklenince CI kırmızı
+
+### Grup C — Ad ve dil
+11. [ ] **M0-11 SaveLens → Save-R** ⏱20 dk ✅ dokümanlar, CLAUDE/AGENTS, skill metinleri ve plan yeni adı kullanıyor; crate adları `save-r-*`
+12. [ ] **M0-12 Repo dokümanlarını EN'e çevir** ⏱45 dk ▶ motor: agy (ucuz) + Claude denetimi ✅ README.md EN + README.tr.md; docs/ EN; sohbet TR kalır
 
 ---
 
@@ -145,6 +149,7 @@ Kurallar:
 3. [ ] **M5-3 README (EN + TR), ekran görüntüleri, GIF** ⏱45 dk
 4. [ ] **M5-4 THIRD_PARTY_NOTICES üretimi** ⏱30 dk ✅ cargo-about + pnpm licenses çıktısı pakette
 5. [ ] **M5-5 Public'e alma + v0.1.0** 👤 ⏱20 dk ▶ senin açık onayın ✅ repo public, release yayınlandı
+6. [ ] **M5-6 RPGSaveEditor'e merhaba notu** 👤 ⏱5 dk ▶ [taslak](research/outreach-rpgsaveeditor.md) ✅ Discussion linki NOW.md'de
 
 Sonrası (Park): SignPath başvurusu, winget manifesti.
 
@@ -197,7 +202,7 @@ Sonrası (Park): SignPath başvurusu, winget manifesti.
 ## 👤 Yalnız senin yapabileceklerin (özet)
 
 1. Kararlar (M0-1)
-2. İş birliği mesajını göndermek (M0-3)
+2. RPGSaveEditor'e merhaba notunu göndermek (M5-6, v0.1 sonrası)
 3. Kendi oyunlarından fixture kayıtları (M2-7)
 4. Düzenlenen kayıtları gerçek oyunda yükleyip test etmek (M3, M6)
 5. Public'e alma ve sürüm onayı (M5-5)

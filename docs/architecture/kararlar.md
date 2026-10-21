@@ -50,22 +50,40 @@ Durumlar: **Kabul** · **Önerildi** · **Açık** · **Değişti**
 - **Bedel:** biraz daha yavaş format kapsamı.
 - **Alternatif:** —
 
-### ADR-008 — Doküman dili · Açık
-- **Öneri:** iç planlama TR (şimdiki dosyalar); public yüzey (README, CONTRIBUTING, uygulama varsayılanı) EN + TR çeviri.
-- **Alternatif:** her şey EN (topluluk için en geniş), her şey TR (sana en rahat).
+### ADR-008 — Dil · Kabul (2026-10-21)
+- **Karar:** sohbet TR; repodaki her şey EN (kod, yorum, commit, dokümanlar). Türkçe kullanıcılar için `README.tr.md` ve uygulamada TR çeviri.
+- **Neden:** topluluk katkısı EN ile en geniş kitleye açılır.
+- **Bedel:** mevcut TR planlama dokümanlarının çevirisi (M0-12; ucuz motor agy'ye uygun iş). Yeni dokümanlar şimdiden EN.
 
 ### ADR-009 — Profillerde anahtar dağıtımı · Açık
 - **Öneri:** başlangıçta profiller yalnız **bulma yöntemini** taşır; anahtar kullanıcının yerel kasasında. Hukuki görüş sonrası yeniden değerlendir.
 - **Alternatif:** bilinen anahtarları kanıt kaynağıyla profillere eklemek (kullanıcı için daha kolay, risk daha yüksek).
 
-### ADR-010 — RPGSaveEditor ilişkisi · Açık
-- **Öneri:** önce iş birliği mesajı ([taslak](../research/outreach-rpgsaveeditor.md)); cevap beklenmeden boşluk formatlarıyla başla.
-- **Alternatif:** iletişim kurmadan Apache-2.0 kodu NOTICE ile uyarlamak; ya da hiç kullanmamak.
+### ADR-010 — RPGSaveEditor ilişkisi · Kabul (2026-10-21)
+- **Karar:** bağımsız ilerliyoruz. Apache-2.0 kodu gerekirse atıfla uyarlanır (izin gerekmez). Eşit seviyede kısa bir not **v0.1 yayınlandıktan sonra** gönderilir ([taslak](../research/outreach-rpgsaveeditor.md)).
+- **Neden:** kapsamlar farklı (o: RPG Maker ailesi, biz: tüm motorlar); çalışan bir ürünle gelen teklif ciddiye alınır, bağımlılık izlenimi oluşmaz.
+- **Alternatif:** şimdi yazmak (elimizde gösterecek bir şey yok), hiç yazmamak (kibar bir kapıyı kapatır).
 
-### ADR-011 — Proje adı · Açık
-- Kod adı **SaveLens** (GitHub'da birebir ad yok, npm ve crates.io boş — 2026-10-21).
-- Elenenler: SaveSmith (aynı alanda Çince bir proje var), SaveKit (npm dolu), SaveForge (aynı adlı şüpheli bir repo var).
+### ADR-011 — Proje adı · Kabul (2026-10-21)
+- **Karar:** **Save-R** (kullanıcının önerisi). Slug'lar: repo `save-r`, crate'ler `save-r-core` vb. (Rust'ta `save_r_core`), CLI `save-r`.
+- **Kontrol (2026-10-21):** GitHub'da birebir repo yok, npm ve crates.io'da `save-r` boş, `save-r.app` / `save-r.dev` DNS kaydı yok, aynı adlı ürün bulunamadı.
+- **Bedel:** tire arama motorlarında "save r" diye okunur → repo açıklamasında ve topic'lerde "save editor" anahtar kelimesi şart.
+- **Elenenler:** Saver (crate ve birçok repo dolu, çok genel), Savior (npm/crate dolu, 542★ başka proje), SaveLens (eski kod adı).
+- **Kalan iş:** kod adı değişimi (M0-11).
 
 ### ADR-012 — macOS imzası · Açık
 - **Öneri:** v0.1'de imzasız macOS sürümü + talimat; talep olursa Apple Developer ($99/yıl).
 - **Alternatif:** macOS'u ilk sürümde hiç yayınlamamak.
+
+### ADR-013 — Hata modeli ve test stratejisi · Önerildi
+- **Karar:** crate başına tipli hatalar, kararlı `SR-<ALAN>-<NNN>` kodları, kütüphanelerde panik yok (lint ile), altın round-trip korpusu + snapshot + property + fuzz testleri, "önce başarısız test, sonra düzeltme" kuralı. Ayrıntı: [QUALITY.md](QUALITY.md).
+- **Neden:** hatayı kullanıcıya ulaşmadan yakalamak; ulaşırsa dakikalar içinde doğru dosyaya inmek.
+- **Bedel:** M1'de birkaç saatlik altyapı; sonraki her codec bunu hazır bulur.
+
+### ADR-014 — Kod haritası · Önerildi
+- **Karar:** [MAP.md](../MAP.md) belirtiden dosyaya en kısa yol; her yeni modül/hata öneki aynı değişiklikte eklenir (denetçi kontrol eder). Kod büyüyünce `/graphify` ek olarak kullanılır.
+- **Neden:** arama yerine doğrudan gitmek → daha az token, daha hızlı düzeltme.
+
+### ADR-015 — Risk kaydı ve kapsam dışı listesi · Önerildi
+- **Karar:** [RISKS.md](../RISKS.md) her riske bir strateji (önle / tespit et / sınırla / kabul et) atar; §3 Non-Goals listesi yalnız ADR ile değişir.
+- **Neden:** "ben bunu istememiştim" sürprizlerini baştan kapatmak.
