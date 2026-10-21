@@ -41,7 +41,7 @@ Kurallar:
 1. [~] **M0-1 Kararlar** 👤 ⏱10 dk ▶ NOW.md'yi aç ✅ kararlar.md'de ADR-008…012 "Kabul" — *ADR-008, 010, 011 kabul; ADR-002 (Rust) A/B bekliyor*
 2. [x] **M0-2 Skill + rea + fabrika kurulumu** ⏱30 dk ▶ kurulum talimatı ✅ 6 skill proje kapsamında, fabrika kancaları testten geçti, rea MCP kayıtlı — *kanıt: koruma.sh 18/18, status line + bağlam uyarısı çalıştı, `claude mcp get rea` → Connected (2026-10-21)*
 3. [x] **M0-3 Risk kaydı + kalite stratejisi + kod haritası** ⏱45 dk ✅ [RISKS.md](RISKS.md), [QUALITY.md](architecture/QUALITY.md), [MAP.md](MAP.md) — *iş birliği notu M5-6'ya taşındı (ADR-010)*
-4. [ ] **M0-4 Rust araç zinciri** ⏱20 dk ▶ `winget install Rustlang.Rustup` ✅ `cargo --version` çalışıyor; MSVC Build Tools ve WebView2 doğrulandı
+4. [x] **M0-4 Rust araç zinciri** ⏱20 dk ▶ `winget install Rustlang.Rustup` ✅ `cargo --version` çalışıyor; MSVC Build Tools ve WebView2 doğrulandı — *kanıt: rustc/cargo 1.99.1, rustfmt 1.10.0, clippy 0.1.99; VS 2022 + 2026 MSVC; WebView2 155; `cargo run` → "Hello, world!" (2026-10-21)*
 5. [ ] **M0-5 Monorepo iskeleti** ⏱30 dk ▶ pnpm + cargo workspace dosyaları ✅ `pnpm tauri dev` pencere açıyor
 
 ### Grup B — İskelet kalitesi

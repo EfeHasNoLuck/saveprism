@@ -41,6 +41,7 @@ Tarih: 2026-10-21 · Yöntem: GitHub araması (`gh`, yıldız sıralı, EN/ZH/JA
 | Stormwave/SaveEditor | 2023'ten beri durgun, GPL-3.0 |
 | Xeeynamo/KingdomSaveEditor | Oyuna özel (KH/FF7R/Persona), 2022'den beri durgun, GPL-3.0 |
 | Poiki/rpgsave-editor | tkinter, tek sürüm, lisans yok |
+| **Savecraft** (savecraft.gg, istemcisi açık kaynak: joshsymonds/savecraft-client) | *2026-10-21'de eklendi.* Oyun kayıtları için **AI asistanı**: 14 oyun, oyuna özel "uzman modülleri", kendi sohbeti + MCP sunucusu (Claude/ChatGPT bağlanabiliyor). **Yalnız okur, düzenlemez.** Editör değil ama "AI + kayıt" pazarının var olduğunu gösteriyor; ileride MCP tarafında tamamlayıcı/ortak olabilir |
 
 > ⚠️ **Şüpheli repolar:** `pebblebakerspell/save-editor-universal-tool` (0★, bugün güncellenmiş, `main.py` + `Program.cs` + `index.html`) ve `Sepiolina/Offline-Save-Editor` (0★, yalnız README). "Evrensel araç" adıyla açılan sıfır yıldızlı repolar bilinen bir zararlı yazılım yemi kalıbı. **İndirilmedi, çalıştırılmamalı.**
 

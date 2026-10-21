@@ -53,7 +53,7 @@
 - `target/`, `node_modules/`, `dist/` ve ikili kayıt dosyaları okunmaz. Dosya içeriğini Bash heredoc ile değil Write aracıyla yaz.
 
 ## Proje bilgisi (kurulum doldurdu, 2026-10-21)
-- Araçlar: Node 22.23.1 · pnpm 11.19 · Python 3.11 · Git 2.55 · Rust: kurulu değil (M0-4)
+- Araçlar: Node 22.23.1 · pnpm 11.19 · Python 3.11 · Git 2.55 · Rust 1.99.1 (rustup, stable-msvc, rustfmt + clippy) · VS 2022/2026 MSVC · WebView2 155
 - Codex: var (açık) · agy: var (açık) · Plan: Pro (paralel kodcu sınırı: 4)
 
 # Compact instructions

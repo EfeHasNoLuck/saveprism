@@ -21,6 +21,8 @@
 
 ## 2. Code (planned layout — becomes real in M0-5 / M1)
 
+Crate and folder prefixes (`save-r-*` below) follow the final project name (ADR-011) and are renamed in M0-11.
+
 | Area | Path | Owns |
 |---|---|---|
 | Core model | `crates/save-r-core/` | SaveDoc, Codec trait, Recipe, Detector, patching, round-trip guard, safe write |

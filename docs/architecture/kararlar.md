@@ -14,7 +14,7 @@ Durumlar: **Kabul** · **Önerildi** · **Açık** · **Değişti**
 - **Bedel:** WebView farkları (özellikle Linux WebKitGTK).
 - **Alternatif:** Electron (ağır), Python + pywebview (paketleme/antivirüs sorunları).
 
-### ADR-002 — Çekirdek dili: Rust · Önerildi
+### ADR-002 — Çekirdek dili: Rust · Kabul (2026-10-21)
 - **Karar:** tüm codec'ler Rust crate'lerinde.
 - **Neden:** güvenilmeyen ikili veri, büyük dosya performansı, `uesave` yerel, CLI/MCP/WASM için tek kod tabanı.
 - **Bedel:** Rust araç zinciri kurulumu (sende yok); RPGSaveEditor'ün TS pickle/Marshal yazıcılarını port etmek.
@@ -60,16 +60,15 @@ Durumlar: **Kabul** · **Önerildi** · **Açık** · **Değişti**
 - **Alternatif:** bilinen anahtarları kanıt kaynağıyla profillere eklemek (kullanıcı için daha kolay, risk daha yüksek).
 
 ### ADR-010 — RPGSaveEditor ilişkisi · Kabul (2026-10-21)
-- **Karar:** bağımsız ilerliyoruz. Apache-2.0 kodu gerekirse atıfla uyarlanır (izin gerekmez). Eşit seviyede kısa bir not **v0.1 yayınlandıktan sonra** gönderilir ([taslak](../research/outreach-rpgsaveeditor.md)).
-- **Neden:** kapsamlar farklı (o: RPG Maker ailesi, biz: tüm motorlar); çalışan bir ürünle gelen teklif ciddiye alınır, bağımlılık izlenimi oluşmaz.
-- **Alternatif:** şimdi yazmak (elimizde gösterecek bir şey yok), hiç yazmamak (kibar bir kapıyı kapatır).
+- **Karar:** kimseye muhtaç olmadan ilerliyoruz, ama iş birliğine açığız. **v0.1 yayınlandıktan sonra** eşit seviyede bir not gönderilir ve somut bir **ortak çözüm havuzu** önerilir: paylaşılan test kayıtları (fixture) + format notları ([taslak](../research/outreach-rpgsaveeditor.md)). Apache-2.0 kodu gerekirse atıfla uyarlanır (izin gerekmez).
+- **Neden:** kapsamlar farklı (o: RPG Maker ailesi, biz: tüm motorlar), bu yüzden rekabet yok; ortak havuz iki projenin de test ve bakım yükünü azaltır. Çalışan bir ürünle gelen teklif ciddiye alınır.
+- **Alternatif:** şimdi yazmak (gösterecek bir şey yok), hiç yazmamak (iki tarafa da yarayacak bir kapıyı kapatır).
 
-### ADR-011 — Proje adı · Kabul (2026-10-21)
-- **Karar:** **Save-R** (kullanıcının önerisi). Slug'lar: repo `save-r`, crate'ler `save-r-core` vb. (Rust'ta `save_r_core`), CLI `save-r`.
-- **Kontrol (2026-10-21):** GitHub'da birebir repo yok, npm ve crates.io'da `save-r` boş, `save-r.app` / `save-r.dev` DNS kaydı yok, aynı adlı ürün bulunamadı.
-- **Bedel:** tire arama motorlarında "save r" diye okunur → repo açıklamasında ve topic'lerde "save editor" anahtar kelimesi şart.
-- **Elenenler:** Saver (crate ve birçok repo dolu, çok genel), Savior (npm/crate dolu, 542★ başka proje), SaveLens (eski kod adı).
-- **Kalan iş:** kod adı değişimi (M0-11).
+### ADR-011 — Proje adı · Açık (araştırma tamam, karar bekliyor)
+- **Öneri:** **SaveStack** (ikinci: SaveLore). Ayrıntı ve veriler: [05-naming.md](../research/05-naming.md).
+- **Save-R:** her yerde boş, ama marka araması "Save-Rite" eczanelerine gidiyor ve "saver" diye duyuluyor.
+- **Elenenler:** OmniSave (aynı alanda iki araç), Savecraft (savecraft.gg bir AI kayıt asistanı), SaveForge, Quicksave, Resave, Savepad, Savix, Saver, Savior.
+- **Kalan iş:** karar → marka araması (TÜRKPATENT/EUIPO/USPTO) → M0-11 yeniden adlandırma.
 
 ### ADR-012 — macOS imzası · Açık
 - **Öneri:** v0.1'de imzasız macOS sürümü + talimat; talep olursa Apple Developer ($99/yıl).

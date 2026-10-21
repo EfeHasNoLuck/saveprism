@@ -4,18 +4,20 @@
 
 **Faz:** M0 — temel kurulum (2026-10-21)
 
-**Son kazanım:** Ad **Save-R** oldu; dil kuralı (sohbet TR, repo EN) ve bağımsız yol (RPGSaveEditor'e not v0.1 sonrası) kayda geçti. Risk kaydı, kalite stratejisi ve kod haritası hazır.
+**Son kazanım:** M0-4 bitti → Rust 1.99.1 kurulu ve derleme + MSVC bağlama test edildi. Çekirdek dili Rust (ADR-002). İsim araştırması hazır ([05-naming.md](docs/research/05-naming.md)).
 
-**Sıradaki tek adım:** Çekirdek dili için A/B kararını ver (Rust mı, TypeScript mi). ⏱ 2 dk
+**Sıradaki tek adım:** Proje adını seç (öneri: SaveStack). ⏱ 2 dk
 
 ---
 
 ## Kararlar (M0-1)
 
-1. ✅ **Ad:** Save-R ([ADR-011](docs/architecture/kararlar.md)) — yeniden adlandırma M0-11
+1. ⏳ **Ad:** öneri SaveStack · ikinci SaveLore · Save-R da mümkün ([ADR-011](docs/architecture/kararlar.md)) — sonra marka araması + M0-11
 2. ✅ **Dil:** sohbet TR, repo EN ([ADR-008](docs/architecture/kararlar.md)) — çeviri M0-12
-3. ✅ **RPGSaveEditor:** bağımsız; eşit seviyede not v0.1 sonrası ([ADR-010](docs/architecture/kararlar.md)) — M5-6
-4. ⏳ **Çekirdek dili:** A = Rust (öneri) · B = TypeScript ([ADR-002](docs/architecture/kararlar.md))
+3. ✅ **RPGSaveEditor:** muhtaç değiliz ama iş birliğine açığız; v0.1 sonrası not + ortak fixture/format havuzu önerisi ([ADR-010](docs/architecture/kararlar.md)) — M5-6
+4. ✅ **Çekirdek dili:** Rust ([ADR-002](docs/architecture/kararlar.md))
+
+> Not: Rust PATH'e eklendi ama açık uygulamalar eski PATH'i görür. Claude uygulamasını/terminali yeniden başlatınca `kontrol.sh` cargo'yu bulur.
 
 ---
 
