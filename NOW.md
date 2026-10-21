@@ -4,11 +4,11 @@
 
 **Faz:** M1 — çekirdek + CLI, planlama (2026-10-21)
 
-**Son kazanım:** D4'ün 3 işi bitti → Base64/GZip/zlib/LZ-String katmanları, biçim koruyan JSON, round-trip koruması (211 test,
-denetçi + Codex). D3: çekirdek sözleşmesi.
+**Son kazanım:** M1'in 8/10 işi makine kanıtlı → çekirdek sözleşmesi, katmanlar, biçim koruyan JSON, round-trip koruması, dedektör,
+sınır testleri, altın test (233 test, denetçi + Codex). Kalan: M1-8 güvenli yazma, M1-6 CLI, fuzz koşusu (push).
 
-**Sıradaki tek adım:** kullanıcının yedek kararı ("üstüne yazarken yedek hep mi, isteğe bağlı mı") → M1-8 kartı. Beklerken D5'in
-bağımsız işleri (M1-5 dedektör, M1-9 sınırlar/fuzz, M1-10 altın test) koşabilir; M1-6 CLI, M1-8'den sonra. ⏱ D5 ~90 dk
+**Sıradaki tek adım:** [HANDOFF-20261021-2](handoff/HANDOFF-20261021-2.md) adım 1 → kullanıcının yedek kararı ("üstüne yazarken yedek hep mi,
+isteğe bağlı mı") → M1-8 + M1-6 kartları. ⏱ ~90 dk + kullanıcının MV kaydıyla demo
 
 ---
 
