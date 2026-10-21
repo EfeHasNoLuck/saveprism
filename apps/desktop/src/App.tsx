@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { useTranslation } from "react-i18next";
 import { LanguageSwitcher } from "@/i18n";
 import { ThemeToggle } from "@/theme";
 
 function App() {
+  const { t } = useTranslation();
   const [coreVersion, setCoreVersion] = useState<string | null>(null);
   const [coreFailed, setCoreFailed] = useState(false);
 
@@ -14,14 +16,14 @@ function App() {
   }, []);
 
   const coreLabel = coreFailed
-    ? "core unavailable"
+    ? t("footer.coreUnavailable")
     : coreVersion
-      ? `core v${coreVersion}`
+      ? t("footer.core", { version: coreVersion })
       : "";
 
   return (
-    <div className="flex h-screen flex-col">
-      <header className="flex items-center justify-between border-b border-gray-300 px-4 py-2">
+    <div className="flex h-screen flex-col bg-background text-foreground">
+      <header className="flex items-center justify-between border-b border-border px-4 py-2">
         <span className="font-semibold">SavePrism</span>
         <div className="flex items-center gap-2">
           <LanguageSwitcher />
@@ -29,10 +31,10 @@ function App() {
         </div>
       </header>
       <main className="flex flex-1 flex-col items-center justify-center gap-2">
-        <p className="text-lg">Drop a save file here</p>
-        <p className="text-sm text-gray-500">Everything stays on your computer.</p>
+        <p className="text-lg">{t("empty.title")}</p>
+        <p className="text-sm text-muted-foreground">{t("empty.subtitle")}</p>
       </main>
-      <footer className="border-t border-gray-300 px-4 py-1 text-xs text-gray-500">
+      <footer className="border-t border-border px-4 py-1 text-xs text-muted-foreground">
         {coreLabel}
       </footer>
     </div>

@@ -9,6 +9,8 @@
     "dev": "pnpm --filter @saveprism/desktop tauri dev",
     "build": "pnpm --filter @saveprism/desktop tauri build",
     "tauri": "pnpm --filter @saveprism/desktop tauri",
-    "typecheck": "pnpm --filter @saveprism/desktop typecheck"
+    "typecheck": "pnpm --filter @saveprism/desktop typecheck",
+    "lint": "pnpm --filter @saveprism/desktop lint",
+    "test": "pnpm --filter @saveprism/desktop test"
   }
 }

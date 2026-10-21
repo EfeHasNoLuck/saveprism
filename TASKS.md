@@ -77,7 +77,8 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
   - Kabul: düğme açık/koyu/sistem arasında canlı geçiş · "sistem" seçiliyken işletim sistemi teması değişince canlı izler ·
     seçim yeniden açılışta korunur · renkler yalnız token'lardan · `src/theme/theme.test.ts` (saf çözümleme fonksiyonu)
   - Doğrulama: CEO `kontrol.sh web` · Sen `pnpm tauri dev` → 3 kip + yeniden açılış (KAPI-2)
-  - Denetim: denetci (dalga) · Kanıt: —
+  - Denetim: denetci (dalga; 1 YUKSEK düzeltildi) · Kanıt: `kontrol.sh hepsi` yeşil (typecheck, lint, 17 test, Rust 3/3) · CEO tarayıcıda:
+    Açık seçildi → `saveprism.theme=light`, yenilemeden sonra açık kaldı; "sistem" açılışta OS temasını alıyor. Canlı OS takibi kullanıcıda
 
 - [~] **M0-7 i18n iskeleti (TR/EN)**
   - Motor: claude/kodcu·haiku · Effort: medium · Deneme: 0/3
@@ -87,7 +88,8 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
   - Kabul: dil seçici TR/EN arasında yeniden yüklemeden canlı geçiş · ilk açılışta işletim sistemi dili · seçim korunur ·
     `<html lang>` güncellenir · `App.tsx`'te sabit metin kalmaz · `src/i18n/i18n.test.ts`: tr ve en anahtar kümeleri aynı
   - Doğrulama: CEO `kontrol.sh web` · Sen `pnpm tauri dev` → dil değiştir + yeniden aç (KAPI-2)
-  - Denetim: denetci (dalga) · Kanıt: —
+  - Denetim: denetci (dalga; 1 YUKSEK düzeltildi) · Kanıt: testler yeşil · CEO tarayıcıda: ilk açılış TR (OS dili), English seçilince metin
+    canlı değişti, `<html lang="en">`, yenilemeden sonra EN kaldı
 
 - [~] **M0-8 CI**
   - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 0/3
@@ -98,7 +100,7 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
   - Kabul: yerelde `kontrol.sh` typecheck + lint + test çalıştırır, çıkış 0 · CI: Rust fmt/clippy/test Windows + Linux + macOS,
     web typecheck/lint/test · yalnız okuma izinleri · Dependabot (cargo, npm, actions) haftalık
   - Doğrulama: CEO `kontrol.sh hepsi` · CI yeşil: GitHub'da repo varsa (KAPI-1 kararı)
-  - Denetim: denetci (dalga) · Kanıt: —
+  - Denetim: denetci (dalga) · Kanıt: yerelde `kontrol.sh` artık typecheck + lint + test koşuyor, hepsi yeşil · CI sonucu: push sonrası
 
 ---
 

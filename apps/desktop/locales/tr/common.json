@@ -1,0 +1,19 @@
+{
+  "empty": {
+    "title": "Kayıt dosyasını buraya bırak",
+    "subtitle": "Her şey bilgisayarında kalır."
+  },
+  "footer": {
+    "core": "çekirdek v{{version}}",
+    "coreUnavailable": "çekirdeğe ulaşılamadı"
+  },
+  "language": {
+    "label": "Dil"
+  },
+  "theme": {
+    "toggle": "Temayı değiştir",
+    "light": "Açık",
+    "dark": "Koyu",
+    "system": "Sistem"
+  }
+}

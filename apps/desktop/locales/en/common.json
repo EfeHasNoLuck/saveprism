@@ -1,0 +1,19 @@
+{
+  "empty": {
+    "title": "Drop a save file here",
+    "subtitle": "Everything stays on your computer."
+  },
+  "footer": {
+    "core": "core v{{version}}",
+    "coreUnavailable": "core unavailable"
+  },
+  "language": {
+    "label": "Language"
+  },
+  "theme": {
+    "toggle": "Change theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  }
+}
