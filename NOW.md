@@ -7,7 +7,8 @@
 **Son kazanım:** M1 demosu geçti → orijinal JS `lz-string` ile üretilen 4 RPG Maker MV kaydı `saveprism decode` → `saveprism encode` ile
 birebir aynı (önce 1 bayt fazla `=` dolgusu çıktı, düzeltildi). 255 test, Rust kontrolü 3/3.
 
-**Sıradaki tek adım:** M1'in son açığı: fuzz testinin GitHub'da bir kez koşması (push için kullanıcı onayı). Sonra M2 planı. ⏱ push ~5 dk
+**Sıradaki tek adım:** [HANDOFF-20261022-1](handoff/HANDOFF-20261022-1.md) adım 1 → fuzz testinin GitHub'da bir kez koşması için push
+(kullanıcı onayı). Sonra M2 planı. ⏱ push ~5 dk
 
 ---
 
