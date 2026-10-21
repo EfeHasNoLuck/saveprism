@@ -30,7 +30,7 @@
 
 1. Oyun klasöründe `<Oyun>_Data/Managed/Assembly-CSharp.dll` dosyasını bul. ⏱ 1 dk
 2. Ajana: *"Bu DLL'deki user string'leri ve ES3Settings / ES3.Save çağrılarına yakın `ldstr` değerlerini listele."* ⏱ 3 dk
-3. Adayları doğrula: `savelens keys try <save.es3> --candidates adaylar.txt` (PBKDF2 + AES + düz metin sezgisi; M2-4'te gelir). ⏱ 1 dk
+3. Adayları doğrula: `saveprism keys try <save.es3> --candidates adaylar.txt` (PBKDF2 + AES + düz metin sezgisi; M2-4'te gelir). ⏱ 1 dk
 4. Doğrulanan anahtarı kanıtıyla (dosya yolu + yöntem + tarih) yerel anahtar kasasına yaz.
 
 - IL2CPP oyunlarda 2. adım `global-metadata.dat` string literal'leri olur.
@@ -38,7 +38,7 @@
 
 ### Senaryo B — Bilinmeyen format
 
-1. `savelens inspect save.dat` → entropi, magic, katman tahmini.
+1. `saveprism inspect save.dat` → entropi, magic, katman tahmini.
 2. Tahmin yoksa: rea ile oyun ikilisinde kayıt rutinini izle (dosya adı string'i → onu çağıranlar → şifre/sıkıştırma çağrıları).
 3. Bulguyu `docs/formats/<oyun>.md` spesifikasyonuna yaz; mümkünse `.ksy` / `.hexpat` ekle.
 4. Fixture + altın test → codec veya **tarif (recipe)** olarak oyun profiline ekle.

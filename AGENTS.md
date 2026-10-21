@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Project: **SaveLens** (codename) — a universal, local, MIT-licensed desktop save editor (Tauri 2 + Rust core + React/TS).
+Project: **SavePrism** — a universal, local, MIT-licensed desktop save editor (Tauri 2 + Rust core + React/TS).
 Planning docs are in Turkish; code, identifiers and commit messages are in English.
 
 ## Start every session

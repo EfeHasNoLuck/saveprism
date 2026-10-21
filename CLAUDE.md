@@ -1,4 +1,4 @@
-# Proje: SaveLens (kod adı) — evrensel, yerel, MIT save editörü (Tauri 2 + Rust çekirdek + React/TS)
+# Proje: SavePrism — evrensel, yerel, MIT save editörü (Tauri 2 + Rust çekirdek + React/TS)
 
 @AGENTS.md
 
@@ -25,7 +25,7 @@
   `kontrol.sh` hatası, kullanıcı doğrulaması tutmadı) kullanıcıya sor: effort yükselt mi (medium→high→xhigh), üst motora mı geç
   (haiku→sonnet→opus), kartı mı yeniden yazalım. 3. başarısızlıkta dur, talebe dön.
 
-## SaveLens: sahiplik
+## SavePrism: sahiplik
 - Her görevin `Sahip` listesi vardır; aynı dalgada iki görev aynı dosyaya sahip olamaz. Dağıtmadan önce kesişimi kontrol et.
 - **Kilitli kaynaklar** (ajanlar yazmaz, makine engeller): `fixtures/samples/**` (kullanıcının gerçek kayıtları, bayt-kesin), `LICENSE`,
   `.claude/settings.json`, `.claude/settings.local.json`, `.claude/hooks/`, `.claude/araclar/`. Örnek kayıtları kullanıcı koyar; ayarları

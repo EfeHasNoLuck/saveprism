@@ -2,7 +2,7 @@
 
 > **TL;DR:** Her karar 5 satır: durum, karar, neden, bedel, alternatif. "Açık" olanlar senin kararını bekliyor; "Önerildi" olanlar itiraz yoksa M0-1'de "Kabul" olur.
 >
-> **Sonraki adım:** Açık kararlar (ADR-008…012) — [NOW.md](../../NOW.md).
+> **Sonraki adım:** Açık kararlar (ADR-009, ADR-012) — [NOW.md](../../NOW.md).
 
 Durumlar: **Kabul** · **Önerildi** · **Açık** · **Değişti**
 
@@ -64,18 +64,19 @@ Durumlar: **Kabul** · **Önerildi** · **Açık** · **Değişti**
 - **Neden:** kapsamlar farklı (o: RPG Maker ailesi, biz: tüm motorlar), bu yüzden rekabet yok; ortak havuz iki projenin de test ve bakım yükünü azaltır. Çalışan bir ürünle gelen teklif ciddiye alınır.
 - **Alternatif:** şimdi yazmak (gösterecek bir şey yok), hiç yazmamak (iki tarafa da yarayacak bir kapıyı kapatır).
 
-### ADR-011 — Proje adı · Açık (araştırma tamam, karar bekliyor)
-- **Öneri:** **SaveStack** (ikinci: SaveLore). Ayrıntı ve veriler: [05-naming.md](../research/05-naming.md).
-- **Save-R:** her yerde boş, ama marka araması "Save-Rite" eczanelerine gidiyor ve "saver" diye duyuluyor.
-- **Elenenler:** OmniSave (aynı alanda iki araç), Savecraft (savecraft.gg bir AI kayıt asistanı), SaveForge, Quicksave, Resave, Savepad, Savix, Saver, Savior.
-- **Kalan iş:** karar → marka araması (TÜRKPATENT/EUIPO/USPTO) → M0-11 yeniden adlandırma.
+### ADR-011 — Proje adı · Kabul (2026-10-21)
+- **Karar:** **SavePrism**. Kullanıcı önerdi, iki aday aynı ölçütlerle karşılaştırıldı, kullanıcı "hangisi daha büyük katkı sağlıyorsa onu" dedi. Slug'lar: repo `saveprism`, crate'ler `saveprism-*`, CLI `saveprism`, hata kodları `SP-*`.
+- **Neden:** GitHub'da hiç eşleşme yok, org adı ve .com/.app/.dev/.gg/.io boş, Google'da marka araması boş (aramayı ilk günden sahipleniyoruz), güçlü görsel kimlik (prizma logosu). Ayrıntı: [05-naming.md](../research/05-naming.md) §6.
+- **Bedel:** "PRISM" yazılım markalarında kalabalık bir kelime → public öncesi marka araması (TÜRKPATENT/EUIPO/USPTO) şart. "save prism" araması Prisma'ya kayabiliyor.
+- **Elenenler:** SaveStack (.com ve org dolu, görsel kimlik zayıf), SaveLore, Save-R ("Save-Rite" çakışması), OmniSave, Savecraft (savecraft.gg bir AI kayıt asistanı), SaveForge, Quicksave, Resave, Savepad, Savix, Saver, Savior.
+- **Uygulandı:** M0-11 (yeniden adlandırma, 2026-10-21).
 
 ### ADR-012 — macOS imzası · Açık
 - **Öneri:** v0.1'de imzasız macOS sürümü + talimat; talep olursa Apple Developer ($99/yıl).
 - **Alternatif:** macOS'u ilk sürümde hiç yayınlamamak.
 
 ### ADR-013 — Hata modeli ve test stratejisi · Önerildi
-- **Karar:** crate başına tipli hatalar, kararlı `SR-<ALAN>-<NNN>` kodları, kütüphanelerde panik yok (lint ile), altın round-trip korpusu + snapshot + property + fuzz testleri, "önce başarısız test, sonra düzeltme" kuralı. Ayrıntı: [QUALITY.md](QUALITY.md).
+- **Karar:** crate başına tipli hatalar, kararlı `SP-<ALAN>-<NNN>` kodları, kütüphanelerde panik yok (lint ile), altın round-trip korpusu + snapshot + property + fuzz testleri, "önce başarısız test, sonra düzeltme" kuralı. Ayrıntı: [QUALITY.md](QUALITY.md).
 - **Neden:** hatayı kullanıcıya ulaşmadan yakalamak; ulaşırsa dakikalar içinde doğru dosyaya inmek.
 - **Bedel:** M1'de birkaç saatlik altyapı; sonraki her codec bunu hazır bulur.
 

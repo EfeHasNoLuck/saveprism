@@ -87,13 +87,13 @@ Unknown files never fail silently: hex view + Diagnostic Report + "request forma
 4. Every milestone ends in a demo you can run yourself.
 
 ### R10 — Dependence on other projects
-Save-R stands alone. Apache-2.0 code may be adapted with attribution (no permission needed). A peer-level note to RPGSaveEditor goes out after v0.1 ([outreach note](research/outreach-rpgsaveeditor.md)).
+SavePrism stands alone. Apache-2.0 code may be adapted with attribution (no permission needed). A peer-level note to RPGSaveEditor goes out after v0.1 ([outreach note](research/outreach-rpgsaveeditor.md)).
 
 ---
 
 ## 3. Non-Goals (the scope contract)
 
-Save-R will **not**:
+SavePrism will **not**:
 
 1. Edit online or multiplayer games, bypass anti-cheat, DRM or license checks.
 2. Edit game memory or act as a trainer.

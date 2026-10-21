@@ -4,13 +4,12 @@
 > **Where:** github.com/truongthang2211/RPGSaveEditor → Discussions (or Issues if Discussions is off).
 > **Who sends:** the maintainer, from their own account. ⏱ 5 min.
 > **Tone:** warm, peer to peer. We genuinely want to collaborate; we just don't depend on a yes.
-> **Name:** replace `<Project>` with the final project name (ADR-011).
 
 ---
 
-**Title:** Hello from <Project> — idea: a shared pool of save fixtures and format notes
+**Title:** Hello from SavePrism — idea: a shared pool of save fixtures and format notes
 
-Hi! I maintain [<Project>](<release link>), an MIT-licensed, cross-platform save editor that covers many engines (Unreal GVAS, Easy Save 3 including encrypted files, Unity PlayerPrefs, Godot and more).
+Hi! I maintain [SavePrism](<release link>), an MIT-licensed, cross-platform save editor that covers many engines (Unreal GVAS, Easy Save 3 including encrypted files, Unity PlayerPrefs, Godot and more).
 
 RPGSaveEditor was one of the best references we found for RPG Maker and Ren'Py — the lossless writers and the save comparison feature are great work. <If adapted: "We adapted parts of your Apache-2.0 format code; your copyright headers are kept and RPGSaveEditor is credited in our README and About screen.">
 

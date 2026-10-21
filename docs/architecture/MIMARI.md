@@ -1,10 +1,10 @@
 # Mimari
 
-> **TL;DR:** Tauri 2 masaüstü kabuğu + Rust çekirdek (`savelens-core`) + React/TypeScript arayüz. Belge Rust'ta yaşar; arayüz yalnız görünen kısmı ister (tembel ağaç). Aynı çekirdek CLI'ı, ileride MCP sunucusunu ve web (WASM) sürümünü besler.
+> **TL;DR:** Tauri 2 masaüstü kabuğu + Rust çekirdek (`saveprism-core`) + React/TypeScript arayüz. Belge Rust'ta yaşar; arayüz yalnız görünen kısmı ister (tembel ağaç). Aynı çekirdek CLI'ı, ileride MCP sunucusunu ve web (WASM) sürümünü besler.
 >
 > **Sonraki adım:** [kararlar.md](kararlar.md) ADR-001…003'ü onayla.
 
-> Ad notu: **SaveLens** geçici kod adıdır (ADR-011). Crate/klasör adları karar sonrası tek seferde değiştirilir.
+> Ad: **SavePrism** (ADR-011).
 
 ---
 
@@ -41,16 +41,16 @@ flowchart TB
     Host["Rust host (src-tauri)<br/>komutlar: open · children · search · edit · save · keys"]
     UI <-->|"tipli IPC (tauri-specta)<br/>yalnız görünen veri"| Host
   end
-  subgraph Core["savelens-core (UI'dan bağımsız)"]
+  subgraph Core["saveprism-core (UI'dan bağımsız)"]
     Doc["SaveDoc<br/>evrensel ağaç + tip ipuçları"]
     Pipe["Recipe / katman boru hattı"]
     Det["Detector<br/>magic + entropi + deneme-çözme"]
     Guard["Round-trip koruması<br/>+ güvenli yazma"]
   end
-  Codecs["savelens-codecs<br/>json · layers · es3 · gvas · rpgmaker · godot · playerprefs · renpy · …"]
-  Keys["savelens-keys<br/>kasa + Anahtar Bulucu"]
-  CLI["savelens-cli<br/>ajanlar · script'ler · CI"]
-  MCP["savelens-mcp (sonra)"]
+  Codecs["saveprism-codecs<br/>json · layers · es3 · gvas · rpgmaker · godot · playerprefs · renpy · …"]
+  Keys["saveprism-keys<br/>kasa + Anahtar Bulucu"]
+  CLI["saveprism-cli<br/>ajanlar · script'ler · CI"]
+  MCP["saveprism-mcp (sonra)"]
   WASM["web/WASM (sonra)"]
   Profiles[("profiles/*.toml<br/>topluluk oyun profilleri")]
   Host --> Core
@@ -150,7 +150,7 @@ Kaydettikten sonra: yazılan dosya yeniden çözülür ve düzenlenen değerler 
 
 ### 3.5 Güvenli yazma
 
-1. **Yedek:** uygulama veri dizinine (`%APPDATA%\SaveLens\backups\<yol-özeti>\<zaman>.bak`), son 10 yedek halkası. Yedek **kayıt klasörüne konmaz** — bazı oyunlar klasördeki her dosyayı kayıt sanar.
+1. **Yedek:** uygulama veri dizinine (`%APPDATA%\SavePrism\backups\<yol-özeti>\<zaman>.bak`), son 10 yedek halkası. Yedek **kayıt klasörüne konmaz** — bazı oyunlar klasördeki her dosyayı kayıt sanar.
 2. Geçici dosyaya yaz → `fsync` → atomik değiştir (Windows'ta `ReplaceFileW`).
 3. Doğrula (3.4). Başarısızsa yedekten geri al.
 
@@ -164,7 +164,7 @@ Kaydettikten sonra: yazılan dosya yeniden çözülür ve düzenlenen değerler 
 
 1. **AI için kopyala:** seçili alt ağaç → temiz JSON (opsiyonel `$type` ipuçları), JSONPath bilgisi, tahmini token sayısı, hazır komut şablonu: *"Yalnız değerleri değiştir; anahtarları ve yapıyı koru; RFC 6902 JSON Patch döndür."*
 2. **AI'dan içe aktar:** tam JSON veya JSON Patch → fark önizlemesi → tip denetimi (`type_hint`) → uygula (geri alınabilir).
-3. **CLI:** `savelens inspect | decode | encode | patch | keys` — kararlı JSON şemalı çıktılar; ajanlar ve script'ler için.
+3. **CLI:** `saveprism inspect | decode | encode | patch | keys` — kararlı JSON şemalı çıktılar; ajanlar ve script'ler için.
 4. **MCP (sonra):** aynı çekirdek; araçlar `open_save`, `query`, `apply_patch`, `save`, `get_last_diagnostic`. Yazma her zaman kullanıcı onaylı.
 5. **Hata anında:** Teşhis Raporu (3.8) aynı köprüyü kullanır — kopyala, AI'a sor, önerilen tarifi doğrula.
 
@@ -268,12 +268,12 @@ label = { tr = "Altın", en = "Gold" }
 ## 5. Hedef repo yapısı
 
 ```
-savelens/
+saveprism/
 ├─ crates/
-│  ├─ savelens-core/      # SaveDoc, Codec, Recipe, Detector, patch, round-trip, güvenli yazma
-│  ├─ savelens-codecs/    # json, layers, es3, gvas, rpgmaker, godot, playerprefs, renpy, …
-│  ├─ savelens-keys/      # kasa + Anahtar Bulucu
-│  └─ savelens-cli/       # `savelens` komutu
+│  ├─ saveprism-core/      # SaveDoc, Codec, Recipe, Detector, patch, round-trip, güvenli yazma
+│  ├─ saveprism-codecs/    # json, layers, es3, gvas, rpgmaker, godot, playerprefs, renpy, …
+│  ├─ saveprism-keys/      # kasa + Anahtar Bulucu
+│  └─ saveprism-cli/       # `saveprism` komutu
 ├─ apps/desktop/
 │  ├─ src/                # React UI
 │  ├─ locales/            # i18n

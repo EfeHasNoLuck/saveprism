@@ -28,12 +28,12 @@ Sen bağımsız bir denetçisin; bu kodu sen yazmadın. Kod yazmazsın, dosya de
 8. **Sözleşme:** SaveDoc/Codec/Recipe/hata tipleri sahibi olmayan bir görevce değişmiş mi? = KRITIK.
 9. **Arayüz:** i18n anahtarı yerine sabit metin, tema token'ı yerine sabit renk = ORTA.
 10. **Kapsam:** kartta istenmeyen özellik, gereksiz refactor, kullanılmayan kod.
-11. **Hata ve harita:** yeni hata tipi `SR-<ALAN>-<NNN>` kodu ve "Neden + Çözüm" metni taşımıyor = ORTA; yeni modül, crate ya da
+11. **Hata ve harita:** yeni hata tipi `SP-<ALAN>-<NNN>` kodu ve "Neden + Çözüm" metni taşımıyor = ORTA; yeni modül, crate ya da
     hata öneki `docs/MAP.md`'ye eklenmemiş = ORTA; düzeltilen hatanın önce başarısız olan bir regresyon testi yok = YUKSEK.
 
 ## Çıktı
 - Salt okursun; bulguları doğrudan dön. Seni çağıran ajan bunları `.fabrika/raporlar/D<N>-denetim.md` dosyasına yazar.
 - Biçim, en çok 12 satır, en ağırdan hafife:
-  `KRITIK | crates/savelens-core/src/x.rs:42 | sorun | önerilen düzeltme (tek cümle)`
+  `KRITIK | crates/saveprism-core/src/x.rs:42 | sorun | önerilen düzeltme (tek cümle)`
   Dereceler: KRITIK / YUKSEK / ORTA / DUSUK. Bulgu yoksa: `Bulgu yok. Kontrol edilen: <dosya sayısı> dosya, <kart listesi>.`
 - Emin olmadığın bulguyu `(emin değilim)` diye işaretle. Kanıtsız bulgu yazma: her bulguda dosya:satır olsun.

@@ -1,4 +1,4 @@
-# SaveLens *(kod adı)*
+# SavePrism
 
 Oyun kayıt dosyalarını — Unreal, Unity, RPG Maker, Ren'Py, Godot ve daha fazlası — tek uygulamada açıp temiz bir ağaç/JSON olarak düzenleyen, sonra **orijinal formatına birebir geri paketleyen**; ücretsiz, tamamen yerel ve MIT lisanslı masaüstü aracı.
 

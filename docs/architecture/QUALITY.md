@@ -11,7 +11,7 @@
 | Rule | Detail |
 |---|---|
 | Typed errors per crate | `thiserror` enums in library crates; no stringly-typed errors |
-| Stable error codes | `SR-<AREA>-<NNN>`, e.g. `SR-ES3-003` (wrong password). Codes never change meaning once released |
+| Stable error codes | `SP-<AREA>-<NNN>`, e.g. `SP-ES3-003` (wrong password). Codes never change meaning once released |
 | Two messages per error | User text (i18n key, "Cause + Fix") and technical context (offsets, layer, recipe step) |
 | Context chain | Each layer adds context (`while decoding layer 2/4 (compression.gzip) at offset 0x1A0`) |
 | No panics in libraries | Parser crates deny `unwrap`, `expect`, `panic!`, unchecked indexing via clippy lints; tests may use them |

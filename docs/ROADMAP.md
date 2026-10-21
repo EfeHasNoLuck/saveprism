@@ -20,7 +20,7 @@ Kurallar:
 | M | Ad | Demo (görünür kazanım) | Tahmin |
 |---|---|---|---|
 | M0 | Temel | `pnpm tauri dev` → boş ama temalı, iki dilli pencere; CI yeşil | 1 oturum |
-| M1 | Çekirdek + CLI | `savelens decode file1.rpgsave` → JSON → geri, **bayt-bayt aynı** | 2–3 oturum |
+| M1 | Çekirdek + CLI | `saveprism decode file1.rpgsave` → JSON → geri, **bayt-bayt aynı** | 2–3 oturum |
 | M2 | İlk motorlar | ES3 (şifreli dahil), GVAS, RPG Maker MV/MZ altın testlerle | 3–4 oturum |
 | M3 | Masaüstü MVP | Dosyayı sürükle → altını değiştir → kaydet (yedekli, doğrulamalı); tanınmayan dosyada Teşhis Raporu | 4–5 oturum |
 | M4 | Arama + AI köprüsü | "AI için kopyala" → Claude'da düzenle → Patch yapıştır → fark → uygula; AI'ın önerdiği tarif otomatik doğrulanıyor | 3–4 oturum |
@@ -52,24 +52,24 @@ Kurallar:
 10. [ ] **M0-10 cargo-deny lisans politikası** ⏱15 dk ▶ `deny.toml` ✅ GPL bağımlılık eklenince CI kırmızı
 
 ### Grup C — Ad ve dil
-11. [ ] **M0-11 SaveLens → Save-R** ⏱20 dk ✅ dokümanlar, CLAUDE/AGENTS, skill metinleri ve plan yeni adı kullanıyor; crate adları `save-r-*`
+11. [x] **M0-11 Yeniden adlandırma → SavePrism** ⏱20 dk ✅ dokümanlar, CLAUDE/AGENTS, skill metinleri ve plan yeni adı kullanıyor; crate adları `saveprism-*`, hata kodları `SP-*` — *kanıt: `git grep -i saveprism` yalnız ad geçmişi dosyalarında ve kilitli kanca yorumunda (2026-10-21)*
 12. [ ] **M0-12 Repo dokümanlarını EN'e çevir** ⏱45 dk ▶ motor: agy (ucuz) + Claude denetimi ✅ README.md EN + README.tr.md; docs/ EN; sohbet TR kalır
 
 ---
 
 ## M1 — Çekirdek + CLI
 
-**Hedef:** UI'dan bağımsız, test edilmiş çekirdek. **Demo:** `savelens decode file1.rpgsave --json` → `savelens encode` → orijinalle bayt-bayt aynı.
+**Hedef:** UI'dan bağımsız, test edilmiş çekirdek. **Demo:** `saveprism decode file1.rpgsave --json` → `saveprism encode` → orijinalle bayt-bayt aynı.
 
 ### Grup A — Model
-1. [ ] **M1-1 SaveDoc + düğüm arenası + TypeHint** ⏱60 dk ▶ `crates/savelens-core/src/doc.rs` ✅ birim testleri yeşil
+1. [ ] **M1-1 SaveDoc + düğüm arenası + TypeHint** ⏱60 dk ▶ `crates/saveprism-core/src/doc.rs` ✅ birim testleri yeşil
 2. [ ] **M1-2 Codec trait + Recipe + Params serileştirme** ⏱45 dk ✅ tarif TOML'a yazılıp geri okunuyor
 3. [ ] **M1-3 Katmanlar: Base64, GZip, zlib, LZ-String** ⏱60 dk ✅ her katman parametreleri koruyarak round-trip
 4. [ ] **M1-4 Biçim koruyan JSON codec** ⏱60 dk ✅ girinti, anahtar sırası ve `1.0` metni korunuyor
 5. [ ] **M1-5 Detector v0** ⏱45 dk ✅ magic + deneme-çözme ile doğru katman zinciri ve güven puanı
 
 ### Grup B — CLI ve güvenlik
-6. [ ] **M1-6 `savelens inspect | decode | encode`** ⏱45 dk ✅ demo komutu çalışıyor
+6. [ ] **M1-6 `saveprism inspect | decode | encode`** ⏱45 dk ✅ demo komutu çalışıyor
 7. [ ] **M1-7 Round-trip koruması + rapor** ⏱30 dk ✅ eşleşmeyen dosya salt-okunur işaretleniyor
 8. [ ] **M1-8 Güvenli yazma modülü** ⏱45 dk ✅ yedek halkası + atomik değiştirme + doğrulama testli
 9. [ ] **M1-9 Girdi sınırları + ilk fuzz hedefi** ⏱30 dk ✅ sıkıştırma bombası testi panik yerine hata döndürüyor
@@ -85,7 +85,7 @@ Kurallar:
 1. [ ] **M2-1 RPG Maker MV/MZ** ⏱90 dk ✅ JsonEx meta korunuyor; `data/*.json`'dan ad sözlüğü
 2. [ ] **M2-2 ES3 düz** ⏱45 dk ✅ `__type` ipuçları TypeHint'e dönüşüyor
 3. [ ] **M2-3 ES3 AES + GZip** ⏱60 dk ✅ PBKDF2/AES-CBC + düz metin sezgisi; yanlış parola net hata
-4. [ ] **M2-4 `savelens keys try`** ⏱30 dk ✅ aday listesinden doğru parolayı buluyor
+4. [ ] **M2-4 `saveprism keys try`** ⏱30 dk ✅ aday listesinden doğru parolayı buluyor
 5. [ ] **M2-5 Unreal GVAS (uesave)** ⏱90 dk ✅ tip ipucu desteğiyle round-trip
 
 ### Grup B — Gerçek veri
@@ -191,7 +191,7 @@ Sonrası (Park): SignPath başvurusu, winget manifesti.
 
 ## M8 — Topluluk & AI-native (sürekli)
 
-1. `savelens-mcp` — MCP sunucusu (yazma her zaman onaylı); `get_last_diagnostic` = Teşhis Raporu seviye 2
+1. `saveprism-mcp` — MCP sunucusu (yazma her zaman onaylı); `get_last_diagnostic` = Teşhis Raporu seviye 2
 2. Weblate entegrasyonu + 3 yeni dil
 3. GitHub Pages sitesi + canlı "format destek tablosu"
 4. RPG Maker XP/VX/VXA (`alox-48`), NRBF, RPG Maker 2000/2003, Wolf RPG, Palworld `PlM` (lisans 🔎)

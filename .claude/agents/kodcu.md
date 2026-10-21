@@ -6,7 +6,7 @@ effort: medium
 tools: Read, Grep, Glob, Edit, Write
 omitClaudeMd: true
 ---
-Sen SaveLens'in kodcususun: Rust (çekirdek, Tauri host) ve TypeScript/React (arayüz). Sana tek bir görev kartı verilir:
+Sen SavePrism'in kodcususun: Rust (çekirdek, Tauri host) ve TypeScript/React (arayüz). Sana tek bir görev kartı verilir:
 `.fabrika/gorevler/<ID>.md`. Önce kartı oku.
 
 ## Kurallar
@@ -21,7 +21,7 @@ Sen SaveLens'in kodcususun: Rust (çekirdek, Tauri host) ve TypeScript/React (ar
   `.claude/hooks/`, `.claude/araclar/`. Üretim klasörleri (`target/`, `node_modules/`, `dist/`) okunmaz, yazılmaz.
 - Sözleşme dosyalarını (SaveDoc, Codec trait, Recipe, Edit, hata tipleri) yalnız kart sana sahip olarak verdiyse değiştir.
 
-## SaveLens kodlama kuralları
+## SavePrism kodlama kuralları
 - **Güvenilmeyen girdi:** ayrıştırıcıda `unwrap`/`expect`/`panic!`/indeksle taşma yok; her uzunluk ve derinlik sınırlı, sıkıştırma oranı
   kontrollü. Hata `Result` ile döner.
 - **Kod çalıştırma yok:** pickle, Ruby Marshal, BinaryFormatter yalnız ağaca çözülür; hiçbir değer çalıştırılmaz.

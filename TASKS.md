@@ -1,4 +1,4 @@
-# TASKS: SaveLens
+# TASKS: SavePrism
 
 Durum: `[ ]` bekliyor · `[~]` dalgada · `[x]` doğrulandı (kanıtlı) · `[!]` durdu (3 deneme) · `[?]` karar bekliyor
 Alan sırası sabittir. Kart dosyası: `.fabrika/gorevler/<ID>.md` (CEO, dalga onaylanınca yazar). Rapor: `.fabrika/raporlar/<ID>.md`.

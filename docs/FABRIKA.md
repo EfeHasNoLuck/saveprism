@@ -1,10 +1,10 @@
-# Fabrika — Günlük Akış (SaveLens)
+# Fabrika — Günlük Akış (SavePrism)
 
 > **TL;DR:** Ana oturum CEO'dur: planlar, alt ajanlara dağıtır, kanıt toplar. Sen iki kapıda karar verirsin: **KAPI-1** (planı onayla) ve **KAPI-2** (uygulamada/oyunda dene).
 >
 > **Sonraki adım:** M0-1 kararları ve M0-4 (Rust) bitince `fabrikayı başlat: M0 Grup B` yaz.
 
-Kaynak: "Claude Code Çalışma Kiti v2 (Ders 3, öğrenci sürümü)" — Unity'ye özgü parçalar çıkarılıp SaveLens'e uyarlandı (2026-10-21).
+Kaynak: "Claude Code Çalışma Kiti v2 (Ders 3, öğrenci sürümü)" — Unity'ye özgü parçalar çıkarılıp SavePrism'e uyarlandı (2026-10-21).
 
 ---
 

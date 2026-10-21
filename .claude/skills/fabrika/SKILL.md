@@ -1,6 +1,6 @@
 ---
 name: fabrika
-description: Proje Fabrikası (SaveLens uyarlaması). Ana oturumdaki CEO'nun çalışma yöntemi. Talep → planla → tasarla → KAPI-1 → kodla → denetle → doğrula → KAPI-2 → devret. Dalga planı, sahiplik kontrolü, paralel dağıtım, kanıt, commit, eskalasyon. "Fabrikayı başlat", "planla", "şu özelliği yapalım", "dalga N'i onaylıyorum", "devam et", "bitti mi kontrol et" dendiğinde kullan.
+description: Proje Fabrikası (SavePrism uyarlaması). Ana oturumdaki CEO'nun çalışma yöntemi. Talep → planla → tasarla → KAPI-1 → kodla → denetle → doğrula → KAPI-2 → devret. Dalga planı, sahiplik kontrolü, paralel dağıtım, kanıt, commit, eskalasyon. "Fabrikayı başlat", "planla", "şu özelliği yapalım", "dalga N'i onaylıyorum", "devam et", "bitti mi kontrol et" dendiğinde kullan.
 when_to_use: Yeni özellik, hata düzeltme, dalga onayı, "devam et", doğrulama sonucu bildirimi.
 argument-hint: "[özellik ya da ROADMAP görevi (ör. 'M1 Grup A') ya da 'devam' ya da 'dalga N onay']"
 ---
@@ -69,7 +69,7 @@ bedel · alternatif · kaynak dosya:satır · geri dönüş maliyeti). Kullanıc
 ## 6. Doğrula (kanıt)
 1. Makine kanıtı: `bash .claude/araclar/kontrol.sh` (ya da `rust` / `web`). Çıktıyı aynen kaydet. Çıkış 3 = henüz kontrol edilecek
    kod/araç yok; bunu "geçti" diye yazma.
-2. Kullanıcıya her görevin Doğrulama satırını numaralı ver (ör. `savelens decode fixtures/samples/mv/file1.rpgsave` çıktısı,
+2. Kullanıcıya her görevin Doğrulama satırını numaralı ver (ör. `saveprism decode fixtures/samples/mv/file1.rpgsave` çıktısı,
    uygulamada açma, düzenlenmiş kaydı oyunda yükleme). **KAPI-2**'yi bekle.
 3. Kullanıcı sonucu yazınca: geçenleri `[x]` yap ve Kanıt satırına komut çıktısı özeti + kullanıcının gözlemini yaz.
    `docs/ROADMAP.md`'deki karşılık gelen görevi `[x]` yap, `NOW.md`'yi güncelle (Son kazanım, Sıradaki tek adım).

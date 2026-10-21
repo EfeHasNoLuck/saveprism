@@ -4,15 +4,15 @@
 
 **Faz:** M0 — temel kurulum (2026-10-21)
 
-**Son kazanım:** M0-4 bitti → Rust 1.99.1 kurulu ve derleme + MSVC bağlama test edildi. Çekirdek dili Rust (ADR-002). İsim araştırması hazır ([05-naming.md](docs/research/05-naming.md)).
+**Son kazanım:** M0-11 bitti → proje adı **SavePrism** (ADR-011), tüm dokümanlar yeniden adlandırıldı. Karşılaştırma: [05-naming.md §6](docs/research/05-naming.md).
 
-**Sıradaki tek adım:** Proje adını seç (öneri: SaveStack). ⏱ 2 dk
+**Sıradaki tek adım:** Claude uygulamasını yeniden başlat (Rust PATH), sonra `fabrikayı başlat: M0 Grup B`. ⏱ 2 dk
 
 ---
 
 ## Kararlar (M0-1)
 
-1. ⏳ **Ad:** öneri SaveStack · ikinci SaveLore · Save-R da mümkün ([ADR-011](docs/architecture/kararlar.md)) — sonra marka araması + M0-11
+1. ✅ **Ad:** SavePrism ([ADR-011](docs/architecture/kararlar.md)) — public öncesi (M5) ücretsiz marka araması: TÜRKPATENT · EUIPO · USPTO
 2. ✅ **Dil:** sohbet TR, repo EN ([ADR-008](docs/architecture/kararlar.md)) — çeviri M0-12
 3. ✅ **RPGSaveEditor:** muhtaç değiliz ama iş birliğine açığız; v0.1 sonrası not + ortak fixture/format havuzu önerisi ([ADR-010](docs/architecture/kararlar.md)) — M5-6
 4. ✅ **Çekirdek dili:** Rust ([ADR-002](docs/architecture/kararlar.md))
