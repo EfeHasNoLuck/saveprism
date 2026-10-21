@@ -6,7 +6,7 @@
 
 **Son kazanım:** M0 demosu hazır → temalı, iki dilli pencere; CI Windows + Linux + macOS'ta yeşil (M0-5…M0-10).
 
-**Sıradaki tek adım:** M1 (çekirdek + CLI) dalga planı → kullanıcı onayı. Açık küçük işler: tema "Sistem" canlı izleme denemesi (kullanıcı), Geist font kararı. ⏱ planlama ~20 dk
+**Sıradaki tek adım:** yeni oturumda [HANDOFF-20261021-1](handoff/HANDOFF-20261021-1.md) adım 1 → M1 (çekirdek + CLI) dalga planı → kullanıcı onayı. ⏱ planlama ~20 dk
 
 ---
 

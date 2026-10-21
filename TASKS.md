@@ -64,7 +64,7 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
 ### D2 — Tema, dil, CI · KAPI-1: onaylandı 2026-10-21 · Bağımlı: D1 doğrulandı
 
 - [x] **A2 Bağımlılık + shadcn** (CEO, Bash) — kuruldu; shadcn 4.22 (radix-nova) listede olmayan 3 paket ekledi: `cn` (MIT, shadcn'in
-  clsx + tailwind-merge yerine geçen paketi), `shadcn` (MIT, CSS için), `@fontsource-variable/geist` (OFL-1.1 font) → font kararı kullanıcıda
+  clsx + tailwind-merge yerine geçen paketi), `shadcn` (MIT, CSS için), `@fontsource-variable/geist` (OFL-1.1 font) → kullanıcı kabul etti (2026-10-21); sürümde OFL metni üçüncü taraf lisanslarına eklenecek (M5)
   - Sahip: `apps/desktop/package.json` (yalnız bağımlılık satırları) · `pnpm-lock.yaml` · `apps/desktop/components.json` ·
     `apps/desktop/src/lib/utils.ts` · `apps/desktop/src/components/ui/**` · `apps/desktop/src/index.css` (yalnız ilk üretim)
   - Adımlar: 1) onaylı D2 paketlerini `pnpm add` · 2) `shadcn init` (Radix) + `shadcn add button dropdown-menu`
