@@ -201,9 +201,9 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
   - Doğrulama: CEO `kontrol.sh rust`
   - Denetim: denetci (dalga) · Kanıt: —
 
-### D5 — Dedektör, CLI, sınırlar, altın test · KAPI-1: onaylandı 2026-10-21 · Bağımlı: D4 doğrulandı
+### D5 — Dedektör, CLI, sınırlar, altın test · KAPI-1: onaylandı 2026-10-21 · Bağımlı: D4 (M1-5, M1-9, M1-10 boru hattında M1-8 beklenirken; M1-6 M1-8 sonrası)
 
-- [ ] **M1-5 Detector v0**
+- [~] **M1-5 Detector v0**
   - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 0/3
   - Sahip: `crates/saveprism-core/src/detect.rs` · `crates/saveprism-codecs/tests/detect.rs` · `.fabrika/raporlar/M1-5.md`
   - Okur: MIMARI §3.1, §3.3 · `crates/saveprism-core/src/{codec,registry,pipeline,limits}.rs`
@@ -224,7 +224,7 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
   - Doğrulama: CEO demo komutları sentetik dosyayla · Sen gerçek MV kaydınla (KAPI-2)
   - Denetim: denetci (dalga) · Kanıt: —
 
-- [ ] **M1-9 Girdi sınırları + ilk fuzz hedefi**
+- [~] **M1-9 Girdi sınırları + ilk fuzz hedefi**
   - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 0/3
   - Sahip: `fuzz/**` · `.github/workflows/fuzz.yml` · `crates/saveprism-codecs/tests/limits.rs` · `.fabrika/raporlar/M1-9.md`
   - Okur: QUALITY §2 · `crates/saveprism-core/src/limits.rs`
@@ -234,7 +234,7 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
   - Doğrulama: CEO `kontrol.sh rust` · fuzz işi GitHub'da bir kez yeşil
   - Denetim: denetci (dalga) · Kanıt: —
 
-- [ ] **M1-10 Fixture düzeni + altın test koşucusu**
+- [~] **M1-10 Fixture düzeni + altın test koşucusu**
   - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 0/3
   - Sahip: `crates/saveprism-codecs/tests/golden.rs` · `fixtures/expected/**` · `fixtures/synthetic/**` · `fixtures/README.md` ·
     `.fabrika/raporlar/M1-10.md`
