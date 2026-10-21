@@ -87,3 +87,18 @@ Durumlar: **Kabul** · **Önerildi** · **Açık** · **Değişti**
 ### ADR-015 — Risk kaydı ve kapsam dışı listesi · Önerildi
 - **Karar:** [RISKS.md](../RISKS.md) her riske bir strateji (önle / tespit et / sınırla / kabul et) atar; §3 Non-Goals listesi yalnız ADR ile değişir.
 - **Neden:** "ben bunu istememiştim" sürprizlerini baştan kapatmak.
+
+### ADR-016 — M1 çekirdek sözleşmesi · Önerildi (KAPI-1 M1 ile kabul)
+- **Karar:** (1) adım iki türdür: `Layer` (bayt ↔ bayt) ve `Codec` (bayt ↔ SaveDoc); tarifin son adımı codec. (2) `Float.text` yerine
+  düğüm düzeyinde `lexeme` (her skaler için orijinal metin, düzenlenince silinir). (3) Metin olmayan anahtarlar için `Value::Map`.
+  (4) `Edit` düğümü `Path` ile adresler. (5) JSON birebirliği = biçim profili (girinti, satır sonu, boşluk) + `lexeme`; düzensiz
+  boşluk "anlamsal eşit". (6) GZip/zlib seviyesi deneme ile bulunur; bulunamazsa "anlamsal eşit". (7) Atomik yazma M1'de `tempfile`
+  `persist`; `ReplaceFileW` sonra. (8) Önce imza: dedektör, koruma ve güvenli yazma imzaları sözleşmede boş gövdeyle durur, sonraki
+  dalgalar paralel doldurur. MIMARI §3.2–3.5.
+- **Neden:** katman ve format ayrı şekillerde (bayt dönüşür / ağaç kurulur); tek trait her codec'e boş metot yazdırırdı. `Map` ve
+  `Path` sonradan eklenirse tüm codec'ler ve AI yaması kırılır; şimdi ucuz. Profil + lexeme makine çıktısı kayıtların hepsini kapsar.
+- **Bedel:** `ReplaceFileW` olmadan Windows'ta dosya izinleri (ACL) korunmayabilir; elle düzenlenmiş JSON'da biçim uyarısı çıkar;
+  miniz_oxide zlib'den farklı sıkıştırdığı için çoğu GZip kayıt "anlamsal eşit" görünür.
+- **Alternatif:** tek `Codec` trait (MIMARI ilk taslağı); JSON için tam CST (her boşluk saklanır, kod iki katı); `windows-sys` ile
+  `ReplaceFileW` (lint istisnası + `unsafe` gerekir).
+- **Geri dönüş maliyeti:** yüksek, M2 codec'leri bu sözleşmeye yazılınca. Bu yüzden D3'te Codex ikinci göz.

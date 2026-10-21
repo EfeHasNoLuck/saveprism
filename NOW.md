@@ -2,11 +2,12 @@
 
 > Her oturumda ilk okunan dosya. Tek ekran. Her görev sonunda güncellenir.
 
-**Faz:** M0 — temel kurulum (2026-10-21)
+**Faz:** M1 — çekirdek + CLI, planlama (2026-10-21)
 
-**Son kazanım:** M0 demosu hazır → temalı, iki dilli pencere; CI Windows + Linux + macOS'ta yeşil (M0-5…M0-10).
+**Son kazanım:** M1 planı yazıldı → 3 dalga (D3 sözleşme · D4 katman/JSON/koruma/yazma · D5 dedektör/CLI/sınır/altın test), [TASKS.md](TASKS.md);
+sözleşme tasarımı MIMARI §3.2–3.5 + [ADR-016](docs/architecture/kararlar.md).
 
-**Sıradaki tek adım:** yeni oturumda [HANDOFF-20261021-1](handoff/HANDOFF-20261021-1.md) adım 1 → M1 (çekirdek + CLI) dalga planı → kullanıcı onayı. ⏱ planlama ~20 dk
+**Sıradaki tek adım:** KAPI-1 → kullanıcı M1 planını ve paket listesini onaylar → D3 kartları + `plan: D3` commit'i. ⏱ D3 ~60–90 dk
 
 ---
 
@@ -38,7 +39,9 @@
 
 ## Park alanı (şimdi değil)
 
-- **Oyun vitrini** ("Hangi oyunda kullandın?" + çalışan oyunlar listesi, 18+ sansürlü) — fizibilite araştırması koşuyor → `docs/research/06-game-showcase-feasibility.md`, sonra ADR
+- **Oyun vitrini** ("Hangi oyunda kullandın?" + çalışan oyunlar listesi, 18+ sansürlü) — araştırma bitti → `docs/research/06-game-showcase-feasibility.md` §8;
+  kullanıcı girdisi (2026-10-21): ayarlarda 18+ anahtarı + yaş sorusu, internet yalnız kişi isterse, oyun görselleri isteniyor (yeni karar D6). M7'den önce değil.
+- **Düzenleme ekranı mockup'ı (A/B)** — kullanıcı istedi (2026-10-21); M3-2 düzenine girdi olacak
 
 - Web (WASM) sürümü
 - MCP sunucusu

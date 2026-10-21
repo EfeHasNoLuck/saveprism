@@ -107,7 +107,9 @@ Kurallar:
 5. [ ] **M3-5 Geri al / yinele + bekleyen değişiklikler** ⏱45 dk ✅ Ctrl+Z / Ctrl+Y
 
 ### Grup B — Akış
-6. [ ] **M3-6 Kaydet akışı** ⏱45 dk ✅ yedek → yaz → doğrula → "Kaydedildi · yedek alındı · doğrulandı ✓"
+6. [ ] **M3-6 Kaydet akışı** ⏱45 dk ✅ yedek → yaz → doğrula → "Kaydedildi · yedek alındı · doğrulandı ✓" — *kullanıcı (2026-10-21):
+   varsayılan "Farklı kaydet" (klasörü kişi seçer), istenirse üstüne yazma; yedekler 30 gün sonra silinir. Üstüne yazarken yedeğin
+   zorunlu mu isteğe bağlı mı olacağı karar bekliyor*
 7. [ ] **M3-7 Sürükle-bırak + son dosyalar** ⏱30 dk
 8. [ ] **M3-8 Hex görünümü** ⏱45 dk ✅ bilinmeyen dosya hex + entropi ile açılıyor
 9. [ ] **M3-9 Ham JSON (Monaco, alt ağaç)** ⏱45 dk
@@ -177,7 +179,7 @@ Sonrası (Park): SignPath başvurusu, winget manifesti.
 
 ### Grup A — Bulucular
 1. [ ] **M7-1 Motor tespiti** ⏱60 dk
-2. [ ] **M7-2 Kayıt konumu bulucu** ⏱45 dk
+2. [ ] **M7-2 Kayıt konumu bulucu** ⏱45 dk — *Park (kullanıcı 2026-10-21): "Otomatik yola gerek yok, kişi sürükleyip bırakır"*
 3. [ ] **M7-3 Anahtar kasası** (`keys.toml` + kanıt) ⏱45 dk
 4. [ ] **M7-4 .NET `#US` okuyucu → ES3 aday üretimi** ⏱90 dk
 5. [ ] **M7-5 IL2CPP string literal okuyucu** ⏱90 dk

@@ -148,6 +148,18 @@ Estimates are mine, not measured. Do not start before M7: the verified tier need
 
 My picks: D1-A, D2-A (add VNDB later if visual novels matter), D3-A, D4-B with two labelled tiers, D5-A.
 
+**Maintainer input (2026-10-21)**
+1. In-app 18+ switch in Settings, off by default. Turning it on asks "Are you 18 or older?" (self-declared). When on, the local
+   catalog lists every game, adult titles included. This settles the in-app side of §5; the public showcase (D3) stays open.
+2. Network only on user action; the app works fully offline otherwise. Matches D1-A and D5-A.
+3. Wants game images ("like apps that pull movie data from an API"). Note: IMDb's data access is paid; free movie apps mostly use
+   TMDb with attribution (from memory, verify). New decision **D6 Images**:
+   - A: no images, names only (today's §5 rule).
+   - B: the user pastes their own free key (SteamGridDB or IGDB) in Settings; images load only on demand, cached locally; adult
+     titles get images only when the 18+ switch is on. No secret ships in the app.
+   - C: Steam store header image by App ID, no key. Steam ToU for images unverified.
+   Research before M7: SteamGridDB API terms, IGDB per-user keys, Steam image terms.
+
 ## Risk table
 
 | Risk | Likelihood | Impact | Mitigation |

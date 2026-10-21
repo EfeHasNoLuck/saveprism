@@ -105,6 +105,144 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
 
 ---
 
+## M1 — Çekirdek + CLI
+
+- **Talep (kullanıcı, 2026-10-21):** "handoff/ içindeki en yeni HANDOFF dosyasını oku, "Tam sonraki adım" 1'den devam et." → HANDOFF-20261021-1 adım 2: M1 dalga planı.
+- **Demo / kabul çekirdeği:** `saveprism decode file1.rpgsave -o f.json` → `saveprism encode f.json --recipe f.recipe.toml -o out.rpgsave` → `out.rpgsave` orijinalle bayt-bayt aynı.
+- **Zincir:** tam (sözleşme tasarımı: MIMARI §3.2–3.5, ADR-016).
+- **Yaklaşım (A, önerilen): önce imza.** D3 tek görevle bütün ortak tipleri ve sonraki modüllerin imzalarını (boş gövde) yazar; D4 ve D5'te
+  görevler dosya düzeyinde ayrılır, paralel koşar. **B (elenen):** her modül kendi tipini getirir, sırayla. 5–6 dalga sürer, aynı tipler
+  iki kez yazılır, M2 codec'leri tutarsız bir tabana oturur.
+- **Kapsam dışı:** RPG Maker JsonEx (`@c`/`@a`) ve MZ zlib ayrıntısı (M2-1), şifre katmanları (M2-3), JSON yama yazımı (span ile,
+  M3/M4), `ReplaceFileW` (ADR-016), tracing log halkası (M3).
+- **Bağımlılıklar (KAPI-1'de onay; hepsi MIT ve/veya Apache-2.0, `cargo info` ile doğrulandı 2026-10-21):** core: `thiserror` 2.0 ·
+  `serde` 1.0 · `toml` 1.1 · `base64` 0.23 · `tracing` 0.1 · `tempfile` 3.27 — codecs: `flate2` 1.1 (miniz_oxide: MIT/Zlib/Apache) ·
+  `lz-str` 0.2 — cli: `clap` 4.6 · `tracing-subscriber` 0.3 — test: `proptest` 1.12 · `insta` 1.49 (Apache-2.0) — araç: `cargo-fuzz`
+  + `libfuzzer-sys` (NCSA ek; `fuzz/` workspace dışı, dağıtılmaz).
+- **KAPI-1 (kullanıcı, 2026-10-21):** "Senin dediklerinde değiştirmek istediğim bir şey göremedim." → M1 planı + bağımlılık listesi onaylı.
+  Aynı mesajda: "kişi … istediği klasöre de değiştirilmiş dosyayı çıktı alır. İsterse üstüne de yazabilir, isterse de yedek aldırabilir
+  … (30 gün içinde de bu yedek veri silinir)" → M1-8 yedek politikası D4'ten önce netleşecek (karar bekliyor).
+
+### D3 — Sözleşme · KAPI-1: onaylandı 2026-10-21
+
+- [~] **M1-1 Çekirdek sözleşmesi (M1-1 + M1-2)**
+  - Motor: claude/kodcu·sonnet · Effort: high · Deneme: 0/3
+  - Sahip: kök `Cargo.toml` (yalnız `[workspace.dependencies]` + `exclude = ["fuzz"]`) · `crates/saveprism-core/**` ·
+    `crates/saveprism-codecs/{Cargo.toml,src/lib.rs,src/json/mod.rs,src/layers/mod.rs}` (iskelet) · `.fabrika/raporlar/M1-1.md`
+  - Okur: MIMARI §3.1–3.5 · QUALITY §1 · ADR-016 · AGENTS.md
+  - Bağımlı: KAPI-1
+  - Kabul: modüller `error` (SP-CORE kodları, bağlam zinciri, i18n anahtarı) · `doc` (arena, Value, Node, lexeme, TypeHint, flags) · `path` ·
+    `edit` (+ `apply_edits`) · `params` · `recipe` (TOML yaz/oku) · `codec` (Layer, Codec, Confidence, ctx) · `registry` · `limits` ·
+    `pipeline` (çalışır); `detect`, `guard`, `io` son imzalarıyla boş gövde (SP-CORE "henüz yok" hatası) · testler: tarif TOML'a yazılıp
+    aynen geri okunuyor, bayt parametresi `base64:` ile geri geliyor, `set` lexeme'i siliyor, `Path` çözümü, sahte 2 katman + sahte
+    codec ile boru hattı round-trip · `unwrap`/`expect`/`panic` yok · `kontrol.sh rust` çıkış 0
+  - Doğrulama: CEO `kontrol.sh rust` · Tauri `core_version` hâlâ derleniyor
+  - Denetim: denetci + Codex ikinci göz (geri dönüşü pahalı sözleşme) · Kanıt: —
+
+- [~] **CI-1 Belge değişikliğinde CI koşmasın**
+  - Motor: claude/kodcu·haiku · Effort: medium · Deneme: 0/3
+  - Sahip: `.github/workflows/ci.yml`
+  - Okur: —
+  - Bağımlı: KAPI-1
+  - Kabul: `push` ve `pull_request` tetiklerine `paths-ignore`: `docs/**`, `**/*.md`, `handoff/**`, `.fabrika/**`; başka değişiklik yok
+  - Doğrulama: CEO diff'e bakar · yalnız belge değiştiren sonraki push'ta GitHub'da CI koşusu açılmaz
+  - Denetim: yok (küçük iş) · Kanıt: —
+
+### D4 — Katmanlar, JSON, koruma, güvenli yazma · KAPI-1: onaylandı 2026-10-21 (M1-8 yedek politikası bekliyor) · Bağımlı: D3 doğrulandı
+
+- [ ] **M1-3 Katmanlar: Base64, GZip, zlib, LZ-String**
+  - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 0/3
+  - Sahip: `crates/saveprism-codecs/src/layers/**` · `.fabrika/raporlar/M1-3.md`
+  - Okur: MIMARI §3.1, §3.3, §3.4 · `crates/saveprism-core/src/{codec,params,limits,error}.rs`
+  - Bağımlı: D3
+  - Kabul: `encoding.base64` (standart / URL-güvenli, dolgu, satır kırma ve sondaki satır sonu korunur) · `compression.gzip` (başlık alanları
+    korunur; seviye 0–9 denenir, bulunamazsa `exact = false`) · `compression.zlib` (aynı) · `compression.lz-string` (base64 / utf16 / uri;
+    geçersiz UTF-16 → hata) · açma `Limits`'e uyar (sınır aşımı → SP-LAY hatası, panik yok) · her katman parametreleriyle round-trip testi
+  - Doğrulama: CEO `kontrol.sh rust`
+  - Denetim: denetci (dalga) · Kanıt: —
+
+- [ ] **M1-4 Biçim koruyan JSON codec**
+  - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 0/3
+  - Sahip: `crates/saveprism-codecs/src/json/**` · `.fabrika/raporlar/M1-4.md`
+  - Okur: MIMARI §3.2–3.4 · ADR-016 madde 2, 5 · `crates/saveprism-core/src/{doc,codec,params,limits,error}.rs`
+  - Bağımlı: D3
+  - Kabul: kendi ayrıştırıcısı (serde_json yok; derinlik sınırı, yığın taşmasız) · anahtar sırası ve tekrar eden anahtar korunur · kanonik
+    olmayan sayı/metin `lexeme`'de · `JSON:int` / `JSON:float` ipucu · biçim profili: sıkışık (`JSON.stringify`), 2 / 4 boşluk, sekme,
+    CRLF, `": "`, sondaki satır sonu, BOM → hepsi bayt-bayt aynı (testler) · düzensiz boşluk → ağaç eşit (test belgeler) · düzenlenmiş
+    `1.0` → `2.0` · `"1.0"` metni korunur
+  - Doğrulama: CEO `kontrol.sh rust`
+  - Denetim: denetci (dalga) · Kanıt: —
+
+- [ ] **M1-7 Round-trip koruması + rapor**
+  - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 0/3
+  - Sahip: `crates/saveprism-core/src/guard.rs` · `.fabrika/raporlar/M1-7.md`
+  - Okur: MIMARI §3.4 · `crates/saveprism-core/src/{pipeline,codec,recipe,error}.rs`
+  - Bağımlı: D3
+  - Kabul: adım başına sonuç (birebir / anlamsal / farklı) + en kötüsü genel sonuç + neden (i18n anahtarı + teknik ayrıntı) · farklı →
+    `editable = false` · sahte katmanlarla üç durumun testi
+  - Doğrulama: CEO `kontrol.sh rust`
+  - Denetim: denetci (dalga) · Kanıt: —
+
+- [ ] **M1-8 Güvenli yazma modülü**
+  - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 0/3
+  - Sahip: `crates/saveprism-core/src/io.rs` · `crates/saveprism-core/tests/io.rs` · `.fabrika/raporlar/M1-8.md`
+  - Okur: MIMARI §3.5 · AGENTS.md kural 1 · `crates/saveprism-core/src/error.rs`
+  - Bağımlı: D3
+  - Kabul: yedek uygulama veri dizininde (`<kök>/<fnv64(yol)>/<zaman>.bak`, son 10) · geçici dosya → `sync_all` → `persist` · doğrulama
+    başarısızsa yedekten geri alır · `default_backup_root()` Windows / macOS / Linux · testler: yedek oluşuyor, halka 10'da kalıyor,
+    doğrulama hatasında orijinal bayt geri geliyor, salt-okunur hedef panik değil hata
+  - Doğrulama: CEO `kontrol.sh rust`
+  - Denetim: denetci (dalga) · Kanıt: —
+
+### D5 — Dedektör, CLI, sınırlar, altın test · KAPI-1: onaylandı 2026-10-21 · Bağımlı: D4 doğrulandı
+
+- [ ] **M1-5 Detector v0**
+  - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 0/3
+  - Sahip: `crates/saveprism-core/src/detect.rs` · `crates/saveprism-codecs/tests/detect.rs` · `.fabrika/raporlar/M1-5.md`
+  - Okur: MIMARI §3.1, §3.3 · `crates/saveprism-core/src/{codec,registry,pipeline,limits}.rs`
+  - Bağımlı: D4
+  - Kabul: sniff sırası + deneme-çözme + geri izleme; katman ve deneme sayısı sınırlı; hiçbiri uymazsa SP-DET hatası · testler (girdiler
+    testte katmanlarla üretilir): JSON, base64(JSON), gzip(JSON), lz-string(JSON) (base64 sanılmaz), base64(gzip(JSON)) → doğru tarif
+  - Doğrulama: CEO `kontrol.sh rust`
+  - Denetim: denetci (dalga) · Kanıt: —
+
+- [ ] **M1-6 `saveprism inspect | decode | encode`**
+  - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 0/3
+  - Sahip: `crates/saveprism-cli/**` · `.fabrika/raporlar/M1-6.md`
+  - Okur: MIMARI §3.1–3.5 · `crates/saveprism-core/src/lib.rs` ve imzaları
+  - Bağımlı: D4 (dedektör imzası D3'te)
+  - Kabul: `inspect` (tarif, güven, round-trip sonucu; `--json`) · `decode -o f.json` (+ `f.recipe.toml`) · `encode f.json --recipe … -o …`
+    (güvenli yazma + yazım sonrası doğrulama) · hata = `SP-…` kodu + bağlam, çıkış 1 · süreç içi testler: base64+JSON ve lz-string+JSON
+    için decode → encode bayt-bayt aynı
+  - Doğrulama: CEO demo komutları sentetik dosyayla · Sen gerçek MV kaydınla (KAPI-2)
+  - Denetim: denetci (dalga) · Kanıt: —
+
+- [ ] **M1-9 Girdi sınırları + ilk fuzz hedefi**
+  - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 0/3
+  - Sahip: `fuzz/**` · `.github/workflows/fuzz.yml` · `crates/saveprism-codecs/tests/limits.rs` · `.fabrika/raporlar/M1-9.md`
+  - Okur: QUALITY §2 · `crates/saveprism-core/src/limits.rs`
+  - Bağımlı: D4
+  - Kabul: gzip/zlib bombası, aşırı derin JSON, aşırı büyük girdi → panik yerine SP hatası · proptest: rastgele bayt her decode'a ve
+    dedektöre → panik yok · `fuzz/` hedefleri (detect, json, layers) · fuzz.yml: haftalık + elle + `crates/**` push'unda, Linux, 60 sn/hedef
+  - Doğrulama: CEO `kontrol.sh rust` · fuzz işi GitHub'da bir kez yeşil
+  - Denetim: denetci (dalga) · Kanıt: —
+
+- [ ] **M1-10 Fixture düzeni + altın test koşucusu**
+  - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 0/3
+  - Sahip: `crates/saveprism-codecs/tests/golden.rs` · `fixtures/expected/**` · `fixtures/synthetic/**` · `fixtures/README.md` ·
+    `.fabrika/raporlar/M1-10.md`
+  - Okur: MIMARI §5, §6 madde 5 · QUALITY §2
+  - Bağımlı: D4 (dedektör imzası D3'te)
+  - Kabul: `fixtures/samples/**` ve `fixtures/synthetic/**` altındaki her dosya için dedektör + round-trip; beklenen tarif ve sonuç
+    `fixtures/expected/<yol>.toml`'da · beklenti yoksa test nasıl üretileceğini yazarak düşer · `SAVEPRISM_BLESS=1` beklentileri yazar ·
+    sentetik düz JSON örnekleri (sıkışık, 2 boşluk, CRLF)
+  - Doğrulama: CEO `kontrol.sh rust` · yeni dosya ekleyince test kendiliğinden koşuyor
+  - Denetim: denetci (dalga) · Kanıt: —
+
+- [ ] **[ben] Gerçek RPG Maker MV kaydı** → `fixtures/samples/rpgmaker/` (kilitli klasör; D5 doğrulamasından önce)
+
+---
+
 ## Kilitli kaynaklar
 | Kaynak | Şu anki sahip |
 |---|---|

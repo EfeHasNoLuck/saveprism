@@ -93,34 +93,48 @@ kind = "format.es3-json"
 ### 3.2 SaveDoc (evrensel ağaç)
 
 ```rust
+pub struct SaveDoc { nodes: Vec<Node>, root: NodeId }   // arena; NodeId(u32) = indeks, oturuma özel
+
 pub enum Value {
     Null,
     Bool(bool),
     Int { v: i128, width: IntWidth },              // i8…u64 bilgisi korunur
-    Float { v: f64, width: FloatWidth, text: Option<String> }, // "1.0" metni korunur
+    Float { v: f64, width: FloatWidth },
     Str(String),
     Bytes(Vec<u8>),
     Array(Vec<NodeId>),
-    Object(Vec<(Key, NodeId)>),                    // anahtar sırası korunur
+    Object(Vec<(String, NodeId)>),                 // metin anahtar; sıra ve tekrar eden anahtar korunur
+    Map(Vec<(NodeId, NodeId)>),                    // metin olmayan anahtar: GVAS MapProperty, pickle dict, Ruby Hash
     Ref(NodeId),                                   // JsonEx/pickle/Marshal referansları
 }
 
 pub struct Node {
-    pub id: NodeId,
     pub value: Value,
-    pub type_hint: Option<TypeHint>, // "UE:IntProperty", "Py:int", "Ruby:Fixnum", "ES3:int"
-    pub span: Option<ByteSpan>,      // kayıpsız yama için orijinal bayt aralığı
-    pub flags: NodeFlags,            // Editable | ReadOnly | Synthetic
+    pub type_hint: Option<TypeHint>,  // "UE:IntProperty", "Py:int", "Ruby:Fixnum", "ES3:int", "JSON:float"
+    pub lexeme: Option<Box<str>>,     // skalerin orijinal metni, codec'in kanonik yazımından farklıysa ("1.0", "é")
+    pub span: Option<ByteSpan>,       // kayıpsız yama için orijinal bayt aralığı
+    pub flags: NodeFlags,             // Editable | ReadOnly | Synthetic
 }
 ```
 
-- `type_hint` → UI doğru editörü gösterir; AI dönüşünde tip ihlali yakalanır.
+- `type_hint` → UI doğru editörü gösterir; AI dönüşünde tip ihlali yakalanır. Düzenlenen `1.0` → `2` olursa `JSON:float` ipucu `2.0` yazdırır.
+- `lexeme` → metin formatlarında bayt-kesin geri yazım. Değer düzenlenince `SaveDoc` onu siler; codec'ler yalnız `lexeme` varsa onu basar.
 - `span` → kayıpsız yama.
+- Düzenlemeler (`Edit`) düğümü `Path` ile (`/actors/1/gold` gibi) adresler, `NodeId` ile değil: AI yamaları ve geri al/yinele oturumdan bağımsız kalır.
 
 ### 3.3 Codec sözleşmesi
 
+İki tür adım var: **katman** (bayt ↔ bayt: kodlama, sıkıştırma, şifre) ve **codec** (bayt ↔ SaveDoc, tarifin son adımı).
+
 ```rust
-pub trait Codec: Send + Sync {
+pub trait Layer: Send + Sync {          // "encoding.base64", "compression.gzip", "crypto.es3-aes"
+    fn id(&self) -> &'static str;
+    fn sniff(&self, input: &[u8], ctx: &SniffCtx) -> Confidence;
+    fn decode(&self, input: &[u8], ctx: &mut DecodeCtx) -> Result<(Vec<u8>, Params)>; // iç bayt + geri sarma parametreleri
+    fn encode(&self, inner: &[u8], params: &Params) -> Result<Vec<u8>>;
+}
+
+pub trait Codec: Send + Sync {          // "format.json", "format.gvas"
     fn id(&self) -> &'static str;
     fn sniff(&self, input: &[u8], ctx: &SniffCtx) -> Confidence;
     fn decode(&self, input: &[u8], ctx: &mut DecodeCtx) -> Result<Decoded>; // SaveDoc + Params
@@ -130,6 +144,11 @@ pub trait Codec: Send + Sync {
     }
 }
 ```
+
+- `Recipe` = adım listesi: baştakiler `Layer`, sonuncusu `Codec`. `Registry` kimlikten uygulamaya eşler; `saveprism-codecs` hepsini
+  `register_all(&mut Registry)` ile kaydeder. Boru hattı (`pipeline`) tarifi `Limits` ile koşar; her adım hataya bağlam ekler.
+- `Params` = sıralı anahtar → değer (bool, tamsayı, ondalık, metin, bayt, liste, tablo). TOML'da baytlar `"base64:…"` metnidir.
+- `DecodeCtx` sınırları (`Limits`) taşır: girdi boyutu, çözülmüş boyut, sıkıştırma oranı, derinlik, düğüm sayısı, katman sayısı.
 
 İki yazma stratejisi:
 
@@ -148,11 +167,18 @@ Açılışta, düzenleme açılmadan önce: `decode → encode` (değişikliksiz
 
 Kaydettikten sonra: yazılan dosya yeniden çözülür ve düzenlenen değerler doğrulanır.
 
+Katmanlı dosyada her adım ayrı ölçülür, en kötü sonuç geçerlidir. Örnek: GZip'i başka bir sıkıştırıcı yazmışsa açılmış içerik
+aynı ama sıkıştırılmış baytlar farklıdır → "Anlamsal eşit". Katman, orijinal seviyeyi deneyerek bulursa (seviye 0–9) → "Birebir aynı".
+JSON'da düzenli girinti (makine çıktısı) birebir geri yazılır; elle bozulmuş girinti → "Anlamsal eşit".
+
 ### 3.5 Güvenli yazma
 
 1. **Yedek:** uygulama veri dizinine (`%APPDATA%\SavePrism\backups\<yol-özeti>\<zaman>.bak`), son 10 yedek halkası. Yedek **kayıt klasörüne konmaz** — bazı oyunlar klasördeki her dosyayı kayıt sanar.
-2. Geçici dosyaya yaz → `fsync` → atomik değiştir (Windows'ta `ReplaceFileW`).
+2. Geçici dosyaya yaz (hedefle aynı klasör, kısa ömürlü `.saveprism-*.tmp`) → `fsync` → atomik değiştir. M1: `tempfile` `persist`
+   (Windows `MoveFileExW(REPLACE_EXISTING)`, Unix `rename` + klasör `fsync`). `ReplaceFileW` `unsafe` FFI ister → sonraya (ADR-016).
 3. Doğrula (3.4). Başarısızsa yedekten geri al.
+4. Yedek kökü çekirdekte tek fonksiyondadır (`default_backup_root`); CLI ve masaüstü aynı klasörü kullanır. Klasör adı yolun
+   FNV-1a 64 özetidir (Rust sürümleri arasında kararlı).
 
 ### 3.6 Belge sahipliği ve IPC
 
@@ -281,7 +307,9 @@ saveprism/
 ├─ profiles/              # oyun profilleri (TOML)
 ├─ fixtures/
 │  ├─ samples/            # izinli örnek kayıtlar (bayt-kesin; ajanlara kilitli)
-│  └─ expected/           # beklenen JSON / tarif çıktıları
+│  ├─ synthetic/          # elle/araçla üretilmiş metin örnekleri (ajanlar yazabilir)
+│  └─ expected/           # beklenen tarif ve round-trip sonucu (<motor>/<ad>.toml)
+├─ fuzz/                  # cargo-fuzz hedefleri (workspace dışı, gecelik araç zinciri)
 ├─ docs/
 └─ .github/               # CI, şablonlar
 ```
