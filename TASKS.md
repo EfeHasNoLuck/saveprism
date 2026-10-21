@@ -63,12 +63,13 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
 
 ### D2 — Tema, dil, CI · KAPI-1: onaylandı 2026-10-21 · Bağımlı: D1 doğrulandı
 
-- [ ] **A2 Bağımlılık + shadcn** (CEO, Bash)
+- [x] **A2 Bağımlılık + shadcn** (CEO, Bash) — kuruldu; shadcn 4.22 (radix-nova) listede olmayan 3 paket ekledi: `cn` (MIT, shadcn'in
+  clsx + tailwind-merge yerine geçen paketi), `shadcn` (MIT, CSS için), `@fontsource-variable/geist` (OFL-1.1 font) → font kararı kullanıcıda
   - Sahip: `apps/desktop/package.json` (yalnız bağımlılık satırları) · `pnpm-lock.yaml` · `apps/desktop/components.json` ·
     `apps/desktop/src/lib/utils.ts` · `apps/desktop/src/components/ui/**` · `apps/desktop/src/index.css` (yalnız ilk üretim)
   - Adımlar: 1) onaylı D2 paketlerini `pnpm add` · 2) `shadcn init` (Radix) + `shadcn add button dropdown-menu`
 
-- [ ] **M0-6 Tema: açık / koyu / sistem**
+- [~] **M0-6 Tema: açık / koyu / sistem**
   - Motor: claude/kodcu·haiku · Effort: medium · Deneme: 0/3
   - Sahip: `apps/desktop/src/theme/**` · `apps/desktop/src/index.css` · `apps/desktop/src/components/ui/**`
   - Okur: MIMARI §4 madde 4 · `src/main.tsx`, `src/App.tsx` (yalnız okur)
@@ -78,7 +79,7 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
   - Doğrulama: CEO `kontrol.sh web` · Sen `pnpm tauri dev` → 3 kip + yeniden açılış (KAPI-2)
   - Denetim: denetci (dalga) · Kanıt: —
 
-- [ ] **M0-7 i18n iskeleti (TR/EN)**
+- [~] **M0-7 i18n iskeleti (TR/EN)**
   - Motor: claude/kodcu·haiku · Effort: medium · Deneme: 0/3
   - Sahip: `apps/desktop/src/i18n/**` · `apps/desktop/locales/**` · `apps/desktop/src/App.tsx`
   - Okur: MIMARI §4 madde 5 · `src/main.tsx` · `src/components/ui/dropdown-menu.tsx` (yalnız okur)
@@ -88,7 +89,7 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
   - Doğrulama: CEO `kontrol.sh web` · Sen `pnpm tauri dev` → dil değiştir + yeniden aç (KAPI-2)
   - Denetim: denetci (dalga) · Kanıt: —
 
-- [ ] **M0-8 CI**
+- [~] **M0-8 CI**
   - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 0/3
   - Sahip: `.github/workflows/ci.yml` · `.github/dependabot.yml` · `apps/desktop/eslint.config.js` · `apps/desktop/vitest.config.ts` ·
     `package.json` (yalnız scripts) · `apps/desktop/package.json` (yalnız scripts)
