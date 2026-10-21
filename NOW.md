@@ -4,10 +4,11 @@
 
 **Faz:** M1 — çekirdek + CLI, planlama (2026-10-21)
 
-**Son kazanım:** D3 bitti → çekirdek sözleşmesi (`saveprism-core`, 133 test yeşil, denetçi + Codex), CI belge değişiminde koşmuyor.
+**Son kazanım:** D4'ün 3 işi bitti → Base64/GZip/zlib/LZ-String katmanları, biçim koruyan JSON, round-trip koruması (211 test,
+denetçi + Codex). D3: çekirdek sözleşmesi.
 
-**Sıradaki tek adım:** D4 (M1-3 katmanlar, M1-4 JSON, M1-7 koruma) dalga-şefinde; M1-8 güvenli yazma kullanıcının yedek kararını bekliyor
-("üstüne yazarken yedek hep mi, isteğe bağlı mı"). ⏱ D4 ~90 dk
+**Sıradaki tek adım:** kullanıcının yedek kararı ("üstüne yazarken yedek hep mi, isteğe bağlı mı") → M1-8 kartı. Beklerken D5'in
+bağımsız işleri (M1-5 dedektör, M1-9 sınırlar/fuzz, M1-10 altın test) koşabilir; M1-6 CLI, M1-8'den sonra. ⏱ D5 ~90 dk
 
 ---
 

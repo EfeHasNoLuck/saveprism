@@ -156,8 +156,8 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
 
 ### D4 — Katmanlar, JSON, koruma, güvenli yazma · KAPI-1: onaylandı 2026-10-21 (M1-8 yedek politikası bekliyor) · Bağımlı: D3 doğrulandı
 
-- [~] **M1-3 Katmanlar: Base64, GZip, zlib, LZ-String**
-  - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 0/3
+- [x] **M1-3 Katmanlar: Base64, GZip, zlib, LZ-String**
+  - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 1/3 (ilk derleme: clippy + test verisi; CEO kararı: aynı motor/effort)
   - Sahip: `crates/saveprism-codecs/src/layers/**` · `.fabrika/raporlar/M1-3.md`
   - Okur: MIMARI §3.1, §3.3, §3.4 · `crates/saveprism-core/src/{codec,params,limits,error}.rs`
   - Bağımlı: D3
@@ -166,10 +166,10 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
     açma kendi sınırlı portumuz çünkü lz-string açması karesel büyüyebilir ve `lz-str` sınır almaz; sıkıştırma `lz-str`) · açma
     `read_bounded` ile (aşım → `CORE_LIMIT_DECODED`, panik yok) · her katman parametreleriyle round-trip testi
   - Doğrulama: CEO `kontrol.sh rust`
-  - Denetim: denetci (dalga) · Kanıt: —
+  - Denetim: dalga-şefi denetçisi (KRITIK 1 + YUKSEK 1 derleme kırıcı, düzeltildi; kalan DUSUK) + Codex ikinci göz (1 YUKSEK lz-string varyantı, 2 ORTA; turu 3 ile düzeltildi) · Kanıt: Rust kontrolü 3/3, codecs 72 + core 139 test, cargo deny 0 (2026-10-21)
 
-- [~] **M1-4 Biçim koruyan JSON codec**
-  - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 0/3
+- [x] **M1-4 Biçim koruyan JSON codec**
+  - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 1/3 (ilk derleme: kartın üs eşiği hatası + test verisi; CEO kararı: aynı motor/effort)
   - Sahip: `crates/saveprism-codecs/src/json/**` · `.fabrika/raporlar/M1-4.md`
   - Okur: MIMARI §3.2–3.4 · ADR-016 madde 2, 5 · `crates/saveprism-core/src/{doc,codec,params,limits,error}.rs`
   - Bağımlı: D3
@@ -178,9 +178,9 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
     CRLF, `": "`, sondaki satır sonu, BOM → hepsi bayt-bayt aynı (testler) · düzensiz boşluk → ağaç eşit (test belgeler) · düzenlenmiş
     `1.0` → `2.0` · `"1.0"` metni korunur
   - Doğrulama: CEO `kontrol.sh rust`
-  - Denetim: denetci (dalga) · Kanıt: —
+  - Denetim: dalga-şefi denetçisi (KRITIK 1 + YUKSEK 1 derleme kırıcı, düzeltildi; kalan DUSUK) + Codex ikinci göz (1 YUKSEK lz-string varyantı, 2 ORTA; turu 3 ile düzeltildi) · Kanıt: Rust kontrolü 3/3, codecs 72 + core 139 test, cargo deny 0 (2026-10-21)
 
-- [~] **M1-7 Round-trip koruması + rapor**
+- [x] **M1-7 Round-trip koruması + rapor**
   - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 0/3
   - Sahip: `crates/saveprism-core/src/guard.rs` · `.fabrika/raporlar/M1-7.md`
   - Okur: MIMARI §3.4 · `crates/saveprism-core/src/{pipeline,codec,recipe,error}.rs`
@@ -188,7 +188,7 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
   - Kabul: adım başına sonuç (birebir / anlamsal / farklı) + en kötüsü genel sonuç + neden (i18n anahtarı + teknik ayrıntı) · farklı →
     `editable = false` · sahte katmanlarla üç durumun testi
   - Doğrulama: CEO `kontrol.sh rust`
-  - Denetim: denetci (dalga) · Kanıt: —
+  - Denetim: dalga-şefi denetçisi (KRITIK 1 + YUKSEK 1 derleme kırıcı, düzeltildi; kalan DUSUK) + Codex ikinci göz (1 YUKSEK lz-string varyantı, 2 ORTA; turu 3 ile düzeltildi) · Kanıt: Rust kontrolü 3/3, codecs 72 + core 139 test, cargo deny 0 (2026-10-21)
 
 - [ ] **M1-8 Güvenli yazma modülü**
   - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 0/3

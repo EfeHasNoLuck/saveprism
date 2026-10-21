@@ -49,9 +49,11 @@ mod tests {
         assert!(!VERSION.is_empty());
     }
 
+    // guard is implemented (M1-7) and covered by its own tests in guard.rs,
+    // so only the two remaining signature-only stubs are checked here.
     #[test]
-    fn the_three_signature_stubs_report_not_implemented() {
-        use super::{Limits, Recipe, Registry, codes};
+    fn the_two_signature_stubs_report_not_implemented() {
+        use super::{Limits, Registry, codes};
 
         let reg = Registry::default();
         let limits = Limits::default();
@@ -60,10 +62,6 @@ mod tests {
             super::detect::detect(b"", &reg, &limits, &super::detect::DetectOptions::default())
                 .unwrap_err();
         assert_eq!(detect.code(), codes::CORE_NOT_IMPLEMENTED);
-
-        let guard = super::guard::check_round_trip(b"", &Recipe::new(Vec::new()), &reg, &limits)
-            .unwrap_err();
-        assert_eq!(guard.code(), codes::CORE_NOT_IMPLEMENTED);
 
         let opts = super::io::WriteOptions::new(std::path::PathBuf::from("backups"));
         let write = super::io::safe_write(

@@ -64,13 +64,13 @@ Kurallar:
 ### Grup A — Model
 1. [x] **M1-1 SaveDoc + düğüm arenası + TypeHint** ⏱60 dk ▶ `crates/saveprism-core/src/doc.rs` ✅ birim testleri yeşil — *kanıt: Rust kontrolü 3/3, 132 core testi; denetçi + Codex (2026-10-21)*
 2. [x] **M1-2 Codec trait + Recipe + Params serileştirme** ⏱45 dk ✅ tarif TOML'a yazılıp geri okunuyor — *kanıt: recipe.rs TOML gidiş-dönüş testleri yeşil (2026-10-21)*
-3. [ ] **M1-3 Katmanlar: Base64, GZip, zlib, LZ-String** ⏱60 dk ✅ her katman parametreleri koruyarak round-trip
-4. [ ] **M1-4 Biçim koruyan JSON codec** ⏱60 dk ✅ girinti, anahtar sırası ve `1.0` metni korunuyor
+3. [x] **M1-3 Katmanlar: Base64, GZip, zlib, LZ-String** ⏱60 dk ✅ her katman parametreleri koruyarak round-trip — *kanıt: 72 codecs testi, bomba testleri; Codex ikinci göz (2026-10-21)*
+4. [x] **M1-4 Biçim koruyan JSON codec** ⏱60 dk ✅ girinti, anahtar sırası ve `1.0` metni korunuyor — *kanıt: JS/Python/2-4 boşluk/sekme/CRLF/BOM bayt-bayt testleri (2026-10-21)*
 5. [ ] **M1-5 Detector v0** ⏱45 dk ✅ magic + deneme-çözme ile doğru katman zinciri ve güven puanı
 
 ### Grup B — CLI ve güvenlik
 6. [ ] **M1-6 `saveprism inspect | decode | encode`** ⏱45 dk ✅ demo komutu çalışıyor
-7. [ ] **M1-7 Round-trip koruması + rapor** ⏱30 dk ✅ eşleşmeyen dosya salt-okunur işaretleniyor
+7. [x] **M1-7 Round-trip koruması + rapor** ⏱30 dk ✅ eşleşmeyen dosya salt-okunur işaretleniyor — *kanıt: guard.rs testleri (birebir/anlamsal/farklı, `editable`) yeşil (2026-10-21)*
 8. [ ] **M1-8 Güvenli yazma modülü** ⏱45 dk ✅ yedek halkası + atomik değiştirme + doğrulama testli
 9. [ ] **M1-9 Girdi sınırları + ilk fuzz hedefi** ⏱30 dk ✅ sıkıştırma bombası testi panik yerine hata döndürüyor
 10. [ ] **M1-10 Fixture düzeni + altın test koşucusu** ⏱30 dk ✅ `fixtures/samples/<motor>/<ad>` ekleyince test otomatik koşuyor
