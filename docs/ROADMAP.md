@@ -62,8 +62,8 @@ Kurallar:
 **Hedef:** UI'dan bağımsız, test edilmiş çekirdek. **Demo:** `saveprism decode file1.rpgsave --json` → `saveprism encode` → orijinalle bayt-bayt aynı.
 
 ### Grup A — Model
-1. [ ] **M1-1 SaveDoc + düğüm arenası + TypeHint** ⏱60 dk ▶ `crates/saveprism-core/src/doc.rs` ✅ birim testleri yeşil
-2. [ ] **M1-2 Codec trait + Recipe + Params serileştirme** ⏱45 dk ✅ tarif TOML'a yazılıp geri okunuyor
+1. [x] **M1-1 SaveDoc + düğüm arenası + TypeHint** ⏱60 dk ▶ `crates/saveprism-core/src/doc.rs` ✅ birim testleri yeşil — *kanıt: Rust kontrolü 3/3, 132 core testi; denetçi + Codex (2026-10-21)*
+2. [x] **M1-2 Codec trait + Recipe + Params serileştirme** ⏱45 dk ✅ tarif TOML'a yazılıp geri okunuyor — *kanıt: recipe.rs TOML gidiş-dönüş testleri yeşil (2026-10-21)*
 3. [ ] **M1-3 Katmanlar: Base64, GZip, zlib, LZ-String** ⏱60 dk ✅ her katman parametreleri koruyarak round-trip
 4. [ ] **M1-4 Biçim koruyan JSON codec** ⏱60 dk ✅ girinti, anahtar sırası ve `1.0` metni korunuyor
 5. [ ] **M1-5 Detector v0** ⏱45 dk ✅ magic + deneme-çözme ile doğru katman zinciri ve güven puanı

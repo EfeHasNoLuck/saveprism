@@ -102,3 +102,7 @@ Durumlar: **Kabul** · **Önerildi** · **Açık** · **Değişti**
 - **Alternatif:** tek `Codec` trait (MIMARI ilk taslağı); JSON için tam CST (her boşluk saklanır, kod iki katı); `windows-sys` ile
   `ReplaceFileW` (lint istisnası + `unsafe` gerekir).
 - **Geri dönüş maliyeti:** yüksek, M2 codec'leri bu sözleşmeye yazılınca. Bu yüzden D3'te Codex ikinci göz.
+- **D3 sonrası ekler (Codex bulguları, 2026-10-21):** iki aşamalı kurma (`reserve`/`finish`, döngülü grafik), belgede zorunlu düğüm
+  sınırı, `DecodeCtx::read_bounded`, `tree_eq` Ref hedeflerini eşler, Map anahtarı `"<i>.key"`, `patch`/`apply_edits` sınırı dışarıdan alır.
+  **Bilinçli kalan bedel:** katman çıktısı sınırı arayüzde zorlanmaz (katmanlar `read_bounded` kullanır, M1-9 bomba testleri her açma
+  katmanını sınar; yabancı eklenti gelirse WASM kum havuzu); `Object` anahtar bayt aralıkları yok (codec tarayarak bulur).

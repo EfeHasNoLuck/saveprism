@@ -4,10 +4,10 @@
 
 **Faz:** M1 — çekirdek + CLI, planlama (2026-10-21)
 
-**Son kazanım:** M1 planı yazıldı → 3 dalga (D3 sözleşme · D4 katman/JSON/koruma/yazma · D5 dedektör/CLI/sınır/altın test), [TASKS.md](TASKS.md);
-sözleşme tasarımı MIMARI §3.2–3.5 + [ADR-016](docs/architecture/kararlar.md).
+**Son kazanım:** D3 bitti → çekirdek sözleşmesi (`saveprism-core`, 133 test yeşil, denetçi + Codex), CI belge değişiminde koşmuyor.
 
-**Sıradaki tek adım:** KAPI-1 → kullanıcı M1 planını ve paket listesini onaylar → D3 kartları + `plan: D3` commit'i. ⏱ D3 ~60–90 dk
+**Sıradaki tek adım:** D4 (M1-3 katmanlar, M1-4 JSON, M1-7 koruma) dalga-şefinde; M1-8 güvenli yazma kullanıcının yedek kararını bekliyor
+("üstüne yazarken yedek hep mi, isteğe bağlı mı"). ⏱ D4 ~90 dk
 
 ---
 
@@ -41,7 +41,8 @@ sözleşme tasarımı MIMARI §3.2–3.5 + [ADR-016](docs/architecture/kararlar.
 
 - **Oyun vitrini** ("Hangi oyunda kullandın?" + çalışan oyunlar listesi, 18+ sansürlü) — araştırma bitti → `docs/research/06-game-showcase-feasibility.md` §8;
   kullanıcı girdisi (2026-10-21): ayarlarda 18+ anahtarı + yaş sorusu, internet yalnız kişi isterse, oyun görselleri isteniyor (yeni karar D6). M7'den önce değil.
-- **Düzenleme ekranı mockup'ı (A/B)** — kullanıcı istedi (2026-10-21); M3-2 düzenine girdi olacak
+- **Düzenleme ekranı mockup'ı (A/B)** — hazır: https://claude.ai/artifact/GKHiaZcNuLQjNXiSKrK3ou (A klasik üç panel, B odak görünümü;
+  hazırlayanın önerisi: B varsayılan + A'nın ağacı/denetçisi çekmecede). Kullanıcının seçimi bekleniyor → M3-2 düzenine girdi
 
 - Web (WASM) sürümü
 - MCP sunucusu

@@ -121,6 +121,9 @@ pub struct Node {
 - `lexeme` → metin formatlarında bayt-kesin geri yazım. Değer düzenlenince `SaveDoc` onu siler; codec'ler yalnız `lexeme` varsa onu basar.
 - `span` → kayıpsız yama.
 - Düzenlemeler (`Edit`) düğümü `Path` ile (`/actors/1/gold` gibi) adresler, `NodeId` ile değil: AI yamaları ve geri al/yinele oturumdan bağımsız kalır.
+  `Map` üzerinde `"<i>"` giriş i'nin değeri, `"<i>.key"` anahtarıdır.
+- Kurma: önce çocuklar (`push`) ya da döngülü grafikte iki aşama (`reserve` → `finish`). Düğüm sınırı belgenin kendisinde zorunludur.
+  İçerme bir ağaçtır; paylaşım ve döngü yalnız `Ref` ile.
 
 ### 3.3 Codec sözleşmesi
 

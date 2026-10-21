@@ -22,6 +22,8 @@ Codex, salt okuma (tasarım belgesi, denetim, görüş):
 ```
 codex exec --skip-git-repo-check -s read-only -C "<PROJE_KOKU>" -o .fabrika/raporlar/<ID>-codex.md - < .fabrika/gorevler/<ID>.md
 ```
+Salt okuma kartına şunu yaz: "dosya yazmaya çalışma; son cevabın raporun kendisidir, CLI onu `-o` dosyasına kaydeder".
+Yazmazsan Codex dosyaya yazmayı dener, kum havuzuna takılır ve rapor yerine "yazamadım" notu kalır (2026-10-21).
 Codex, yazarak (yalnız kartın Sahip dosyaları): aynı komut, `-s read-only` yerine `-s workspace-write`.
 Codex ile hazır inceleme: `codex exec review` (çalışma ağacındaki değişiklikleri inceler; çıktıyı `-o` ile dosyaya al).
 

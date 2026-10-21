@@ -125,7 +125,7 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
 
 ### D3 — Sözleşme · KAPI-1: onaylandı 2026-10-21
 
-- [~] **M1-1 Çekirdek sözleşmesi (M1-1 + M1-2)**
+- [x] **M1-1 Çekirdek sözleşmesi (M1-1 + M1-2)**
   - Motor: claude/kodcu·sonnet · Effort: high · Deneme: 0/3
   - Sahip: kök `Cargo.toml` (yalnız `[workspace.dependencies]` + `exclude = ["fuzz"]`) · `crates/saveprism-core/**` ·
     `crates/saveprism-codecs/{Cargo.toml,src/lib.rs,src/json/mod.rs,src/layers/mod.rs}` (iskelet) · `.fabrika/raporlar/M1-1.md`
@@ -137,7 +137,12 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
     aynen geri okunuyor, bayt parametresi `base64:` ile geri geliyor, `set` lexeme'i siliyor, `Path` çözümü, sahte 2 katman + sahte
     codec ile boru hattı round-trip · `unwrap`/`expect`/`panic` yok · `kontrol.sh rust` çıkış 0
   - Doğrulama: CEO `kontrol.sh rust` · Tauri `core_version` hâlâ derleniyor
-  - Denetim: denetci + Codex ikinci göz (geri dönüşü pahalı sözleşme) · Kanıt: —
+  - Denetim: denetci (KRITIK/YUKSEK yok; 2 ORTA, 4 DUSUK) + Codex ikinci göz (1 KRITIK döngülü grafik kurulamıyor, 3 YUKSEK: sınırlar
+    işbirliğine bağlı, Map anahtarı adreslenemiyor, `tree_eq` Ref hedefini karşılaştırmıyor) → düzeltme turu 1 (deneme sayılmaz) uygulandı; Codex yeniden kontrol: 4 kapandı, 2 kısmen (bilinçli bedel, ADR-016), yeni
+    KRITIK/YUKSEK yok;
+    Object anahtar aralıkları ertelendi (codec tarar) · Kanıt: CEO `cargo fmt --all` → `kontrol.sh rust`
+    3/3 ilk denemede (fmt, clippy -D warnings, test) · `cargo test --workspace` → core 103 + codecs 1 geçti · Tauri crate derlendi ·
+    `cargo deny check` çıkış 0 (yalnız tekrar eden sürüm uyarısı) · düzeltme turu sonrası yine 3/3, core 132 + codecs 1 test (2026-10-21)
 
 - [~] **CI-1 Belge değişikliğinde CI koşmasın**
   - Motor: claude/kodcu·haiku · Effort: medium · Deneme: 0/3
@@ -146,7 +151,8 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
   - Bağımlı: KAPI-1
   - Kabul: `push` ve `pull_request` tetiklerine `paths-ignore`: `docs/**`, `**/*.md`, `handoff/**`, `.fabrika/**`; başka değişiklik yok
   - Doğrulama: CEO diff'e bakar · yalnız belge değiştiren sonraki push'ta GitHub'da CI koşusu açılmaz
-  - Denetim: yok (küçük iş) · Kanıt: —
+  - Denetim: yok (küçük iş) · Kanıt: CEO `git diff` → yalnız `on.push` ve `on.pull_request` altına 4 satırlık `paths-ignore` eklendi,
+    işler aynen (2026-10-21) · GitHub'da belge-push denemesi: bekliyor
 
 ### D4 — Katmanlar, JSON, koruma, güvenli yazma · KAPI-1: onaylandı 2026-10-21 (M1-8 yedek politikası bekliyor) · Bağımlı: D3 doğrulandı
 
