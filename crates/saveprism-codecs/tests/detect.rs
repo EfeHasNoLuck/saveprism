@@ -88,6 +88,22 @@ fn base64_of_gzip_json() {
 }
 
 #[test]
+fn small_byte_limit_still_finds_the_right_recipe() {
+    let reg = registry();
+    let input = make_input(&reg, &["encoding.base64", "compression.gzip"]);
+    // Only a little above the input size: the frontier must stay within this budget.
+    let limits = Limits {
+        max_decoded_bytes: 1024,
+        ..Limits::default()
+    };
+    let detection = detect(&input, &reg, &limits, &DetectOptions::default()).unwrap();
+    assert_eq!(
+        detection.best.recipe.kinds(),
+        ["encoding.base64", "compression.gzip", "format.json"]
+    );
+}
+
+#[test]
 fn random_bytes_match_nothing() {
     let reg = registry();
     // Deterministic pseudo-random bytes; the first byte rules out every sniffer.

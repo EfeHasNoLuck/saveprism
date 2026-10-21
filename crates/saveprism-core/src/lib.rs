@@ -48,21 +48,4 @@ mod tests {
     fn version_is_not_empty() {
         assert!(!VERSION.is_empty());
     }
-
-    // guard (M1-7) and detect (M1-5) are implemented and covered by their own tests,
-    // so only the remaining signature-only stub, safe_write, is checked here.
-    #[test]
-    fn the_safe_write_stub_reports_not_implemented() {
-        use super::codes;
-
-        let opts = super::io::WriteOptions::new(std::path::PathBuf::from("backups"));
-        let write = super::io::safe_write(
-            std::path::Path::new("save.dat"),
-            b"",
-            &opts,
-            &|_bytes: &[u8]| Ok(()),
-        )
-        .unwrap_err();
-        assert_eq!(write.code(), codes::CORE_NOT_IMPLEMENTED);
-    }
 }

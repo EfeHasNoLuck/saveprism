@@ -190,7 +190,7 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
   - Doğrulama: CEO `kontrol.sh rust`
   - Denetim: dalga-şefi denetçisi (KRITIK 1 + YUKSEK 1 derleme kırıcı, düzeltildi; kalan DUSUK) + Codex ikinci göz (1 YUKSEK lz-string varyantı, 2 ORTA; turu 3 ile düzeltildi) · Kanıt: Rust kontrolü 3/3, codecs 72 + core 139 test, cargo deny 0 (2026-10-21)
 
-- [ ] **M1-8 Güvenli yazma modülü**
+- [x] **M1-8 Güvenli yazma modülü**
   - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 0/3
   - Sahip: `crates/saveprism-core/src/io.rs` · `crates/saveprism-core/tests/io.rs` · `.fabrika/raporlar/M1-8.md`
   - Okur: MIMARI §3.5 · AGENTS.md kural 1 · `crates/saveprism-core/src/error.rs`
@@ -199,7 +199,7 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
     başarısızsa yedekten geri alır · `default_backup_root()` Windows / macOS / Linux · testler: yedek oluşuyor, halka 10'da kalıyor,
     doğrulama hatasında orijinal bayt geri geliyor, salt-okunur hedef panik değil hata
   - Doğrulama: CEO `kontrol.sh rust`
-  - Denetim: denetci (dalga) · Kanıt: —
+  - Denetim: dalga denetçisi (KRITIK/YUKSEK yok) · Kanıt: Rust kontrolü 3/3 (fmt, clippy, test) + sentetik demo: base64 kaydı decode→encode bayt-bayt aynı, üstüne yazmada yedek oluştu (2026-10-22) · açık: 2 ORTA (CLI doğrulama kapanı hata kodu, Unix izin kaybı), 5 DUSUK → .fabrika/raporlar/D5b-denetim.md
 
 ### D5 — Dedektör, CLI, sınırlar, altın test · KAPI-1: onaylandı 2026-10-21 · Bağımlı: D4 (M1-5, M1-9, M1-10 boru hattında M1-8 beklenirken; M1-6 M1-8 sonrası)
 
@@ -213,7 +213,7 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
   - Doğrulama: CEO `kontrol.sh rust`
   - Denetim: dalga-şefi denetçisi (1 YUKSEK + 1 ORTA düzeltildi) · Kanıt: Rust kontrolü 3/3; tests/detect.rs 7 test (JSON, base64, gzip, zlib, lz-string, base64+gzip, rastgele) + core 146 (2026-10-21) · açık DUSUK: ön cephe bellek bütçesi (16 × max_decoded) → M1-6 dalgasında düzeltilecek
 
-- [ ] **M1-6 `saveprism inspect | decode | encode`**
+- [x] **M1-6 `saveprism inspect | decode | encode`**
   - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 0/3
   - Sahip: `crates/saveprism-cli/**` · `.fabrika/raporlar/M1-6.md`
   - Okur: MIMARI §3.1–3.5 · `crates/saveprism-core/src/lib.rs` ve imzaları
@@ -222,7 +222,7 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
     (güvenli yazma + yazım sonrası doğrulama) · hata = `SP-…` kodu + bağlam, çıkış 1 · süreç içi testler: base64+JSON ve lz-string+JSON
     için decode → encode bayt-bayt aynı
   - Doğrulama: CEO demo komutları sentetik dosyayla · Sen gerçek MV kaydınla (KAPI-2)
-  - Denetim: denetci (dalga) · Kanıt: —
+  - Denetim: dalga denetçisi (KRITIK/YUKSEK yok) · Kanıt: Rust kontrolü 3/3 (fmt, clippy, test) + sentetik demo: base64 kaydı decode→encode bayt-bayt aynı, üstüne yazmada yedek oluştu (2026-10-22) · açık: 2 ORTA (CLI doğrulama kapanı hata kodu, Unix izin kaybı), 5 DUSUK → .fabrika/raporlar/D5b-denetim.md
 
 - [~] **M1-9 Girdi sınırları + ilk fuzz hedefi**
   - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 0/3

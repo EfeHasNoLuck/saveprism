@@ -4,11 +4,11 @@
 
 **Faz:** M1 — çekirdek + CLI, planlama (2026-10-21)
 
-**Son kazanım:** M1'in 8/10 işi makine kanıtlı → çekirdek sözleşmesi, katmanlar, biçim koruyan JSON, round-trip koruması, dedektör,
-sınır testleri, altın test (233 test, denetçi + Codex). Kalan: M1-8 güvenli yazma, M1-6 CLI, fuzz koşusu (push).
+**Son kazanım:** M1 kodu tamam: güvenli yazma (yedek A), CLI (`saveprism inspect|decode|encode`) ve dedektör bellek düzeltmesi; Rust kontrolü 3/3,
+sentetik kayıtta decode→encode bayt-bayt aynı (2026-10-22). Kalan: senin gerçek kayıt denemen (KAPI-2) + fuzz koşusu (push).
 
-**Sıradaki tek adım:** [HANDOFF-20261021-3](handoff/HANDOFF-20261021-3.md) adım 1 → M1-8 (yedek politikası A: üstüne yazmada her zaman
-yedek, 30 gün) + M1-6 CLI kartları. ⏱ ~90 dk + kullanıcının MV kaydıyla demo
+**Sıradaki tek adım:** gerçek RPG Maker MV kaydını `fixtures/samples/rpgmaker/` altına koy; sonra `saveprism decode k.rpgsave -o f.json` →
+`saveprism encode f.json --recipe f.recipe.toml -o out.rpgsave` ve `fc /b k.rpgsave out.rpgsave` aynı çıkmalı. ⏱ ~10 dk
 
 ---
 

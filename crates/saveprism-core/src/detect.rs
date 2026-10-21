@@ -82,9 +82,20 @@ fn pop_best(frontier: &mut Vec<State>) -> Option<State> {
     Some(frontier.swap_remove(index))
 }
 
-/// Drops the worst states until at most [`MAX_FRONTIER`] are left.
-fn trim_frontier(frontier: &mut Vec<State>) {
-    while frontier.len() > MAX_FRONTIER {
+/// Total number of bytes held by the states of the frontier.
+fn frontier_bytes(frontier: &[State]) -> u64 {
+    frontier.iter().fold(0_u64, |sum, state| {
+        sum.saturating_add(len_u64(state.bytes.len()))
+    })
+}
+
+/// Drops the worst states until at most [`MAX_FRONTIER`] are left and their bytes together stay
+/// within `max_bytes`. The last remaining state is never dropped (if it alone is over the limit,
+/// that is a limit error elsewhere).
+fn trim_frontier(frontier: &mut Vec<State>, max_bytes: u64) {
+    while frontier.len() > 1
+        && (frontier.len() > MAX_FRONTIER || frontier_bytes(frontier) > max_bytes)
+    {
         let Some(index) = frontier
             .iter()
             .enumerate()
@@ -213,7 +224,7 @@ pub fn detect(
                 score: state.score * sniffed.value(),
                 kept,
             });
-            trim_frontier(&mut frontier);
+            trim_frontier(&mut frontier, limits.max_decoded_bytes);
         }
     }
 
@@ -324,6 +335,60 @@ mod tests {
 
     fn run(input: &[u8], reg: &Registry, opts: &DetectOptions) -> Result<Detection> {
         detect(input, reg, &Limits::default(), opts)
+    }
+
+    fn state(len: usize, score: f32) -> State {
+        State {
+            bytes: vec![0; len],
+            steps: Vec::new(),
+            score,
+            kept: 0,
+        }
+    }
+
+    #[test]
+    fn trim_frontier_keeps_total_bytes_within_the_limit() {
+        let mut frontier = vec![state(40, 0.9), state(40, 0.5), state(40, 0.1)];
+        trim_frontier(&mut frontier, 100);
+        assert_eq!(frontier.len(), 2);
+        assert!(frontier_bytes(&frontier) <= 100);
+        // The lowest score went first.
+        assert!(frontier.iter().all(|s| s.score > 0.2));
+
+        // A single state over the limit is kept (mirrors the old behaviour).
+        let mut single = vec![state(200, 0.5)];
+        trim_frontier(&mut single, 100);
+        assert_eq!(single.len(), 1);
+    }
+
+    #[test]
+    fn a_branching_input_under_a_small_byte_limit_is_still_detected() {
+        // Two layers match the same marker, so every step branches.
+        let reg = registry(
+            vec![FirstByteCodec {
+                id: "c.hash",
+                accepts: b"#",
+                conf: 0.5,
+            }],
+            vec![
+                StripLayer {
+                    id: "l.a",
+                    marker: b'x',
+                    conf: 1.0,
+                },
+                StripLayer {
+                    id: "l.b",
+                    marker: b'x',
+                    conf: 0.9,
+                },
+            ],
+        );
+        let limits = Limits {
+            max_decoded_bytes: 64,
+            ..Limits::default()
+        };
+        let found = detect(b"xxx#", &reg, &limits, &DetectOptions::default()).unwrap();
+        assert_eq!(found.best.recipe.kinds(), ["l.a", "l.a", "l.a", "c.hash"]);
     }
 
     #[test]
