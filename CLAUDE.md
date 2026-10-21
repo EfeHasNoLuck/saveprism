@@ -49,6 +49,9 @@
 - Bağlam %55: yeni dalga açma, `devret`. %60'ı geçme. %75+: yalnız HANDOFF. Dalga/özellik bitince devretmek en ucuzudur.
 - 5 saatlik kota %85: yeni dalga yok, HANDOFF. Kancanın eklediği "ANA OTURUM BAGLAMI" uyarısı bir emirdir.
 - HANDOFF her seferinde yeni dosya: `handoff/HANDOFF-YYYYMMDD-N.md`; NOW.md de güncellenir. Konu değişince `/clear`; `/compact` devir değildir.
+- **Yetki (kullanıcı, 2026-10-21):** "Context aşıldığında … bunu sen de yapabilirsin yetki veriyorum. Handoff'tan devam edersin." → devirden
+  sonra devamı CEO kendisi başlatır (yeni oturum; kota doluysa sıfırlanma saatine tek seferlik zamanlanmış görev). Kullanıcıdan mesaj beklemez.
+  Bağlam ve kota `mcp__ccd_session_mgmt__get_usage` ile ölçülür.
 
 ## Token
 - Ajana yalnız kart dosyası (`Kartın: .fabrika/gorevler/<ID>.md`). Mimariden yalnız ilgili bölüm. Rapor ≤10 satır, uzun çıktı dosyaya.

@@ -154,7 +154,7 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
   - Denetim: yok (küçük iş) · Kanıt: CEO `git diff` → yalnız `on.push` ve `on.pull_request` altına 4 satırlık `paths-ignore` eklendi,
     işler aynen (2026-10-21) · GitHub'da belge-push denemesi: bekliyor
 
-### D4 — Katmanlar, JSON, koruma, güvenli yazma · KAPI-1: onaylandı 2026-10-21 (M1-8 yedek politikası bekliyor) · Bağımlı: D3 doğrulandı
+### D4 — Katmanlar, JSON, koruma, güvenli yazma · KAPI-1: onaylandı 2026-10-21 (M1-8 yedek politikası: A, kullanıcı 2026-10-21 "A seçeneği ile ilerleyelim") · Bağımlı: D3 doğrulandı
 
 - [x] **M1-3 Katmanlar: Base64, GZip, zlib, LZ-String**
   - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 1/3 (ilk derleme: clippy + test verisi; CEO kararı: aynı motor/effort)
@@ -195,7 +195,7 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
   - Sahip: `crates/saveprism-core/src/io.rs` · `crates/saveprism-core/tests/io.rs` · `.fabrika/raporlar/M1-8.md`
   - Okur: MIMARI §3.5 · AGENTS.md kural 1 · `crates/saveprism-core/src/error.rs`
   - Bağımlı: D3
-  - Kabul: yedek uygulama veri dizininde (`<kök>/<fnv64(yol)>/<zaman>.bak`, son 10) · geçici dosya → `sync_all` → `persist` · doğrulama
+  - Kabul: var olan dosyanın üstüne her yazışta yedek (kapatılamaz); yeni dosyada yedek yok · yedek uygulama veri dizininde (`<kök>/<fnv64(yol)>/<zaman>.bak`; 30 günden eski ve 10 fazlası silinir, en yenisi kalır) · geçici dosya → `sync_all` → `persist` · doğrulama
     başarısızsa yedekten geri alır · `default_backup_root()` Windows / macOS / Linux · testler: yedek oluşuyor, halka 10'da kalıyor,
     doğrulama hatasında orijinal bayt geri geliyor, salt-okunur hedef panik değil hata
   - Doğrulama: CEO `kontrol.sh rust`

@@ -108,8 +108,8 @@ Kurallar:
 
 ### Grup B — Akış
 6. [ ] **M3-6 Kaydet akışı** ⏱45 dk ✅ yedek → yaz → doğrula → "Kaydedildi · yedek alındı · doğrulandı ✓" — *kullanıcı (2026-10-21):
-   varsayılan "Farklı kaydet" (klasörü kişi seçer), istenirse üstüne yazma; yedekler 30 gün sonra silinir. Üstüne yazarken yedeğin
-   zorunlu mu isteğe bağlı mı olacağı karar bekliyor*
+   varsayılan "Farklı kaydet" (klasörü kişi seçer), istenirse üstüne yazma; üstüne yazmada yedek her zaman alınır (karar A); yedekler
+   30 gün sonra silinir, her dosyanın en son yedeği kalır*
 7. [ ] **M3-7 Sürükle-bırak + son dosyalar** ⏱30 dk
 8. [ ] **M3-8 Hex görünümü** ⏱45 dk ✅ bilinmeyen dosya hex + entropi ile açılıyor
 9. [ ] **M3-9 Ham JSON (Monaco, alt ağaç)** ⏱45 dk

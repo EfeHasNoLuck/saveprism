@@ -7,8 +7,8 @@
 **Son kazanım:** M1'in 8/10 işi makine kanıtlı → çekirdek sözleşmesi, katmanlar, biçim koruyan JSON, round-trip koruması, dedektör,
 sınır testleri, altın test (233 test, denetçi + Codex). Kalan: M1-8 güvenli yazma, M1-6 CLI, fuzz koşusu (push).
 
-**Sıradaki tek adım:** [HANDOFF-20261021-2](handoff/HANDOFF-20261021-2.md) adım 1 → kullanıcının yedek kararı ("üstüne yazarken yedek hep mi,
-isteğe bağlı mı") → M1-8 + M1-6 kartları. ⏱ ~90 dk + kullanıcının MV kaydıyla demo
+**Sıradaki tek adım:** [HANDOFF-20261021-3](handoff/HANDOFF-20261021-3.md) adım 1 → M1-8 (yedek politikası A: üstüne yazmada her zaman
+yedek, 30 gün) + M1-6 CLI kartları. ⏱ ~90 dk + kullanıcının MV kaydıyla demo
 
 ---
 
