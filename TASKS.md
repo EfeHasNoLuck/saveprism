@@ -156,18 +156,19 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
 
 ### D4 — Katmanlar, JSON, koruma, güvenli yazma · KAPI-1: onaylandı 2026-10-21 (M1-8 yedek politikası bekliyor) · Bağımlı: D3 doğrulandı
 
-- [ ] **M1-3 Katmanlar: Base64, GZip, zlib, LZ-String**
+- [~] **M1-3 Katmanlar: Base64, GZip, zlib, LZ-String**
   - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 0/3
   - Sahip: `crates/saveprism-codecs/src/layers/**` · `.fabrika/raporlar/M1-3.md`
   - Okur: MIMARI §3.1, §3.3, §3.4 · `crates/saveprism-core/src/{codec,params,limits,error}.rs`
   - Bağımlı: D3
   - Kabul: `encoding.base64` (standart / URL-güvenli, dolgu, satır kırma ve sondaki satır sonu korunur) · `compression.gzip` (başlık alanları
-    korunur; seviye 0–9 denenir, bulunamazsa `exact = false`) · `compression.zlib` (aynı) · `compression.lz-string` (base64 / utf16 / uri;
-    geçersiz UTF-16 → hata) · açma `Limits`'e uyar (sınır aşımı → SP-LAY hatası, panik yok) · her katman parametreleriyle round-trip testi
+    korunur; seviye 0–9 denenir, bulunamazsa `exact = false`) · `compression.zlib` (aynı) · `compression.lz-string` (base64 / uri; utf16 M2;
+    açma kendi sınırlı portumuz çünkü lz-string açması karesel büyüyebilir ve `lz-str` sınır almaz; sıkıştırma `lz-str`) · açma
+    `read_bounded` ile (aşım → `CORE_LIMIT_DECODED`, panik yok) · her katman parametreleriyle round-trip testi
   - Doğrulama: CEO `kontrol.sh rust`
   - Denetim: denetci (dalga) · Kanıt: —
 
-- [ ] **M1-4 Biçim koruyan JSON codec**
+- [~] **M1-4 Biçim koruyan JSON codec**
   - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 0/3
   - Sahip: `crates/saveprism-codecs/src/json/**` · `.fabrika/raporlar/M1-4.md`
   - Okur: MIMARI §3.2–3.4 · ADR-016 madde 2, 5 · `crates/saveprism-core/src/{doc,codec,params,limits,error}.rs`
@@ -179,7 +180,7 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
   - Doğrulama: CEO `kontrol.sh rust`
   - Denetim: denetci (dalga) · Kanıt: —
 
-- [ ] **M1-7 Round-trip koruması + rapor**
+- [~] **M1-7 Round-trip koruması + rapor**
   - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 0/3
   - Sahip: `crates/saveprism-core/src/guard.rs` · `.fabrika/raporlar/M1-7.md`
   - Okur: MIMARI §3.4 · `crates/saveprism-core/src/{pipeline,codec,recipe,error}.rs`
