@@ -4,9 +4,9 @@
 
 **Faz:** M0 — temel kurulum (2026-10-21)
 
-**Son kazanım:** D1 bitti → uygulama iskeleti açılıyor, topluluk dosyaları ve lisans kontrolü hazır (M0-5, M0-9, M0-10).
+**Son kazanım:** M0 demosu hazır → temalı, iki dilli pencere; CI Windows + Linux + macOS'ta yeşil (M0-5…M0-10).
 
-**Sıradaki tek adım:** D2 (tema, TR/EN, CI) koşuyor; bitince kullanıcı `pnpm dev` ile tema ve dil düğmelerini dener. ⏱ ~60 dk
+**Sıradaki tek adım:** M1 (çekirdek + CLI) dalga planı → kullanıcı onayı. Açık küçük işler: tema "Sistem" canlı izleme denemesi (kullanıcı), Geist font kararı. ⏱ planlama ~20 dk
 
 ---
 

@@ -45,9 +45,9 @@ Kurallar:
 5. [x] **M0-5 Monorepo iskeleti** ⏱30 dk ▶ pnpm + cargo workspace dosyaları ✅ `pnpm tauri dev` pencere açıyor — *kanıt: 4/4 kontrol geçti; kullanıcı arayüzü açıp gördü (2026-10-21)*
 
 ### Grup B — İskelet kalitesi
-6. [ ] **M0-6 shadcn/ui + Tailwind v4 + tema token'ları** ⏱30 dk ▶ `pnpm dlx shadcn@latest init` ✅ açık/koyu/sistem düğmesi çalışıyor
-7. [ ] **M0-7 i18n iskeleti (TR/EN)** ⏱20 dk ▶ `locales/tr/common.json` ✅ dil canlı değişiyor
-8. [ ] **M0-8 CI** ⏱40 dk ▶ `.github/workflows/ci.yml` ✅ fmt/clippy/test + typecheck/lint/vitest — Windows, Linux, macOS yeşil
+6. [~] **M0-6 shadcn/ui + Tailwind v4 + tema token'ları** ⏱30 dk ▶ `pnpm dlx shadcn@latest init` ✅ açık/koyu/sistem düğmesi çalışıyor — *3 kip + kalıcılık tarayıcıda doğrulandı; kalan: "Sistem" seçiliyken Windows teması değişince canlı izleme (kullanıcı)*
+7. [x] **M0-7 i18n iskeleti (TR/EN)** ⏱20 dk ▶ `locales/tr/common.json` ✅ dil canlı değişiyor — *kanıt: tarayıcıda TR→EN canlı, kalıcı, `<html lang>`; testler yeşil (2026-10-21)*
+8. [x] **M0-8 CI** ⏱40 dk ▶ `.github/workflows/ci.yml` ✅ fmt/clippy/test + typecheck/lint/vitest — Windows, Linux, macOS yeşil — *kanıt: GitHub CI run 39625162997, 4/4 iş yeşil (2026-10-21)*
 9. [x] **M0-9 Topluluk dosyaları** ⏱30 dk ▶ CONTRIBUTING iskeleti ✅ CONTRIBUTING, CODE_OF_CONDUCT, SECURITY, DISCLAIMER, issue/PR şablonları — *kanıt: CoC resmi 2.1 yapısıyla aynı; iletişim adresi M5 öncesi (2026-10-21)*
 10. [x] **M0-10 cargo-deny lisans politikası** ⏱15 dk ▶ `deny.toml` ✅ GPL bağımlılık eklenince CI kırmızı — *kanıt: cargo deny temiz; geçici GPL crate reddedildi (2026-10-21)*
 

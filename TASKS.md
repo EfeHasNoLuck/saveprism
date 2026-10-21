@@ -80,7 +80,7 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
   - Denetim: denetci (dalga; 1 YUKSEK düzeltildi) · Kanıt: `kontrol.sh hepsi` yeşil (typecheck, lint, 17 test, Rust 3/3) · CEO tarayıcıda:
     Açık seçildi → `saveprism.theme=light`, yenilemeden sonra açık kaldı; "sistem" açılışta OS temasını alıyor. Canlı OS takibi kullanıcıda
 
-- [~] **M0-7 i18n iskeleti (TR/EN)**
+- [x] **M0-7 i18n iskeleti (TR/EN)**
   - Motor: claude/kodcu·haiku · Effort: medium · Deneme: 0/3
   - Sahip: `apps/desktop/src/i18n/**` · `apps/desktop/locales/**` · `apps/desktop/src/App.tsx`
   - Okur: MIMARI §4 madde 5 · `src/main.tsx` · `src/components/ui/dropdown-menu.tsx` (yalnız okur)
@@ -91,7 +91,7 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
   - Denetim: denetci (dalga; 1 YUKSEK düzeltildi) · Kanıt: testler yeşil · CEO tarayıcıda: ilk açılış TR (OS dili), English seçilince metin
     canlı değişti, `<html lang="en">`, yenilemeden sonra EN kaldı
 
-- [~] **M0-8 CI**
+- [x] **M0-8 CI**
   - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 0/3
   - Sahip: `.github/workflows/ci.yml` · `.github/dependabot.yml` · `apps/desktop/eslint.config.js` · `apps/desktop/vitest.config.ts` ·
     `package.json` (yalnız scripts) · `apps/desktop/package.json` (yalnız scripts)
@@ -100,7 +100,8 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
   - Kabul: yerelde `kontrol.sh` typecheck + lint + test çalıştırır, çıkış 0 · CI: Rust fmt/clippy/test Windows + Linux + macOS,
     web typecheck/lint/test · yalnız okuma izinleri · Dependabot (cargo, npm, actions) haftalık
   - Doğrulama: CEO `kontrol.sh hepsi` · CI yeşil: GitHub'da repo varsa (KAPI-1 kararı)
-  - Denetim: denetci (dalga) · Kanıt: yerelde `kontrol.sh` artık typecheck + lint + test koşuyor, hepsi yeşil · CI sonucu: push sonrası
+  - Denetim: denetci (dalga) · Kanıt: yerelde `kontrol.sh` artık typecheck + lint + test koşuyor, hepsi yeşil · GitHub CI run 39625162997:
+    web ✓ · rust ubuntu-24.04 ✓ · rust windows-latest ✓ · rust macos-latest ✓ (2026-10-21, ilk denemede)
 
 ---
 
