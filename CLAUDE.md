@@ -40,6 +40,9 @@
 - CEO: Opus 5.5, effort xhigh (`.claude/settings.local.json`). Alt ajanlar: kodcu (haiku), denetci (sonnet), tarayici (haiku),
   dalga-sefi (sonnet), munazaraci (sonnet); hepsi **medium**.
 - Münazara sentezi xhigh. `max` effort ve alt ajana Fable **yalnız kullanıcı açıkça isterse**.
+- **Yetki (kullanıcı, 2026-10-21):** "sana model ve effort değiştirmen için de yetki veriyorum, bu chat dahil". 3 deneme kuralındaki
+  effort/motor yükseltmesini CEO kendisi seçer ve raporda yazar; ana oturumun model/effort'unu da gerekirse CEO değiştirir.
+  `max` ve Fable yine son çare: yalnız opus·xhigh başarısız olduysa, kullanıcıya bildirerek.
 - Codex (tasarım, ikinci göz) ve agy (angarya, ek kota) için `dis-motor` skill'i.
 
 ## Bağlam ve kota

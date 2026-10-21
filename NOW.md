@@ -4,9 +4,9 @@
 
 **Faz:** M0 — temel kurulum (2026-10-21)
 
-**Son kazanım:** M0-11 bitti → proje adı **SavePrism** (ADR-011), tüm dokümanlar yeniden adlandırıldı. Karşılaştırma: [05-naming.md §6](docs/research/05-naming.md).
+**Son kazanım:** D1 bitti → uygulama iskeleti açılıyor, topluluk dosyaları ve lisans kontrolü hazır (M0-5, M0-9, M0-10).
 
-**Sıradaki tek adım:** D1 dalgası koşuyor (M0-5, M0-9, M0-10) → bitince CEO doğrular, sonra KAPI-2: `pnpm dev` ile pencereyi aç. ⏱ ~45 dk
+**Sıradaki tek adım:** D2 (tema, TR/EN, CI) koşuyor; bitince kullanıcı `pnpm dev` ile tema ve dil düğmelerini dener. ⏱ ~60 dk
 
 ---
 
@@ -16,6 +16,7 @@
 2. ✅ **Dil:** sohbet TR, repo EN ([ADR-008](docs/architecture/kararlar.md)) — çeviri M0-12
 3. ✅ **RPGSaveEditor:** muhtaç değiliz ama iş birliğine açığız; v0.1 sonrası not + ortak fixture/format havuzu önerisi ([ADR-010](docs/architecture/kararlar.md)) — M5-6
 4. ✅ **Çekirdek dili:** Rust ([ADR-002](docs/architecture/kararlar.md))
+5. ✅ **CI:** private repo [huseyincancalti/saveprism](https://github.com/huseyincancalti/saveprism) (2026-10-21). Actions dakikası biterse B: yerel `kontrol.sh`, git yerelde sürer, push sonraki ay.
 
 > Not: Rust PATH'e eklendi ama açık uygulamalar eski PATH'i görür. Claude uygulamasını/terminali yeniden başlatınca `kontrol.sh` cargo'yu bulur.
 
@@ -36,6 +37,8 @@
 ---
 
 ## Park alanı (şimdi değil)
+
+- **Oyun vitrini** ("Hangi oyunda kullandın?" + çalışan oyunlar listesi, 18+ sansürlü) — fizibilite araştırması koşuyor → `docs/research/06-game-showcase-feasibility.md`, sonra ADR
 
 - Web (WASM) sürümü
 - MCP sunucusu

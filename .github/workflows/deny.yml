@@ -1,0 +1,44 @@
+# cargo-deny kapısı: GPL-ailesi lisans veya bilinen güvenlik açığı varsa kontrol kırmızı olur.
+# Kaynak: AGENTS.md kural 5, ADR-006, QUALITY.md §4. Politika: deny.toml.
+name: cargo-deny
+
+on:
+  push:
+    paths:
+      - "**/Cargo.toml"
+      - "Cargo.lock"
+      - "deny.toml"
+      - ".github/workflows/deny.yml"
+  pull_request:
+    paths:
+      - "**/Cargo.toml"
+      - "Cargo.lock"
+      - "deny.toml"
+      - ".github/workflows/deny.yml"
+  # Yeni güvenlik bildirimleri kod değişmeden de yakalansın diye haftalık çalışır (Pazartesi 06:00 UTC).
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  cargo-deny:
+    name: cargo-deny check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Run cargo-deny
+        uses: EmbarkStudios/cargo-deny-action@v2
+        with:
+          command: check

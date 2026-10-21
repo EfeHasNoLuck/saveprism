@@ -20,12 +20,12 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
 
 ### D1 — İskelet + bağımsız dosyalar · KAPI-1: onaylandı 2026-10-21
 
-- [~] **A1 Üreteç + kurulum** (adım 1 bitti) (CEO, Bash)
+- [x] **A1 Üreteç + kurulum** (CEO, Bash) — `pnpm install` (44 paket) ve `pnpm build` geçti; Cargo.lock rust-version 1.99 ile üretildi
   - Sahip: `apps/desktop/**` (yalnız ilk üretim, M0-5'ten önce) · `pnpm-lock.yaml` · `Cargo.lock`
   - Adımlar: 1) `apps/` içinde `pnpm create tauri-app` (react-ts, pnpm) → şablon demo dosyalarını sil · 2) M0-5 bitince
     `pnpm install` → `pnpm build` → `bash .claude/araclar/kontrol.sh`
 
-- [~] **M0-5 Monorepo iskeleti + D2 sözleşmesi**
+- [x] **M0-5 Monorepo iskeleti + D2 sözleşmesi**
   - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 0/3
   - Sahip: `Cargo.toml` · `package.json` · `pnpm-workspace.yaml` · `rust-toolchain.toml` · `clippy.toml` ·
     `apps/desktop/{package.json,index.html,vite.config.ts,tsconfig*.json}` · `apps/desktop/src/{main.tsx,App.tsx,index.css,vite-env.d.ts}` ·
@@ -36,9 +36,10 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
     workspace lint'leri `unwrap`/`expect`/`panic`/`unsafe` yasaklar · Tailwind v4 bağlı · `@/` takma adı çalışır ·
     D2 sözleşmesi: `@/theme` (applyStoredTheme, ThemeProvider, ThemeToggle) ve `@/i18n` (initI18n, LanguageSwitcher) taslakları main/App'e bağlı
   - Doğrulama: CEO `kontrol.sh hepsi` · Sen `pnpm tauri dev` → pencere açılıyor (KAPI-2)
-  - Denetim: denetci (dalga) · Kanıt: —
+  - Denetim: denetci (dalga) · Kanıt: `kontrol.sh hepsi` → 4/4 (fmt, clippy -D warnings, test, typecheck), 2026-10-21 ·
+    düzeltme turu 1: rust-version 1.99, `publish = false`, `devCsp: null` · KAPI-2: kullanıcı "tam dediğin gibi bir şey açıldı" (tarayıcıda)
 
-- [~] **M0-9 Topluluk dosyaları**
+- [x] **M0-9 Topluluk dosyaları**
   - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 0/3
   - Sahip: `CONTRIBUTING.md` · `CODE_OF_CONDUCT.md` · `SECURITY.md` · `DISCLAIMER.md` · `.github/ISSUE_TEMPLATE/**` · `.github/PULL_REQUEST_TEMPLATE.md`
   - Okur: AGENTS.md · docs/RISKS.md §3 · MIMARI §6, §8 · QUALITY §2, §4 · `.claude/skills/no-ai-slop/SKILL.md`
@@ -46,9 +47,10 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
   - Kabul: 4 belge + 3 issue formu (hata, özellik, yeni format/oyun) + PR şablonu · EN, no-ai-slop · temiz oda, fixture izni ve kapsam dışı
     listesi yazılı · iletişim adresi yer tutucu (`TODO(maintainer)`, karar M5 öncesi sende)
   - Doğrulama: CEO okur · Sen 5 dk göz at (KAPI-2)
-  - Denetim: denetci (dalga) · Kanıt: —
+  - Denetim: denetci (dalga) · Kanıt: CoC yapısı resmi Contributor Covenant 2.1 ile aynı (7 bölüm, 4 yaptırım seviyesi, atıf) ·
+    düzeltme turu 1: repo adresi, zip notu · kullanıcı göz atması isteğe bağlı (public öncesi)
 
-- [~] **M0-10 cargo-deny lisans politikası**
+- [x] **M0-10 cargo-deny lisans politikası**
   - Motor: claude/kodcu·haiku · Effort: medium · Deneme: 0/3
   - Sahip: `deny.toml` · `.github/workflows/deny.yml`
   - Okur: AGENTS.md kural 5 · kararlar.md ADR-006
@@ -56,7 +58,8 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
   - Kabul: izinli lisans listesi (MIT, Apache-2.0, BSD-2/3, ISC, Zlib, Unicode-3.0, MPL-2.0, …); GPL/AGPL/LGPL/SSPL reddedilir ·
     bilinen güvenlik açığı = hata · bilinmeyen kayıt/git kaynağı = hata
   - Doğrulama: CEO `cargo deny check` → 0 · geçici, GPL lisanslı yerel bir crate eklenince → hata (sonra geri alınır)
-  - Denetim: denetci (dalga) · Kanıt: —
+  - Denetim: denetci (dalga) · Kanıt: `cargo deny check` → advisories ok, bans ok, licenses ok, sources ok · geçici `GPL-3.0-only`
+    crate → `error[rejected]` (geri alındı), 2026-10-21
 
 ### D2 — Tema, dil, CI · KAPI-1: onaylandı 2026-10-21 · Bağımlı: D1 doğrulandı
 

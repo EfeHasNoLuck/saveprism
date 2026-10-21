@@ -42,14 +42,14 @@ Kurallar:
 2. [x] **M0-2 Skill + rea + fabrika kurulumu** ⏱30 dk ▶ kurulum talimatı ✅ 6 skill proje kapsamında, fabrika kancaları testten geçti, rea MCP kayıtlı — *kanıt: koruma.sh 18/18, status line + bağlam uyarısı çalıştı, `claude mcp get rea` → Connected (2026-10-21)*
 3. [x] **M0-3 Risk kaydı + kalite stratejisi + kod haritası** ⏱45 dk ✅ [RISKS.md](RISKS.md), [QUALITY.md](architecture/QUALITY.md), [MAP.md](MAP.md) — *iş birliği notu M5-6'ya taşındı (ADR-010)*
 4. [x] **M0-4 Rust araç zinciri** ⏱20 dk ▶ `winget install Rustlang.Rustup` ✅ `cargo --version` çalışıyor; MSVC Build Tools ve WebView2 doğrulandı — *kanıt: rustc/cargo 1.99.1, rustfmt 1.10.0, clippy 0.1.99; VS 2022 + 2026 MSVC; WebView2 155; `cargo run` → "Hello, world!" (2026-10-21)*
-5. [ ] **M0-5 Monorepo iskeleti** ⏱30 dk ▶ pnpm + cargo workspace dosyaları ✅ `pnpm tauri dev` pencere açıyor
+5. [x] **M0-5 Monorepo iskeleti** ⏱30 dk ▶ pnpm + cargo workspace dosyaları ✅ `pnpm tauri dev` pencere açıyor — *kanıt: 4/4 kontrol geçti; kullanıcı arayüzü açıp gördü (2026-10-21)*
 
 ### Grup B — İskelet kalitesi
 6. [ ] **M0-6 shadcn/ui + Tailwind v4 + tema token'ları** ⏱30 dk ▶ `pnpm dlx shadcn@latest init` ✅ açık/koyu/sistem düğmesi çalışıyor
 7. [ ] **M0-7 i18n iskeleti (TR/EN)** ⏱20 dk ▶ `locales/tr/common.json` ✅ dil canlı değişiyor
 8. [ ] **M0-8 CI** ⏱40 dk ▶ `.github/workflows/ci.yml` ✅ fmt/clippy/test + typecheck/lint/vitest — Windows, Linux, macOS yeşil
-9. [ ] **M0-9 Topluluk dosyaları** ⏱30 dk ▶ CONTRIBUTING iskeleti ✅ CONTRIBUTING, CODE_OF_CONDUCT, SECURITY, DISCLAIMER, issue/PR şablonları
-10. [ ] **M0-10 cargo-deny lisans politikası** ⏱15 dk ▶ `deny.toml` ✅ GPL bağımlılık eklenince CI kırmızı
+9. [x] **M0-9 Topluluk dosyaları** ⏱30 dk ▶ CONTRIBUTING iskeleti ✅ CONTRIBUTING, CODE_OF_CONDUCT, SECURITY, DISCLAIMER, issue/PR şablonları — *kanıt: CoC resmi 2.1 yapısıyla aynı; iletişim adresi M5 öncesi (2026-10-21)*
+10. [x] **M0-10 cargo-deny lisans politikası** ⏱15 dk ▶ `deny.toml` ✅ GPL bağımlılık eklenince CI kırmızı — *kanıt: cargo deny temiz; geçici GPL crate reddedildi (2026-10-21)*
 
 ### Grup C — Ad ve dil
 11. [x] **M0-11 Yeniden adlandırma → SavePrism** ⏱20 dk ✅ dokümanlar, CLAUDE/AGENTS, skill metinleri ve plan yeni adı kullanıyor; crate adları `saveprism-*`, hata kodları `SP-*` — *kanıt: `git grep -i saveprism` yalnız ad geçmişi dosyalarında ve kilitli kanca yorumunda (2026-10-21)*

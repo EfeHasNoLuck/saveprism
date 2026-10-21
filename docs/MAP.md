@@ -19,16 +19,19 @@
 | Crash with error code `SP-…` | Error prefix table (§3) | `QUALITY.md` §1 |
 | Auto-update fails | `tauri.conf.json` updater section | `.github/workflows/release.yml` |
 
-## 2. Code (planned layout — becomes real in M0-5 / M1)
+## 2. Code (✅ = exists, others planned)
 
 | Area | Path | Owns |
 |---|---|---|
-| Core model | `crates/saveprism-core/` | SaveDoc, Codec trait, Recipe, Detector, patching, round-trip guard, safe write |
+| Workspace ✅ | `Cargo.toml` · `package.json` · `pnpm-workspace.yaml` · `clippy.toml` · `rust-toolchain.toml` | Members, shared lints (no unwrap/expect/panic/unsafe), release profile, root scripts |
+| License policy ✅ | `deny.toml` · `.github/workflows/deny.yml` | Allowed licenses, advisories, sources |
+| Core model ✅ (stub) | `crates/saveprism-core/` | SaveDoc, Codec trait, Recipe, Detector, patching, round-trip guard, safe write (M1) |
 | Codecs | `crates/saveprism-codecs/` | json, layers, es3, gvas, rpgmaker, godot, playerprefs, renpy… |
 | Keys | `crates/saveprism-keys/` | Key vault, key finder |
 | CLI | `crates/saveprism-cli/` | `saveprism` command |
-| Desktop host | `apps/desktop/src-tauri/` | Tauri commands → core |
-| Desktop UI | `apps/desktop/src/` | React UI |
+| Desktop host ✅ | `apps/desktop/src-tauri/` | Tauri commands → core (`core_version`), window, CSP, capabilities |
+| Desktop UI ✅ | `apps/desktop/src/` | React UI: `App.tsx` shell · `theme/` (M0-6) · `i18n/` (M0-7) |
+| Community ✅ | `CONTRIBUTING.md` · `SECURITY.md` · `DISCLAIMER.md` · `CODE_OF_CONDUCT.md` · `.github/ISSUE_TEMPLATE/` | Contributor rules, reporting, scope |
 | Profiles | `profiles/` | Game profiles (TOML) |
 | Fixtures | `fixtures/samples/` (locked) · `fixtures/expected/` | Golden corpus |
 
@@ -39,7 +42,7 @@
 | `SP-CORE` · `SP-DET` · `SP-IO` | `saveprism-core` (model · detector · safe write) |
 | `SP-LAY` · `SP-JSON` · `SP-ES3` · `SP-GVAS` · `SP-RPGM` · `SP-GODOT` · `SP-PREFS` · `SP-RENPY` | `saveprism-codecs` |
 | `SP-KEYS` | `saveprism-keys` |
-| `SP-APP` · `SP-UI` | desktop host · UI |
+| `SP-APP` · `SP-UI` | desktop host · UI (`SP-APP-001`: app failed to start → `apps/desktop/src-tauri/src/lib.rs`) |
 
 ## 4. Docs — which file answers what
 

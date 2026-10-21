@@ -1,0 +1,14 @@
+{
+  "name": "saveprism",
+  "private": true,
+  "packageManager": "pnpm@11.19.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @saveprism/desktop tauri dev",
+    "build": "pnpm --filter @saveprism/desktop tauri build",
+    "tauri": "pnpm --filter @saveprism/desktop tauri",
+    "typecheck": "pnpm --filter @saveprism/desktop typecheck"
+  }
+}

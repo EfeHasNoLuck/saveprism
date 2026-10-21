@@ -1,0 +1,65 @@
+name: Game or format support
+description: Ask for support of a game or save format.
+labels: ["game-support"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        SavePrism supports single-player games you own. Online games, anti-cheat and DRM are out of scope.
+        Attach only saves you created yourself, with personal data removed.
+  - type: input
+    id: game
+    attributes:
+      label: Game name
+    validations:
+      required: true
+  - type: input
+    id: store
+    attributes:
+      label: Store link
+      placeholder: "https://store.steampowered.com/app/..."
+    validations:
+      required: true
+  - type: dropdown
+    id: engine
+    attributes:
+      label: Engine
+      options:
+        - Unity
+        - Unreal Engine
+        - Godot
+        - RPG Maker
+        - Ren'Py
+        - Other
+        - Don't know
+    validations:
+      required: true
+  - type: input
+    id: path
+    attributes:
+      label: Save file path
+      description: Remove your user name from the path.
+      placeholder: "%USERPROFILE%\\AppData\\LocalLow\\Studio\\Game\\"
+    validations:
+      required: true
+  - type: input
+    id: extension
+    attributes:
+      label: Save file extension
+      placeholder: ".sav"
+    validations:
+      required: true
+  - type: textarea
+    id: sample
+    attributes:
+      label: Sample save
+      description: GitHub does not accept extensions like .sav. Zip the save and attach the .zip, or paste a link. Only a save you created yourself.
+    validations:
+      required: false
+  - type: checkboxes
+    id: consent
+    attributes:
+      label: Sample consent
+      options:
+        - label: I created this save and agree to share it under MIT
+          required: true
