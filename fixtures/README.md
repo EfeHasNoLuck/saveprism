@@ -36,6 +36,7 @@ the expected value and the found value.
 |---|---|---|
 | `synthetic/json/` | hand-written | Plain JSON in common serializer styles. `tabs.json` mixes tab indentation with a one-line inner array on purpose; its expected verdict is `semantic`. |
 | `synthetic/rpgmaker-mv/` | [lz-string](https://github.com/pieroxy/lz-string) 1.5.0 (MIT), Node.js | `LZString.compressToBase64(JSON.stringify(data))`, the call RPG Maker MV uses for `.rpgsave` files. Data is invented (no real player data). Each file was checked with the library's own `decompressFromBase64` before writing (2026-10-22). These files come from the original JavaScript library, not from our code, so they are an independent check of the LZ-String layer. |
+| `synthetic/rpgmaker-mz/` | Python 3.11 `zlib`, [`tools/make_mz.py`](tools/make_mz.py) | What RPG Maker MZ does for `.rmmzsave`: `pako.deflate(JSON.stringify(data), {to: "string", level: 1})`, then NW.js writes that one-char-per-byte string as UTF-8. pako is a port of zlib, so Python's zlib at level 1 stands in for it. Data is invented (2026-10-22). Our zlib encoder (miniz_oxide) may not repeat zlib's bytes exactly, so the expected verdict can be `semantic`. |
 
 ## Personal data
 

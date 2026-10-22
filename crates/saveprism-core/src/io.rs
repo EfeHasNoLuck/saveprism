@@ -270,8 +270,19 @@ fn make_backup(target: &std::path::Path, opts: &WriteOptions) -> Result<PathBuf>
     ))
 }
 
+/// Sets the permission bits of `temp` to those of `target`. Does nothing if `target` does not exist yet.
+#[cfg(unix)]
+fn copy_existing_mode(target: &std::path::Path, temp: &std::path::Path) -> std::io::Result<()> {
+    match fs::metadata(target) {
+        Ok(meta) => fs::set_permissions(temp, meta.permissions()),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        Err(error) => Err(error),
+    }
+}
+
 /// Writes `bytes` to a temporary file next to `target`, syncs it and atomically replaces `target`.
-/// The temporary file never outlives a failure.
+/// The temporary file never outlives a failure. On Unix the permission bits of an existing target
+/// are copied to the new file; the owner and symbolic links of the target are not preserved.
 fn atomic_write(target: &std::path::Path, dir: &std::path::Path, bytes: &[u8]) -> Result<()> {
     let temp_error = |message: &str, source: std::io::Error| {
         Error::new(
@@ -293,6 +304,13 @@ fn atomic_write(target: &std::path::Path, dir: &std::path::Path, bytes: &[u8]) -
     temp.as_file()
         .sync_all()
         .map_err(|error| temp_error("cannot sync the temporary file", error))?;
+    #[cfg(unix)]
+    copy_existing_mode(target, temp.path()).map_err(|error| {
+        temp_error(
+            "cannot copy the permissions of the target to the temporary file",
+            error,
+        )
+    })?;
     temp.persist(target).map_err(|failed| {
         // `failed.file` is dropped here, which deletes the temporary file.
         Error::new(

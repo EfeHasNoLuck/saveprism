@@ -45,6 +45,8 @@ M2-1 RPG Maker MV/MZ, M2-2 ES3 düz, M2-5 GVAS, FIX-1. ⏱ D6 ~2–3 saat, D7 ~2
 - **Düzenleme ekranı** — kullanıcı (2026-10-22): A/B mockup'ını "hiç beğenmedim ya daha kolay anlaşılabilir bişi lazım bize
   https://www.saveeditonline.com/ çok kolay anlaşılıyordu" → M3-2'de o sadelikte yeni tasarım (yalnız UX'ten ders; kod/metin kopyalanmaz)
 
+- **GVAS fuzz hedefi** (D6 denetimi): uesave bozuk uzunluk alanıyla büyük bellek isteyebilir; `catch_unwind` bunu yakalamaz. Fuzz hedefi
+  ekleyip gerekirse girdi öncesi kaba boy kontrolü.
 - Web (WASM) sürümü
 - MCP sunucusu
 - Kod imzalama: SignPath başvurusu, Apple notarization

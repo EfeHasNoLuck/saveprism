@@ -276,7 +276,7 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
 
 ### D6 — RPG Maker, ES3 düz, GVAS, açık bulgular · KAPI-1: onaylandı 2026-10-22 · Bağımlı: D5 doğrulandı
 
-- [ ] **M2-1 RPG Maker MV/MZ**
+- [~] **M2-1 RPG Maker MV/MZ**
   - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 0/3
   - Sahip: `crates/saveprism-codecs/src/rpgmaker/**` · `crates/saveprism-codecs/src/lib.rs` · `fixtures/expected/rpgmaker-mz/**` ·
     `.fabrika/raporlar/M2-1.md` (`fixtures/synthetic/rpgmaker-mz/**` ikili; CEO Python betiğiyle üretir)
@@ -288,9 +288,12 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
     `Actors.json`/`Items.json`'dan adlar okuyan `NameDictionary` (yalnız okuma; arayüz M3) · `lib.rs` rpgmaker + es3 + gvas `register`
     çağrılarını ekler · sentetik MZ örneği CEO'nun Python betiğiyle üretilir, beklenti `SAVEPRISM_BLESS=1`
   - Doğrulama: CEO `kontrol.sh rust` · MV 4 örnek + MZ örnekleri decode → encode birebir
-  - Denetim: dalga denetçisi
+  - Denetim: dalga denetçisi (KRITIK/YUKSEK yok; ORTA: `format.rpgmaker-json` hiç seçilmiyordu → düzeltme turu, sniff işaretle 0.95) ·
+    Kanıt: `kontrol.sh rust` 3/3, 284 test (2026-10-22) · altın: MV `file1` → `format.rpgmaker-json` exact; MZ (Python zlib ile bağımsız
+    üretilmiş 4 dosya) `encoding.js-binary-string > compression.zlib > …` semantic; CLI decode → encode sonrası iç JSON birebir (zlib
+    baytları miniz_oxide'dan farklı) · KAPI-2 bekliyor (kullanıcının oyunu yok)
 
-- [ ] **M2-2 ES3 düz**
+- [~] **M2-2 ES3 düz**
   - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 0/3
   - Sahip: `crates/saveprism-codecs/src/es3/**` · `fixtures/synthetic/es3/**` · `fixtures/expected/es3/**` · `.fabrika/raporlar/M2-2.md`
   - Okur: research/02 "Unity — Easy Save 3" · MIMARI §3.2, §3.3 · `crates/saveprism-codecs/src/json/mod.rs` · `crates/saveprism-core/src/doc.rs`
@@ -298,9 +301,10 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
   - Kabul: `format.es3` = JSON codec üzerine ince kat; `__type` değeri kardeş düğümlerin ipucuna `ES3:<tip>` olarak geçer, kendisi korunur ·
     bayt-bayt round-trip · sniff: `{` + `__type` ya da `.es3` uzantısı · sentetik 2 düz örnek (metin, ajan yazar)
   - Doğrulama: CEO `kontrol.sh rust`
-  - Denetim: dalga denetçisi
+  - Denetim: dalga denetçisi (KRITIK/YUKSEK yok) · Kanıt: `kontrol.sh rust` 3/3 (2026-10-22) · altın: `settings.es3`, `progress.es3` →
+    `format.es3` exact · CLI `decode` henüz yalnız `format.json` kabul ediyor → M2-4'e eklendi · KAPI-2 bekliyor
 
-- [ ] **M2-5 Unreal GVAS (uesave)**
+- [~] **M2-5 Unreal GVAS (uesave)**
   - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 0/3
   - Sahip: `crates/saveprism-codecs/src/gvas/**` · `crates/saveprism-codecs/tests/gvas.rs` · `.fabrika/raporlar/M2-5.md`
   - Okur: research/02 "Unreal — GVAS" · MIMARI §3.2–3.4 · `uesave` 0.7 genel API'si (docs.rs)
@@ -310,9 +314,12 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
     round-trip birebir değilse koruma "farklı" der (düzenleme kapalı) ·
     testler uesave ile kurulan küçük kayıtlarla (ikili dosya yazılmaz) · sınırlar: girdi boyutu ve düğüm sayısı `Limits`'ten
   - Doğrulama: CEO `kontrol.sh rust`
-  - Denetim: dalga denetçisi
+  - Denetim: dalga denetçisi (KRITIK/YUKSEK yok; ORTA `GVAS:<tip>` ipucu yok: çekirdekte ipucu yazma API'si gerekir, bilinçli bırakıldı;
+    DUSUK: uesave uzunluk alanıyla büyük bellek isteyebilir, `catch_unwind` OOM'u yakalamaz → GVAS fuzz hedefi Park'ta) · Kanıt:
+    `kontrol.sh rust` 3/3, `tests/gvas.rs` 7 test (2026-10-22) · **gerçek oyun kaydı:** uesave paketindeki Deep Rock Galactic
+    `drg-save-test.sav` (565 992 bayt, repoya konmadı) → `saveprism inspect` → `format.gvas`, round trip `exact (editable: yes)` · KAPI-2 bekliyor
 
-- [ ] **FIX-1 Açık ORTA bulgular (D5b)**
+- [~] **FIX-1 Açık ORTA bulgular (D5b)**
   - Motor: claude/kodcu·haiku · Effort: medium · Deneme: 0/3
   - Sahip: `crates/saveprism-cli/src/lib.rs` · `crates/saveprism-core/src/io.rs` · `crates/saveprism-core/tests/io.rs` · `.fabrika/raporlar/FIX-1.md`
   - Okur: `.fabrika/raporlar/D5b-denetim.md` (iki ORTA satırı)
@@ -320,13 +327,15 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
   - Kabul: CLI doğrulama kapanı yeni hedefte `SP-IO-004` yerine doğru kodu döndürür · Unix'te değiştirilen dosyanın izinleri korunur
     (`#[cfg(unix)]`, Windows'ta değişiklik yok) · ilgili testler
   - Doğrulama: CEO `kontrol.sh rust`
-  - Denetim: dalga denetçisi
+  - Denetim: dalga denetçisi (karşılandı: kapan `CORE_EDIT_FAILED`, `cfg(unix)` izin kopyası) · Kanıt: `kontrol.sh rust` 3/3 Windows'ta
+    (2026-10-22); unix testi Linux/macOS CI'da koşacak (sonraki push)
 
 ### D7 — ES3 şifre, parola deneme, Palworld, hız · KAPI-1: onaylandı 2026-10-22 · Bağımlı: D6 doğrulandı
 
 - [ ] **M2-3 ES3 AES + GZip**
   - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 0/3
-  - Sahip: `crates/saveprism-codecs/src/es3/**` · `fixtures/synthetic/es3-aes/**` · `fixtures/expected/es3-aes/**` · `.fabrika/raporlar/M2-3.md`
+  - Sahip: `crates/saveprism-codecs/src/es3/**` · `crates/saveprism-codecs/tests/es3_aes.rs` · `.fabrika/raporlar/M2-3.md`
+    (örnekler `fixtures/keyed/es3-aes/`, CEO üretti; altın test bu klasörü taramaz çünkü parola ister)
   - Okur: research/02 "Unity — Easy Save 3" · MIMARI §3.3, §3.9
   - Bağımlı: M2-2
   - Kabul: katman `crypto.es3-aes`: `tuz[16] ‖ AES-128-CBC(PBKDF2-HMAC-SHA1(parola, tuz, 100, 16), IV = tuz, PKCS7)`; parola
@@ -341,7 +350,8 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
   - Okur: MIMARI §3.9 · M2-3'ün katman API'si
   - Bağımlı: M2-3
   - Kabul: `saveprism keys try <dosya> --candidates <liste.txt>` her adayı dener, tutanı yazar; hiçbiri tutmazsa çıkış 1 · aday sayısı
-    sınırlı · test: 3 adaydan doğrusu bulunuyor
+    sınırlı · test: 3 adaydan doğrusu bulunuyor · `decode`/`encode` JSON ağaçlı yeni codec'leri kabul eder (D6 doğrulamasında görüldü:
+    yalnız `format.json` geçiyordu)
   - Doğrulama: CEO `kontrol.sh rust`
   - Denetim: dalga denetçisi
 

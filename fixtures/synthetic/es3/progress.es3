@@ -1,0 +1,1 @@
+{"checkpoint":{"__type":"UnityEngine.Vector3,UnityEngine.CoreModule","value":{"x":1.5,"y":2.0,"z":-3.25}},"unlockedLevels":{"__type":"System.Collections.Generic.List`1[[System.Int32]]","value":[1,2,3]},"coins":{"__type":"System.Int32","value":250}}

@@ -5,13 +5,19 @@
 
 use saveprism_core::Registry;
 
+pub mod es3;
+pub mod gvas;
 pub mod json;
 pub mod layers;
+pub mod rpgmaker;
 
 /// Registers every layer and codec of this crate into `reg`.
 pub fn register_all(reg: &mut Registry) {
     layers::register(reg);
     json::register(reg);
+    rpgmaker::register(reg);
+    es3::register(reg);
+    gvas::register(reg);
 }
 
 #[cfg(test)]

@@ -41,7 +41,7 @@
 | Prefix | Crate / area |
 |---|---|
 | `SP-CORE` · `SP-DET` · `SP-IO` | `saveprism-core` (model · detector · safe write) |
-| `SP-LAY` · `SP-JSON` · `SP-ES3` · `SP-GVAS` · `SP-RPGM` · `SP-GODOT` · `SP-PREFS` · `SP-RENPY` | `saveprism-codecs` |
+| `SP-LAY` · `SP-JSON` · `SP-ES3` · `SP-GVAS` · `SP-RPG` · `SP-PAL` · `SP-GODOT` · `SP-PREFS` · `SP-RENPY` | `saveprism-codecs` (`src/<format>/mod.rs`: `rpgmaker`, `es3`, `gvas`, `palworld`) |
 | `SP-KEYS` | `saveprism-keys` |
 | `SP-APP` · `SP-UI` | desktop host · UI (`SP-APP-001`: app failed to start → `apps/desktop/src-tauri/src/lib.rs`) |
 

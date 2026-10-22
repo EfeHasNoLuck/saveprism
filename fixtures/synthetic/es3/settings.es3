@@ -1,0 +1,18 @@
+{
+  "volume": {
+    "__type": "float",
+    "value": 0.75
+  },
+  "level": {
+    "__type": "int",
+    "value": 12
+  },
+  "fullscreen": {
+    "__type": "bool",
+    "value": true
+  },
+  "playerName": {
+    "__type": "string",
+    "value": "Ada"
+  }
+}

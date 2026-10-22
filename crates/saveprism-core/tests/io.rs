@@ -212,3 +212,21 @@ fn backup_root_next_to_the_save_is_refused() {
     assert_eq!(error.code(), codes::IO_NO_BACKUP_ROOT);
     assert_eq!(fs::read(&target).unwrap(), b"data");
 }
+
+#[cfg(unix)]
+#[test]
+fn existing_file_keeps_its_unix_permissions() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let (_tmp, saves, backups) = setup();
+    let target = saves.join("slot1.sav");
+    fs::write(&target, b"old bytes").unwrap();
+    fs::set_permissions(&target, fs::Permissions::from_mode(0o644)).unwrap();
+    let opts = WriteOptions::new(backups);
+
+    safe_write(&target, b"new bytes", &opts, &ok).unwrap();
+
+    assert_eq!(fs::read(&target).unwrap(), b"new bytes");
+    let mode = fs::metadata(&target).unwrap().permissions().mode() & 0o777;
+    assert_eq!(mode, 0o644);
+}

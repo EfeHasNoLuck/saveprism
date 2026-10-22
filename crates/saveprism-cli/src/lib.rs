@@ -330,8 +330,9 @@ fn verify_equal(expected: &[u8]) -> impl Fn(&[u8]) -> Result<()> + '_ {
         if written == expected {
             Ok(())
         } else {
+            // Not IO_VERIFY_RESTORED: `safe_write` sets that code only after it restored a backup.
             Err(Error::new(
-                codes::IO_VERIFY_RESTORED,
+                codes::CORE_EDIT_FAILED,
                 "the written file differs from the bytes that were meant to be written",
             ))
         }
@@ -420,8 +421,9 @@ fn encode(
         if again.doc.tree_eq(&doc) {
             Ok(())
         } else {
+            // Not IO_VERIFY_RESTORED: `safe_write` sets that code only after it restored a backup.
             Err(Error::new(
-                codes::IO_VERIFY_RESTORED,
+                codes::CORE_EDIT_FAILED,
                 "the written file decodes to a different document",
             ))
         }
@@ -440,4 +442,19 @@ fn encode(
             report.bytes_written
         ),
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn decode_verification_mismatch_uses_a_core_code() {
+        let verify = verify_equal(b"expected");
+        assert!(verify(b"expected").is_ok());
+        assert_eq!(
+            verify(b"other").err().map(|error| error.code()),
+            Some(codes::CORE_EDIT_FAILED)
+        );
+    }
 }
