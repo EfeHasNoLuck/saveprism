@@ -43,9 +43,10 @@ describe("engine helpers", () => {
   });
 
   it("names the .txt export after the save's stem", () => {
-    expect(exportFileName("file1.rmmzsave")).toBe("file1.json.txt");
-    expect(exportFileName("slot.v2.es3")).toBe("slot.v2.json.txt");
-    expect(exportFileName("SaveGame")).toBe("SaveGame.json.txt");
-    expect(exportFileName(".hidden")).toBe(".hidden.json.txt");
+    expect(exportFileName("file1.rmmzsave")).toBe("file1-export.json");
+    expect(exportFileName("slot.v2.es3")).toBe("slot.v2-export.json");
+    expect(exportFileName("SaveGame")).toBe("SaveGame-export.json");
+    expect(exportFileName(".hidden")).toBe(".hidden-export.json");
+    expect(exportFileName("compact.json")).toBe("compact-export.json");
   });
 });

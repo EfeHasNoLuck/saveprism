@@ -37,8 +37,8 @@
     "saveTitle": "Save as",
     "saveFiles": "Save files",
     "allFiles": "All files",
-    "exportTitle": "Export JSON as text",
-    "textFiles": "Text"
+    "exportTitle": "Export JSON",
+    "jsonFiles": "JSON (*.json)"
   },
   "start": {
     "dropActive": "Release to open",
@@ -61,7 +61,7 @@
     "changesTitle": "Pending changes",
     "undoAll": "Undo all",
     "openJson": "Open JSON",
-    "openJsonInfo": "Shows the whole file as read-only JSON text, as SavePrism understands it.",
+    "openJsonInfo": "Shows the whole file as JSON text. You can change values there and apply them.",
     "saveAs": "Save as…",
     "saveOverwrite": "Overwrite current file",
     "overwriteItem": "Overwrite current file (backup is made first)",
@@ -82,8 +82,8 @@
     "closeDiscard": "Close without saving"
   },
   "json": {
-    "title": "Document as JSON",
-    "readOnlyNote": "Read-only view. Editing JSON is not available yet.",
+    "title": "JSON editor",
+    "readOnlyNote": "This file is read-only, so changes to the JSON cannot be applied.",
     "search": "Search in JSON",
     "matches_one": "{{count}} match",
     "matches_other": "{{count}} matches",
@@ -91,7 +91,32 @@
     "next": "Next match",
     "previous": "Previous match",
     "failed": "The JSON view could not be created.",
-    "exportTxt": "Export .txt"
+    "editNote": "Change values, then Apply. Fields, list items and placeholders such as <12 bytes> stay as they are.",
+    "exportJson": "Export .json",
+    "exportApplyFirst": "Apply or undo your edits first. Export saves the applied values.",
+    "editorLabel": "JSON text",
+    "apply": "Apply",
+    "applying": "Applying…",
+    "dirty": "Edited. Apply to use these values.",
+    "notApplied": "Nothing was applied.",
+    "syntaxAt": "Line {{line}}, column {{column}}: {{problem}}",
+    "confirmTitle": "Apply your JSON changes?",
+    "confirmBody": "Your edits in the JSON text are not applied yet.",
+    "keepEditing": "Keep editing",
+    "discard": "Discard",
+    "problem": {
+      "end": "The text ends too early.",
+      "unexpected": "This is not a value. Use a number, text in quotes, true, false or null.",
+      "expectedKey": "Expected a field name in quotes.",
+      "expectedColon": "Expected ':' after the field name.",
+      "expectedCommaOrBrace": "Expected ',' or '}'.",
+      "expectedCommaOrBracket": "Expected ',' or ']'.",
+      "unclosedString": "This text has no closing quote.",
+      "controlChar": "Write line breaks and tabs inside text as \\n and \\t.",
+      "badEscape": "Unknown escape after a backslash.",
+      "badNumber": "This number is not written correctly.",
+      "trailing": "There is more text after the end of the JSON."
+    }
   },
   "password": {
     "title": "This file is encrypted",
@@ -110,12 +135,15 @@
     "saveFailed": "The file could not be saved",
     "verifyFailed": "The saved file did not check out",
     "jsonFailed": "The JSON view could not be created",
-    "exportedTitle": "JSON exported as text",
+    "exportedTitle": "JSON exported",
     "exportFailed": "The JSON could not be exported",
     "closeFailed": "The window could not be closed",
     "discardFailed": "The changes could not be undone",
     "changesFailed": "The list of changes could not be read",
-    "errorDetail": "{{reason}} {{fix}}"
+    "errorDetail": "{{reason}} {{fix}}",
+    "jsonApplied_one": "{{count}} change applied",
+    "jsonApplied_other": "{{count}} changes applied",
+    "jsonNoChanges": "No values changed"
   },
   "bell": {
     "title": "This session",

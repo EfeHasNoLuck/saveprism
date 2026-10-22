@@ -94,6 +94,36 @@ export function formatValue(text: string, format: FormatNumber): string {
   return Number.isSafeInteger(n) ? format(n) : text;
 }
 
+/** Longest text value in an "old → new" line, in characters. */
+export const CHANGE_TEXT_CHARS = 24;
+
+/**
+ * A value as an "old → new" line shows it: whole numbers grouped in the UI language, text quoted
+ * and cut to `maxChars`, anything else (true/false, decimals) as it is.
+ */
+export function changeValue(
+  kind: FieldKindLike,
+  text: string,
+  format: FormatNumber,
+  maxChars = CHANGE_TEXT_CHARS,
+): string {
+  if (kind !== "string") return formatValue(text, format);
+  const chars = Array.from(text);
+  const short = chars.length > maxChars ? `${chars.slice(0, maxChars - 1).join("")}…` : text;
+  return `"${short}"`;
+}
+
+/** "2,500 → 2,601", "false → true", "\"Ann\" → \"Ada\"". */
+export function changeText(
+  kind: FieldKindLike,
+  original: string,
+  value: string,
+  format: FormatNumber,
+  maxChars = CHANGE_TEXT_CHARS,
+): string {
+  return `${changeValue(kind, original, format, maxChars)} → ${changeValue(kind, value, format, maxChars)}`;
+}
+
 export interface HintInput {
   hint: string;
   focused: boolean;
@@ -101,21 +131,27 @@ export interface HintInput {
   always: boolean;
   /** Out of range, not a number, or rejected by the host. */
   invalid: boolean;
+  /** "old → new" of a changed value, or `null`. */
+  change: string | null;
 }
 
 export interface HintLine {
   text: string;
   error: boolean;
+  /** The line is the "old → new" of a changed value. */
+  change: boolean;
 }
 
 /**
- * The line under a field, or `null` when none should show. A changed value is shown by its colour
- * and the undo button (whose tooltip names the old value), not by this line.
+ * The line under a field, or `null` when none should show. An error wins; a focused field shows
+ * its type and limits; a changed field shows "old → new"; Gold shows its type and limits always.
  */
 export function hintLine(i: HintInput): HintLine | null {
-  if (i.invalid) return i.hint ? { text: i.hint, error: true } : null;
-  if (!(i.always || i.focused) || !i.hint) return null;
-  return { text: i.hint, error: false };
+  if (i.invalid) return i.hint ? { text: i.hint, error: true, change: false } : null;
+  if (i.focused && i.hint) return { text: i.hint, error: false, change: false };
+  if (i.change) return { text: i.change, error: false, change: true };
+  if (i.always && i.hint) return { text: i.hint, error: false, change: false };
+  return null;
 }
 
 export interface Searchable {

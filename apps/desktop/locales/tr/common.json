@@ -37,8 +37,8 @@
     "saveTitle": "Farklı kaydet",
     "saveFiles": "Kayıt dosyaları",
     "allFiles": "Tüm dosyalar",
-    "exportTitle": "JSON'u metin olarak dışa aktar",
-    "textFiles": "Metin"
+    "exportTitle": "JSON'u dışa aktar",
+    "jsonFiles": "JSON (*.json)"
   },
   "start": {
     "dropActive": "Açmak için bırak",
@@ -61,7 +61,7 @@
     "changesTitle": "Bekleyen değişiklikler",
     "undoAll": "Tümünü geri al",
     "openJson": "JSON'u aç",
-    "openJsonInfo": "Tüm dosyayı, SavePrism'in anladığı haliyle salt okunur JSON metni olarak gösterir.",
+    "openJsonInfo": "Tüm dosyayı JSON metni olarak gösterir. Değerleri orada değiştirip uygulayabilirsin.",
     "saveAs": "Farklı kaydet…",
     "saveOverwrite": "Geçerli dosyanın üzerine yaz",
     "overwriteItem": "Geçerli dosyanın üzerine yaz (önce yedek alınır)",
@@ -82,8 +82,8 @@
     "closeDiscard": "Kaydetmeden kapat"
   },
   "json": {
-    "title": "Belge JSON olarak",
-    "readOnlyNote": "Salt okunur görünüm. JSON düzenleme henüz yok.",
+    "title": "JSON düzenleyici",
+    "readOnlyNote": "Bu dosya salt okunur, bu yüzden JSON'daki değişiklikler uygulanamaz.",
     "search": "JSON içinde ara",
     "matches_one": "{{count}} eşleşme",
     "matches_other": "{{count}} eşleşme",
@@ -91,7 +91,32 @@
     "next": "Sonraki eşleşme",
     "previous": "Önceki eşleşme",
     "failed": "JSON görünümü oluşturulamadı.",
-    "exportTxt": "Dışa aktar (.txt)"
+    "editNote": "Değerleri değiştir, sonra Uygula'ya bas. Alanlar, liste öğeleri ve <12 bytes> gibi yer tutucular olduğu gibi kalır.",
+    "exportJson": "Dışa aktar (.json)",
+    "exportApplyFirst": "Önce düzenlemelerini uygula ya da geri al. Dışa aktarma uygulanmış değerleri kaydeder.",
+    "editorLabel": "JSON metni",
+    "apply": "Uygula",
+    "applying": "Uygulanıyor…",
+    "dirty": "Düzenlendi. Bu değerleri kullanmak için Uygula'ya bas.",
+    "notApplied": "Hiçbir şey uygulanmadı.",
+    "syntaxAt": "Satır {{line}}, sütun {{column}}: {{problem}}",
+    "confirmTitle": "JSON değişikliklerin uygulansın mı?",
+    "confirmBody": "JSON metnindeki düzenlemelerin henüz uygulanmadı.",
+    "keepEditing": "Düzenlemeye devam et",
+    "discard": "Değişiklikleri at",
+    "problem": {
+      "end": "Metin erken bitiyor.",
+      "unexpected": "Bu bir değer değil. Sayı, tırnak içinde metin, true, false ya da null kullan.",
+      "expectedKey": "Tırnak içinde bir alan adı bekleniyor.",
+      "expectedColon": "Alan adından sonra ':' bekleniyor.",
+      "expectedCommaOrBrace": "',' ya da '}' bekleniyor.",
+      "expectedCommaOrBracket": "',' ya da ']' bekleniyor.",
+      "unclosedString": "Bu metnin kapanış tırnağı yok.",
+      "controlChar": "Metin içindeki satır sonu ve sekmeleri \\n ve \\t olarak yaz.",
+      "badEscape": "Ters eğik çizgiden sonra bilinmeyen kaçış.",
+      "badNumber": "Bu sayı doğru yazılmamış.",
+      "trailing": "JSON bittikten sonra fazladan metin var."
+    }
   },
   "password": {
     "title": "Bu dosya şifreli",
@@ -110,12 +135,15 @@
     "saveFailed": "Dosya kaydedilemedi",
     "verifyFailed": "Kaydedilen dosya doğrulanamadı",
     "jsonFailed": "JSON görünümü oluşturulamadı",
-    "exportedTitle": "JSON metin olarak dışa aktarıldı",
+    "exportedTitle": "JSON dışa aktarıldı",
     "exportFailed": "JSON dışa aktarılamadı",
     "closeFailed": "Pencere kapatılamadı",
     "discardFailed": "Değişiklikler geri alınamadı",
     "changesFailed": "Değişiklik listesi okunamadı",
-    "errorDetail": "{{reason}} {{fix}}"
+    "errorDetail": "{{reason}} {{fix}}",
+    "jsonApplied_one": "{{count}} değişiklik uygulandı",
+    "jsonApplied_other": "{{count}} değişiklik uygulandı",
+    "jsonNoChanges": "Hiçbir değer değişmedi"
   },
   "bell": {
     "title": "Bu oturum",

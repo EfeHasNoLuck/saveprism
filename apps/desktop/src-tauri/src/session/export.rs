@@ -1,9 +1,11 @@
-//! Pretty JSON text of the open document, for the read-only "Open JSON" view and "Export .txt".
+//! Pretty JSON text of the open document, for the JSON editor and "Export .json".
 //!
 //! The text is a view, not a file format: bytes become `"<N bytes>"`, references become `"-> #N"`
 //! (so cyclic graphs cannot loop), maps become lists of `{"key", "value"}`, and repeated object keys
-//! get a ` (2)`, ` (3)` suffix. Nothing in the document is executed or evaluated.
+//! get a ` (2)`, ` (3)` suffix. Nothing in the document is executed or evaluated. Edited text comes
+//! back through `json_apply`, which walks the same view in the same way.
 
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::io::Write;
 use std::path::{Path as FsPath, PathBuf};
@@ -16,9 +18,11 @@ use super::{ApiError, Session, app_codes, same_file};
 /// Largest JSON text the view returns, in bytes.
 pub const MAX_EXPORT_BYTES: usize = 50 * 1024 * 1024;
 /// Deepest nesting the view follows.
-const MAX_DEPTH: usize = 128;
+pub(super) const MAX_DEPTH: usize = 128;
+/// What the view shows below [`MAX_DEPTH`].
+pub(super) const TOO_DEEP: &str = "<too deep>";
 
-fn too_big(detail: &str) -> ApiError {
+pub(super) fn too_big(detail: &str) -> ApiError {
     ApiError::new(
         codes::CORE_LIMIT_DECODED.as_str(),
         format!("the JSON view is too large ({detail}); the limit is 50 MB"),
@@ -26,7 +30,7 @@ fn too_big(detail: &str) -> ApiError {
     )
 }
 
-fn scalar_int(v: i128) -> Json {
+pub(super) fn scalar_int(v: i128) -> Json {
     if let Ok(small) = i64::try_from(v) {
         Json::Number(Number::from(small))
     } else if let Ok(big) = u64::try_from(v) {
@@ -36,24 +40,56 @@ fn scalar_int(v: i128) -> Json {
     }
 }
 
-fn unique_key(map: &Map<String, Json>, key: &str) -> String {
-    if !map.contains_key(key) {
-        return key.to_string();
+/// The text a float gets in the view: a JSON number, or `"NaN"` / `"inf"` when it is not finite.
+pub(super) fn scalar_float(v: f64) -> Json {
+    match Number::from_f64(v) {
+        Some(number) => Json::Number(number),
+        None => Json::String(format!("{v:?}")),
     }
-    let mut n: usize = 2;
-    loop {
-        let candidate = format!("{key} ({n})");
-        if !map.contains_key(&candidate) {
-            return candidate;
+}
+
+/// `"<N bytes>"`
+pub(super) fn bytes_text(len: usize) -> String {
+    format!("<{len} bytes>")
+}
+
+/// `"-> #N"`
+pub(super) fn ref_text(target: NodeId) -> String {
+    format!("-> #{}", target.index())
+}
+
+/// The view names of the keys of one object: a repeated key gets the first free ` (2)`, ` (3)`
+/// suffix. The next suffix to try is kept per key, so many repeats of one key stay linear.
+#[derive(Default)]
+pub(super) struct KeyNames {
+    used: HashSet<String>,
+    next: HashMap<String, usize>,
+}
+
+impl KeyNames {
+    pub(super) fn name(&mut self, key: &str) -> String {
+        if !self.used.contains(key) {
+            self.used.insert(key.to_string());
+            return key.to_string();
         }
-        n = n.saturating_add(1);
+        // Every suffix below the remembered one is taken already (names are never removed).
+        let mut n = self.next.get(key).copied().unwrap_or(2);
+        loop {
+            let candidate = format!("{key} ({n})");
+            n = n.saturating_add(1);
+            if !self.used.contains(&candidate) {
+                self.used.insert(candidate.clone());
+                self.next.insert(key.to_string(), n);
+                return candidate;
+            }
+        }
     }
 }
 
 fn convert(doc: &SaveDoc, id: NodeId, depth: usize, budget: &mut usize) -> Result<Json, ApiError> {
     let next = depth.saturating_add(1);
     if depth > MAX_DEPTH {
-        return Ok(Json::String("<too deep>".to_string()));
+        return Ok(Json::String(TOO_DEEP.to_string()));
     }
     if *budget == 0 {
         return Err(too_big("too many values"));
@@ -66,13 +102,10 @@ fn convert(doc: &SaveDoc, id: NodeId, depth: usize, budget: &mut usize) -> Resul
         Value::Null => Json::Null,
         Value::Bool(b) => Json::Bool(*b),
         Value::Int { v, .. } => scalar_int(*v),
-        Value::Float { v, .. } => match Number::from_f64(*v) {
-            Some(number) => Json::Number(number),
-            None => Json::String(format!("{v:?}")),
-        },
+        Value::Float { v, .. } => scalar_float(*v),
         Value::Str(text) => Json::String(text.clone()),
-        Value::Bytes(bytes) => Json::String(format!("<{} bytes>", bytes.len())),
-        Value::Ref(target) => Json::String(format!("-> #{}", target.index())),
+        Value::Bytes(bytes) => Json::String(bytes_text(bytes.len())),
+        Value::Ref(target) => Json::String(ref_text(*target)),
         Value::Array(items) => {
             let mut out = Vec::with_capacity(items.len().min(1024));
             for child in items {
@@ -82,10 +115,10 @@ fn convert(doc: &SaveDoc, id: NodeId, depth: usize, budget: &mut usize) -> Resul
         }
         Value::Object(entries) => {
             let mut map = Map::new();
+            let mut names = KeyNames::default();
             for (key, child) in entries {
                 let value = convert(doc, *child, next, budget)?;
-                let key = unique_key(&map, key);
-                map.insert(key, value);
+                map.insert(names.name(key), value);
             }
             Json::Object(map)
         }
@@ -166,7 +199,8 @@ impl Session {
 
     /// Writes [`Session::export_json`] to `target` as UTF-8 text (temporary file, then rename) and
     /// returns the written path. Refuses the open save file itself, names that do not end in
-    /// `.txt` (so a typed name can never replace another save or a backup) and an existing folder.
+    /// `.json` (so a typed name can never replace a save of another format or a backup) and an
+    /// existing folder.
     pub fn export_json_file(&self, target: &str) -> Result<String, ApiError> {
         let target_path = PathBuf::from(target);
         if same_file(&target_path, &self.path) {
@@ -176,14 +210,14 @@ impl Session {
                 "Pick another file name. The export never replaces the save.",
             ));
         }
-        let is_txt = target_path
+        let is_json = target_path
             .extension()
-            .is_some_and(|ext| ext.eq_ignore_ascii_case("txt"));
-        if !is_txt {
+            .is_some_and(|ext| ext.eq_ignore_ascii_case("json"));
+        if !is_json {
             return Err(ApiError::new(
                 app_codes::EXPORT_TARGET,
-                format!("\"{}\" is not a .txt file", target_path.display()),
-                "Pick a file name that ends in .txt.",
+                format!("\"{}\" is not a .json file", target_path.display()),
+                "Pick a file name that ends in .json.",
             ));
         }
         if fs::metadata(&target_path).is_ok_and(|meta| meta.is_dir()) {
@@ -240,6 +274,16 @@ mod tests {
         assert_eq!(parsed["level"], 7);
         assert_eq!(parsed["tags"], serde_json::json!([true, null]));
         assert_eq!(parsed["name (2)"], "dup");
+    }
+
+    #[test]
+    fn repeated_keys_get_the_first_free_suffix() {
+        let mut names = KeyNames::default();
+        let shown: Vec<String> = ["a", "a", "a (2)", "a", "b"]
+            .iter()
+            .map(|key| names.name(key))
+            .collect();
+        assert_eq!(shown, ["a", "a (2)", "a (2) (2)", "a (3)", "b"]);
     }
 
     #[test]

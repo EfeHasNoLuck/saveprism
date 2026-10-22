@@ -122,17 +122,24 @@ async fn save(
     state.with_session(|session| session.save(&target, overwrite.unwrap_or(false)))
 }
 
-/// Pretty JSON text of the open document (read-only view; at most 50 MB).
+/// Pretty JSON text of the open document (the view the JSON editor edits; at most 50 MB).
 #[tauri::command]
 async fn export_json(state: State<'_, AppState>) -> Result<String, ApiError> {
     state.with_session(|session| session.export_json())
 }
 
 /// Writes the text of `export_json` to `target` as UTF-8 (temporary file, then rename) and returns
-/// the written path. Refuses the open save file and folders.
+/// the written path. Refuses the open save file, folders and names that do not end in `.json`.
 #[tauri::command]
 async fn export_json_file(state: State<'_, AppState>, target: String) -> Result<String, ApiError> {
     state.with_session(|session| session.export_json_file(&target))
+}
+
+/// Applies the edited text of `export_json`: only scalar values may change. Everything is checked
+/// first and nothing is applied on an error. Returns the number of values that changed.
+#[tauri::command]
+async fn apply_json(state: State<'_, AppState>, text: String) -> Result<usize, ApiError> {
+    state.with_session(|session| session.apply_json(&text))
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -154,6 +161,7 @@ pub fn run() {
             save,
             export_json,
             export_json_file,
+            apply_json,
         ])
         .run(tauri::generate_context!());
 

@@ -31,11 +31,14 @@ export function baseName(path: string): string {
   return parts[parts.length - 1] ?? path;
 }
 
-/** Default file name of "Export .txt": `file1.rmmzsave` becomes `file1.json.txt`. */
+/**
+ * Default file name of "Export .json": `file1.rmmzsave` becomes `file1-export.json`, so it never
+ * equals the name of a `.json` save.
+ */
 export function exportFileName(fileName: string): string {
   const dot = fileName.lastIndexOf(".");
   const stem = dot > 0 ? fileName.slice(0, dot) : fileName;
-  return `${stem}.json.txt`;
+  return `${stem}-export.json`;
 }
 
 /** Folder part of a path (empty when there is none). */

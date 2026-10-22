@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  changeText,
+  changeValue,
   checkRange,
   clampPage,
   fieldHint,
@@ -17,6 +19,7 @@ const base = {
   focused: false,
   always: false,
   invalid: false,
+  change: null,
 };
 
 describe("hintLine", () => {
@@ -24,13 +27,54 @@ describe("hintLine", () => {
     expect(hintLine(base)).toBeNull();
   });
   it("shows the hint when focused", () => {
-    expect(hintLine({ ...base, focused: true })).toEqual({ text: base.hint, error: false });
+    expect(hintLine({ ...base, focused: true })).toEqual({
+      text: base.hint,
+      error: false,
+      change: false,
+    });
   });
   it("always shows for Gold", () => {
     expect(hintLine({ ...base, always: true })?.text).toBe(base.hint);
   });
   it("uses the error tone when invalid, even if idle", () => {
-    expect(hintLine({ ...base, invalid: true })).toEqual({ text: base.hint, error: true });
+    expect(hintLine({ ...base, invalid: true })).toEqual({
+      text: base.hint,
+      error: true,
+      change: false,
+    });
+  });
+  it("shows old → new for a changed value, also in place of Gold's hint", () => {
+    const change = "2,500 → 2,601";
+    expect(hintLine({ ...base, change })).toEqual({ text: change, error: false, change: true });
+    expect(hintLine({ ...base, always: true, change })?.text).toBe(change);
+  });
+  it("shows the hint on focus and the error over old → new", () => {
+    const change = "2,500 → 2,601";
+    expect(hintLine({ ...base, focused: true, change })?.text).toBe(base.hint);
+    expect(hintLine({ ...base, invalid: true, change })).toEqual({
+      text: base.hint,
+      error: true,
+      change: false,
+    });
+  });
+});
+
+describe("changeText", () => {
+  const en = (n: number) => n.toLocaleString("en");
+  const tr = (n: number) => n.toLocaleString("tr");
+  it("groups whole numbers in the UI language", () => {
+    expect(changeText("int", "2500", "2601", en)).toBe("2,500 → 2,601");
+    expect(changeText("int", "10000", "-5", tr)).toBe("10.000 → -5");
+  });
+  it("keeps true/false and decimals as they are", () => {
+    expect(changeText("bool", "false", "true", en)).toBe("false → true");
+    expect(changeText("float", "100.5", "7.25", tr)).toBe("100.5 → 7.25");
+  });
+  it("quotes text and cuts long text", () => {
+    expect(changeText("string", "Ann", "Ada", en)).toBe('"Ann" → "Ada"');
+    expect(changeValue("string", "a".repeat(30), en)).toBe(`"${"a".repeat(23)}…"`);
+    expect(changeValue("string", "a".repeat(30), en, Infinity)).toBe(`"${"a".repeat(30)}"`);
+    expect(changeValue("string", "", en)).toBe('""');
   });
 });
 

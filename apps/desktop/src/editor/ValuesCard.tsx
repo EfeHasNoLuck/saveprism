@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { isChanged, useEditorContext } from "./context";
 import { FieldEditor } from "./FieldEditor";
-import { EmptyText, SearchBox, Section } from "./parts";
+import { ChangeNote, EmptyText, SearchBox, Section } from "./parts";
 
 const CHILD_PAGE = 200;
 /** Name · Type · Value. The type column fits "Decimal number" in English and Turkish. */
@@ -40,7 +40,10 @@ interface NodeProps {
   depth: number;
 }
 
-/** One row: a value with its editor (tinted when changed), or a group that expands to its children. */
+/**
+ * One row: a value with its editor (tinted and "old → new" next to the name when changed), or a
+ * group that expands to its children.
+ */
 function ValueNode({ name, path, field, childCount, depth }: NodeProps) {
   const { t } = useTranslation("editor");
   const ctx = useEditorContext();
@@ -75,7 +78,9 @@ function ValueNode({ name, path, field, childCount, depth }: NodeProps) {
             <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
               {t("values.items", { count: childCount })}
             </span>
-          ) : null}
+          ) : (
+            <ChangeNote field={field} className="ml-auto max-w-[60%] shrink-0 pl-2" />
+          )}
         </div>
         <div className="flex min-w-0 items-center">
           {field !== null ? <TypeTag field={field} /> : null}

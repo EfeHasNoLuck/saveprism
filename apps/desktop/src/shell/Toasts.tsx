@@ -12,7 +12,10 @@ export function Toasts() {
   if (toasts.length === 0) return null;
 
   return (
-    <div className="pointer-events-none fixed right-4 bottom-20 z-[60] flex w-96 max-w-[calc(100vw-2rem)] flex-col gap-2">
+    <div
+      data-toasts
+      className="pointer-events-none fixed right-4 bottom-20 z-[60] flex w-96 max-w-[calc(100vw-2rem)] flex-col gap-2"
+    >
       {toasts.map((toast) => (
         <div
           key={toast.id}

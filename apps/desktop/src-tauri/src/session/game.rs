@@ -892,7 +892,7 @@ impl Session {
     }
 
     /// The limits of every field of the RPG Maker view, by path (empty for other formats).
-    fn rpg_bounds(&self) -> HashMap<String, Bounds> {
+    pub(super) fn rpg_bounds(&self) -> HashMap<String, Bounds> {
         let Some(engine) = self.rpg_engine() else {
             return HashMap::new();
         };
@@ -948,31 +948,40 @@ impl Session {
         node: &Node,
         value: &OwnedValue,
     ) -> Result<(), ApiError> {
-        let (inside, shown) = match value {
-            OwnedValue::Int(number) => (None, number.to_string()),
-            OwnedValue::Float(number) => (Some(*number), number.to_string()),
-            _ => return Ok(()),
-        };
-        let bounds = self
-            .rpg_bounds()
-            .get(&path.to_string())
-            .copied()
-            .unwrap_or_else(|| type_bounds(node, true));
-        let fits = match (value, inside) {
-            (OwnedValue::Int(number), _) => bounds.contains(*number),
-            (_, Some(number)) => bounds.contains_f64(number),
-            _ => true,
-        };
-        if fits {
-            return Ok(());
-        }
-        Err(ApiError::new(
-            app_codes::OUT_OF_RANGE,
-            format!(
-                "{shown} is outside the range of this value ({})",
-                bounds.range_text()
-            ),
-            bounds.advice(),
-        ))
+        check_bounds_in(&self.rpg_bounds(), path, node, value)
     }
+}
+
+/// [`Session::check_bounds`] with the RPG Maker limits already built (one build for many values).
+pub(super) fn check_bounds_in(
+    rpg_bounds: &HashMap<String, Bounds>,
+    path: &Path,
+    node: &Node,
+    value: &OwnedValue,
+) -> Result<(), ApiError> {
+    let (inside, shown) = match value {
+        OwnedValue::Int(number) => (None, number.to_string()),
+        OwnedValue::Float(number) => (Some(*number), number.to_string()),
+        _ => return Ok(()),
+    };
+    let bounds = rpg_bounds
+        .get(&path.to_string())
+        .copied()
+        .unwrap_or_else(|| type_bounds(node, true));
+    let fits = match (value, inside) {
+        (OwnedValue::Int(number), _) => bounds.contains(*number),
+        (_, Some(number)) => bounds.contains_f64(number),
+        _ => true,
+    };
+    if fits {
+        return Ok(());
+    }
+    Err(ApiError::new(
+        app_codes::OUT_OF_RANGE,
+        format!(
+            "{shown} is outside the range of this value ({})",
+            bounds.range_text()
+        ),
+        bounds.advice(),
+    ))
 }

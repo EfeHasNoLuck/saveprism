@@ -317,17 +317,18 @@ fn export_json_file_refuses_the_open_save_and_folders() {
         assert_eq!(error.code, app_codes::EXPORT_TARGET, "{}", target.display());
         assert!(!error.hint.is_empty());
     }
-    // A folder, also one named like a text file, and any name that is not `.txt`.
-    let txt_folder = env.work.join("folder.txt");
-    fs::create_dir(&txt_folder).unwrap();
+    // A folder, also one named like a JSON file, and any name that is not `.json`.
+    let json_folder = env.work.join("folder.json");
+    fs::create_dir(&json_folder).unwrap();
     let other_save = env.work.join("other.es3");
-    for target in [&env.work, &txt_folder, &other_save] {
+    let text_file = env.work.join("notes.txt");
+    for target in [&env.work, &json_folder, &other_save, &text_file] {
         let error = session
             .export_json_file(target.to_str().unwrap())
             .unwrap_err();
         assert_eq!(error.code, app_codes::EXPORT_TARGET, "{}", target.display());
     }
-    fs::remove_dir(&txt_folder).unwrap();
+    fs::remove_dir(&json_folder).unwrap();
     assert!(session.export_json_file("").is_err());
 
     assert_eq!(fs::read(&path).unwrap(), before);
@@ -335,25 +336,368 @@ fn export_json_file_refuses_the_open_save_and_folders() {
 }
 
 #[test]
-fn export_json_file_writes_the_json_view_as_text() {
+fn export_json_file_writes_the_json_view_as_json() {
     let env = env();
     let mut session = open_json(&env);
     session.edit_value("/level", "7").unwrap();
-    let target = env.work.join("compact.json.txt");
+    let target = env.work.join("compact-export.json");
     fs::write(&target, b"old text").unwrap();
 
     let written = session.export_json_file(target.to_str().unwrap()).unwrap();
     assert_eq!(written, target.to_string_lossy());
     let text = fs::read_to_string(&target).unwrap();
     assert_eq!(text, session.export_json().unwrap());
-    assert!(text.starts_with('{'));
     assert!(text.contains("\"level\": 7"));
-    // No temporary file is left next to it, and the pending edit is still pending.
+    // The file is plain JSON.
+    let parsed: serde_json::Value = serde_json::from_str(&text).unwrap();
+    assert_eq!(parsed["level"], 7);
+    // The extension is checked without regard to case.
+    let upper = env.work.join("UPPER.JSON");
+    session.export_json_file(upper.to_str().unwrap()).unwrap();
+    // No temporary file is left next to them, and the pending edit is still pending.
     assert_eq!(
         file_names(&env.work),
-        vec!["compact.json".to_string(), "compact.json.txt".to_string()]
+        vec![
+            "UPPER.JSON".to_string(),
+            "compact-export.json".to_string(),
+            "compact.json".to_string()
+        ]
     );
     assert_eq!(session.pending_changes().len(), 1);
+}
+
+/// The JSON view of `session` after `change`, as the editor would send it back.
+fn edited(session: &Session, change: impl FnOnce(&mut serde_json::Value)) -> String {
+    let mut json: serde_json::Value =
+        serde_json::from_str(&session.export_json().unwrap()).unwrap();
+    change(&mut json);
+    serde_json::to_string_pretty(&json).unwrap()
+}
+
+#[test]
+fn apply_json_changes_int_float_bool_and_text() {
+    let env = env();
+    let mut session = open_json(&env);
+    let text = edited(&session, |json| {
+        json["level"] = 43.into();
+        json["ratio"] = 2.5.into();
+        json["name"] = "Ada".into();
+        json["stats"]["hp"] = 7.25.into();
+        json["stats"]["alive"] = false.into();
+    });
+    assert_eq!(session.apply_json(&text).unwrap(), 5);
+
+    assert_eq!(row(&session, "/level").preview, "43");
+    assert_eq!(row(&session, "/ratio").preview, "2.5");
+    assert_eq!(row(&session, "/name").preview, "Ada");
+    assert_eq!(row(&session, "/stats/hp").preview, "7.25");
+    assert_eq!(row(&session, "/stats/alive").preview, "false");
+    // They are ordinary pending edits: listed with the opened value, undone one by one.
+    let changes = session.pending_changes();
+    assert_eq!(changes.len(), 5);
+    let level = changes.iter().find(|c| c.path == "/level").unwrap();
+    assert_eq!((level.old.as_str(), level.new.as_str()), ("42", "43"));
+    session.edit_value("/level", "42").unwrap();
+    assert_eq!(session.pending_changes().len(), 4);
+    // Applying the opened values again cancels their entries.
+    let back = edited(&session, |json| {
+        json["ratio"] = 1.0.into();
+        json["name"] = "Şükrü'nün kaydı".into();
+    });
+    assert_eq!(session.apply_json(&back).unwrap(), 2);
+    assert_eq!(session.pending_changes().len(), 2);
+}
+
+#[test]
+fn apply_json_of_the_same_view_changes_nothing() {
+    let env = env();
+    let mut session = open_json(&env);
+    let text = session.export_json().unwrap();
+    assert_eq!(session.apply_json(&text).unwrap(), 0);
+    // Other spacing and `1` for the float `1.0` are no change either.
+    let other = edited(&session, |json| json["ratio"] = 1.into());
+    assert_eq!(session.apply_json(&other).unwrap(), 0);
+    assert!(session.pending_changes().is_empty());
+}
+
+/// A change to the parsed JSON view.
+type JsonChange = fn(&mut serde_json::Value);
+
+#[test]
+fn apply_json_refuses_structure_changes_and_applies_nothing() {
+    let env = env();
+    let mut session = open_json(&env);
+    let cases: [(&str, JsonChange); 5] = [
+        ("/stats/note", |json| {
+            json["stats"].as_object_mut().unwrap().remove("note");
+        }),
+        ("/extra", |json| json["extra"] = 1.into()),
+        ("/items/0/tags", |json| {
+            json["items"][0]["tags"]
+                .as_array_mut()
+                .unwrap()
+                .push("x".into());
+        }),
+        ("/stats", |json| json["stats"] = serde_json::json!([1, 2])),
+        ("/stats/note", |json| json["stats"]["note"] = 0.into()),
+    ];
+    for (pointer, change) in cases {
+        // A valid change rides along; it must not be applied either.
+        let text = edited(&session, |json| {
+            json["level"] = 7.into();
+            change(json);
+        });
+        let error = session.apply_json(&text).unwrap_err();
+        assert_eq!(error.code, app_codes::JSON_SHAPE, "{pointer}");
+        assert!(
+            error.message.starts_with(&format!("{pointer}: ")),
+            "{}",
+            error.message
+        );
+        assert!(!error.hint.is_empty());
+        assert!(session.pending_changes().is_empty(), "{pointer}");
+        assert_eq!(row(&session, "/level").preview, "42", "{pointer}");
+    }
+    let removed = edited(&session, |json| {
+        json.as_object_mut().unwrap().remove("ratio");
+    });
+    let error = session.apply_json(&removed).unwrap_err();
+    assert!(
+        error
+            .message
+            .contains("adding or removing fields is not supported")
+    );
+
+    // A value of another type, and text that is not JSON.
+    let typed = edited(&session, |json| json["level"] = "43".into());
+    let error = session.apply_json(&typed).unwrap_err();
+    assert_eq!(error.code, app_codes::BAD_VALUE);
+    assert!(error.message.starts_with("/level: "));
+    let error = session.apply_json("{\n  \"level\": 43,\n}").unwrap_err();
+    assert_eq!(error.code, app_codes::JSON_TEXT);
+    assert!(error.hint.contains("line 3"), "{}", error.hint);
+    assert!(session.pending_changes().is_empty());
+}
+
+#[test]
+fn apply_json_refuses_text_over_the_limit() {
+    let env = env();
+    let mut session = open_json(&env);
+    let mut text = session.export_json().unwrap();
+    text.push_str(&" ".repeat(export::MAX_EXPORT_BYTES));
+    let error = session.apply_json(&text).unwrap_err();
+    assert_eq!(error.code, codes::CORE_LIMIT_DECODED.as_str());
+}
+
+#[test]
+fn apply_json_keeps_whole_numbers_whole_and_in_range() {
+    let env = env();
+    let mut session = open_json(&env);
+    let text = session.export_json().unwrap();
+    let huge = text.replace("\"level\": 42", "\"level\": 99999999999999999999999");
+    let error = session.apply_json(&huge).unwrap_err();
+    assert_eq!(error.code, app_codes::OUT_OF_RANGE);
+    assert!(error.message.starts_with("/level: "), "{}", error.message);
+    let decimal = edited(&session, |json| json["level"] = 1.5.into());
+    assert_eq!(
+        session.apply_json(&decimal).unwrap_err().code,
+        app_codes::BAD_VALUE
+    );
+    assert!(session.pending_changes().is_empty());
+}
+
+#[test]
+fn apply_json_checks_the_gold_limit_and_applies_nothing_on_error() {
+    let env = env();
+    let path = copy_in(&env, "synthetic/rpgmaker-mz/file1.rmmzsave");
+    let mut session = open(&env, &path, None).unwrap();
+    let view = rpg_view(&session).unwrap();
+    let gold = view.gold.path.clone();
+    let hp = view.actors[0].hp.path.clone();
+
+    let text = edited(&session, |json| {
+        *json.pointer_mut(&hp).unwrap() = 1.into();
+        *json.pointer_mut(&gold).unwrap() = 100_000_000.into();
+    });
+    let error = session.apply_json(&text).unwrap_err();
+    assert_eq!(error.code, app_codes::OUT_OF_RANGE);
+    assert!(
+        error.message.starts_with(&format!("{gold}: ")),
+        "{}",
+        error.message
+    );
+    assert!(error.message.contains("99,999,999"));
+    assert!(session.pending_changes().is_empty());
+    assert_eq!(rpg_view(&session).unwrap().gold.value, "1250");
+
+    let text = edited(&session, |json| {
+        *json.pointer_mut(&gold).unwrap() = 2601.into();
+    });
+    assert_eq!(session.apply_json(&text).unwrap(), 1);
+    let field = rpg_view(&session).unwrap().gold;
+    assert_eq!(
+        (field.value.as_str(), field.original.as_str()),
+        ("2601", "1250")
+    );
+}
+
+/// `{"name": "Ann", "inventory": <map {"sword": 3, 7: true}>, "name": "Bob", "blob": <3 bytes>,
+/// "link": a reference to the first name, "none": null}`
+fn map_doc() -> SaveDoc {
+    use saveprism_core::{IntWidth, Node};
+    let mut doc = SaveDoc::new();
+    let mut add = |value: Value| doc.push(Node::new(value)).unwrap();
+    let ann = add(Value::Str("Ann".into()));
+    let sword = add(Value::Str("sword".into()));
+    let three = add(Value::Int {
+        v: 3,
+        width: IntWidth::I32,
+    });
+    let seven = add(Value::Int {
+        v: 7,
+        width: IntWidth::I32,
+    });
+    let yes = add(Value::Bool(true));
+    let inventory = add(Value::Map(vec![(sword, three), (seven, yes)]));
+    let bob = add(Value::Str("Bob".into()));
+    let blob = add(Value::Bytes(vec![1, 2, 3]));
+    let link = add(Value::Ref(ann));
+    let none = add(Value::Null);
+    let root = add(Value::Object(vec![
+        ("name".into(), ann),
+        ("inventory".into(), inventory),
+        ("name".into(), bob),
+        ("blob".into(), blob),
+        ("link".into(), link),
+        ("none".into(), none),
+    ]));
+    doc.set_root(root);
+    doc
+}
+
+fn map_session(env: &Env) -> Session {
+    let mut session = open_json(env);
+    session.doc = map_doc();
+    session
+}
+
+#[test]
+fn apply_json_changes_the_value_of_a_map_pair() {
+    let env = env();
+    let mut session = map_session(&env);
+    let text = edited(&session, |json| {
+        assert_eq!(json["inventory"][1]["key"], 7);
+        json["inventory"][0]["value"] = 5.into();
+        json["inventory"][1]["value"] = false.into();
+    });
+    assert_eq!(session.apply_json(&text).unwrap(), 2);
+    let changes = session.pending_changes();
+    assert_eq!(changes[0].path, "/inventory/0");
+    assert_eq!(
+        (changes[0].old.as_str(), changes[0].new.as_str()),
+        ("3", "5")
+    );
+    assert_eq!(changes[1].path, "/inventory/1");
+
+    // Map keys stay as they are.
+    let text = edited(&session, |json| {
+        json["name"] = "Zed".into();
+        json["inventory"][0]["key"] = "axe".into();
+    });
+    let error = session.apply_json(&text).unwrap_err();
+    assert_eq!(error.code, app_codes::JSON_SHAPE);
+    assert!(
+        error.message.starts_with("/inventory/0/key: "),
+        "{}",
+        error.message
+    );
+    let text = edited(&session, |json| {
+        json["inventory"][0].as_object_mut().unwrap().remove("key");
+    });
+    assert_eq!(
+        session.apply_json(&text).unwrap_err().code,
+        app_codes::JSON_SHAPE
+    );
+    assert_eq!(session.pending_changes().len(), 2);
+    assert_eq!(row(&session, "/name").preview, "Ann");
+}
+
+#[test]
+fn apply_json_maps_repeated_keys_like_the_view() {
+    let env = env();
+    let mut session = map_session(&env);
+    // `name (2)` is the second `name`: leaving it alone while the first changes is fine.
+    let text = edited(&session, |json| {
+        assert_eq!(json["name (2)"], "Bob");
+        json["name"] = "Ada".into();
+    });
+    assert_eq!(session.apply_json(&text).unwrap(), 1);
+    let rows = session.get_children("", 0, 10).unwrap().items;
+    assert_eq!(
+        (rows[0].key.as_str(), rows[0].preview.as_str()),
+        ("name", "Ada")
+    );
+    assert_eq!(
+        (rows[2].key.as_str(), rows[2].preview.as_str()),
+        ("name", "Bob")
+    );
+
+    // The second one cannot be addressed by its path, so it is refused instead of changing the first.
+    let text = edited(&session, |json| json["name (2)"] = "Cid".into());
+    let error = session.apply_json(&text).unwrap_err();
+    assert_eq!(error.code, app_codes::NOT_EDITABLE_NODE);
+    assert!(
+        error.message.starts_with("/name (2): "),
+        "{}",
+        error.message
+    );
+    assert_eq!(session.pending_changes().len(), 1);
+}
+
+#[test]
+fn apply_json_refuses_placeholder_changes() {
+    let env = env();
+    let mut session = map_session(&env);
+    let cases: [(&str, serde_json::Value); 3] = [
+        ("/blob", "<4 bytes>".into()),
+        ("/link", "-> #99".into()),
+        ("/none", 0.into()),
+    ];
+    for (pointer, value) in cases {
+        let text = edited(&session, |json| {
+            json["name"] = "Zed".into();
+            *json.pointer_mut(pointer).unwrap() = value;
+        });
+        let error = session.apply_json(&text).expect_err(pointer);
+        assert_eq!(error.code, app_codes::JSON_SHAPE, "{pointer}");
+        assert!(
+            error.message.starts_with(&format!("{pointer}: ")),
+            "{}",
+            error.message
+        );
+        assert!(session.pending_changes().is_empty());
+    }
+}
+
+#[test]
+fn apply_json_handles_many_repeated_keys() {
+    use saveprism_core::Node;
+    let env = env();
+    let mut session = open_json(&env);
+    let mut doc = SaveDoc::new();
+    let mut entries = Vec::new();
+    for index in 0..20_000 {
+        let id = doc.push(Node::new(Value::Str(index.to_string()))).unwrap();
+        entries.push(("k".to_string(), id));
+    }
+    let root = doc.push(Node::new(Value::Object(entries))).unwrap();
+    doc.set_root(root);
+    session.doc = doc;
+    let text = session.export_json().unwrap();
+    assert!(text.contains("\"k (20000)\""));
+    assert_eq!(session.apply_json(&text).unwrap(), 0);
+    let text = edited(&session, |json| json["k"] = "first".into());
+    assert_eq!(session.apply_json(&text).unwrap(), 1);
 }
 
 #[test]

@@ -2,12 +2,14 @@
 //!
 //! v0.1 keeps one document at a time: [`Session::open`] detects and decodes a file and runs the
 //! round-trip guard; [`Session::get_children`] and [`Session::search`] read the tree;
-//! [`Session::edit_value`] changes one scalar; [`Session::save`] encodes, writes with the core safe
-//! write (backup, temp file, atomic replace) and checks every edited value in the written file.
+//! [`Session::edit_value`] changes one scalar and [`Session::apply_json`] the scalars of an edited
+//! JSON view; [`Session::save`] encodes, writes with the core safe write (backup, temp file, atomic
+//! replace) and checks every edited value in the written file.
 //!
 //! Errors cross the IPC boundary as [`ApiError`] (`code`, `message`, `hint`). The password of an
 //! encrypted file lives in memory only; it is never logged, put into a message or written to disk.
 
+use std::collections::HashMap;
 use std::fs;
 use std::path::{Path as FsPath, PathBuf};
 
@@ -23,6 +25,7 @@ use serde::Serialize;
 
 mod export;
 mod game;
+mod json_apply;
 
 pub use game::{Actor, Bonus, Entry, Field, FieldKind, GameView, RpgMakerView, ValueRow};
 
@@ -54,10 +57,14 @@ pub mod app_codes {
     pub const TARGET_EXISTS: &str = "SP-APP-006";
     /// The node is a container or has no editable type.
     pub const NOT_EDITABLE_NODE: &str = "SP-APP-007";
-    /// "Export .txt" would write onto the open save file or a folder.
+    /// "Export .json" would write onto the open save file, a folder or a name that is not `.json`.
     pub const EXPORT_TARGET: &str = "SP-APP-008";
     /// Internal state could not be used (lock poisoned).
     pub const INTERNAL: &str = "SP-APP-009";
+    /// The edited JSON text is not valid JSON.
+    pub const JSON_TEXT: &str = "SP-APP-010";
+    /// The edited JSON text changes more than values (fields, list items, map keys, placeholders).
+    pub const JSON_SHAPE: &str = "SP-APP-011";
 }
 
 /// An error as the UI receives it.
@@ -812,6 +819,33 @@ impl Session {
                 }
             }
         }
+    }
+
+    /// [`Session::record_change`] for many paths at once, with an index instead of a scan per path.
+    fn record_changes(&mut self, changes: Vec<Change>) {
+        let mut index: HashMap<String, usize> = self
+            .pending
+            .iter()
+            .enumerate()
+            .map(|(position, change)| (change.path.clone(), position))
+            .collect();
+        for change in changes {
+            match index.get(&change.path) {
+                Some(&position) => {
+                    if let Some(entry) = self.pending.get_mut(position) {
+                        entry.new = change.new;
+                    }
+                }
+                None => {
+                    if change.old != change.new {
+                        index.insert(change.path.clone(), self.pending.len());
+                        self.pending.push(change);
+                    }
+                }
+            }
+        }
+        // An edit back to the first value cancels its entry.
+        self.pending.retain(|change| change.old != change.new);
     }
 
     /// The edits made since opening or the last save.

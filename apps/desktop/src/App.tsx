@@ -23,9 +23,9 @@ import { ConfirmDiscardDialog } from "./shell/ConfirmDiscardDialog";
 import { useNotify, useSettings } from "./shell/context";
 import { baseName, exportFileName } from "./shell/engine";
 import { describeError } from "./shell/errors";
-import { exportJson, exportJsonFile } from "./shell/exportApi";
+import { applyJson, exportJson, exportJsonFile } from "./shell/exportApi";
 import { Header } from "./shell/Header";
-import { JsonDialog, type JsonState } from "./shell/JsonDialog";
+import { JsonDialog, type ApplyResult, type JsonState } from "./shell/JsonDialog";
 import { PasswordDialog } from "./shell/PasswordDialog";
 import { addRecent, loadRecent, saveRecent, type RecentFile } from "./shell/recent";
 import { SettingsDialog } from "./shell/SettingsDialog";
@@ -56,6 +56,8 @@ function App() {
   const [pendingOpen, setPendingOpen] = useState<string | null>(null);
   const [jsonOpen, setJsonOpen] = useState(false);
   const [jsonState, setJsonState] = useState<JsonState>({ status: "loading" });
+  /** The JSON editor holds edits that are not applied yet. */
+  const [jsonDirty, setJsonDirty] = useState(false);
   const [exporting, setExporting] = useState(false);
   /** The window's close button was pressed while there were unsaved changes. */
   const [closeAsked, setCloseAsked] = useState(false);
@@ -122,17 +124,20 @@ function App() {
     [notify, notifyError, rememberRecent, t],
   );
 
-  /** Opens `path`; with unsaved changes it asks first. Ignored while another action runs. */
+  /**
+   * Opens `path`; with unsaved changes it asks first. Ignored while another action runs or the
+   * JSON editor is open (its text belongs to the open file).
+   */
   const requestOpen = useCallback(
     (path: string) => {
-      if (busy) return;
+      if (busy || jsonOpen) return;
       if (file && changeCount > 0) {
         setPendingOpen(path);
         return;
       }
       void openPath(path);
     },
-    [busy, changeCount, file, openPath],
+    [busy, changeCount, file, jsonOpen, openPath],
   );
 
   const chooseAndOpen = useCallback(async () => {
@@ -182,12 +187,13 @@ function App() {
     };
   }, []);
 
-  // Closing the window with unsaved changes asks first. While this handler is registered the host
-  // waits for it: without `preventDefault()` the window is destroyed right away.
+  // Closing the window with unsaved changes (or JSON edits not applied) asks first. While this
+  // handler is registered the host waits for it: without `preventDefault()` the window is destroyed
+  // right away.
   const hasChangesRef = useRef(false);
   useEffect(() => {
-    hasChangesRef.current = file !== null && changeCount > 0;
-  }, [file, changeCount]);
+    hasChangesRef.current = file !== null && (changeCount > 0 || jsonDirty);
+  }, [file, changeCount, jsonDirty]);
 
   useEffect(() => {
     const handle: { stop: (() => void) | null } = { stop: null };
@@ -326,7 +332,39 @@ function App() {
       });
   }, [t]);
 
-  /** Saves the JSON view as a UTF-8 `.txt` file at a place the user picks. */
+  /**
+   * Applies the edited JSON text. On success the cards read the document again, the editor gets
+   * the fresh text and a toast counts the changes; a refusal goes back to the editor to show.
+   */
+  const applyJsonText = useCallback(
+    async (text: string): Promise<ApplyResult> => {
+      let count: number;
+      try {
+        count = await applyJson(text);
+      } catch (error) {
+        return { ok: false, error };
+      }
+      setEditorKey((key) => key + 1);
+      notify({
+        kind: "saved",
+        title: count === 0 ? t("toast.jsonNoChanges") : t("toast.jsonApplied", { count }),
+        skipBell: count === 0,
+      });
+      try {
+        setJsonState({ status: "ready", text: await exportJson() });
+      } catch (error) {
+        const { reason, fix } = describeError(error);
+        setJsonState({
+          status: "error",
+          message: `${t("json.failed")} ${t("toast.errorDetail", { reason, fix })}`.trim(),
+        });
+      }
+      return { ok: true };
+    },
+    [notify, t],
+  );
+
+  /** Saves the JSON view as a UTF-8 `.json` file at a place the user picks. */
   const exportJsonText = useCallback(async () => {
     if (!file) return;
     setExporting(true);
@@ -334,7 +372,7 @@ function App() {
       const target = await saveDialog({
         title: t("dialog.exportTitle"),
         defaultPath: exportFileName(file.fileName),
-        filters: [{ name: t("dialog.textFiles"), extensions: ["txt"] }],
+        filters: [{ name: t("dialog.jsonFiles"), extensions: ["json"] }],
       });
       if (typeof target !== "string") return;
       const written = await exportJsonFile(target);
@@ -418,11 +456,13 @@ function App() {
         <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
         {jsonOpen ? (
           <JsonDialog
-            open
-            onOpenChange={setJsonOpen}
             state={jsonState}
+            readOnly={readOnly}
+            onClose={() => setJsonOpen(false)}
             onExport={() => void exportJsonText()}
             exporting={exporting}
+            onApply={applyJsonText}
+            onDirtyChange={setJsonDirty}
           />
         ) : null}
         {passwordRequest ? (
@@ -447,7 +487,8 @@ function App() {
         {closeAsked ? (
           <ConfirmDiscardDialog
             reason="close"
-            count={changeCount}
+            // JSON edits that are not applied count as one more change.
+            count={changeCount + (jsonDirty ? 1 : 0)}
             onCancel={() => setCloseAsked(false)}
             onDiscard={closeWithoutSaving}
           />

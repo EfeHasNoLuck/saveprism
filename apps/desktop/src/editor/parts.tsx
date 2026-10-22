@@ -1,9 +1,11 @@
 import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import type { Field } from "@/api/commands";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { clampPage, pageCount, pagerLabel } from "./helpers";
+import { useEditorContext, useFormatNumber } from "./context";
+import { changeText, clampPage, pageCount, pagerLabel } from "./helpers";
 import { InfoTip } from "@/components/ui/info-tip";
 
 /**
@@ -43,6 +45,25 @@ export function Section({
       </div>
       {children}
     </section>
+  );
+}
+
+/**
+ * "2,500 → 2,601" for a changed value, nothing otherwise. Compact rows show it next to the name,
+ * so the row keeps its height; the tooltip has the full text.
+ */
+export function ChangeNote({ field, className }: { field: Field; className?: string }) {
+  const ctx = useEditorContext();
+  const format = useFormatNumber();
+  const latest = ctx.fields.get(field.path) ?? field;
+  if (latest.value === latest.original) return null;
+  return (
+    <span
+      className={cn("min-w-0 truncate text-xs text-changed-foreground tabular-nums", className)}
+      title={changeText(latest.kind, latest.original, latest.value, format, Infinity)}
+    >
+      {changeText(latest.kind, latest.original, latest.value, format)}
+    </span>
   );
 }
 

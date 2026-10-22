@@ -1,10 +1,11 @@
 import { Minus, Plus, Undo2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { editValue, fieldInfo, type ApiError, type Field } from "@/api/commands";
 import { cn } from "@/lib/utils";
-import { toApiError, useEditorContext } from "./context";
+import { toApiError, useEditorContext, useFormatNumber } from "./context";
 import {
+  changeText,
   checkRange,
   fieldHint,
   formatValue,
@@ -21,6 +22,11 @@ interface Props {
   alwaysHint?: boolean;
   /** Show the hint as a floating line while focused, so the row keeps its height (lists). */
   floatingHint?: boolean;
+  /**
+   * Show "old → new" under a changed field (default). Compact rows turn it off and show it next
+   * to their label instead; floating-hint rows never show it here.
+   */
+  showChange?: boolean;
   /** Accessible name of the control. */
   label: string;
   className?: string;
@@ -31,15 +37,12 @@ export function FieldEditor({
   field: initial,
   alwaysHint = false,
   floatingHint = false,
+  showChange = true,
   label,
   className,
 }: Props) {
-  const { t, i18n } = useTranslation("editor");
-  const language = i18n.resolvedLanguage ?? "en";
-  const format = useMemo(() => {
-    const numbers = new Intl.NumberFormat(language);
-    return (value: number) => numbers.format(value);
-  }, [language]);
+  const { t } = useTranslation("editor");
+  const format = useFormatNumber();
   const ctx = useEditorContext();
   const field = ctx.fields.get(initial.path) ?? initial;
   const path = field.path;
@@ -101,7 +104,8 @@ export function FieldEditor({
   }
 
   const originalText = formatValue(field.original, format);
-  let hintText = fieldHint(field.kind, field.min, field.max, t, format);
+  const typeHint = fieldHint(field.kind, field.min, field.max, t, format);
+  let hintText = typeHint;
   if (backendError !== null) {
     hintText = `${backendError.message} ${backendError.hint}`.trim();
   } else if (problem === "empty" || problem === "notNumber" || problem === "notWhole") {
@@ -112,6 +116,10 @@ export function FieldEditor({
     focused: !isBool && focused,
     always: !isBool && alwaysHint,
     invalid,
+    change:
+      changed && showChange && !floatingHint
+        ? changeText(field.kind, field.original, field.value, format)
+        : null,
   });
 
   // The undo slot is always there, so the input keeps its width when the button appears. Its
@@ -236,8 +244,17 @@ export function FieldEditor({
       {controls}
       {line !== null ? (
         <p
-          className={cn("mt-1 text-xs", line.error ? "text-destructive" : "text-muted-foreground")}
+          className={cn(
+            "mt-1 truncate text-xs",
+            line.error
+              ? "text-destructive"
+              : line.change
+                ? "text-changed-foreground tabular-nums"
+                : "text-muted-foreground",
+          )}
           role={line.error ? "alert" : undefined}
+          // "old → new" keeps the type and limits in its tooltip (they also show on focus).
+          title={line.change ? typeHint : undefined}
         >
           {line.text}
         </p>

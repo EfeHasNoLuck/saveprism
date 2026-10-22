@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { isChanged, useEditorContext } from "./context";
 import { FieldEditor } from "./FieldEditor";
 import { filterEntries, pageItems } from "./helpers";
-import { EmptyText, Pager, SearchBox, Section } from "./parts";
+import { ChangeNote, EmptyText, Pager, SearchBox, Section } from "./parts";
 
 const PAGE_SIZE = 50;
 
@@ -22,8 +22,8 @@ interface Props {
 }
 
 /**
- * Searchable list of "name  #id  editor" rows (a changed row is tinted); a plain line when the
- * save has none.
+ * Searchable list of "name  #id  old → new  editor" rows (a changed row is tinted and names its
+ * old value); a plain line when the save has none.
  */
 export function EntryList({ title, info, kind, entries, paged = false, className }: Props) {
   const { t } = useTranslation("editor");
@@ -70,6 +70,7 @@ export function EntryList({ title, info, kind, entries, paged = false, className
                   <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
                     #{entry.id}
                   </span>
+                  <ChangeNote field={entry.field} className="ml-auto max-w-[60%] shrink-0" />
                 </div>
                 <div className={isBool ? "shrink-0" : "w-44 shrink-0"}>
                   <FieldEditor field={entry.field} label={name} floatingHint />

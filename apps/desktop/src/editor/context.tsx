@@ -1,5 +1,7 @@
-import { createContext, useContext } from "react";
+import { createContext, useContext, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { isApiError, type ApiError, type Field } from "@/api/commands";
+import type { FormatNumber } from "./helpers";
 
 export interface EditorContextValue {
   readOnly: boolean;
@@ -23,6 +25,16 @@ export function useEditorContext(): EditorContextValue {
 export function isChanged(fields: ReadonlyMap<string, Field>, field: Field): boolean {
   const latest = fields.get(field.path) ?? field;
   return latest.value !== latest.original;
+}
+
+/** Number formatting in the UI language ("1,234" in English, "1.234" in Turkish). */
+export function useFormatNumber(): FormatNumber {
+  const { i18n } = useTranslation("editor");
+  const language = i18n.resolvedLanguage ?? "en";
+  return useMemo(() => {
+    const numbers = new Intl.NumberFormat(language);
+    return (value: number) => numbers.format(value);
+  }, [language]);
 }
 
 /** Turns anything thrown by a command into an `ApiError`. */

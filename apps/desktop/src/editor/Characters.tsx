@@ -4,9 +4,12 @@ import type { Actor, Field } from "@/api/commands";
 import { cn } from "@/lib/utils";
 import { isChanged, useEditorContext } from "./context";
 import { FieldEditor } from "./FieldEditor";
-import { EmptyText, Section } from "./parts";
+import { ChangeNote, EmptyText, Section } from "./parts";
 
-/** A stat with its label above; the pair is tinted when the value is changed. */
+/**
+ * A stat with its label above; the pair is tinted when the value is changed, and "old → new" sits
+ * at the end of the label line so the stat keeps its height.
+ */
 function Labeled({ label, field }: { label: string; field: Field }) {
   const ctx = useEditorContext();
   return (
@@ -16,8 +19,11 @@ function Labeled({ label, field }: { label: string; field: Field }) {
         isChanged(ctx.fields, field) && "bg-changed/10",
       )}
     >
-      <span className="text-[13px] text-muted-foreground">{label}</span>
-      <FieldEditor field={field} label={label} />
+      <div className="flex min-w-0 items-baseline justify-between gap-2">
+        <span className="truncate text-[13px] text-muted-foreground">{label}</span>
+        <ChangeNote field={field} className="max-w-[65%] shrink-0" />
+      </div>
+      <FieldEditor field={field} label={label} showChange={false} />
     </div>
   );
 }
