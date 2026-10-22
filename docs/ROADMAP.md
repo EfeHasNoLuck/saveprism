@@ -99,6 +99,9 @@ Kurallar:
 
 **Hedef:** ilk gerçek kullanıcı akışı. **Demo:** sürükle → bul → değiştir → kaydet → oyunda yükle 👤.
 
+> **Arayüz kuralı (kullanıcı, 2026-10-22):** "yeri geldiğinde bana mockupları göster. iş bitti dediğinde bok gibi bir ui/ux görürsem kızarım
+> sana" → her ekran önce v0'da A/B mockup, kullanıcı onaylar, sonra kodlanır; "bitti" demeden önce kullanıcı yapılan ekranı görür (KAPI-2).
+
 ### Grup A — Görünüm
 1. [ ] **M3-1 Tauri komutları + tauri-specta bağları** ⏱60 dk ✅ open/children/edit/save TS'ten tipli çağrılıyor
 2. [ ] **M3-2 Uygulama düzeni** ⏱60 dk ✅ kenar çubuğu, sekmeler, denetçi, durum çubuğu — *kullanıcı (2026-10-22): ilk mockup fazla
