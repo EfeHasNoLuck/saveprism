@@ -128,6 +128,13 @@ async fn export_json(state: State<'_, AppState>) -> Result<String, ApiError> {
     state.with_session(|session| session.export_json())
 }
 
+/// Writes the text of `export_json` to `target` as UTF-8 (temporary file, then rename) and returns
+/// the written path. Refuses the open save file and folders.
+#[tauri::command]
+async fn export_json_file(state: State<'_, AppState>, target: String) -> Result<String, ApiError> {
+    state.with_session(|session| session.export_json_file(&target))
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let result = tauri::Builder::default()
@@ -146,6 +153,7 @@ pub fn run() {
             discard_changes,
             save,
             export_json,
+            export_json_file,
         ])
         .run(tauri::generate_context!());
 

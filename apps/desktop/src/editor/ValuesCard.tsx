@@ -10,6 +10,7 @@ import {
 } from "@/api/commands";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { isChanged, useEditorContext } from "./context";
 import { FieldEditor } from "./FieldEditor";
 import { EmptyText, SearchBox, Section } from "./parts";
 
@@ -39,15 +40,20 @@ interface NodeProps {
   depth: number;
 }
 
-/** One row: a value with its editor, or a group that expands to its children. */
+/** One row: a value with its editor (tinted when changed), or a group that expands to its children. */
 function ValueNode({ name, path, field, childCount, depth }: NodeProps) {
   const { t } = useTranslation("editor");
+  const ctx = useEditorContext();
   const [open, setOpen] = useState(false);
   const indent = { paddingLeft: `${depth * 16 + 8}px` };
+  const changed = field !== null && isChanged(ctx.fields, field);
 
   return (
     <>
-      <div className={cn(COLUMNS, "min-h-11 border-b py-1.5 pr-2")} style={indent}>
+      <div
+        className={cn(COLUMNS, "min-h-11 border-b py-1.5 pr-2", changed && "bg-changed/10")}
+        style={indent}
+      >
         <div className="flex min-w-0 items-center gap-1">
           {field === null ? (
             <button

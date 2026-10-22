@@ -19,7 +19,7 @@
     "namesFrom": "İsimler şuradan: {{folder}}",
     "noNames": "Oyun veri klasörü bulunamadı; isimler numara olarak gösteriliyor.",
     "variables": "Oyun değişkenleri. Ne işe yaradıklarını bilmiyorsanız değiştirmeyin.",
-    "switches": "Oyun anahtarları (açık/kapalı).",
+    "switches": "Oyun anahtarları (true ya da false).",
     "values": "Bu dosyada bulunan tüm düzenlenebilir değerler."
   },
   "fallback": {
@@ -37,8 +37,7 @@
     "lv": "Sv {{level}}"
   },
   "field": {
-    "was": "önceki: {{value}}",
-    "undo": "{{value}} değerine döndür",
+    "undo": "Geri al (önceki: {{value}})",
     "increase": "Artır",
     "decrease": "Azalt",
     "info": "Daha fazla bilgi"
@@ -73,7 +72,7 @@
   "type": {
     "int": "Tam sayı",
     "float": "Ondalıklı sayı",
-    "bool": "Açık/kapalı",
+    "bool": "Doğru/yanlış",
     "string": "Metin",
     "source": "Dosyadaki tür: {{name}}"
   },

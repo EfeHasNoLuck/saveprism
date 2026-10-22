@@ -19,7 +19,7 @@
     "namesFrom": "Names from {{folder}}",
     "noNames": "No game data folder was found, so names are shown as numbers.",
     "variables": "Game variables. Change them only if you know what they do.",
-    "switches": "Game switches (on/off).",
+    "switches": "Game switches (true or false).",
     "values": "All editable values found in this file."
   },
   "fallback": {
@@ -37,8 +37,7 @@
     "lv": "Lv {{level}}"
   },
   "field": {
-    "was": "was {{value}}",
-    "undo": "Restore {{value}}",
+    "undo": "Undo (was {{value}})",
     "increase": "Increase",
     "decrease": "Decrease",
     "info": "More information"
@@ -73,7 +72,7 @@
   "type": {
     "int": "Whole number",
     "float": "Decimal number",
-    "bool": "On/off",
+    "bool": "True/false",
     "string": "Text",
     "source": "File type: {{name}}"
   },

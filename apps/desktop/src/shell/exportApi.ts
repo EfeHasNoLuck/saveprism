@@ -7,3 +7,11 @@ import { invoke } from "@tauri-apps/api/core";
 export function exportJson(): Promise<string> {
   return invoke<string>("export_json");
 }
+
+/**
+ * Writes the same text to `target` as UTF-8 and returns the written path. The host refuses the open
+ * save file itself and folders.
+ */
+export function exportJsonFile(target: string): Promise<string> {
+  return invoke<string>("export_json_file", { target });
+}

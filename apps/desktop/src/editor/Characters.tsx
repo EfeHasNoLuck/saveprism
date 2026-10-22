@@ -2,13 +2,20 @@ import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { Actor, Field } from "@/api/commands";
 import { cn } from "@/lib/utils";
-import { useEditorContext } from "./context";
+import { isChanged, useEditorContext } from "./context";
 import { FieldEditor } from "./FieldEditor";
 import { EmptyText, Section } from "./parts";
 
+/** A stat with its label above; the pair is tinted when the value is changed. */
 function Labeled({ label, field }: { label: string; field: Field }) {
+  const ctx = useEditorContext();
   return (
-    <div className="flex min-w-0 flex-col gap-1">
+    <div
+      className={cn(
+        "-m-1.5 flex min-w-0 flex-col gap-1 rounded-md p-1.5",
+        isChanged(ctx.fields, field) && "bg-changed/10",
+      )}
+    >
       <span className="text-[13px] text-muted-foreground">{label}</span>
       <FieldEditor field={field} label={label} />
     </div>

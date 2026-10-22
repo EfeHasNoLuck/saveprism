@@ -66,7 +66,15 @@ export function BottomBar({
           }}
         >
           <PopoverTrigger asChild>
-            <Button variant="ghost" disabled={changeCount === 0}>
+            {/* Amber like the changed fields, so the count and the tints read as one thing. */}
+            <Button
+              variant="ghost"
+              disabled={changeCount === 0}
+              className={changeCount > 0 ? "text-changed-foreground" : undefined}
+            >
+              {changeCount === 0 ? null : (
+                <span className="size-2 rounded-full bg-changed" aria-hidden="true" />
+              )}
               {changeCount === 0
                 ? t("bottom.noChanges")
                 : t("bottom.changes", { count: changeCount })}

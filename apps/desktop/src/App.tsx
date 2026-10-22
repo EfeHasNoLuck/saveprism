@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { TriangleAlert } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import {
@@ -20,9 +21,9 @@ import { BackgroundPattern } from "./shell/BackgroundPattern";
 import { BottomBar } from "./shell/BottomBar";
 import { ConfirmDiscardDialog } from "./shell/ConfirmDiscardDialog";
 import { useNotify, useSettings } from "./shell/context";
-import { baseName } from "./shell/engine";
+import { baseName, exportFileName } from "./shell/engine";
 import { describeError } from "./shell/errors";
-import { exportJson } from "./shell/exportApi";
+import { exportJson, exportJsonFile } from "./shell/exportApi";
 import { Header } from "./shell/Header";
 import { JsonDialog, type JsonState } from "./shell/JsonDialog";
 import { PasswordDialog } from "./shell/PasswordDialog";
@@ -55,6 +56,9 @@ function App() {
   const [pendingOpen, setPendingOpen] = useState<string | null>(null);
   const [jsonOpen, setJsonOpen] = useState(false);
   const [jsonState, setJsonState] = useState<JsonState>({ status: "loading" });
+  const [exporting, setExporting] = useState(false);
+  /** The window's close button was pressed while there were unsaved changes. */
+  const [closeAsked, setCloseAsked] = useState(false);
 
   const notifyError = useCallback(
     (title: string, error: unknown) => {
@@ -178,6 +182,44 @@ function App() {
     };
   }, []);
 
+  // Closing the window with unsaved changes asks first. While this handler is registered the host
+  // waits for it: without `preventDefault()` the window is destroyed right away.
+  const hasChangesRef = useRef(false);
+  useEffect(() => {
+    hasChangesRef.current = file !== null && changeCount > 0;
+  }, [file, changeCount]);
+
+  useEffect(() => {
+    const handle: { stop: (() => void) | null } = { stop: null };
+    let disposed = false;
+    try {
+      void getCurrentWindow()
+        .onCloseRequested((event) => {
+          if (!hasChangesRef.current) return;
+          event.preventDefault();
+          setCloseAsked(true);
+        })
+        .then((stop) => {
+          if (disposed) stop();
+          else handle.stop = stop;
+        })
+        .catch(() => undefined);
+    } catch {
+      // Not running inside the desktop shell: nothing to guard.
+    }
+    return () => {
+      disposed = true;
+      if (handle.stop) handle.stop();
+    };
+  }, []);
+
+  const closeWithoutSaving = useCallback(() => {
+    setCloseAsked(false);
+    getCurrentWindow()
+      .destroy()
+      .catch((error: unknown) => notifyError(t("toast.closeFailed"), error));
+  }, [notifyError, t]);
+
   const afterSave = useCallback(
     async (target: string, overwrite: boolean) => {
       setBusy(true);
@@ -284,6 +326,38 @@ function App() {
       });
   }, [t]);
 
+  /** Saves the JSON view as a UTF-8 `.txt` file at a place the user picks. */
+  const exportJsonText = useCallback(async () => {
+    if (!file) return;
+    setExporting(true);
+    try {
+      const target = await saveDialog({
+        title: t("dialog.exportTitle"),
+        defaultPath: exportFileName(file.fileName),
+        filters: [{ name: t("dialog.textFiles"), extensions: ["txt"] }],
+      });
+      if (typeof target !== "string") return;
+      const written = await exportJsonFile(target);
+      notify({
+        kind: "saved",
+        title: t("toast.exportedTitle"),
+        detail: written,
+        action: {
+          label: t("toast.showInFolder"),
+          run: () => {
+            revealItemInDir(written).catch((error: unknown) =>
+              notifyError(t("toast.showInFolder"), error),
+            );
+          },
+        },
+      });
+    } catch (error) {
+      notifyError(t("toast.exportFailed"), error);
+    } finally {
+      setExporting(false);
+    }
+  }, [file, notify, notifyError, t]);
+
   const readOnly = file !== null && !file.editable;
 
   return (
@@ -343,7 +417,13 @@ function App() {
 
         <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
         {jsonOpen ? (
-          <JsonDialog open onOpenChange={setJsonOpen} state={jsonState} />
+          <JsonDialog
+            open
+            onOpenChange={setJsonOpen}
+            state={jsonState}
+            onExport={() => void exportJsonText()}
+            exporting={exporting}
+          />
         ) : null}
         {passwordRequest ? (
           <PasswordDialog
@@ -362,6 +442,14 @@ function App() {
               setPendingOpen(null);
               void openPath(path);
             }}
+          />
+        ) : null}
+        {closeAsked ? (
+          <ConfirmDiscardDialog
+            reason="close"
+            count={changeCount}
+            onCancel={() => setCloseAsked(false)}
+            onDiscard={closeWithoutSaving}
           />
         ) : null}
         <Toasts />

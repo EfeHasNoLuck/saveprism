@@ -287,6 +287,75 @@ fn save_as_onto_an_existing_file_needs_overwrite() {
     assert_eq!(row(&reopened, "/level").preview, "5");
 }
 
+/// Names of the files in `dir`, sorted.
+fn file_names(dir: &Path) -> Vec<String> {
+    let mut names: Vec<String> = fs::read_dir(dir)
+        .unwrap()
+        .map(|entry| entry.unwrap().file_name().to_string_lossy().into_owned())
+        .collect();
+    names.sort();
+    names
+}
+
+#[test]
+fn export_json_file_refuses_the_open_save_and_folders() {
+    let env = env();
+    let path = copy_in(&env, "synthetic/json/compact.json");
+    let before = fs::read(&path).unwrap();
+    let session = open(&env, &path, None).unwrap();
+
+    // The open save, also spelled through `..` (only canonical paths match).
+    let roundabout = env
+        .work
+        .join("..")
+        .join("work")
+        .join(path.file_name().unwrap());
+    for target in [&path, &roundabout] {
+        let error = session
+            .export_json_file(target.to_str().unwrap())
+            .unwrap_err();
+        assert_eq!(error.code, app_codes::EXPORT_TARGET, "{}", target.display());
+        assert!(!error.hint.is_empty());
+    }
+    // A folder, also one named like a text file, and any name that is not `.txt`.
+    let txt_folder = env.work.join("folder.txt");
+    fs::create_dir(&txt_folder).unwrap();
+    let other_save = env.work.join("other.es3");
+    for target in [&env.work, &txt_folder, &other_save] {
+        let error = session
+            .export_json_file(target.to_str().unwrap())
+            .unwrap_err();
+        assert_eq!(error.code, app_codes::EXPORT_TARGET, "{}", target.display());
+    }
+    fs::remove_dir(&txt_folder).unwrap();
+    assert!(session.export_json_file("").is_err());
+
+    assert_eq!(fs::read(&path).unwrap(), before);
+    assert_eq!(file_names(&env.work), vec!["compact.json".to_string()]);
+}
+
+#[test]
+fn export_json_file_writes_the_json_view_as_text() {
+    let env = env();
+    let mut session = open_json(&env);
+    session.edit_value("/level", "7").unwrap();
+    let target = env.work.join("compact.json.txt");
+    fs::write(&target, b"old text").unwrap();
+
+    let written = session.export_json_file(target.to_str().unwrap()).unwrap();
+    assert_eq!(written, target.to_string_lossy());
+    let text = fs::read_to_string(&target).unwrap();
+    assert_eq!(text, session.export_json().unwrap());
+    assert!(text.starts_with('{'));
+    assert!(text.contains("\"level\": 7"));
+    // No temporary file is left next to it, and the pending edit is still pending.
+    assert_eq!(
+        file_names(&env.work),
+        vec!["compact.json".to_string(), "compact.json.txt".to_string()]
+    );
+    assert_eq!(session.pending_changes().len(), 1);
+}
+
 #[test]
 fn encrypted_es3_asks_for_a_password() {
     let env = env();

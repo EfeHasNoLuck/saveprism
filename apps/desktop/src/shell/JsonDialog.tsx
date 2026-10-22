@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, ChevronUp, Copy, Search } from "lucide-react";
+import { ChevronDown, ChevronUp, Copy, FileDown, Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
@@ -32,10 +32,14 @@ interface JsonDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   state: JsonState;
+  /** Saves the same text as a `.txt` file (the caller asks for the place and reports the result). */
+  onExport: () => void;
+  /** An export is running. */
+  exporting: boolean;
 }
 
-/** Read-only pretty JSON of the open document, with search and Copy. */
-export function JsonDialog({ open, onOpenChange, state }: JsonDialogProps) {
+/** Read-only pretty JSON of the open document, with search, Copy and Export .txt. */
+export function JsonDialog({ open, onOpenChange, state, onExport, exporting }: JsonDialogProps) {
   const { t } = useTranslation();
   const [query, setQuery] = useState("");
   const [current, setCurrent] = useState(0);
@@ -162,6 +166,14 @@ export function JsonDialog({ open, onOpenChange, state }: JsonDialogProps) {
           >
             <Copy />
             {copied ? t("common.copied") : t("common.copy")}
+          </Button>
+          <Button
+            variant="outline"
+            disabled={state.status !== "ready" || exporting}
+            onClick={onExport}
+          >
+            <FileDown />
+            {t("json.exportTxt")}
           </Button>
         </div>
 

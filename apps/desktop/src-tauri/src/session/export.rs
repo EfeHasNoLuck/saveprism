@@ -1,13 +1,17 @@
-//! Pretty JSON text of the open document, for the read-only "Open JSON" view.
+//! Pretty JSON text of the open document, for the read-only "Open JSON" view and "Export .txt".
 //!
 //! The text is a view, not a file format: bytes become `"<N bytes>"`, references become `"-> #N"`
 //! (so cyclic graphs cannot loop), maps become lists of `{"key", "value"}`, and repeated object keys
 //! get a ` (2)`, ` (3)` suffix. Nothing in the document is executed or evaluated.
 
+use std::fs;
+use std::io::Write;
+use std::path::{Path as FsPath, PathBuf};
+
 use saveprism_core::{Error, NodeId, SaveDoc, Value, codes};
 use serde_json::{Map, Number, Value as Json};
 
-use super::{ApiError, Session};
+use super::{ApiError, Session, app_codes, same_file};
 
 /// Largest JSON text the view returns, in bytes.
 pub const MAX_EXPORT_BYTES: usize = 50 * 1024 * 1024;
@@ -114,10 +118,84 @@ fn export_doc(doc: &SaveDoc, max_bytes: usize) -> Result<String, ApiError> {
     Ok(text)
 }
 
+/// Writes `bytes` to `target` through a temporary file in the same folder and a rename, so a
+/// failed write leaves neither a partial target nor the temporary file behind.
+fn write_atomic(target: &FsPath, bytes: &[u8]) -> Result<(), ApiError> {
+    let dir = match target.parent() {
+        Some(parent) if !parent.as_os_str().is_empty() => parent,
+        _ => FsPath::new("."),
+    };
+    let temp_error = |source: std::io::Error| {
+        ApiError::from(
+            Error::new(
+                codes::IO_TEMP_WRITE,
+                format!(
+                    "cannot write a temporary file in \"{}\": {source}",
+                    dir.display()
+                ),
+            )
+            .with_source(source),
+        )
+    };
+    let mut temp = tempfile::Builder::new()
+        .prefix(".saveprism-")
+        .suffix(".tmp")
+        .tempfile_in(dir)
+        .map_err(temp_error)?;
+    temp.write_all(bytes)
+        .and_then(|()| temp.as_file().sync_all())
+        .map_err(temp_error)?;
+    // A failed rename drops the temporary file, which deletes it.
+    temp.persist(target).map_err(|failed| {
+        ApiError::from(
+            Error::new(
+                codes::IO_REPLACE,
+                format!("cannot write \"{}\": {}", target.display(), failed.error),
+            )
+            .with_source(failed.error),
+        )
+    })?;
+    Ok(())
+}
+
 impl Session {
     /// Pretty JSON text of the document as it is now (pending edits included). Fails above 50 MB.
     pub fn export_json(&self) -> Result<String, ApiError> {
         export_doc(&self.doc, MAX_EXPORT_BYTES)
+    }
+
+    /// Writes [`Session::export_json`] to `target` as UTF-8 text (temporary file, then rename) and
+    /// returns the written path. Refuses the open save file itself, names that do not end in
+    /// `.txt` (so a typed name can never replace another save or a backup) and an existing folder.
+    pub fn export_json_file(&self, target: &str) -> Result<String, ApiError> {
+        let target_path = PathBuf::from(target);
+        if same_file(&target_path, &self.path) {
+            return Err(ApiError::new(
+                app_codes::EXPORT_TARGET,
+                format!("\"{}\" is the open save file", target_path.display()),
+                "Pick another file name. The export never replaces the save.",
+            ));
+        }
+        let is_txt = target_path
+            .extension()
+            .is_some_and(|ext| ext.eq_ignore_ascii_case("txt"));
+        if !is_txt {
+            return Err(ApiError::new(
+                app_codes::EXPORT_TARGET,
+                format!("\"{}\" is not a .txt file", target_path.display()),
+                "Pick a file name that ends in .txt.",
+            ));
+        }
+        if fs::metadata(&target_path).is_ok_and(|meta| meta.is_dir()) {
+            return Err(ApiError::new(
+                app_codes::EXPORT_TARGET,
+                format!("\"{}\" is a folder", target_path.display()),
+                "Pick a file name inside the folder.",
+            ));
+        }
+        let text = self.export_json()?;
+        write_atomic(&target_path, text.as_bytes())?;
+        Ok(target_path.to_string_lossy().into_owned())
     }
 }
 

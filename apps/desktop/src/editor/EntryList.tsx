@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { Entry } from "@/api/commands";
+import { cn } from "@/lib/utils";
+import { isChanged, useEditorContext } from "./context";
 import { FieldEditor } from "./FieldEditor";
 import { filterEntries, pageItems } from "./helpers";
 import { EmptyText, Pager, SearchBox, Section } from "./parts";
@@ -19,9 +21,13 @@ interface Props {
   className?: string;
 }
 
-/** Searchable list of "name  #id  editor" rows; a plain line when the save has none. */
+/**
+ * Searchable list of "name  #id  editor" rows (a changed row is tinted); a plain line when the
+ * save has none.
+ */
 export function EntryList({ title, info, kind, entries, paged = false, className }: Props) {
   const { t } = useTranslation("editor");
+  const ctx = useEditorContext();
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(0);
   const filtered = useMemo(() => filterEntries(entries, query), [entries, query]);
@@ -39,19 +45,23 @@ export function EntryList({ title, info, kind, entries, paged = false, className
           placeholder={t("search.list")}
         />
       )}
-      <div className={paged ? "flex flex-col" : "flex max-h-80 flex-col overflow-y-auto"}>
-        {entries.length === 0 ? (
-          <EmptyText>{t(`empty.${kind}`)}</EmptyText>
-        ) : rows.length === 0 ? (
-          <EmptyText>{t("search.empty")}</EmptyText>
-        ) : (
-          rows.map((entry) => {
+      {entries.length === 0 ? (
+        <EmptyText>{t(`empty.${kind}`)}</EmptyText>
+      ) : rows.length === 0 ? (
+        <EmptyText>{t("search.empty")}</EmptyText>
+      ) : (
+        // Rows reach 8 px past the search box, so a changed row's tint has room around its text.
+        <div className={cn("-mx-2 flex flex-col", !paged && "max-h-80 overflow-y-auto")}>
+          {rows.map((entry) => {
             const name = entry.name ?? t(`fallback.${kind}`, { id: entry.id });
             const isBool = entry.field.kind === "bool";
             return (
               <div
                 key={entry.id}
-                className="flex items-center gap-2 border-b py-1.5 last:border-b-0"
+                className={cn(
+                  "flex items-center gap-2 border-b px-2 py-1.5 last:border-b-0",
+                  isChanged(ctx.fields, entry.field) && "bg-changed/10",
+                )}
               >
                 <div className="flex min-w-0 flex-1 items-baseline gap-1.5">
                   <span className="truncate text-[13px]" title={name}>
@@ -66,9 +76,9 @@ export function EntryList({ title, info, kind, entries, paged = false, className
                 </div>
               </div>
             );
-          })
-        )}
-      </div>
+          })}
+        </div>
+      )}
       {paged && filtered.length > PAGE_SIZE ? (
         <Pager page={page} total={filtered.length} size={PAGE_SIZE} onPage={setPage} />
       ) : null}

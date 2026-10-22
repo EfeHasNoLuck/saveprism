@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
-import { baseName, dirName, engineLabel } from "./engine";
+import { baseName, dirName, engineLabel, exportFileName } from "./engine";
 import { capitalize, describeError } from "./errors";
 
 describe("describeError", () => {
@@ -40,5 +40,12 @@ describe("engine helpers", () => {
     expect(baseName("/home/u/a.sav")).toBe("a.sav");
     expect(dirName("C:\\saves\\a.sav")).toBe("C:\\saves");
     expect(dirName("a.sav")).toBe("");
+  });
+
+  it("names the .txt export after the save's stem", () => {
+    expect(exportFileName("file1.rmmzsave")).toBe("file1.json.txt");
+    expect(exportFileName("slot.v2.es3")).toBe("slot.v2.json.txt");
+    expect(exportFileName("SaveGame")).toBe("SaveGame.json.txt");
+    expect(exportFileName(".hidden")).toBe(".hidden.json.txt");
   });
 });

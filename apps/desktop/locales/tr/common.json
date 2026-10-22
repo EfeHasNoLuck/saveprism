@@ -36,7 +36,9 @@
     "openTitle": "Bir kayıt dosyası aç",
     "saveTitle": "Farklı kaydet",
     "saveFiles": "Kayıt dosyaları",
-    "allFiles": "Tüm dosyalar"
+    "allFiles": "Tüm dosyalar",
+    "exportTitle": "JSON'u metin olarak dışa aktar",
+    "textFiles": "Metin"
   },
   "start": {
     "dropActive": "Açmak için bırak",
@@ -73,7 +75,11 @@
     "discardOpen_one": "{{count}} değişiklik silinsin ve başka bir dosya açılsın mı?",
     "discardOpen_other": "{{count}} değişiklik silinsin ve başka bir dosya açılsın mı?",
     "discardBody": "Kaydedilmemiş değişikliklerin kaybolacak.",
-    "discard": "Sil"
+    "discard": "Sil",
+    "closeTitle": "Kaydetmeden kapatılsın mı?",
+    "closeBody_one": "{{count}} değişikliğin kaybolacak.",
+    "closeBody_other": "{{count}} değişikliğin kaybolacak.",
+    "closeDiscard": "Kaydetmeden kapat"
   },
   "json": {
     "title": "Belge JSON olarak",
@@ -84,7 +90,8 @@
     "noMatches": "Eşleşme yok",
     "next": "Sonraki eşleşme",
     "previous": "Önceki eşleşme",
-    "failed": "JSON görünümü oluşturulamadı."
+    "failed": "JSON görünümü oluşturulamadı.",
+    "exportTxt": "Dışa aktar (.txt)"
   },
   "password": {
     "title": "Bu dosya şifreli",
@@ -103,6 +110,9 @@
     "saveFailed": "Dosya kaydedilemedi",
     "verifyFailed": "Kaydedilen dosya doğrulanamadı",
     "jsonFailed": "JSON görünümü oluşturulamadı",
+    "exportedTitle": "JSON metin olarak dışa aktarıldı",
+    "exportFailed": "JSON dışa aktarılamadı",
+    "closeFailed": "Pencere kapatılamadı",
     "discardFailed": "Değişiklikler geri alınamadı",
     "changesFailed": "Değişiklik listesi okunamadı",
     "errorDetail": "{{reason}} {{fix}}"

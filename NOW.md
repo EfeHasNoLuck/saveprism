@@ -22,6 +22,8 @@
 ## Known gaps
 - RPG Maker saves re-compress to different bytes: editable, not byte-exact. ES3 dicts with number keys don't open. Palworld PlZ2 world
   files are slow.
+- JSON view/export on huge saves: the 50 MB cap is checked only after the whole text is built, and `unique_key` in
+  `session/export.rs` is quadratic on many repeated keys; both run under the session lock (review, 2026-10-22).
 - Real saves were pushed once in `bed2ed9` (private repo); ask the user before any history cleanup.
 
 ## Later (not now)

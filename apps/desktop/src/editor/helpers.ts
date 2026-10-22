@@ -96,9 +96,6 @@ export function formatValue(text: string, format: FormatNumber): string {
 
 export interface HintInput {
   hint: string;
-  /** Already translated, for example "was 5". */
-  wasText: string;
-  changed: boolean;
   focused: boolean;
   /** Shown even when not focused or changed (Gold). */
   always: boolean;
@@ -111,14 +108,14 @@ export interface HintLine {
   error: boolean;
 }
 
-/** The line under a field, or `null` when none should show. */
+/**
+ * The line under a field, or `null` when none should show. A changed value is shown by its colour
+ * and the undo button (whose tooltip names the old value), not by this line.
+ */
 export function hintLine(i: HintInput): HintLine | null {
   if (i.invalid) return i.hint ? { text: i.hint, error: true } : null;
-  if (!(i.always || i.focused || i.changed)) return null;
-  const parts: string[] = [];
-  if (i.hint) parts.push(i.hint);
-  if (i.changed) parts.push(i.wasText);
-  return parts.length > 0 ? { text: parts.join(" · "), error: false } : null;
+  if (!(i.always || i.focused) || !i.hint) return null;
+  return { text: i.hint, error: false };
 }
 
 export interface Searchable {

@@ -19,6 +19,12 @@ export function useEditorContext(): EditorContextValue {
   return ctx;
 }
 
+/** True when the latest known value of `field` differs from the value in the file. */
+export function isChanged(fields: ReadonlyMap<string, Field>, field: Field): boolean {
+  const latest = fields.get(field.path) ?? field;
+  return latest.value !== latest.original;
+}
+
 /** Turns anything thrown by a command into an `ApiError`. */
 export function toApiError(error: unknown, fallbackMessage: string): ApiError {
   if (isApiError(error)) return error;

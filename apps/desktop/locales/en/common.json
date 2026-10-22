@@ -36,7 +36,9 @@
     "openTitle": "Open a save file",
     "saveTitle": "Save as",
     "saveFiles": "Save files",
-    "allFiles": "All files"
+    "allFiles": "All files",
+    "exportTitle": "Export JSON as text",
+    "textFiles": "Text"
   },
   "start": {
     "dropActive": "Release to open",
@@ -73,7 +75,11 @@
     "discardOpen_one": "Discard {{count}} change and open another file?",
     "discardOpen_other": "Discard {{count}} changes and open another file?",
     "discardBody": "Your unsaved changes will be lost.",
-    "discard": "Discard"
+    "discard": "Discard",
+    "closeTitle": "Close without saving?",
+    "closeBody_one": "Your {{count}} change will be lost.",
+    "closeBody_other": "Your {{count}} changes will be lost.",
+    "closeDiscard": "Close without saving"
   },
   "json": {
     "title": "Document as JSON",
@@ -84,7 +90,8 @@
     "noMatches": "No matches",
     "next": "Next match",
     "previous": "Previous match",
-    "failed": "The JSON view could not be created."
+    "failed": "The JSON view could not be created.",
+    "exportTxt": "Export .txt"
   },
   "password": {
     "title": "This file is encrypted",
@@ -103,6 +110,9 @@
     "saveFailed": "The file could not be saved",
     "verifyFailed": "The saved file did not check out",
     "jsonFailed": "The JSON view could not be created",
+    "exportedTitle": "JSON exported as text",
+    "exportFailed": "The JSON could not be exported",
+    "closeFailed": "The window could not be closed",
     "discardFailed": "The changes could not be undone",
     "changesFailed": "The list of changes could not be read",
     "errorDetail": "{{reason}} {{fix}}"

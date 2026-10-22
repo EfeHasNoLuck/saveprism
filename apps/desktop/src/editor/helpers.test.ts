@@ -14,8 +14,6 @@ import {
 
 const base = {
   hint: "Whole number · 0 to 99,999,999",
-  wasText: "was 5",
-  changed: false,
   focused: false,
   always: false,
   invalid: false,
@@ -27,12 +25,6 @@ describe("hintLine", () => {
   });
   it("shows the hint when focused", () => {
     expect(hintLine({ ...base, focused: true })).toEqual({ text: base.hint, error: false });
-  });
-  it("adds the original when changed", () => {
-    expect(hintLine({ ...base, changed: true })).toEqual({
-      text: `${base.hint} · was 5`,
-      error: false,
-    });
   });
   it("always shows for Gold", () => {
     expect(hintLine({ ...base, always: true })?.text).toBe(base.hint);
@@ -61,7 +53,7 @@ describe("fieldHint", () => {
     expect(fieldHint("int", -safe, safe, t, format)).toBe("type.int");
     expect(fieldHint("int", 0, safe, t, format)).toBe("type.int · range.atLeast(0)");
   });
-  it("has no range for on/off and text", () => {
+  it("has no range for true/false and text", () => {
     expect(fieldHint("bool", 0, 1, t, format)).toBe("type.bool");
     expect(fieldHint("string", null, null, t, format)).toBe("type.string");
   });

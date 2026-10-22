@@ -27,6 +27,4 @@ serde_json = "1"
 saveprism-core = { path = "../../../crates/saveprism-core" }
 saveprism-codecs = { workspace = true }
 tauri-plugin-dialog = "2"
-
-[dev-dependencies]
 tempfile = { workspace = true }

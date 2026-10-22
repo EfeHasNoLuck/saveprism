@@ -54,6 +54,8 @@ pub mod app_codes {
     pub const TARGET_EXISTS: &str = "SP-APP-006";
     /// The node is a container or has no editable type.
     pub const NOT_EDITABLE_NODE: &str = "SP-APP-007";
+    /// "Export .txt" would write onto the open save file or a folder.
+    pub const EXPORT_TARGET: &str = "SP-APP-008";
     /// Internal state could not be used (lock poisoned).
     pub const INTERNAL: &str = "SP-APP-009";
 }

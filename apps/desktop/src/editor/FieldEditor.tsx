@@ -12,7 +12,7 @@ import {
   stepValue,
   type RangeProblem,
 } from "./helpers";
-import { Switch } from "@/components/ui/switch";
+import { BoolChoice } from "./BoolChoice";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface Props {
@@ -26,7 +26,7 @@ interface Props {
   className?: string;
 }
 
-/** One editor for every scalar: number (with steppers), switch or text. */
+/** One editor for every scalar: number (with steppers), true/false or text. */
 export function FieldEditor({
   field: initial,
   alwaysHint = false,
@@ -109,14 +109,13 @@ export function FieldEditor({
   }
   const line = hintLine({
     hint: hintText,
-    wasText: t("field.was", { value: originalText }),
-    changed: !isBool && changed,
     focused: !isBool && focused,
     always: !isBool && alwaysHint,
     invalid,
   });
 
-  // The undo slot is always there, so the input keeps its width when the button appears.
+  // The undo slot is always there, so the input keeps its width when the button appears. Its
+  // tooltip names the value in the file ("Undo (was 1,250)"); the field itself is only tinted.
   const undoButton = changed ? (
     <button
       type="button"
@@ -139,11 +138,12 @@ export function FieldEditor({
     <div className={cn("flex items-center gap-1", isBool && "justify-end")}>
       {isBool ? (
         <div className="flex shrink-0 justify-end">
-          <Switch
-            aria-label={label}
-            checked={field.value.toLowerCase() === "true"}
+          <BoolChoice
+            label={label}
+            value={field.value.toLowerCase() === "true"}
             disabled={disabled}
-            onCheckedChange={(checked) => commit(checked ? "true" : "false")}
+            changed={changed}
+            onChange={(next) => commit(next ? "true" : "false")}
           />
         </div>
       ) : (
@@ -186,7 +186,7 @@ export function FieldEditor({
             className={cn(
               "h-8 w-full min-w-0 rounded-md border bg-background px-2 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:bg-muted",
               isNumber && "text-right tabular-nums",
-              changed && !invalid && "border-primary/40 bg-primary/10",
+              changed && !invalid && "border-changed bg-changed/10",
               invalid &&
                 "border-destructive bg-destructive/5 focus-visible:border-destructive focus-visible:ring-destructive/20",
             )}
@@ -210,7 +210,7 @@ export function FieldEditor({
 
   if (floatingHint) {
     // Table rows: the line floats under the field while it is focused or wrong, so the row
-    // keeps its height. "was ..." stays in the undo button's tooltip.
+    // keeps its height.
     const floating = line !== null && (focused || invalid) ? line : null;
     return (
       <Tooltip open={floating !== null}>
