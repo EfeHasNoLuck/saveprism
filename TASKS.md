@@ -258,6 +258,117 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
 
 ---
 
+## M2 — İlk motorlar
+
+- **Talep:** ROADMAP M2 (HANDOFF-20261022-1 adım 3–4).
+- **KAPI-1 (kullanıcı, 2026-10-22):** bağımlılıklar "Evet, ekle" · plan (D6 + D7) "Her şeyde yetkin var, overengineering yapma ve bilgisayarımı
+  bozma :D" · başarısızlıkta "Güçlendir, olmazsa ayır" (bir kez güçlendir, en çok opus; olmazsa `[?]`, diğerlerine devam).
+- **Bağımlılıklar (onaylı, CEO ekledi 2026-10-22):** `uesave` 0.7 (MIT, GVAS) · `aes` 0.9, `cbc` 0.2, `pbkdf2` 0.13, `sha1` 0.11
+  (MIT OR Apache-2.0, ES3 şifresi). Listede olmayan paket eklenmez.
+- **Gerçek kayıt yok** (kullanıcının oyunu yok, 2026-10-22). Örnekler bağımsız araçla üretilir: MZ → Python `zlib` (pako zlib'in birebir
+  portu), ES3 şifreli → .NET `Rfc2898DeriveBytes` + `Aes` (ES3'ün kullandığı sınıflar, PowerShell). GVAS → yalnız `uesave` ile (bağımsız
+  üretici yok; bilinen sınır). ROADMAP demosundaki "gerçek kayıt" kullanıcıya kalır (M2-7).
+- **Kapsam dışı:** ad sözlüğünün arayüzü (M3), `PlM`/Oodle (Park), ES3 parola kasası (`saveprism-keys`, M4), MZ dışı RPG Maker sürümleri.
+- **Kayıt düzeni:** her format `crates/saveprism-codecs/src/<format>/mod.rs` içinde `pub fn register(reg: &mut Registry)` verir;
+  `src/lib.rs`'e yalnız M2-1 yazar (üç modülü birden bağlar).
+
+### D6 — RPG Maker, ES3 düz, GVAS, açık bulgular · KAPI-1: onaylandı 2026-10-22 · Bağımlı: D5 doğrulandı
+
+- [ ] **M2-1 RPG Maker MV/MZ**
+  - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 0/3
+  - Sahip: `crates/saveprism-codecs/src/rpgmaker/**` · `crates/saveprism-codecs/src/lib.rs` · `fixtures/synthetic/rpgmaker-mz/**` ·
+    `fixtures/expected/rpgmaker-mz/**` · `.fabrika/raporlar/M2-1.md`
+  - Okur: research/02 "RPG Maker MV / MZ" · MIMARI §3.1, §3.3, §3.11 · `crates/saveprism-codecs/src/{json,layers}/mod.rs`
+  - Bağımlı: D5
+  - Kabul: MV `.rpgsave` = lz-string base64 + JSON (mevcut katmanlar; tarif + uzantı ipucu) · MZ `.rmmzsave` = pako `to:"string"`
+    ikili metninin UTF-8 yazımı → zlib (seviye 1) → JSON; ikili metin için yeni katman `encoding.js-binary-string` (rpgmaker içinde) ·
+    JsonEx `@c` / `@a` anahtarları korunur ve düğüm ipucu `JsonEx:meta` alır · `data/System.json`'dan anahtar/değişken adları,
+    `Actors.json`/`Items.json`'dan adlar okuyan `NameDictionary` (yalnız okuma; arayüz M3) · `lib.rs` rpgmaker + es3 + gvas `register`
+    çağrılarını ekler · sentetik MZ örneği CEO'nun Python betiğiyle üretilir, beklenti `SAVEPRISM_BLESS=1`
+  - Doğrulama: CEO `kontrol.sh rust` · MV 4 örnek + MZ örnekleri decode → encode birebir
+  - Denetim: dalga denetçisi
+
+- [ ] **M2-2 ES3 düz**
+  - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 0/3
+  - Sahip: `crates/saveprism-codecs/src/es3/**` · `fixtures/synthetic/es3/**` · `fixtures/expected/es3/**` · `.fabrika/raporlar/M2-2.md`
+  - Okur: research/02 "Unity — Easy Save 3" · MIMARI §3.2, §3.3 · `crates/saveprism-codecs/src/json/mod.rs` · `crates/saveprism-core/src/doc.rs`
+  - Bağımlı: D5
+  - Kabul: `format.es3` = JSON codec üzerine ince kat; `__type` değeri kardeş düğümlerin ipucuna `ES3:<tip>` olarak geçer, kendisi korunur ·
+    bayt-bayt round-trip · sniff: `{` + `__type` ya da `.es3` uzantısı · sentetik 2 düz örnek (metin, ajan yazar)
+  - Doğrulama: CEO `kontrol.sh rust`
+  - Denetim: dalga denetçisi
+
+- [ ] **M2-5 Unreal GVAS (uesave)**
+  - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 0/3
+  - Sahip: `crates/saveprism-codecs/src/gvas/**` · `crates/saveprism-codecs/tests/gvas.rs` · `.fabrika/raporlar/M2-5.md`
+  - Okur: research/02 "Unreal — GVAS" · MIMARI §3.2–3.4 · `uesave` 0.7 genel API'si (docs.rs)
+  - Bağımlı: D5
+  - Kabul: `format.gvas` (`GVAS` sihirli baytı) · uesave `Save` ↔ SaveDoc ağacı (özellik adı, tip ipucu `GVAS:<tip>`) · tip ipuçları
+    `Params`'ta (`types` tablosu) · encode uesave yazıcısıyla · round-trip birebir değilse koruma "farklı" der (düzenleme kapalı) ·
+    testler uesave ile kurulan küçük kayıtlarla (ikili dosya yazılmaz) · sınırlar: girdi boyutu ve düğüm sayısı `Limits`'ten
+  - Doğrulama: CEO `kontrol.sh rust`
+  - Denetim: dalga denetçisi
+
+- [ ] **FIX-1 Açık ORTA bulgular (D5b)**
+  - Motor: claude/kodcu·haiku · Effort: medium · Deneme: 0/3
+  - Sahip: `crates/saveprism-cli/src/lib.rs` · `crates/saveprism-core/src/io.rs` · `crates/saveprism-core/tests/io.rs` · `.fabrika/raporlar/FIX-1.md`
+  - Okur: `.fabrika/raporlar/D5b-denetim.md` (iki ORTA satırı)
+  - Bağımlı: D5
+  - Kabul: CLI doğrulama kapanı yeni hedefte `SP-IO-004` yerine doğru kodu döndürür · Unix'te değiştirilen dosyanın izinleri korunur
+    (`#[cfg(unix)]`, Windows'ta değişiklik yok) · ilgili testler
+  - Doğrulama: CEO `kontrol.sh rust`
+  - Denetim: dalga denetçisi
+
+### D7 — ES3 şifre, parola deneme, Palworld, hız · KAPI-1: onaylandı 2026-10-22 · Bağımlı: D6 doğrulandı
+
+- [ ] **M2-3 ES3 AES + GZip**
+  - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 0/3
+  - Sahip: `crates/saveprism-codecs/src/es3/**` · `fixtures/synthetic/es3-aes/**` · `fixtures/expected/es3-aes/**` · `.fabrika/raporlar/M2-3.md`
+  - Okur: research/02 "Unity — Easy Save 3" · MIMARI §3.3, §3.9
+  - Bağımlı: M2-2
+  - Kabul: katman `crypto.es3-aes`: `tuz[16] ‖ AES-128-CBC(PBKDF2-HMAC-SHA1(parola, tuz, 100, 16), IV = tuz, PKCS7)`; parola
+    `DecodeCtx`/`Params` üzerinden (dosyaya yazılmaz) · encode aynı tuzla birebir · ardından isteğe bağlı GZip (mevcut katman) · yanlış
+    parola → net SP hatası (dolgu/JSON sezgisi) · sentetik örnekler CEO'nun .NET betiğiyle
+  - Doğrulama: CEO `kontrol.sh rust` · .NET ile üretilen örnek decode → encode birebir
+  - Denetim: dalga denetçisi
+
+- [ ] **M2-4 `saveprism keys try`**
+  - Motor: claude/kodcu·haiku · Effort: medium · Deneme: 0/3
+  - Sahip: `crates/saveprism-cli/**` · `.fabrika/raporlar/M2-4.md`
+  - Okur: MIMARI §3.9 · M2-3'ün katman API'si
+  - Bağımlı: M2-3
+  - Kabul: `saveprism keys try <dosya> --candidates <liste.txt>` her adayı dener, tutanı yazar; hiçbiri tutmazsa çıkış 1 · aday sayısı
+    sınırlı · test: 3 adaydan doğrusu bulunuyor
+  - Doğrulama: CEO `kontrol.sh rust`
+  - Denetim: dalga denetçisi
+
+- [ ] **M2-6 Palworld `PlZ` kabuğu**
+  - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 0/3
+  - Sahip: `crates/saveprism-codecs/src/palworld/**` · `crates/saveprism-codecs/src/lib.rs` · `crates/saveprism-codecs/tests/palworld.rs` ·
+    `.fabrika/raporlar/M2-6.md`
+  - Okur: research/02 "Unreal — GVAS" ve Palworld notu · MIMARI §3.3
+  - Bağımlı: M2-5
+  - Kabul: katman `container.palworld-plz`: başlık (açık boy, sıkışık boy, `PlZ`, tür baytı) + zlib (tür 0x32 = iki kat) · `PlM` → net
+    "desteklenmiyor" hatası · test: uesave ile kurulan GVAS → PlZ kabuğu → decode → encode birebir · `lib.rs`'e palworld `register`
+    çağrısı (D7'de `lib.rs`'in tek sahibi)
+  - Doğrulama: CEO `kontrol.sh rust`
+  - Denetim: dalga denetçisi
+
+- [ ] **M2-8 Hız ölçümü**
+  - Motor: claude/kodcu·haiku · Effort: medium · Deneme: 0/3
+  - Sahip: `crates/saveprism-codecs/tests/bench_gvas.rs` · `.fabrika/raporlar/M2-8.md`
+  - Okur: M2-5'in test yardımcıları
+  - Bağımlı: M2-5
+  - Kabul: `#[ignore]` test: uesave ile ≥50 MB GVAS kurar, decode süresini yazdırır (yeni bağımlılık yok) · CEO `--release` ile koşup
+    sonucu NOW.md'ye yazar
+  - Doğrulama: CEO `cargo test --release -- --ignored bench_gvas`
+  - Denetim: yok (küçük iş)
+
+- [?] **M2-7 [ben] Gerçek kayıtlar** → kullanıcının oyunu yok (2026-10-22). Sahip olduğu bir RPG Maker MZ, Easy Save 3 (Unity) ya da
+  Unreal oyunu olursa `fixtures/samples/<motor>/` altına 2 kayıt koyar; altın test kendiliğinden koşar.
+
+---
+
 ## Kilitli kaynaklar
 | Kaynak | Şu anki sahip |
 |---|---|

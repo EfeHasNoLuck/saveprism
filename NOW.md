@@ -7,8 +7,8 @@
 **Son kazanım:** M1 bitti. GitHub'da fuzz yeşil (3 hedef × 60 sn, çökme yok; koşu 39700556640), aynı push'ta ci (3 işletim sistemi + web)
 ve cargo-deny yeşil. Orijinal JS `lz-string` ile üretilen 4 RPG Maker MV kaydı decode → encode birebir aynı; 255 test.
 
-**Sıradaki tek adım:** [HANDOFF-20261022-1](handoff/HANDOFF-20261022-1.md) adım 3 → M2 planı (önce M2-1 RPG Maker MV/MZ, ES3, GVAS),
-kullanıcıya KAPI-1 için kısa tablo + tek soru. ⏱ plan ~30 dk
+**Sıradaki tek adım:** M2 planı onaylı (TASKS "M2 — İlk motorlar", D6 + D7; AFK ayarı `.fabrika/durum/afk.md`) → D6'yı yürüt:
+M2-1 RPG Maker MV/MZ, M2-2 ES3 düz, M2-5 GVAS, FIX-1. ⏱ D6 ~2–3 saat, D7 ~2 saat
 
 ---
 

@@ -13,6 +13,11 @@ saveprism-core.workspace = true
 flate2.workspace = true
 base64.workspace = true
 lz-str.workspace = true
+uesave.workspace = true
+aes.workspace = true
+cbc.workspace = true
+pbkdf2.workspace = true
+sha1.workspace = true
 
 [dev-dependencies]
 proptest.workspace = true
