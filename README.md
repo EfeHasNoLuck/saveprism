@@ -1,29 +1,54 @@
 # SavePrism
 
-Oyun kayıt dosyalarını — Unreal, Unity, RPG Maker, Ren'Py, Godot ve daha fazlası — tek uygulamada açıp temiz bir ağaç/JSON olarak düzenleyen, sonra **orijinal formatına birebir geri paketleyen**; ücretsiz, tamamen yerel ve MIT lisanslı masaüstü aracı.
+A free, local, MIT-licensed desktop app for editing game save files. Open a save from RPG Maker, Unity, Unreal Engine and more,
+change values like gold, stats and items, and save it back **byte-for-byte in its original format**. Your files never leave your computer.
 
-**Durum:** araştırma ve planlama tamam → M0 kararları bekleniyor. Güncel durum ve sıradaki adım: **[NOW.md](NOW.md)**
+**Status:** pre-release. The core and the command-line tool work today; the Windows desktop app (v0.1) is being built.
 
 ---
 
-## Neden?
+## Why
 
-1. **Web servisleri kısıtlı:** yükleme limitleri, bekleme süreleri, abonelik duvarları; bazıları dosyayı sunucuya gönderiyor.
-2. **Açık kaynak tarafı parçalı:** her motor için ayrı CLI; en iyi masaüstü aracı yalnız RPG Maker/Ren'Py ailesine odaklı ve yalnız Windows.
-3. **AI çağı için tasarlanmamış:** kayıtları bir AI'ın güvenle okuyup düzenleyebileceği temiz JSON'a çeviren, değişikliği fark önizlemesiyle geri uygulayan bir araç yok.
+1. **Online editors have limits:** upload caps, waiting times, paywalls, and your file goes to someone else's server.
+2. **Open-source tools are scattered:** one CLI per engine, and the best desktop editors cover only a few engines.
+3. **Nothing round-trips safely:** SavePrism decodes a save, re-encodes it unchanged and checks that the bytes match before it lets you
+   edit. Every write makes a backup first and is verified afterwards.
 
-Ayrıntı: [docs/research/01-pazar-taramasi.md](docs/research/01-pazar-taramasi.md)
+## Supported formats
 
-## Belgeler
+| Engine | Files | Notes |
+|---|---|---|
+| RPG Maker MV / MZ | `.rpgsave`, `.rmmzsave` | |
+| Unity · Easy Save 3 | `.es3` | plain, GZip, and AES-encrypted (password needed) |
+| Unreal Engine | `.sav` (GVAS) | |
+| Palworld | `.sav` (PlZ) | PlM (Oodle) not supported yet |
+| Plain JSON | `.json` | |
 
-| Belge | İçerik |
+## Platforms
+
+Windows first. Linux and macOS builds come later.
+
+## Command line
+
+```
+saveprism inspect <save>                                   # detected format and round-trip result
+saveprism decode <save> -o save.json                       # save → JSON + save.json.recipe.toml
+saveprism encode save.json --recipe <recipe> -o <save>     # JSON → save (backup first)
+saveprism keys try <save> --candidates <list.txt>          # find the password of an encrypted ES3 save
+```
+
+## Documentation
+
+Planning notes are written in Turkish; code, identifiers and commit messages are in English.
+
+| File | Contents |
 |---|---|
-| [NOW.md](NOW.md) | Şu an neredeyiz, sıradaki tek adım |
-| [docs/ROADMAP.md](docs/ROADMAP.md) | Milestone'lar ve mikro görevler |
-| [docs/architecture/MIMARI.md](docs/architecture/MIMARI.md) | Teknoloji yığını ve mimari |
-| [docs/architecture/kararlar.md](docs/architecture/kararlar.md) | Karar kayıtları (ADR) |
-| [docs/research/](docs/research/) | Pazar, formatlar, rea, skills.sh/i-have-adhd |
+| [NOW.md](NOW.md) | Current state and the next step |
+| [docs/ROADMAP.md](docs/ROADMAP.md) | Milestones and tasks |
+| [docs/architecture/MIMARI.md](docs/architecture/MIMARI.md) | Architecture |
+| [docs/architecture/kararlar.md](docs/architecture/kararlar.md) | Decision records (ADR) |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | How to build and contribute |
 
-## Lisans
+## License
 
-[MIT](LICENSE). Yalnız sahip olduğunuz oyunların tek oyunculu kayıtları için tasarlanmıştır; çevrimiçi oyunlar, hile önleme ve DRM kapsam dışıdır.
+[MIT](LICENSE). Made for single-player saves of games you own. Online games, anti-cheat and DRM are out of scope.
