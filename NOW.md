@@ -20,6 +20,8 @@ yok) → M3 planı (masaüstü MVP; önce v0 mockup'ları, ROADMAP M3 notu). ⏱
 3. ✅ **RPGSaveEditor:** muhtaç değiliz ama iş birliğine açığız; v0.1 sonrası not + ortak fixture/format havuzu önerisi ([ADR-010](docs/architecture/kararlar.md)) — M5-6
 4. ✅ **Çekirdek dili:** Rust ([ADR-002](docs/architecture/kararlar.md))
 5. ✅ **CI:** private repo [huseyincancalti/saveprism](https://github.com/huseyincancalti/saveprism) (2026-10-21). Actions dakikası biterse B: yerel `kontrol.sh`, git yerelde sürer, push sonraki ay.
+6. ✅ **Platform:** şimdilik yalnız Windows (kullanıcı, 2026-10-22: "linux me mac arkadaşlarımızı kapsam dışı tutuyorum artık! en son onları
+   test yapıp eklemeye çalışırız"). CI'da Rust işi yalnız Windows; Linux/macOS sürümden hemen önce geri gelir.
 
 > Not: Rust PATH'e eklendi ama açık uygulamalar eski PATH'i görür. Claude uygulamasını/terminali yeniden başlatınca `kontrol.sh` cargo'yu bulur.
 
