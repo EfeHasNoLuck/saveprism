@@ -305,7 +305,7 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
     `format.es3` exact · CLI `decode` henüz yalnız `format.json` kabul ediyor → M2-4'e eklendi · KAPI-2 bekliyor
 
 - [~] **M2-5 Unreal GVAS (uesave)**
-  - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 0/3
+  - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 1/3 (1: GitHub fuzz `detect` kırmızı — uesave paniği; sürüm profili `panic = "abort"` olduğundan `catch_unwind` sürümde çalışmıyordu → M2-5b: `unwind` + fuzz GVAS'ı atlar; release CLI fuzz girdisinde `SP-DET-001` çıkış 1, çökme yok, 2026-10-22)
   - Sahip: `crates/saveprism-codecs/src/gvas/**` · `crates/saveprism-codecs/tests/gvas.rs` · `.fabrika/raporlar/M2-5.md`
   - Okur: research/02 "Unreal — GVAS" · MIMARI §3.2–3.4 · `uesave` 0.7 genel API'si (docs.rs)
   - Bağımlı: D5

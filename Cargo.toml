@@ -49,5 +49,7 @@ dbg_macro = "deny"
 codegen-units = 1
 lto = true
 opt-level = 3
-panic = "abort"
+# uesave (third-party) may panic on malformed input. The gvas codec turns that panic into an error
+# with catch_unwind, which needs unwinding; "abort" would turn it into a process crash.
+panic = "unwind"
 strip = true

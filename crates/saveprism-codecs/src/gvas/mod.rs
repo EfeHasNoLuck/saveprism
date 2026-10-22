@@ -79,6 +79,8 @@ fn read_types(hints: &Params) -> Result<(Types, Params)> {
 }
 
 /// Runs `f`, turning a panic inside `uesave` into an error (the input is untrusted).
+///
+/// requires `panic = "unwind"` (see the root Cargo.toml release profile)
 fn guarded<T>(code: ErrorCode, what: &str, f: impl FnOnce() -> Result<T>) -> Result<T> {
     catch_unwind(AssertUnwindSafe(f)).unwrap_or_else(|_| {
         Err(Error::new(
