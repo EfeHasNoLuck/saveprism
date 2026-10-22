@@ -4,12 +4,12 @@
 
 **Faz:** M2 bitti → v0.1 kısa yol (Windows), ROADMAP "v0.1 kısa yol" K-1…K-5 (2026-10-22)
 
-**Son kazanım:** M2'nin iki turu (D6, D7) bitti: RPG Maker MV/MZ, Easy Save 3 (düz + şifreli), Unreal GVAS, Palworld kabuğu,
-`saveprism keys try`. 301 test, Rust kontrolü 3/3. Gerçek Deep Rock Galactic kaydı (uesave paketinden) aç-yaz birebir.
-Hız: 52 MB GVAS decode 391 ms, encode 103 ms (tek büyük alanlı sentetik dosya).
+**Son kazanım:** masaüstü arka ucu hazır: K-1 komutları (aç, çocuklar, ara, düzenle, yedekli kaydet) ve K-3a oyun görünümü (RPG Maker
+bölümleri, oyunun `data/` klasöründen adlar, alan sınırları). 319 test, Rust 3/3. Ekran tasarımı yönü kabul edildi (v0, `.fabrika/raporlar/K-2/E1…E5`).
+README İngilizce.
 
-**Sıradaki tek adım:** [HANDOFF-20261022-3](handoff/HANDOFF-20261022-3.md) adım 1–2: CI sonucu → paralel K-1 Tauri komutları + K-2
-ekran tasarımı (v0, A/B). ⏱ K-1 ~1 saat, K-2 ~1 saat
+**Sıradaki tek adım:** [HANDOFF-20261022-4](handoff/HANDOFF-20261022-4.md) adım 1–2: dialog eklentisi kararı → K-3b1 + K-3b2 paralel
+(ekranın kendisi). ⏱ ~2 saat
 
 ---
 

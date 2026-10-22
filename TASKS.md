@@ -424,7 +424,9 @@ KAPI-1: kullanıcı "şimdilik devam et her şeye" (2026-10-22). Recent files va
   - Sahip: `apps/desktop/src-tauri/**` · `apps/desktop/src/api/**` · `Cargo.lock` · `.fabrika/raporlar/K-3a.md`
   - Bağımlı: K-1
   - Kabul: `game_view`, `field_info`, sınırlı `edit_value`; sözleşme kartta (K-3b buna göre yazar)
-  - Doğrulama: CEO `kontrol.sh rust` + typecheck · Denetim: dalga denetçisi · Kanıt: —
+  - Doğrulama: CEO `kontrol.sh rust` + typecheck · Denetim: denetci (KRITIK/YUKSEK yok; `.fabrika/raporlar/D9-denetim.md`) + 2 düzeltme
+    turu (clippy large_enum_variant; float sınırı, 2^53 kırpma, 10 000 sınırı, take(MAX+1), göreli yol) · Kanıt: `kontrol.sh rust` 3/3,
+    319 test, typecheck çıkış 0 (2026-10-22), commit `073ed58` · kullanıcı denemesi K-4'te
 
 - [~] **K-3c Gerçek oyun kayıtları**
   - Motor: claude/general-purpose·sonnet · Effort: medium · Deneme: 0/3
@@ -433,7 +435,12 @@ KAPI-1: kullanıcı "şimdilik devam et her şeye" (2026-10-22). Recent files va
   - Kabul: ≥6 gerçek dosya, ≥3 motor, kaynak + lisans + sha256 + `inspect` sonucu `fixtures/external/SOURCES.md`'de
   - Doğrulama: CEO `inspect` örnek tekrarı · Denetim: yok · Kanıt: —
 
-- [ ] **K-3b Tek ekran (arayüz)** — dosya seçme penceresi kararı bekleniyor (yeni bağımlılık)
+- [ ] **K-3b1 Uygulama kabuğu** (başlık, başlangıç ekranı, aç/kaydet akışı, ayarlar penceresi, tema, desen) — kart `.fabrika/gorevler/K-3b1.md`
+  - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 0/3 · Bağımlı: K-3a + dialog eklentisi kararı (kullanıcı)
+  - Sahip: kartta (`apps/desktop/src/**` hariç `src/editor/**`, `src/api/**`; `common.json`; `src-tauri` yalnız eklenti + `export_json`)
+- [ ] **K-3b2 Düzenleyici görünümleri** (RPG Maker bölümleri, Values listesi, alan düzenleyici) — kart `.fabrika/gorevler/K-3b2.md`
+  - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 0/3 · Bağımlı: K-3a
+  - Sahip: `apps/desktop/src/editor/**` · `apps/desktop/locales/*/editor.json`
 
 ---
 
