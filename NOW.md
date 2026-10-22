@@ -2,14 +2,14 @@
 
 > Her oturumda ilk okunan dosya. Tek ekran. Her görev sonunda güncellenir.
 
-**Faz:** M2 — ilk motorlar: kod bitti, makine kanıtlı; kullanıcı kontrolü bekliyor (2026-10-22)
+**Faz:** M2 bitti → v0.1 kısa yol (Windows), ROADMAP "v0.1 kısa yol" K-1…K-5 (2026-10-22)
 
 **Son kazanım:** M2'nin iki turu (D6, D7) bitti: RPG Maker MV/MZ, Easy Save 3 (düz + şifreli), Unreal GVAS, Palworld kabuğu,
 `saveprism keys try`. 301 test, Rust kontrolü 3/3. Gerçek Deep Rock Galactic kaydı (uesave paketinden) aç-yaz birebir.
 Hız: 52 MB GVAS decode 391 ms, encode 103 ms (tek büyük alanlı sentetik dosya).
 
-**Sıradaki tek adım:** [HANDOFF-20261022-2](handoff/HANDOFF-20261022-2.md) adım 1: kullanıcı [AFK raporunu](.fabrika/raporlar/AFK-20261022.md) okur → yerel commit'ler GitHub'a gönderilir (AFK'da push
-yok) → M3 planı (masaüstü MVP; önce v0 mockup'ları, ROADMAP M3 notu). ⏱ rapor 5 dk
+**Sıradaki tek adım:** [HANDOFF-20261022-3](handoff/HANDOFF-20261022-3.md) adım 1–2: CI sonucu → paralel K-1 Tauri komutları + K-2
+ekran tasarımı (v0, A/B). ⏱ K-1 ~1 saat, K-2 ~1 saat
 
 ---
 

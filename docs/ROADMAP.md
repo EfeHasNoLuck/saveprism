@@ -82,16 +82,31 @@ Kurallar:
 **Hedef:** en çok istenen boşluk formatları. **Demo:** üç motordan gerçek kayıtlar altın testlerden geçiyor.
 
 ### Grup A — Codec'ler
-1. [~] **M2-1 RPG Maker MV/MZ** ⏱90 dk ✅ JsonEx meta korunuyor; `data/*.json`'dan ad sözlüğü — *makine kanıtı: MV exact, MZ (Python zlib) semantic; oyunda deneme bekliyor (2026-10-22)*
-2. [~] **M2-2 ES3 düz** ⏱45 dk ✅ `__type` ipuçları TypeHint'e dönüşüyor — *makine kanıtı: 2 örnek exact, CLI'de düzenleme çalışıyor (2026-10-22)*
-3. [~] **M2-3 ES3 AES + GZip** ⏱60 dk ✅ PBKDF2/AES-CBC + düz metin sezgisi; yanlış parola net hata — *makine kanıtı: .NET ile üretilen örnekler açılıyor (2026-10-22)*
-4. [~] **M2-4 `saveprism keys try`** ⏱30 dk ✅ aday listesinden doğru parolayı buluyor — *elle denendi: 3. satırdaki parola bulundu (2026-10-22)*
-5. [~] **M2-5 Unreal GVAS (uesave)** ⏱90 dk ✅ tip ipucu desteğiyle round-trip — *gerçek DRG kaydı (566 KB) birebir (2026-10-22)*
+1. [x] **M2-1 RPG Maker MV/MZ** ⏱90 dk ✅ JsonEx meta korunuyor; `data/*.json`'dan ad sözlüğü — *makine kanıtı: MV exact, MZ (Python zlib) semantic; oyunda deneme bekliyor (2026-10-22)*
+2. [x] **M2-2 ES3 düz** ⏱45 dk ✅ `__type` ipuçları TypeHint'e dönüşüyor — *makine kanıtı: 2 örnek exact, CLI'de düzenleme çalışıyor (2026-10-22)*
+3. [x] **M2-3 ES3 AES + GZip** ⏱60 dk ✅ PBKDF2/AES-CBC + düz metin sezgisi; yanlış parola net hata — *makine kanıtı: .NET ile üretilen örnekler açılıyor (2026-10-22)*
+4. [x] **M2-4 `saveprism keys try`** ⏱30 dk ✅ aday listesinden doğru parolayı buluyor — *elle denendi: 3. satırdaki parola bulundu (2026-10-22)*
+5. [x] **M2-5 Unreal GVAS (uesave)** ⏱90 dk ✅ tip ipucu desteğiyle round-trip — *gerçek DRG kaydı (566 KB) birebir (2026-10-22)*
 
 ### Grup B — Gerçek veri
-6. [~] **M2-6 Palworld `PlZ` kabuğu** ⏱45 dk ✅ zlib kabuklu GVAS açılıyor (`PlM`/Oodle → Park) — *makine kanıtı; gerçek Palworld kaydı yok (2026-10-22)*
+6. [x] **M2-6 Palworld `PlZ` kabuğu** ⏱45 dk ✅ zlib kabuklu GVAS açılıyor (`PlM`/Oodle → Park) — *makine kanıtı; gerçek Palworld kaydı yok (2026-10-22)*
 7. [ ] **M2-7 Fixture toplama** 👤 ⏱30 dk ▶ sahip olduğun oyunlardan her motor için 2 kayıt ✅ `fixtures/samples/` altında, kişisel veri temizlenmiş (bu klasör ajanlara kilitli; dosyaları sen koyarsın)
 8. [x] **M2-8 Benchmark** ⏱30 dk ✅ ≥50 MB GVAS açılış süresi ölçüldü, NOW.md'ye yazıldı — *kanıt: 52 MB, decode 391 ms, encode 103 ms, birebir (2026-10-22)*
+
+---
+
+## v0.1 kısa yol (Windows) — kullanıcı kararı 2026-10-22
+
+> Kullanıcı: "Yapabiliriz evet, ama süreç çok yavaş ilerliyor! bizim kullanılabilir sürmü çıkarmamız lazımdı?" ve "linux me mac
+> arkadaşlarımızı kapsam dışı tutuyorum artık! en son onları test yapıp eklemeye çalışırız." → M3–M5'ten yalnız şu işler, sırayla:
+
+1. [ ] **K-1 Tauri komutları** (M3-1): `open`, ağaç/çocuklar, `search` (yol + değer metni), `edit`, `save` (yedekli, doğrulamalı) — UI'dan bağımsız, hemen
+2. [ ] **K-2 Ekran tasarımı** (M3-2): saveeditonline.com sadeliğinde tek ekran, v0'da A/B; kullanıcı seçer (kod/metin kopyalanmaz)
+3. [ ] **K-3 Tek ekran** (M3-2, M3-4 sade, M3-6, M3-7, M3-10 sade): sürükle-bırak → arama → değer düzenle → Kaydet / Farklı kaydet
+4. [ ] **K-4 Kullanıcı denemesi** 👤: bir dosyayla aç → değiştir → kaydet
+5. [ ] **K-5 Windows sürümü** (M5-2 yalnız Windows, M5-3, M5-4): `.msi`/`.exe`, README, THIRD_PARTY_NOTICES; public + release yalnız kullanıcı onayıyla
+
+Sonraya: M3-3 (dev ağaç), M3-5, M3-8, M3-9, M3-11…13, M4 tümü, M5-1 güncelleyici, Linux/macOS.
 
 ---
 

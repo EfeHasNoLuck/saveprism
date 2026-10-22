@@ -276,7 +276,7 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
 
 ### D6 — RPG Maker, ES3 düz, GVAS, açık bulgular · KAPI-1: onaylandı 2026-10-22 · Bağımlı: D5 doğrulandı
 
-- [~] **M2-1 RPG Maker MV/MZ**
+- [x] **M2-1 RPG Maker MV/MZ**
   - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 0/3
   - Sahip: `crates/saveprism-codecs/src/rpgmaker/**` · `crates/saveprism-codecs/src/lib.rs` · `fixtures/expected/rpgmaker-mz/**` ·
     `.fabrika/raporlar/M2-1.md` (`fixtures/synthetic/rpgmaker-mz/**` ikili; CEO Python betiğiyle üretir)
@@ -291,9 +291,9 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
   - Denetim: dalga denetçisi (KRITIK/YUKSEK yok; ORTA: `format.rpgmaker-json` hiç seçilmiyordu → düzeltme turu, sniff işaretle 0.95) ·
     Kanıt: `kontrol.sh rust` 3/3, 284 test (2026-10-22) · altın: MV `file1` → `format.rpgmaker-json` exact; MZ (Python zlib ile bağımsız
     üretilmiş 4 dosya) `encoding.js-binary-string > compression.zlib > …` semantic; CLI decode → encode sonrası iç JSON birebir (zlib
-    baytları miniz_oxide'dan farklı) · KAPI-2 bekliyor (kullanıcının oyunu yok)
+    baytları miniz_oxide'dan farklı) · KAPI-2: kullanıcı raporu kabul etti (2026-10-22: "Raporu okudum, itirazım yok"; oyun yok)
 
-- [~] **M2-2 ES3 düz**
+- [x] **M2-2 ES3 düz**
   - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 0/3
   - Sahip: `crates/saveprism-codecs/src/es3/**` · `fixtures/synthetic/es3/**` · `fixtures/expected/es3/**` · `.fabrika/raporlar/M2-2.md`
   - Okur: research/02 "Unity — Easy Save 3" · MIMARI §3.2, §3.3 · `crates/saveprism-codecs/src/json/mod.rs` · `crates/saveprism-core/src/doc.rs`
@@ -302,9 +302,9 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
     bayt-bayt round-trip · sniff: `{` + `__type` ya da `.es3` uzantısı · sentetik 2 düz örnek (metin, ajan yazar)
   - Doğrulama: CEO `kontrol.sh rust`
   - Denetim: dalga denetçisi (KRITIK/YUKSEK yok) · Kanıt: `kontrol.sh rust` 3/3 (2026-10-22) · altın: `settings.es3`, `progress.es3` →
-    `format.es3` exact · CLI `decode` henüz yalnız `format.json` kabul ediyor → M2-4'e eklendi · KAPI-2 bekliyor
+    `format.es3` exact · CLI `decode` henüz yalnız `format.json` kabul ediyor → M2-4'e eklendi · KAPI-2: rapor kabul (kullanıcı 2026-10-22)
 
-- [~] **M2-5 Unreal GVAS (uesave)**
+- [x] **M2-5 Unreal GVAS (uesave)**
   - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 1/3 (1: GitHub fuzz `detect` kırmızı — uesave paniği; sürüm profili `panic = "abort"` olduğundan `catch_unwind` sürümde çalışmıyordu → M2-5b: `unwind` + fuzz GVAS'ı atlar; release CLI fuzz girdisinde `SP-DET-001` çıkış 1, çökme yok, 2026-10-22)
   - Sahip: `crates/saveprism-codecs/src/gvas/**` · `crates/saveprism-codecs/tests/gvas.rs` · `.fabrika/raporlar/M2-5.md`
   - Okur: research/02 "Unreal — GVAS" · MIMARI §3.2–3.4 · `uesave` 0.7 genel API'si (docs.rs)
@@ -317,9 +317,9 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
   - Denetim: dalga denetçisi (KRITIK/YUKSEK yok; ORTA `GVAS:<tip>` ipucu yok: çekirdekte ipucu yazma API'si gerekir, bilinçli bırakıldı;
     DUSUK: uesave uzunluk alanıyla büyük bellek isteyebilir, `catch_unwind` OOM'u yakalamaz → GVAS fuzz hedefi Park'ta) · Kanıt:
     `kontrol.sh rust` 3/3, `tests/gvas.rs` 7 test (2026-10-22) · **gerçek oyun kaydı:** uesave paketindeki Deep Rock Galactic
-    `drg-save-test.sav` (565 992 bayt, repoya konmadı) → `saveprism inspect` → `format.gvas`, round trip `exact (editable: yes)` · KAPI-2 bekliyor
+    `drg-save-test.sav` (565 992 bayt, repoya konmadı) → `saveprism inspect` → `format.gvas`, round trip `exact (editable: yes)` · KAPI-2: rapor kabul (kullanıcı 2026-10-22)
 
-- [~] **FIX-1 Açık ORTA bulgular (D5b)**
+- [x] **FIX-1 Açık ORTA bulgular (D5b)**
   - Motor: claude/kodcu·haiku · Effort: medium · Deneme: 0/3
   - Sahip: `crates/saveprism-cli/src/lib.rs` · `crates/saveprism-core/src/io.rs` · `crates/saveprism-core/tests/io.rs` · `.fabrika/raporlar/FIX-1.md`
   - Okur: `.fabrika/raporlar/D5b-denetim.md` (iki ORTA satırı)
@@ -332,7 +332,7 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
 
 ### D7 — ES3 şifre, parola deneme, Palworld, hız · KAPI-1: onaylandı 2026-10-22 · Bağımlı: D6 doğrulandı
 
-- [~] **M2-3 ES3 AES + GZip**
+- [x] **M2-3 ES3 AES + GZip**
   - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 1/3 (1: düzeltme turu sonrası test derlenmedi, E0716; CEO kararı: effort high, 2026-10-22)
   - Sahip: `crates/saveprism-codecs/src/es3/**` · `crates/saveprism-codecs/tests/es3_aes.rs` · `.fabrika/raporlar/M2-3.md`
     (örnekler `fixtures/keyed/es3-aes/`, CEO üretti; altın test bu klasörü taramaz çünkü parola ister)
@@ -345,9 +345,9 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
   - Denetim: dalga denetçisi (KRITIK/YUKSEK yok; parola tarife/Params'a/log'a sızmıyor) + 3 düzeltme turu (clippy, test katılığı, E0716,
     gizli kalmış 2 `unwrap`) · Kanıt: `kontrol.sh rust` 3/3, 301 test, cargo deny ok (2026-10-22) · örnekler .NET `Rfc2898DeriveBytes` +
     `Aes` ile üretildi, Python `cryptography` ile çapraz çözüldü · `settings.es3` decode → encode birebir; GZip'li `progress-gzip.es3` düz
-    metni birebir, yeniden kodlama `semantic` (ES3 `" : "` biçimi, Park) · CLI'de şifreli dosyayı parolayla açma yok (Park) · KAPI-2 bekliyor
+    metni birebir, yeniden kodlama `semantic` (ES3 `" : "` biçimi, Park) · CLI'de şifreli dosyayı parolayla açma yok (Park) · KAPI-2: rapor kabul (kullanıcı 2026-10-22)
 
-- [~] **M2-4 `saveprism keys try`**
+- [x] **M2-4 `saveprism keys try`**
   - Motor: claude/kodcu·haiku · Effort: medium · Deneme: 0/3
   - Sahip: `crates/saveprism-cli/**` · `.fabrika/raporlar/M2-4.md`
   - Okur: MIMARI §3.9 · M2-3'ün katman API'si
@@ -359,9 +359,9 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
   - Denetim: dalga denetçisi (ORTA: `SP-CLI` MAP.md'de yoktu → CEO ekledi) + düzeltme turu (doğrulama JSON görünümünü karşılaştırıyor,
     kullanılmayan import) · Kanıt: `kontrol.sh rust` 3/3 (2026-10-22) · elle: `keys try` 3 adaydan `found: synthetic-test-key (line 3)`
     çıkış 0, tutmayan liste `SP-CLI-002` çıkış 1 · CLI decode → encode birebir: `progress.es3` ve gerçek `drg-save-test.sav` (GVAS) ·
-    düzenleme: `coins` 250 → 251, yalnız o sayı değişti, `inspect` → exact · KAPI-2 bekliyor
+    düzenleme: `coins` 250 → 251, yalnız o sayı değişti, `inspect` → exact · KAPI-2: rapor kabul (kullanıcı 2026-10-22)
 
-- [~] **M2-6 Palworld `PlZ` kabuğu**
+- [x] **M2-6 Palworld `PlZ` kabuğu**
   - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 0/3
   - Sahip: `crates/saveprism-codecs/src/palworld/**` · `crates/saveprism-codecs/src/lib.rs` · `crates/saveprism-codecs/tests/palworld.rs` ·
     `.fabrika/raporlar/M2-6.md`
@@ -373,7 +373,7 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
   - Doğrulama: CEO `kontrol.sh rust`
   - Denetim: dalga denetçisi (KRITIK/YUKSEK yok; boy alanı kuralı kartla aynı) + düzeltme turu (yardımcılardaki `unwrap`) · Kanıt:
     `kontrol.sh rust` 3/3, `tests/palworld.rs` 6 test (0x31, 0x32, `PlM`, bozuk boy) (2026-10-22) · gerçek Palworld kaydı yok: testler
-    uesave ile kurulan GVAS'tan · KAPI-2 bekliyor
+    uesave ile kurulan GVAS'tan · KAPI-2: rapor kabul (kullanıcı 2026-10-22)
 
 - [x] **M2-8 Hız ölçümü**
   - Motor: claude/kodcu·haiku · Effort: medium · Deneme: 0/3
