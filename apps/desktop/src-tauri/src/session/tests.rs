@@ -428,6 +428,24 @@ fn names_come_from_the_data_folder_next_to_the_save_folder() {
 }
 
 #[test]
+fn names_also_come_from_a_data_folder_copied_next_to_the_save() {
+    let env = env();
+    let path = copy_in(&env, "synthetic/rpgmaker-mz/file1.rmmzsave");
+    let data = env.work.join("data");
+    fs::create_dir_all(&data).unwrap();
+    fs::write(
+        data.join("Items.json"),
+        r#"[null,{"id":1,"name":"Potion"}]"#,
+    )
+    .unwrap();
+
+    let session = open(&env, &path, None).unwrap();
+    let view = rpg_view(&session).unwrap();
+    assert_eq!(view.names_folder, Some(data.to_string_lossy().into_owned()));
+    assert_eq!(view.items[0].name.as_deref(), Some("Potion"));
+}
+
+#[test]
 fn easy_save_file_becomes_a_values_list() {
     let env = env();
     let path = copy_in(&env, "synthetic/es3/progress.es3");
@@ -437,7 +455,7 @@ fn easy_save_file_becomes_a_values_list() {
     };
     let coins = rows.iter().find(|r| r.name == "coins").unwrap();
     let field = coins.field.as_ref().unwrap();
-    assert_eq!(field.type_label, "Int32");
+    assert_eq!(field.type_name.as_deref(), Some("Int32"));
     assert_eq!(field.max, Some(2_147_483_647));
     assert_eq!(field.min, Some(-2_147_483_648));
     assert_eq!(field.value, "250");
@@ -448,7 +466,7 @@ fn easy_save_file_becomes_a_values_list() {
     assert_eq!(levels.children, 3);
 
     let info = session.field_info("/coins/value").unwrap();
-    assert_eq!(info.type_label, "Int32");
+    assert_eq!(info.type_name.as_deref(), Some("Int32"));
     assert_eq!(
         session.field_info("/unlockedLevels").unwrap_err().code,
         app_codes::NOT_EDITABLE_NODE

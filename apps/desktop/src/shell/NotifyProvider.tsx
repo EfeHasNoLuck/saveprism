@@ -17,6 +17,8 @@ const TOAST_ERROR_MS = 14000;
 export function NotifyProvider({ children }: { children: ReactNode }) {
   const [events, setEvents] = useState<AppEvent[]>([]);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
+  /** Highest event id the user has seen in the bell. */
+  const [seenId, setSeenId] = useState(0);
   const nextId = useRef(1);
 
   const dismissToast = useCallback((id: number) => {
@@ -54,10 +56,12 @@ export function NotifyProvider({ children }: { children: ReactNode }) {
   );
 
   const clearEvents = useCallback(() => setEvents([]), []);
+  const markSeen = useCallback(() => setSeenId(nextId.current - 1), []);
+  const unseen = useMemo(() => events.filter((event) => event.id > seenId).length, [events, seenId]);
 
   const value = useMemo<NotifyContextValue>(
-    () => ({ events, toasts, notify, dismissToast, clearEvents }),
-    [events, toasts, notify, dismissToast, clearEvents],
+    () => ({ events, unseen, markSeen, toasts, notify, dismissToast, clearEvents }),
+    [events, unseen, markSeen, toasts, notify, dismissToast, clearEvents],
   );
   return <NotifyContext.Provider value={value}>{children}</NotifyContext.Provider>;
 }

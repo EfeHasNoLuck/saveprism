@@ -11,17 +11,29 @@ import { Switch } from "@/components/ui/switch";
 import { SUPPORTED_LANGUAGES, type Language } from "@/i18n";
 import { useTheme, type ThemePreference } from "@/theme";
 import { useSettings } from "./context";
-import { InfoTip } from "./InfoTip";
+import { InfoTip } from "@/components/ui/info-tip";
 import type { SaveDefault } from "./settings";
 
 const LANGUAGE_NAMES: Record<Language, string> = { en: "English", tr: "Türkçe" };
 const THEMES: ThemePreference[] = ["system", "light", "dark"];
 
-function Section({ title, children }: { title: string; children: ReactNode }) {
+/** A settings group. `aside` puts a single control on the heading's line (no repeated label). */
+function Section({
+  title,
+  aside,
+  children,
+}: {
+  title: string;
+  aside?: ReactNode;
+  children?: ReactNode;
+}) {
   return (
     <section className="flex flex-col gap-3">
-      <h3 className="text-sm font-semibold">{title}</h3>
-      <div className="flex flex-col gap-3">{children}</div>
+      <div className="flex items-center justify-between gap-4">
+        <h3 className="text-sm font-semibold">{title}</h3>
+        {aside}
+      </div>
+      {children ? <div className="flex flex-col gap-3">{children}</div> : null}
     </section>
   );
 }
@@ -50,7 +62,11 @@ function Segmented<T extends string>({
   label: string;
 }) {
   return (
-    <div role="radiogroup" aria-label={label} className="inline-flex rounded-lg bg-muted p-0.5">
+    <div
+      role="radiogroup"
+      aria-label={label}
+      className="inline-flex rounded-lg bg-muted p-0.5 dark:bg-background"
+    >
       {options.map((option) => (
         <button
           key={option.value}
@@ -60,7 +76,7 @@ function Segmented<T extends string>({
           onClick={() => onChange(option.value)}
           className={
             option.value === value
-              ? "rounded-md bg-background px-3 py-1 text-sm text-foreground shadow-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+              ? "rounded-md bg-card px-3 py-1 text-sm font-medium text-foreground shadow-sm ring-1 ring-border outline-none focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input dark:ring-0"
               : "rounded-md px-3 py-1 text-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
           }
         >
@@ -122,8 +138,9 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
           </Row>
         </Section>
 
-        <Section title={t("settings.language")}>
-          <Row label={t("settings.language")}>
+        <Section
+          title={t("settings.language")}
+          aside={
             <Segmented
               label={t("settings.language")}
               value={language}
@@ -133,8 +150,8 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
               }))}
               onChange={(value) => void i18n.changeLanguage(value)}
             />
-          </Row>
-        </Section>
+          }
+        />
 
         <Section title={t("settings.saving")}>
           <Row label={t("settings.defaultAction")} info={t("settings.defaultActionInfo")}>

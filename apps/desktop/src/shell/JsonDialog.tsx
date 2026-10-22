@@ -21,6 +21,13 @@ const LINE_HEIGHT = 20;
 const OVERSCAN = 20;
 const MAX_MATCHES = 10_000;
 
+/** Scrolls the view so that `line` sits in its middle. */
+function scrollToLine(element: HTMLElement | null, line: number) {
+  if (element) {
+    element.scrollTop = Math.max(0, line * LINE_HEIGHT - element.clientHeight / 2);
+  }
+}
+
 interface JsonDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -64,15 +71,17 @@ export function JsonDialog({ open, onOpenChange, state }: JsonDialogProps) {
     return () => observer.disconnect();
   }, [state.status, open]);
 
+  // A new search shows its first match right away (Enter then goes to the second one).
+  useEffect(() => {
+    const first = matches[0];
+    if (first !== undefined) scrollToLine(viewRef.current, first);
+  }, [matches]);
+
   const jumpTo = (matchIndex: number) => {
     if (matches.length === 0) return;
     const wrapped = (matchIndex + matches.length) % matches.length;
     setCurrent(wrapped);
-    const line = matches[wrapped] ?? 0;
-    const element = viewRef.current;
-    if (element) {
-      element.scrollTop = Math.max(0, line * LINE_HEIGHT - element.clientHeight / 2);
-    }
+    scrollToLine(viewRef.current, matches[wrapped] ?? 0);
   };
 
   const activeLine = matches.length > 0 ? (matches[Math.min(current, matches.length - 1)] ?? -1) : -1;
@@ -112,7 +121,9 @@ export function JsonDialog({ open, onOpenChange, state }: JsonDialogProps) {
                 setCurrent(0);
               }}
               onKeyDown={(event) => {
-                if (event.key === "Enter") jumpTo(event.shiftKey ? current - 1 : current + 1);
+                if (event.key !== "Enter") return;
+                event.preventDefault();
+                jumpTo(event.shiftKey ? current - 1 : current + 1);
               }}
               placeholder={t("json.search")}
               aria-label={t("json.search")}

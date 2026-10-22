@@ -5,21 +5,21 @@ import { EntryList } from "./EntryList";
 import { FieldEditor } from "./FieldEditor";
 import { Section } from "./parts";
 
-const ROW = "rounded-xl border bg-card text-card-foreground";
-const DIVIDE = "divide-y lg:divide-x lg:divide-y-0";
-
-/** Three surfaces: Gold + Characters, Items + Weapons + Armors, Variables + Switches. */
+/** Cards in three rows: Gold + Characters, Items + Weapons + Armors, Variables + Switches. */
 export function RpgMaker({ view }: { view: RpgMakerView }) {
   const { t } = useTranslation("editor");
   return (
     <div className="flex flex-col gap-4">
-      <div className={`${ROW} grid ${DIVIDE} lg:grid-cols-[minmax(0,1fr)_minmax(0,3fr)]`}>
-        <Section title={t("sections.gold")} info={t("info.gold")}>
-          <FieldEditor field={view.gold} label={t("sections.gold")} alwaysHint />
-        </Section>
-        <Characters actors={view.actors} namesFolder={view.namesFolder} />
-      </div>
-      <div className={`${ROW} grid ${DIVIDE} lg:grid-cols-3`}>
+      <Characters
+        actors={view.actors}
+        namesFolder={view.namesFolder}
+        gold={
+          <Section title={t("sections.gold")} info={t("info.gold")}>
+            <FieldEditor field={view.gold} label={t("sections.gold")} alwaysHint />
+          </Section>
+        }
+      />
+      <div className="grid gap-4 lg:grid-cols-3">
         <EntryList
           title={t("sections.items")}
           kind="item"
@@ -29,7 +29,7 @@ export function RpgMaker({ view }: { view: RpgMakerView }) {
         <EntryList title={t("sections.weapons")} kind="weapon" entries={view.weapons} />
         <EntryList title={t("sections.armors")} kind="armor" entries={view.armors} />
       </div>
-      <div className={`${ROW} grid ${DIVIDE} lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]`}>
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <EntryList
           title={t("sections.variables")}
           info={t("info.variables")}

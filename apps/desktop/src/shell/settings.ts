@@ -102,11 +102,11 @@ export function saveSettings(
 }
 
 /**
- * Opacity of the background pattern: about 3 % in dark and 2 % in light at the default
+ * Opacity of the blue background lattice: about 12 % in dark and 14 % in light at the default
  * strength (50); 0 gives nothing, 100 gives twice as much.
  */
 export function patternOpacity(strength: number, dark: boolean): number {
-  const base = dark ? 0.03 : 0.02;
+  const base = dark ? 0.12 : 0.14;
   return base * (clampStrength(strength) / 50);
 }
 

@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useNotify } from "./context";
+import { PathText } from "./PathText";
 
 function timeText(at: number, language: string): string {
   try {
@@ -12,14 +13,16 @@ function timeText(at: number, language: string): string {
   }
 }
 
-/** The bell: a count badge and a popover with what happened in this session. */
+/** The bell: a badge with the unseen events and a popover with what happened in this session. */
 export function Bell() {
   const { t, i18n } = useTranslation();
-  const { events, clearEvents } = useNotify();
+  const { events, unseen, markSeen, clearEvents } = useNotify();
   const count = events.length;
 
   return (
-    <Popover>
+    // Opening the bell counts as seeing everything in it; closing it too, for lines that came
+    // in while it was open.
+    <Popover onOpenChange={markSeen}>
       <PopoverTrigger asChild>
         <Button
           variant="ghost"
@@ -28,9 +31,9 @@ export function Bell() {
           aria-label={t("header.notifications")}
         >
           <BellIcon />
-          {count > 0 ? (
+          {unseen > 0 ? (
             <span className="absolute -top-0.5 -right-0.5 flex min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] leading-4 font-medium text-primary-foreground">
-              {count > 9 ? "9+" : count}
+              {unseen > 9 ? "9+" : unseen}
             </span>
           ) : null}
         </Button>
@@ -54,11 +57,11 @@ export function Bell() {
                   <span
                     className={
                       event.kind === "error"
-                        ? "text-sm font-medium text-destructive"
-                        : "text-sm font-medium"
+                        ? "min-w-0 text-sm font-medium break-words text-destructive"
+                        : "min-w-0 text-sm font-medium break-words"
                     }
                   >
-                    {event.title}
+                    <PathText text={event.title} />
                   </span>
                   <span className="shrink-0 text-xs text-muted-foreground">
                     {timeText(event.at, i18n.language)}
@@ -66,7 +69,7 @@ export function Bell() {
                 </div>
                 {event.detail ? (
                   <p className="mt-0.5 text-xs break-words text-muted-foreground">
-                    {event.detail}
+                    <PathText text={event.detail} />
                   </p>
                 ) : null}
               </li>

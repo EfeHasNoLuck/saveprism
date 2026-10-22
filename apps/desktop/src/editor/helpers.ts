@@ -45,6 +45,55 @@ export function stepValue(
   return String(n);
 }
 
+/** `t` of react-i18next, narrowed to what the helpers need (a fake works in tests). */
+export type Translate = (key: string, options?: Record<string, unknown>) => string;
+
+/** Formats a number in the UI language ("1,234" in English, "1.234" in Turkish). */
+export type FormatNumber = (value: number) => string;
+
+/**
+ * The limits worth showing. The host clamps a limit past +-(2^53-1) (a 64-bit type) to that
+ * value; such a limit reads as "no limit" on its side.
+ */
+export function shownLimits(
+  min: number | null,
+  max: number | null,
+): { min: number | null; max: number | null } {
+  return {
+    min: min !== null && min > -Number.MAX_SAFE_INTEGER ? min : null,
+    max: max !== null && max < Number.MAX_SAFE_INTEGER ? max : null,
+  };
+}
+
+/** The type and limits of a field in the UI language: "Whole number · 0 to 99,999,999". */
+export function fieldHint(
+  kind: FieldKindLike,
+  min: number | null,
+  max: number | null,
+  t: Translate,
+  format: FormatNumber,
+): string {
+  const type = t(`type.${kind}`);
+  if (kind !== "int" && kind !== "float") return type;
+  const limits = shownLimits(min, max);
+  let range = "";
+  if (limits.min !== null && limits.max !== null) {
+    range = t("range.between", { min: format(limits.min), max: format(limits.max) });
+  } else if (limits.min !== null) {
+    range = t("range.atLeast", { min: format(limits.min) });
+  } else if (limits.max !== null) {
+    range = t("range.atMost", { max: format(limits.max) });
+  }
+  return range === "" ? type : `${type} · ${range}`;
+}
+
+/** A whole number as text in the UI language's grouping; any other text stays as it is. */
+export function formatValue(text: string, format: FormatNumber): string {
+  if (!INT_RE.test(text.trim())) return text;
+  const n = Number(text);
+  return Number.isSafeInteger(n) ? format(n) : text;
+}
+
 export interface HintInput {
   hint: string;
   /** Already translated, for example "was 5". */

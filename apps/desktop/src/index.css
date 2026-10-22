@@ -34,6 +34,9 @@
   --border: oklch(0.88 0.012 255);
   --input: oklch(0.88 0.012 255);
   --ring: oklch(0.62 0.16 255);
+  /* Background lattice: the two blues of the logo (#4A7FD6, #8FC0F7). */
+  --pattern-square: oklch(0.6 0.145 260);
+  --pattern-diamond: oklch(0.68 0.12 255);
   --chart-1: oklch(0.87 0.01 255);
   --chart-2: oklch(0.556 0.015 255);
   --chart-3: oklch(0.439 0.015 255);
@@ -118,6 +121,8 @@
   --border: oklch(0.3 0.015 255);
   --input: oklch(0.3 0.015 255);
   --ring: oklch(0.62 0.16 255);
+  --pattern-square: oklch(0.6 0.145 260);
+  --pattern-diamond: oklch(0.79 0.094 252);
   --chart-1: oklch(0.87 0.01 255);
   --chart-2: oklch(0.556 0.015 255);
   --chart-3: oklch(0.439 0.015 255);
@@ -146,19 +151,41 @@
   ::selection {
     background: color-mix(in oklch, var(--brand) 35%, transparent);
   }
+  /* The default placeholder (half the text colour) is too faint; muted text passes 4.5:1. */
+  ::placeholder {
+    color: var(--muted-foreground);
+    opacity: 1;
+  }
 }
 
 /*
- * Background pattern: the lattice is an SVG mask (set from JS) painted in the
- * text colour, so it follows the theme. Opacity comes from --pattern-opacity.
+ * Background pattern: two SVG masks (set from JS) painted in the two brand
+ * blues of the logo. Opacity comes from --pattern-opacity.
  */
 .app-pattern {
   position: fixed;
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background-color: var(--foreground);
   opacity: var(--pattern-opacity, 0);
+}
+.app-pattern::before,
+.app-pattern::after {
+  content: "";
+  position: absolute;
+  inset: 0;
   -webkit-mask-repeat: repeat;
   mask-repeat: repeat;
+  -webkit-mask-size: var(--pattern-tile) var(--pattern-tile);
+  mask-size: var(--pattern-tile) var(--pattern-tile);
+}
+.app-pattern::before {
+  background-color: var(--pattern-diamond);
+  -webkit-mask-image: var(--pattern-diamond-mask);
+  mask-image: var(--pattern-diamond-mask);
+}
+.app-pattern::after {
+  background-color: var(--pattern-square);
+  -webkit-mask-image: var(--pattern-square-mask);
+  mask-image: var(--pattern-square-mask);
 }

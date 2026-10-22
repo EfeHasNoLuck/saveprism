@@ -22,16 +22,16 @@ use super::{ApiError, Change, Session, app_codes, bad_path, child_count, value_t
 const MAX_DATA_FILE: u64 = 32 * 1024 * 1024;
 /// Most rows of the generic Values list.
 const MAX_VALUE_ROWS: usize = 10_000;
-/// Labels of `_paramPlus[0..8]`.
-const BONUS_LABELS: [&str; 8] = [
-    "Max HP",
-    "Max MP",
-    "Attack",
-    "Defense",
-    "M.Attack",
-    "M.Defense",
-    "Agility",
-    "Luck",
+/// Stable keys of `_paramPlus[0..8]`; the UI translates them.
+const BONUS_KEYS: [&str; 8] = [
+    "maxHp",
+    "maxMp",
+    "attack",
+    "defense",
+    "magicAttack",
+    "magicDefense",
+    "agility",
+    "luck",
 ];
 
 /// The kind of an editable value.
@@ -60,13 +60,14 @@ pub struct Field {
     pub original: String,
     /// Kind of the value.
     pub kind: FieldKind,
-    /// "Whole number", "Decimal number", "On/off", "Text" or the Easy Save 3 type (`Int32`).
-    pub type_label: String,
+    /// The file format's own type name (Easy Save 3: `Int32`); `None` when the format has none.
+    pub type_name: Option<String>,
     /// Lowest allowed number.
     pub min: Option<i64>,
     /// Highest allowed number.
     pub max: Option<i64>,
-    /// Short description such as "Whole number · 0 to 99,999,999".
+    /// English description such as "Whole number · 0 to 99,999,999" (logs and tests); the UI
+    /// builds its own translated text from `kind`, `min` and `max`.
     pub hint: String,
     /// True when the value can be changed.
     pub editable: bool,
@@ -86,8 +87,8 @@ pub struct Entry {
 /// A stat bonus of a character.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct Bonus {
-    /// "Max HP", "Attack", ...
-    pub label: String,
+    /// Stable key of the stat: "maxHp", "attack", ... (see `BONUS_KEYS`).
+    pub key: String,
     /// The bonus value.
     pub field: Field,
 }
@@ -353,20 +354,13 @@ fn hint_text(kind: FieldKind, bounds: Bounds) -> String {
     }
 }
 
-fn type_label(kind: FieldKind, node: &Node) -> String {
-    if let Some(name) = es3_name(node) {
-        return match es3_label(name) {
-            Some(label) => label.to_string(),
-            None => name.strip_prefix("System.").unwrap_or(name).to_string(),
-        };
-    }
-    match kind {
-        FieldKind::Int => "Whole number",
-        FieldKind::Float => "Decimal number",
-        FieldKind::Bool => "On/off",
-        FieldKind::String => "Text",
-    }
-    .to_string()
+/// The Easy Save 3 type of a node as a short name (`Int32`, `Vector3`).
+fn type_name(node: &Node) -> Option<String> {
+    let name = es3_name(node)?;
+    Some(match es3_label(name) {
+        Some(label) => label.to_string(),
+        None => name.strip_prefix("System.").unwrap_or(name).to_string(),
+    })
 }
 
 /// A node and its path.
@@ -449,16 +443,24 @@ fn index_names(list: Option<&serde_json::Value>) -> HashMap<u32, String> {
 }
 
 /// Looks for the game's `data` folder next to the save's folder (`<save dir>/../data`, then
-/// `<save dir>/../www/data`); the first folder with a readable data file wins.
+/// `<save dir>/../www/data`, then a copied `<save dir>/data`); the first folder with a readable
+/// data file wins.
 fn load_names(save_path: &FsPath) -> GameNames {
     // A relative save path would resolve against the process folder, not the game's.
     if !save_path.is_absolute() {
         return GameNames::default();
     }
-    let Some(game_root) = save_path.parent().and_then(FsPath::parent) else {
+    let Some(save_dir) = save_path.parent() else {
         return GameNames::default();
     };
-    for folder in [game_root.join("data"), game_root.join("www").join("data")] {
+    let Some(game_root) = save_dir.parent() else {
+        return GameNames::default();
+    };
+    for folder in [
+        game_root.join("data"),
+        game_root.join("www").join("data"),
+        save_dir.join("data"),
+    ] {
         let mut names = GameNames::default();
         let mut found = false;
         if let Some(file) = read_json(&folder.join("Items.json")) {
@@ -551,7 +553,7 @@ impl Ctx<'_> {
             value,
             original,
             kind,
-            type_label: type_label(kind, node),
+            type_name: type_name(node),
             min: bounds.min.filter(|_| numeric).map(clamp_i64),
             max: bounds.max.filter(|_| numeric).map(clamp_i64),
             hint: hint_text(kind, bounds),
@@ -736,9 +738,9 @@ impl Ctx<'_> {
                 self.items(&list)
                     .into_iter()
                     .filter_map(|(index, item)| {
-                        let label = BONUS_LABELS.get(index)?;
+                        let key = BONUS_KEYS.get(index)?;
                         Some(Bonus {
-                            label: (*label).to_string(),
+                            key: (*key).to_string(),
                             field: self.field(&item, UNLIMITED)?,
                         })
                     })

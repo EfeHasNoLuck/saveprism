@@ -57,14 +57,6 @@ function writeStoredLanguage(lang: Language): void {
   }
 }
 
-function readNavigatorLanguage(): string | undefined {
-  try {
-    return typeof navigator !== "undefined" ? navigator.language : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
 function applyHtmlLang(lang: Language): void {
   if (typeof document !== "undefined") {
     document.documentElement.lang = lang;
@@ -80,10 +72,7 @@ export function initI18n(): void {
   }
   initialised = true;
 
-  const lng = detectLanguage({
-    stored: readStoredLanguage(),
-    navigatorLanguage: readNavigatorLanguage(),
-  });
+  const lng = detectLanguage({ stored: readStoredLanguage() });
 
   // Resources are bundled, so initialisation is synchronous.
   void i18next.use(initReactI18next).init({

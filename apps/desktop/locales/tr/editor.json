@@ -10,7 +10,8 @@
     "variables": "Değişkenler",
     "switches": "Anahtarlar",
     "values": "Değerler",
-    "statBonuses": "Özellik bonusları"
+    "statBonuses": "Özellik bonusları",
+    "character": "Karakter"
   },
   "info": {
     "gold": "Takımın altını. Alanın altında gösterilen aralıkta kalmalıdır.",
@@ -68,5 +69,36 @@
   },
   "errors": {
     "unknown": "Değişiklik uygulanmadı. Tekrar deneyin."
+  },
+  "type": {
+    "int": "Tam sayı",
+    "float": "Ondalıklı sayı",
+    "bool": "Açık/kapalı",
+    "string": "Metin",
+    "source": "Dosyadaki tür: {{name}}"
+  },
+  "range": {
+    "between": "{{min}} ile {{max}} arası",
+    "atLeast": "{{min}} veya üstü",
+    "atMost": "{{max}} veya altı"
+  },
+  "stat": {
+    "maxHp": "Maks. HP",
+    "maxMp": "Maks. MP",
+    "attack": "Saldırı",
+    "defense": "Savunma",
+    "magicAttack": "Büyü saldırısı",
+    "magicDefense": "Büyü savunması",
+    "agility": "Çeviklik",
+    "luck": "Şans"
+  },
+  "empty": {
+    "item": "Bu kayıtta eşya yok.",
+    "weapon": "Bu kayıtta silah yok.",
+    "armor": "Bu kayıtta zırh yok.",
+    "variable": "Bu kayıtta değişken yok.",
+    "switch": "Bu kayıtta anahtar yok.",
+    "values": "Bu dosyada değer yok.",
+    "characters": "Bu kayıtta karakter yok."
   }
 }

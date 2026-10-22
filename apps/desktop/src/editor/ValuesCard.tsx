@@ -11,13 +11,21 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { FieldEditor } from "./FieldEditor";
-import { SearchBox, Section } from "./parts";
+import { EmptyText, SearchBox, Section } from "./parts";
 
 const CHILD_PAGE = 200;
+/** Name · Type · Value. The type column fits "Decimal number" in English and Turkish. */
+const COLUMNS = "grid grid-cols-[minmax(0,1fr)_8.5rem_minmax(0,15rem)] items-center gap-3";
 
-function TypeTag({ label }: { label: string }) {
+/** The kind of a value in words; the file's own type name (Int32) is in the tooltip. */
+function TypeTag({ field }: { field: Field }) {
+  const { t } = useTranslation("editor");
+  const label = t(`type.${field.kind}`);
   return (
-    <span className="inline-block max-w-full truncate rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
+    <span
+      className="max-w-full truncate rounded bg-muted px-1.5 py-0.5 text-xs leading-4 text-muted-foreground"
+      title={field.typeName ? t("type.source", { name: field.typeName }) : label}
+    >
       {label}
     </span>
   );
@@ -39,10 +47,7 @@ function ValueNode({ name, path, field, childCount, depth }: NodeProps) {
 
   return (
     <>
-      <div
-        className="grid grid-cols-[minmax(0,1fr)_96px_minmax(0,14rem)] items-center gap-3 border-b py-1.5 pr-2"
-        style={indent}
-      >
+      <div className={cn(COLUMNS, "min-h-11 border-b py-1.5 pr-2")} style={indent}>
         <div className="flex min-w-0 items-center gap-1">
           {field === null ? (
             <button
@@ -66,9 +71,11 @@ function ValueNode({ name, path, field, childCount, depth }: NodeProps) {
             </span>
           ) : null}
         </div>
-        <div className="min-w-0">{field !== null ? <TypeTag label={field.typeLabel} /> : null}</div>
+        <div className="flex min-w-0 items-center">
+          {field !== null ? <TypeTag field={field} /> : null}
+        </div>
         <div className="min-w-0">
-          {field !== null ? <FieldEditor field={field} label={name} /> : null}
+          {field !== null ? <FieldEditor field={field} label={name} floatingHint /> : null}
         </div>
       </div>
       {field === null && open ? <GroupChildren path={path} depth={depth + 1} /> : null}
@@ -160,7 +167,7 @@ function GroupChildren({ path, depth }: { path: string; depth: number }) {
         n.field === null && !n.isGroup ? (
           <div
             key={n.path}
-            className="flex items-center gap-3 border-b py-1.5 pr-2 text-[13px]"
+            className="flex min-h-11 items-center gap-3 border-b py-1.5 pr-2 text-[13px]"
             style={{ paddingLeft: `${depth * 16 + 8 + 24}px` }}
           >
             <span className="truncate">{n.name}</span>
@@ -207,31 +214,37 @@ export function ValuesCard({ rows }: { rows: ValueRow[] }) {
   }, [rows, query]);
 
   return (
-    <div className="rounded-xl border bg-card text-card-foreground">
-      <Section title={t("sections.values")} info={t("info.values")}>
-        <SearchBox value={query} onChange={setQuery} placeholder={t("search.values")} />
-        <div>
-          <div className="grid grid-cols-[minmax(0,1fr)_96px_minmax(0,14rem)] gap-3 border-b py-1.5 pr-2 pl-8 text-xs text-muted-foreground">
-            <span>{t("values.name")}</span>
-            <span>{t("values.type")}</span>
-            <span>{t("values.value")}</span>
+    <Section title={t("sections.values")} info={t("info.values")}>
+      {rows.length === 0 ? (
+        <EmptyText>{t("empty.values")}</EmptyText>
+      ) : (
+        <>
+          <SearchBox value={query} onChange={setQuery} placeholder={t("search.values")} />
+          <div>
+            <div
+              className={cn(COLUMNS, "border-b py-1.5 pr-2 pl-8 text-xs text-muted-foreground")}
+            >
+              <span>{t("values.name")}</span>
+              <span>{t("values.type")}</span>
+              <span>{t("values.value")}</span>
+            </div>
+            {filtered.length === 0 ? (
+              <EmptyText>{t("search.empty")}</EmptyText>
+            ) : (
+              filtered.map((r) => (
+                <ValueNode
+                  key={r.path}
+                  name={r.name}
+                  path={r.path}
+                  field={r.field}
+                  childCount={r.children}
+                  depth={0}
+                />
+              ))
+            )}
           </div>
-          {filtered.length === 0 ? (
-            <p className="py-3 text-[13px] text-muted-foreground">{t("search.empty")}</p>
-          ) : (
-            filtered.map((r) => (
-              <ValueNode
-                key={r.path}
-                name={r.name}
-                path={r.path}
-                field={r.field}
-                childCount={r.children}
-                depth={0}
-              />
-            ))
-          )}
-        </div>
-      </Section>
-    </div>
+        </>
+      )}
+    </Section>
   );
 }

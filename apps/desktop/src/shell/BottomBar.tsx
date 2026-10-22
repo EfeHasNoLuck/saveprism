@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { InfoTip } from "./InfoTip";
+import { InfoTip } from "@/components/ui/info-tip";
 import type { SaveDefault } from "./settings";
 
 interface BottomBarProps {
@@ -121,7 +121,7 @@ export function BottomBar({
               <Button
                 disabled={cannotSave}
                 aria-label={t("bottom.saveOptions")}
-                className="rounded-l-none border-l-primary-foreground/30 px-1.5"
+                className="rounded-l-none border-l-primary-foreground/30 px-1.5 disabled:border-l-border"
               >
                 <ChevronDown />
               </Button>

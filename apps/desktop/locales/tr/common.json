@@ -14,7 +14,9 @@
     "toggle": "Temayı değiştir",
     "light": "Açık",
     "dark": "Koyu",
-    "system": "Sistem"
+    "system": "Sistem",
+    "toLight": "Açık temaya geç",
+    "toDark": "Koyu temaya geç"
   },
   "common": {
     "close": "Kapat",

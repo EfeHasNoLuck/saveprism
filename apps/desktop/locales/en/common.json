@@ -14,7 +14,9 @@
     "toggle": "Change theme",
     "light": "Light",
     "dark": "Dark",
-    "system": "System"
+    "system": "System",
+    "toLight": "Switch to light theme",
+    "toDark": "Switch to dark theme"
   },
   "common": {
     "close": "Close",

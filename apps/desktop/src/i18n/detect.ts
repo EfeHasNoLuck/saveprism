@@ -20,23 +20,13 @@ export function isLanguage(value: unknown): value is Language {
 export interface DetectInput {
   /** Value previously saved under STORAGE_KEY, if any. */
   stored: string | null | undefined;
-  /** Browser/OS language tag such as "tr-TR" or "en-US", if any. */
-  navigatorLanguage: string | null | undefined;
 }
 
 /**
- * Chooses the active language.
- * 1. A valid stored value wins.
- * 2. Otherwise a Turkish navigator language ("tr", "tr-TR", ...) yields "tr".
- * 3. Everything else yields "en".
+ * Chooses the active language: a valid stored value wins, otherwise English.
+ * The OS language is not used, so the app always starts in English until the
+ * user picks another language.
  */
-export function detectLanguage({
-  stored,
-  navigatorLanguage,
-}: DetectInput): Language {
-  if (isLanguage(stored)) {
-    return stored;
-  }
-  const primary = (navigatorLanguage ?? "").trim().split(/[-_]/)[0];
-  return primary?.toLowerCase() === "tr" ? "tr" : "en";
+export function detectLanguage({ stored }: DetectInput): Language {
+  return isLanguage(stored) ? stored : "en";
 }

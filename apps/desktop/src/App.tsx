@@ -307,13 +307,15 @@ function App() {
         ) : null}
 
         {file ? (
-          <main className="relative z-10 flex min-h-0 flex-1 flex-col overflow-auto">
-            <EditorView
-              key={editorKey}
-              readOnly={readOnly}
-              onChangesChanged={setChangeCount}
-              onInvalidChanged={setInvalid}
-            />
+          <main className="relative z-10 min-h-0 flex-1 overflow-auto">
+            <div className="mx-auto w-full max-w-7xl px-6 py-6">
+              <EditorView
+                key={editorKey}
+                readOnly={readOnly}
+                onChangesChanged={setChangeCount}
+                onInvalidChanged={setInvalid}
+              />
+            </div>
           </main>
         ) : (
           <StartScreen

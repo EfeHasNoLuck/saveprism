@@ -75,13 +75,17 @@ export function StartScreen({ dragging, recent, onOpenFile, onOpenRecent }: Star
           {t("start.faqLink")}
           <ChevronDown className={cn("size-4 transition-transform", faqOpen && "rotate-180")} />
         </button>
-        {faqOpen ? (
-          <ul className="mt-2 flex list-disc flex-col gap-1 pl-5 text-muted-foreground">
-            <li>{t("start.faqRpgMaker")}</li>
-            <li>{t("start.faqUnity")}</li>
-            <li>{t("start.faqUnreal")}</li>
-          </ul>
-        ) : null}
+        {/* Always laid out (hidden while closed), so opening it does not move the card above. */}
+        <ul
+          className={cn(
+            "mt-2 flex list-disc flex-col gap-1 pl-5 text-muted-foreground",
+            !faqOpen && "invisible",
+          )}
+        >
+          <li>{t("start.faqRpgMaker")}</li>
+          <li>{t("start.faqUnity")}</li>
+          <li>{t("start.faqUnreal")}</li>
+        </ul>
       </div>
     </div>
   );

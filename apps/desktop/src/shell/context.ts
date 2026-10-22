@@ -57,6 +57,10 @@ export interface NotifyInput {
 
 export interface NotifyContextValue {
   events: AppEvent[];
+  /** Events that came in since the bell was last opened. */
+  unseen: number;
+  /** Marks every event as seen (the bell was opened or closed). */
+  markSeen: () => void;
   toasts: ToastItem[];
   notify: (input: NotifyInput) => void;
   dismissToast: (id: number) => void;

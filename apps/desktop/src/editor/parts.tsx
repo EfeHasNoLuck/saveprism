@@ -4,29 +4,51 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { clampPage, pageCount, pagerLabel } from "./helpers";
-import { InfoTip } from "./ui/info-tip";
+import { InfoTip } from "@/components/ui/info-tip";
 
-/** A titled block. The title is 16 px semibold; help goes into the (i) tooltip. */
+/**
+ * A titled card. The title is 16 px semibold, an optional overline sits above it, and help goes
+ * into the (i) tooltip.
+ */
 export function Section({
   title,
+  overline,
   info,
   className,
   children,
 }: {
   title: string;
+  overline?: string;
   info?: string;
   className?: string;
   children: ReactNode;
 }) {
   return (
-    <section className={cn("flex min-w-0 flex-col gap-3 p-4", className)}>
-      <div className="flex items-center gap-1.5">
-        <h2 className="text-base font-semibold">{title}</h2>
-        {info ? <InfoTip text={info} /> : null}
+    <section
+      className={cn(
+        "flex min-w-0 flex-col gap-3 rounded-xl border bg-card p-5 text-card-foreground",
+        className,
+      )}
+    >
+      <div className="flex min-w-0 flex-col gap-0.5">
+        {overline ? (
+          <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+            {overline}
+          </span>
+        ) : null}
+        <div className="flex min-w-0 items-center gap-1.5">
+          <h2 className="truncate text-base font-semibold">{title}</h2>
+          {info ? <InfoTip text={info} /> : null}
+        </div>
       </div>
       {children}
     </section>
   );
+}
+
+/** The quiet line of a list or table with nothing to show. */
+export function EmptyText({ children }: { children: ReactNode }) {
+  return <p className="py-2 text-[13px] text-muted-foreground">{children}</p>;
 }
 
 export function SearchBox({
@@ -73,6 +95,7 @@ export function Pager({
         variant="ghost"
         size="icon-xs"
         aria-label={t("pager.previous")}
+        className="text-foreground"
         disabled={current <= 0}
         onClick={() => onPage(current - 1)}
       >
@@ -83,6 +106,7 @@ export function Pager({
         variant="ghost"
         size="icon-xs"
         aria-label={t("pager.next")}
+        className="text-foreground"
         disabled={current >= last}
         onClick={() => onPage(current + 1)}
       >

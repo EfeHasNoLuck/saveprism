@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   checkRange,
   clampPage,
+  fieldHint,
   filterEntries,
+  formatValue,
   hintLine,
   pageCount,
   pageItems,
@@ -37,6 +39,44 @@ describe("hintLine", () => {
   });
   it("uses the error tone when invalid, even if idle", () => {
     expect(hintLine({ ...base, invalid: true })).toEqual({ text: base.hint, error: true });
+  });
+});
+
+describe("fieldHint", () => {
+  const t = (key: string, o?: Record<string, unknown>) =>
+    o ? `${key}(${Object.values(o).join(",")})` : key;
+  const format = (n: number) => n.toLocaleString("en");
+
+  it("names the type and both limits", () => {
+    expect(fieldHint("int", 0, 99999999, t, format)).toBe(
+      "type.int · range.between(0,99,999,999)",
+    );
+  });
+  it("shows one side when the other is open", () => {
+    expect(fieldHint("int", 0, null, t, format)).toBe("type.int · range.atLeast(0)");
+    expect(fieldHint("float", null, 99, t, format)).toBe("type.float · range.atMost(99)");
+  });
+  it("treats a clamped 64-bit limit as no limit", () => {
+    const safe = Number.MAX_SAFE_INTEGER;
+    expect(fieldHint("int", -safe, safe, t, format)).toBe("type.int");
+    expect(fieldHint("int", 0, safe, t, format)).toBe("type.int · range.atLeast(0)");
+  });
+  it("has no range for on/off and text", () => {
+    expect(fieldHint("bool", 0, 1, t, format)).toBe("type.bool");
+    expect(fieldHint("string", null, null, t, format)).toBe("type.string");
+  });
+});
+
+describe("formatValue", () => {
+  const format = (n: number) => n.toLocaleString("tr");
+  it("groups whole numbers in the UI language", () => {
+    expect(formatValue("10000", format)).toBe("10.000");
+    expect(formatValue("-2147483648", format)).toBe("-2.147.483.648");
+  });
+  it("leaves other text alone", () => {
+    expect(formatValue("1.5", format)).toBe("1.5");
+    expect(formatValue("abc", format)).toBe("abc");
+    expect(formatValue("99999999999999999999", format)).toBe("99999999999999999999");
   });
 });
 

@@ -147,11 +147,12 @@ export interface Field {
   /** Value when the file was opened (for "was ..."). */
   original: string;
   kind: FieldKind;
-  /** "Whole number", "Decimal number", "On/off", "Text", or the Easy Save 3 type such as "Int32". */
-  typeLabel: string;
+  /** The file format's own type name (Easy Save 3: "Int32"), or null when the format has none. */
+  typeName: string | null;
+  /** Limits; a limit past +-(2^53-1) arrives clamped to it. */
   min: number | null;
   max: number | null;
-  /** For example "Whole number · 0 to 99,999,999". */
+  /** English description for logs; the UI builds its own text from `kind`, `min` and `max`. */
   hint: string;
   editable: boolean;
 }
@@ -163,6 +164,17 @@ export interface Entry {
   field: Field;
 }
 
+/** Stable keys of the stat bonuses (`_paramPlus[0..8]`). */
+export type StatKey =
+  | "maxHp"
+  | "maxMp"
+  | "attack"
+  | "defense"
+  | "magicAttack"
+  | "magicDefense"
+  | "agility"
+  | "luck";
+
 export interface Actor {
   id: number;
   name: string;
@@ -170,8 +182,8 @@ export interface Actor {
   hp: Field;
   mp: Field;
   exp: Field | null;
-  /** Max HP, Max MP, Attack, Defense, M.Attack, M.Defense, Agility, Luck. */
-  bonuses: { label: string; field: Field }[];
+  /** Stat bonuses in game order; translate `key` with `stat.<key>` (editor namespace). */
+  bonuses: { key: StatKey; field: Field }[];
 }
 
 export interface RpgMakerView {

@@ -13,16 +13,9 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { Monitor, Moon, Sun, type LucideIcon } from "lucide-react";
+import { Moon, Sun } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   parseStoredPreference,
   resolveTheme,
@@ -146,50 +139,25 @@ export function useTheme(): ThemeContextValue {
   return ctx;
 }
 
-const OPTIONS: ReadonlyArray<{
-  value: ThemePreference;
-  labelKey: "theme.light" | "theme.dark" | "theme.system";
-  Icon: LucideIcon;
-}> = [
-  { value: "light", labelKey: "theme.light", Icon: Sun },
-  { value: "dark", labelKey: "theme.dark", Icon: Moon },
-  { value: "system", labelKey: "theme.system", Icon: Monitor },
-];
-
-function isThemePreference(value: string): value is ThemePreference {
-  return value === "light" || value === "dark" || value === "system";
-}
-
-/** Theme switcher: a ghost icon button that opens a radio menu of the three modes. */
+/**
+ * Theme switch in the header: one click flips between light and dark. "System" is chosen in
+ * Settings; while it is active the icon shows the theme the system gives.
+ */
 export function ThemeToggle() {
   const { t } = useTranslation();
-  const { preference, resolvedTheme, setPreference } = useTheme();
-  const CurrentIcon = resolvedTheme === "dark" ? Moon : Sun;
+  const { resolvedTheme, setPreference } = useTheme();
+  const dark = resolvedTheme === "dark";
+  const label = dark ? t("theme.toLight") : t("theme.toDark");
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" aria-label={t("theme.toggle")}>
-          <CurrentIcon />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuRadioGroup
-          value={preference}
-          onValueChange={(value) => {
-            if (isThemePreference(value)) {
-              setPreference(value);
-            }
-          }}
-        >
-          {OPTIONS.map(({ value, labelKey, Icon }) => (
-            <DropdownMenuRadioItem key={value} value={value}>
-              <Icon />
-              {t(labelKey)}
-            </DropdownMenuRadioItem>
-          ))}
-        </DropdownMenuRadioGroup>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <Button
+      variant="ghost"
+      size="icon"
+      aria-label={label}
+      title={label}
+      onClick={() => setPreference(dark ? "light" : "dark")}
+    >
+      {dark ? <Moon /> : <Sun />}
+    </Button>
   );
 }

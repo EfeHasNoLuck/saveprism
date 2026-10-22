@@ -59,33 +59,16 @@ describe("locale resources", () => {
 });
 
 describe("detectLanguage", () => {
-  it("uses a valid stored value first", () => {
-    expect(detectLanguage({ stored: "tr", navigatorLanguage: "en-US" })).toBe("tr");
-    expect(detectLanguage({ stored: "en", navigatorLanguage: "tr-TR" })).toBe("en");
+  it("uses a valid stored value", () => {
+    expect(detectLanguage({ stored: "tr" })).toBe("tr");
+    expect(detectLanguage({ stored: "en" })).toBe("en");
   });
 
-  it("ignores an invalid stored value and falls back to navigator", () => {
-    expect(detectLanguage({ stored: "de", navigatorLanguage: "tr-TR" })).toBe("tr");
-    expect(detectLanguage({ stored: "xx", navigatorLanguage: "en-US" })).toBe("en");
-  });
-
-  it("treats a missing or empty stored value as absent", () => {
-    expect(detectLanguage({ stored: null, navigatorLanguage: "tr-TR" })).toBe("tr");
-    expect(detectLanguage({ stored: undefined, navigatorLanguage: "tr" })).toBe("tr");
-    expect(detectLanguage({ stored: "", navigatorLanguage: "tr-TR" })).toBe("tr");
-  });
-
-  it("maps Turkish navigator tags to tr", () => {
-    expect(detectLanguage({ stored: null, navigatorLanguage: "tr-TR" })).toBe("tr");
-    expect(detectLanguage({ stored: null, navigatorLanguage: "tr" })).toBe("tr");
-  });
-
-  it("maps every other navigator language to en", () => {
-    expect(detectLanguage({ stored: null, navigatorLanguage: "en-US" })).toBe("en");
-    expect(detectLanguage({ stored: null, navigatorLanguage: "de" })).toBe("en");
-    expect(detectLanguage({ stored: null, navigatorLanguage: "" })).toBe("en");
-    expect(detectLanguage({ stored: null, navigatorLanguage: undefined })).toBe("en");
-    expect(detectLanguage({ stored: null, navigatorLanguage: null })).toBe("en");
+  it("starts in English without a valid stored value", () => {
+    expect(detectLanguage({ stored: "de" })).toBe("en");
+    expect(detectLanguage({ stored: "" })).toBe("en");
+    expect(detectLanguage({ stored: null })).toBe("en");
+    expect(detectLanguage({ stored: undefined })).toBe("en");
   });
 
   it("uses the saveprism.lang storage key", () => {

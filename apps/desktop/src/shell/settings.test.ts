@@ -84,15 +84,15 @@ describe("loadSettings and saveSettings", () => {
 });
 
 describe("patternOpacity", () => {
-  it("is about 3 % in dark and 2 % in light at the default strength", () => {
-    expect(patternOpacity(50, true)).toBeCloseTo(0.03);
-    expect(patternOpacity(50, false)).toBeCloseTo(0.02);
+  it("is about 12 % in dark and 14 % in light at the default strength", () => {
+    expect(patternOpacity(50, true)).toBeCloseTo(0.12);
+    expect(patternOpacity(50, false)).toBeCloseTo(0.14);
   });
 
   it("is 0 at strength 0 and scales up to twice the default", () => {
     expect(patternOpacity(0, true)).toBe(0);
-    expect(patternOpacity(100, true)).toBeCloseTo(0.06);
-    expect(patternOpacity(1000, false)).toBeCloseTo(0.04);
-    expect(patternOpacity(Number.NaN, true)).toBeCloseTo(0.03);
+    expect(patternOpacity(100, true)).toBeCloseTo(0.24);
+    expect(patternOpacity(1000, false)).toBeCloseTo(0.28);
+    expect(patternOpacity(Number.NaN, true)).toBeCloseTo(0.12);
   });
 });

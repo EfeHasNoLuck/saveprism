@@ -10,7 +10,8 @@
     "variables": "Variables",
     "switches": "Switches",
     "values": "Values",
-    "statBonuses": "Stat bonuses"
+    "statBonuses": "Stat bonuses",
+    "character": "Character"
   },
   "info": {
     "gold": "The party's gold. It must stay within the range shown below the field.",
@@ -68,5 +69,36 @@
   },
   "errors": {
     "unknown": "The change was not applied. Try again."
+  },
+  "type": {
+    "int": "Whole number",
+    "float": "Decimal number",
+    "bool": "On/off",
+    "string": "Text",
+    "source": "File type: {{name}}"
+  },
+  "range": {
+    "between": "{{min}} to {{max}}",
+    "atLeast": "{{min}} or higher",
+    "atMost": "{{max}} or lower"
+  },
+  "stat": {
+    "maxHp": "Max HP",
+    "maxMp": "Max MP",
+    "attack": "Attack",
+    "defense": "Defense",
+    "magicAttack": "M.Attack",
+    "magicDefense": "M.Defense",
+    "agility": "Agility",
+    "luck": "Luck"
+  },
+  "empty": {
+    "item": "No items in this save.",
+    "weapon": "No weapons in this save.",
+    "armor": "No armors in this save.",
+    "variable": "No variables in this save.",
+    "switch": "No switches in this save.",
+    "values": "No values in this file.",
+    "characters": "No characters in this save."
   }
 }

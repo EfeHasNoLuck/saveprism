@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import type { Entry } from "@/api/commands";
 import { FieldEditor } from "./FieldEditor";
 import { filterEntries, pageItems } from "./helpers";
-import { Pager, SearchBox, Section } from "./parts";
+import { EmptyText, Pager, SearchBox, Section } from "./parts";
 
 const PAGE_SIZE = 50;
 
@@ -19,7 +19,7 @@ interface Props {
   className?: string;
 }
 
-/** Searchable list of "name  #id  editor" rows. */
+/** Searchable list of "name  #id  editor" rows; a plain line when the save has none. */
 export function EntryList({ title, info, kind, entries, paged = false, className }: Props) {
   const { t } = useTranslation("editor");
   const [query, setQuery] = useState("");
@@ -29,17 +29,21 @@ export function EntryList({ title, info, kind, entries, paged = false, className
 
   return (
     <Section title={title} info={info} className={className}>
-      <SearchBox
-        value={query}
-        onChange={(v) => {
-          setQuery(v);
-          setPage(0);
-        }}
-        placeholder={t("search.list")}
-      />
+      {entries.length === 0 ? null : (
+        <SearchBox
+          value={query}
+          onChange={(v) => {
+            setQuery(v);
+            setPage(0);
+          }}
+          placeholder={t("search.list")}
+        />
+      )}
       <div className={paged ? "flex flex-col" : "flex max-h-80 flex-col overflow-y-auto"}>
-        {rows.length === 0 ? (
-          <p className="py-3 text-[13px] text-muted-foreground">{t("search.empty")}</p>
+        {entries.length === 0 ? (
+          <EmptyText>{t(`empty.${kind}`)}</EmptyText>
+        ) : rows.length === 0 ? (
+          <EmptyText>{t("search.empty")}</EmptyText>
         ) : (
           rows.map((entry) => {
             const name = entry.name ?? t(`fallback.${kind}`, { id: entry.id });
@@ -57,8 +61,8 @@ export function EntryList({ title, info, kind, entries, paged = false, className
                     #{entry.id}
                   </span>
                 </div>
-                <div className={isBool ? "shrink-0" : "w-40 shrink-0"}>
-                  <FieldEditor field={entry.field} label={name} />
+                <div className={isBool ? "shrink-0" : "w-44 shrink-0"}>
+                  <FieldEditor field={entry.field} label={name} floatingHint />
                 </div>
               </div>
             );
