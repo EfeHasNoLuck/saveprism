@@ -436,12 +436,14 @@ KAPI-1: kullanıcı "şimdilik devam et her şeye" (2026-10-22). Recent files va
   - Kabul: ≥6 gerçek dosya, ≥3 motor, kaynak + lisans + sha256 + `inspect` sonucu `fixtures/external/SOURCES.md`'de
   - Doğrulama: CEO `inspect` örnek tekrarı · Denetim: yok · Kanıt: —
 
-- [ ] **K-3b1 Uygulama kabuğu** (başlık, başlangıç ekranı, aç/kaydet akışı, ayarlar penceresi, tema, desen) — kart `.fabrika/gorevler/K-3b1.md`
+- [~] **K-3b1 Uygulama kabuğu** (başlık, başlangıç ekranı, aç/kaydet akışı, ayarlar penceresi, tema, desen) — kart `.fabrika/gorevler/K-3b1.md`
   - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 0/3 · Bağımlı: K-3a + dialog eklentisi kararı (kullanıcı)
   - Sahip: kartta (`apps/desktop/src/**` hariç `src/editor/**`, `src/api/**`; `common.json`; `src-tauri` yalnız eklenti + `export_json`)
-- [ ] **K-3b2 Düzenleyici görünümleri** (RPG Maker bölümleri, Values listesi, alan düzenleyici) — kart `.fabrika/gorevler/K-3b2.md`
+- [~] **K-3b2 Düzenleyici görünümleri** (RPG Maker bölümleri, Values listesi, alan düzenleyici) — kart `.fabrika/gorevler/K-3b2.md`
   - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 0/3 · Bağımlı: K-3a
   - Sahip: `apps/desktop/src/editor/**` · `apps/desktop/locales/*/editor.json`
+- K-3b kanıtı (ikisi): web 3/3 (60 test), rust 3/3 (322 test), denetim KRITIK/YUKSEK yok + düzeltme turu (`D9-denetim-K3b.md`),
+  commit `5922b85` · **göz kontrolü yapılmadı** (computer-use erişimi reddedildi, tarayıcı paneli localhost'a bağlanamadı) → K-4'te kullanıcıyla
 
 ---
 

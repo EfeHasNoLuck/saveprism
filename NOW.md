@@ -4,12 +4,10 @@
 
 **Faz:** M2 bitti → v0.1 kısa yol (Windows), ROADMAP "v0.1 kısa yol" K-1…K-5 (2026-10-22)
 
-**Son kazanım:** masaüstü arka ucu hazır: K-1 komutları (aç, çocuklar, ara, düzenle, yedekli kaydet) ve K-3a oyun görünümü (RPG Maker
-bölümleri, oyunun `data/` klasöründen adlar, alan sınırları). 319 test, Rust 3/3. Ekran tasarımı yönü kabul edildi (v0, `.fabrika/raporlar/K-2/E1…E5`).
-README İngilizce.
+**Son kazanım:** tek ekran yazıldı (K-3b: başlık, başlangıç, aç/kaydet + dialog, ayarlar penceresi, tema, desen, RPG Maker bölümleri,
+Values listesi, sınırlı alan düzenleyici). Web 3/3 (60 test), Rust 3/3 (322 test), denetimden geçti. Gerçek kayıtlar yerelde (`fixtures/external/`).
 
-**Sıradaki tek adım:** [HANDOFF-20261022-4](handoff/HANDOFF-20261022-4.md) adım 1–2: dialog eklentisi kararı → K-3b1 + K-3b2 paralel
-(ekranın kendisi). ⏱ ~2 saat
+**Sıradaki tek adım:** [HANDOFF-20261022-5](handoff/HANDOFF-20261022-5.md): uygulamayı gözle kontrol (K-4, kullanıcıyla) → K-5 Windows sürümü. ⏱ ~1 saat
 
 ---
 
