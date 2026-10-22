@@ -8,7 +8,7 @@
 `saveprism keys try`. 301 test, Rust kontrolü 3/3. Gerçek Deep Rock Galactic kaydı (uesave paketinden) aç-yaz birebir.
 Hız: 52 MB GVAS decode 391 ms, encode 103 ms (tek büyük alanlı sentetik dosya).
 
-**Sıradaki tek adım:** kullanıcı [AFK raporunu](.fabrika/raporlar/AFK-20261022.md) okur → yerel commit'ler GitHub'a gönderilir (AFK'da push
+**Sıradaki tek adım:** [HANDOFF-20261022-2](handoff/HANDOFF-20261022-2.md) adım 1: kullanıcı [AFK raporunu](.fabrika/raporlar/AFK-20261022.md) okur → yerel commit'ler GitHub'a gönderilir (AFK'da push
 yok) → M3 planı (masaüstü MVP; önce v0 mockup'ları, ROADMAP M3 notu). ⏱ rapor 5 dk
 
 ---
