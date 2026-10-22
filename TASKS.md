@@ -264,7 +264,9 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
 - **KAPI-1 (kullanıcı, 2026-10-22):** bağımlılıklar "Evet, ekle" · plan (D6 + D7) "Her şeyde yetkin var, overengineering yapma ve bilgisayarımı
   bozma :D" · başarısızlıkta "Güçlendir, olmazsa ayır" (bir kez güçlendir, en çok opus; olmazsa `[?]`, diğerlerine devam).
 - **Bağımlılıklar (onaylı, CEO ekledi 2026-10-22):** `uesave` 0.7 (MIT, GVAS) · `aes` 0.9, `cbc` 0.2, `pbkdf2` 0.13, `sha1` 0.11
-  (MIT OR Apache-2.0, ES3 şifresi). Listede olmayan paket eklenmez.
+  (MIT OR Apache-2.0, ES3 şifresi) · `serde_json` 1.0 + `float_roundtrip` (MIT OR Apache-2.0; Tauri üzerinden zaten kilit dosyasında,
+  yeni indirme yok; uesave'in kendi test ettiği JSON yolu, en az kod; CEO kararı, kullanıcının "her şeyde yetkin var" yetkisiyle).
+  Listede olmayan paket eklenmez.
 - **Gerçek kayıt yok** (kullanıcının oyunu yok, 2026-10-22). Örnekler bağımsız araçla üretilir: MZ → Python `zlib` (pako zlib'in birebir
   portu), ES3 şifreli → .NET `Rfc2898DeriveBytes` + `Aes` (ES3'ün kullandığı sınıflar, PowerShell). GVAS → yalnız `uesave` ile (bağımsız
   üretici yok; bilinen sınır). ROADMAP demosundaki "gerçek kayıt" kullanıcıya kalır (M2-7).
@@ -276,13 +278,13 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
 
 - [ ] **M2-1 RPG Maker MV/MZ**
   - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 0/3
-  - Sahip: `crates/saveprism-codecs/src/rpgmaker/**` · `crates/saveprism-codecs/src/lib.rs` · `fixtures/synthetic/rpgmaker-mz/**` ·
-    `fixtures/expected/rpgmaker-mz/**` · `.fabrika/raporlar/M2-1.md`
+  - Sahip: `crates/saveprism-codecs/src/rpgmaker/**` · `crates/saveprism-codecs/src/lib.rs` · `fixtures/expected/rpgmaker-mz/**` ·
+    `.fabrika/raporlar/M2-1.md` (`fixtures/synthetic/rpgmaker-mz/**` ikili; CEO Python betiğiyle üretir)
   - Okur: research/02 "RPG Maker MV / MZ" · MIMARI §3.1, §3.3, §3.11 · `crates/saveprism-codecs/src/{json,layers}/mod.rs`
   - Bağımlı: D5
   - Kabul: MV `.rpgsave` = lz-string base64 + JSON (mevcut katmanlar; tarif + uzantı ipucu) · MZ `.rmmzsave` = pako `to:"string"`
     ikili metninin UTF-8 yazımı → zlib (seviye 1) → JSON; ikili metin için yeni katman `encoding.js-binary-string` (rpgmaker içinde) ·
-    JsonEx `@c` / `@a` anahtarları korunur ve düğüm ipucu `JsonEx:meta` alır · `data/System.json`'dan anahtar/değişken adları,
+    JsonEx `@` ile başlayan anahtarlar (`@`, `@c`, `@r`, `@a`) korunur ve düğüm ipucu `JsonEx:meta` alır · `data/System.json`'dan anahtar/değişken adları,
     `Actors.json`/`Items.json`'dan adlar okuyan `NameDictionary` (yalnız okuma; arayüz M3) · `lib.rs` rpgmaker + es3 + gvas `register`
     çağrılarını ekler · sentetik MZ örneği CEO'nun Python betiğiyle üretilir, beklenti `SAVEPRISM_BLESS=1`
   - Doğrulama: CEO `kontrol.sh rust` · MV 4 örnek + MZ örnekleri decode → encode birebir
@@ -303,8 +305,9 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
   - Sahip: `crates/saveprism-codecs/src/gvas/**` · `crates/saveprism-codecs/tests/gvas.rs` · `.fabrika/raporlar/M2-5.md`
   - Okur: research/02 "Unreal — GVAS" · MIMARI §3.2–3.4 · `uesave` 0.7 genel API'si (docs.rs)
   - Bağımlı: D5
-  - Kabul: `format.gvas` (`GVAS` sihirli baytı) · uesave `Save` ↔ SaveDoc ağacı (özellik adı, tip ipucu `GVAS:<tip>`) · tip ipuçları
-    `Params`'ta (`types` tablosu) · encode uesave yazıcısıyla · round-trip birebir değilse koruma "farklı" der (düzenleme kapalı) ·
+  - Kabul: `format.gvas` (`GVAS` sihirli baytı) · uesave `Save` → `serde_json::to_string` → mevcut JSON codec → SaveDoc; geri:
+    JSON yazıcı → `serde_json::from_str::<Save>` → `Save::write` · tip ipuçları (`uesave::Types`) `Params`'ta (`types` tablosu) ·
+    round-trip birebir değilse koruma "farklı" der (düzenleme kapalı) ·
     testler uesave ile kurulan küçük kayıtlarla (ikili dosya yazılmaz) · sınırlar: girdi boyutu ve düğüm sayısı `Limits`'ten
   - Doğrulama: CEO `kontrol.sh rust`
   - Denetim: dalga denetçisi

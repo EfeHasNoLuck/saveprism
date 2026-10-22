@@ -3229,6 +3229,7 @@ dependencies = [
  "pbkdf2",
  "proptest",
  "saveprism-core",
+ "serde_json",
  "sha1",
  "uesave",
 ]
