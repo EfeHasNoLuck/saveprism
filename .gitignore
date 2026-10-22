@@ -32,16 +32,5 @@ Thumbs.db
 .fabrika/raporlar/*.xml
 .claude/settings.local.json
 
-# fixtures/external (local only)
-fixtures/external/es3/house-of-legacy/
-fixtures/external/es3/nso-savedatasync/
-fixtures/external/es3/nso-unity-rebuild/
-fixtures/external/es3/supermarket-simulator/
-fixtures/external/es3/yurei-tests/
-fixtures/external/palworld/palworld-save-tools/v0.2.0.6-Level.sav
-fixtures/external/rpgmaker-mv/cicini-melancholianna/
-fixtures/external/rpgmaker-mv/ojoh1993-scp-oopart/
-fixtures/external/rpgmaker-mz/alpha-abs-z/
-fixtures/external/rpgmaker-mz/life-1-source/
-fixtures/external/rpgmaker-mz/waves/
-fixtures/external/unreal-gvas/gvas-json-converter/
+# Real game saves for local testing only; never pushed (user, 2026-10-22)
+fixtures/external/

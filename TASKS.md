@@ -428,8 +428,8 @@ KAPI-1: kullanıcı "şimdilik devam et her şeye" (2026-10-22). Recent files va
     turu (clippy large_enum_variant; float sınırı, 2^53 kırpma, 10 000 sınırı, take(MAX+1), göreli yol) · Kanıt: `kontrol.sh rust` 3/3,
     319 test, typecheck çıkış 0 (2026-10-22), commit `073ed58` · kullanıcı denemesi K-4'te
 
-- [x] **K-3c Gerçek oyun kayıtları** — 65 kayıt, 16 exact · 33 semantic · 16 failed; CEO `inspect` 2 örnekte aynı sonucu aldı; commit
-  `bed2ed9`; ayrıntı HANDOFF-20261022-4 "K-3c sonucu"
+- [x] **K-3c Gerçek oyun kayıtları** — 65 kayıt, 16 exact · 33 semantic · 16 failed; CEO `inspect` 2 örnekte aynı sonucu aldı; yalnız yerelde
+  (`fixtures/external/`, git dışı; kullanıcı: "test verilerini paylaşmaya gerek yok githubla"); ayrıntı HANDOFF-20261022-4 "K-3c sonucu"
   - Motor: claude/general-purpose·sonnet · Effort: medium · Deneme: 0/3
   - Sahip: `fixtures/external/**` · `.gitignore` · `.fabrika/raporlar/K-3c.md`
   - Bağımlı: yok
