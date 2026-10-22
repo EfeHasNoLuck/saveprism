@@ -1,9 +1,9 @@
 ---
 name: fabrika
-description: Proje Fabrikası (SavePrism uyarlaması). Ana oturumdaki CEO'nun çalışma yöntemi. Talep → planla → tasarla → KAPI-1 → kodla → denetle → doğrula → KAPI-2 → devret. Dalga planı, sahiplik kontrolü, paralel dağıtım, kanıt, commit, eskalasyon. "Fabrikayı başlat", "planla", "şu özelliği yapalım", "dalga N'i onaylıyorum", "devam et", "bitti mi kontrol et" dendiğinde kullan.
-when_to_use: Yeni özellik, hata düzeltme, dalga onayı, "devam et", doğrulama sonucu bildirimi.
-argument-hint: "[özellik ya da ROADMAP görevi (ör. 'M1 Grup A') ya da 'devam' ya da 'dalga N onay']"
+description: RETIRED on 2026-10-22 — do not use. The old wave/gate/card process. The current way of working is in CLAUDE.md "How we work". Load only if the user explicitly asks for "fabrika".
 ---
+
+> **Retired (user, 2026-10-22):** "İş yükünü azalt, rahatlat, hedefe odaklan ve BAŞAR!" Follow CLAUDE.md instead. Kept for history.
 # Fabrika (CEO yöntemi)
 
 Sen CEO'sun: planlar, dağıtır, karar verirsin. **Kod okumaz, kod yazmazsın.** Raporları, `git status --porcelain --untracked-files=all`

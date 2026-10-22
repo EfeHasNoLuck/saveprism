@@ -1,58 +1,29 @@
-# NOW — Şu an neredeyiz?
+# NOW
 
-> Her oturumda ilk okunan dosya. Tek ekran. Her görev sonunda güncellenir.
+**Goal:** Windows v0.1 — open an RPG Maker MV/MZ, Unity ES3 or Unreal GVAS save, change values, save with a backup. Installable `.msi`/`.exe`.
 
-**Faz:** M2 bitti → v0.1 kısa yol (Windows), ROADMAP "v0.1 kısa yol" K-1…K-5 (2026-10-22)
+## Done (verified)
+- Core + CLI: RPG Maker MV/MZ, Easy Save 3 (plain, GZip, AES), Unreal GVAS, Palworld PlZ; round-trip guard; backup + atomic write.
+- Desktop backend: open, browse, search, edit with type limits, save with backup and verify; RPG Maker sections with names from the
+  game's `data/` folder.
+- Desktop UI (machine-checked, **not yet looked at in the running app**): start screen, Open file / Save as dialogs + drag-drop,
+  settings modal, theme, background pattern, RPG Maker sections, Values list. Checks: rust 3/3 (322 tests), web 3/3 (60 tests).
+- 65 real saves for local tests in `fixtures/external/` (git-ignored; sources and licenses in `fixtures/external/SOURCES.md`).
 
-**Son kazanım:** tek ekran yazıldı (K-3b: başlık, başlangıç, aç/kaydet + dialog, ayarlar penceresi, tema, desen, RPG Maker bölümleri,
-Values listesi, sınırlı alan düzenleyici). Web 3/3 (60 test), Rust 3/3 (322 test), denetimden geçti. Gerçek kayıtlar yerelde (`fixtures/external/`).
+## Todo (in order)
+1. Look at the running app (`pnpm -C apps/desktop tauri dev`) through a subagent with screenshots, dark + light: open
+   `fixtures/external/rpgmaker-mz/journey-of-elaina/file0.rmmzsave` (names should show), set Gold to 100000000 (red hint), Save as,
+   open `fixtures/synthetic/es3/progress.es3` (Values table). Fix what looks wrong.
+2. User tries it once (open → change → save) and approves the look.
+3. Windows installer: `pnpm -C apps/desktop tauri build` → `.msi`/`.exe`; README install section; `THIRD_PARTY_NOTICES`.
+4. Ask the user to publish the release.
 
-**Sıradaki tek adım:** [HANDOFF-20261022-5](handoff/HANDOFF-20261022-5.md): uygulamayı gözle kontrol (K-4, kullanıcıyla) → K-5 Windows sürümü. ⏱ ~1 saat
+## Known gaps
+- RPG Maker saves re-compress to different bytes: editable, not byte-exact. ES3 dicts with number keys don't open. Palworld PlZ2 world
+  files are slow.
+- Real saves were pushed once in `bed2ed9` (private repo); ask the user before any history cleanup.
+- Small UI leftovers: duplicate switch/info-tip components in `src/editor/ui/` vs `src/components/ui/`.
 
----
-
-## Kararlar (M0-1)
-
-1. ✅ **Ad:** SavePrism ([ADR-011](docs/architecture/kararlar.md)) — public öncesi (M5) ücretsiz marka araması: TÜRKPATENT · EUIPO · USPTO
-2. ✅ **Dil:** sohbet TR, repo EN ([ADR-008](docs/architecture/kararlar.md)) — çeviri M0-12
-3. ✅ **RPGSaveEditor:** muhtaç değiliz ama iş birliğine açığız; v0.1 sonrası not + ortak fixture/format havuzu önerisi ([ADR-010](docs/architecture/kararlar.md)) — M5-6
-4. ✅ **Çekirdek dili:** Rust ([ADR-002](docs/architecture/kararlar.md))
-5. ✅ **CI:** private repo [huseyincancalti/saveprism](https://github.com/huseyincancalti/saveprism) (2026-10-21). Actions dakikası biterse B: yerel `kontrol.sh`, git yerelde sürer, push sonraki ay.
-6. ✅ **Platform:** şimdilik yalnız Windows (kullanıcı, 2026-10-22: "linux me mac arkadaşlarımızı kapsam dışı tutuyorum artık! en son onları
-   test yapıp eklemeye çalışırız"). CI'da Rust işi yalnız Windows; Linux/macOS sürümden hemen önce geri gelir.
-
-> Not: Rust PATH'e eklendi ama açık uygulamalar eski PATH'i görür. Claude uygulamasını/terminali yeniden başlatınca `kontrol.sh` cargo'yu bulur.
-
----
-
-## Durum özeti
-
-| Alan | Durum |
-|---|---|
-| Araştırma | ✅ [01 Pazar](docs/research/01-pazar-taramasi.md) · [02 Formatlar](docs/research/02-format-ve-kutuphane-atlasi.md) · [03 rea](docs/research/03-rea-oyun-kitabi.md) · [04 Skills/ADHD](docs/research/04-skills-ve-adhd-is-akisi.md) |
-| Mimari | ✅ [MIMARI.md](docs/architecture/MIMARI.md) · [kararlar.md](docs/architecture/kararlar.md) · [QUALITY.md](docs/architecture/QUALITY.md) |
-| Riskler ve harita | ✅ [RISKS.md](docs/RISKS.md) (Non-Goals dahil) · [MAP.md](docs/MAP.md) |
-| Yol haritası | ✅ [ROADMAP.md](docs/ROADMAP.md) |
-| Çalışma düzeni | ✅ [Fabrika](docs/FABRIKA.md) (CEO + alt ajanlar, KAPI-1/KAPI-2) · TASKS.md · handoff/ · 6 skill + rea MCP |
-| Kod | ⏳ M0-5'te başlar |
-| GitHub | ⏳ Yerel repo; public'e alma M5-5'te, senin onayınla |
-
----
-
-## Park alanı (şimdi değil)
-
-- **Oyun vitrini** ("Hangi oyunda kullandın?" + çalışan oyunlar listesi, 18+ sansürlü) — araştırma bitti → `docs/research/06-game-showcase-feasibility.md` §8;
-  kullanıcı girdisi (2026-10-21): ayarlarda 18+ anahtarı + yaş sorusu, internet yalnız kişi isterse, oyun görselleri isteniyor (yeni karar D6). M7'den önce değil.
-- **Düzenleme ekranı** — kullanıcı (2026-10-22): A/B mockup'ını "hiç beğenmedim ya daha kolay anlaşılabilir bişi lazım bize
-  https://www.saveeditonline.com/ çok kolay anlaşılıyordu" → M3-2'de o sadelikte yeni tasarım (yalnız UX'ten ders; kod/metin kopyalanmaz)
-
-- **GVAS fuzz hedefi** (D6 denetimi): uesave bozuk uzunluk alanıyla büyük bellek isteyebilir; `catch_unwind` bunu yakalamaz. Fuzz hedefi
-  ekleyip gerekirse girdi öncesi kaba boy kontrolü.
-- **JSON biçim profili `" : "`** (D7): ES3'ün güzel yazımı (`"anahtar" : değer`, tek satır dizi) şu an `semantic` dönüyor (düzenlenebilir
-  ama bayt bayt değil). Profil eklenirse `exact` olur. Önce gerçek bir ES3 kaydıyla biçim doğrulanmalı.
-- **Şifreli ES3 için CLI parola yolu** (D7 denetimi): `decode`/`encode`'a `--password` yok; `keys try` parolayı buluyor ama açma arayüzde (M3) ya da sonraki CLI kartında.
-- Web (WASM) sürümü
-- MCP sunucusu
-- Kod imzalama: SignPath başvurusu, Apple notarization
-- WASM codec eklentileri (Extism/wasmtime)
-- Palworld `PlM` (Oodle) desteği
+## Later (not now)
+Linux/macOS, AI bridge, MCP server, game showcase, plugins, web version, code signing, hex and JSON editing, game profiles.
+Old plans: `docs/ROADMAP.md`, `docs/archive/TASKS.md`.

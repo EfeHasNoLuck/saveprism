@@ -1,25 +1,15 @@
 # AGENTS.md
 
 Project: **SavePrism** — a universal, local, MIT-licensed desktop save editor (Tauri 2 + Rust core + React/TS).
-Planning docs are in Turkish; code, identifiers and commit messages are in English.
+Everything in the repo is English: code, docs, UI text, commit messages.
 
 ## Start every session
 
-1. Read `NOW.md` (state + the single next action) and the newest `handoff/HANDOFF-*.md` if one exists.
-2. Read the matching milestone in `docs/ROADMAP.md`.
-3. Work on ONE micro-task. Multi-task work runs through the factory workflow (`fabrika` skill, guide: `docs/FABRIKA.md`):
-   plan → KAPI-1 (user approves the wave) → code → review → verify → KAPI-2 (user checks it in the app/game).
-4. When done: update `NOW.md` ("Son kazanım", "Sıradaki tek adım"), then commit.
+1. Read `NOW.md` (goal + todo) and `HANDOFF.md` if it exists.
+2. Take the first open todo. Small steps: change, verify, commit, update `NOW.md`.
 
 Locked paths (agents never write; the hook enforces it): `fixtures/samples/**`, `LICENSE`, `.claude/settings*.json`, `.claude/hooks/`, `.claude/araclar/`.
 Evidence command: `bash .claude/araclar/kontrol.sh [rust|web]` (exit 0 pass · 1 fail · 3 nothing to run).
-
-## Output style (i-have-adhd rules)
-
-- Lead with the next action. Number multi-step work. End with one concrete next step.
-- Restate where we are (milestone/task). Give concrete time estimates.
-- Max 5 items per list group. No preamble, no recap, no closing pleasantries.
-- Tangents go to the "Park alanı" in `NOW.md`, not into the current task.
 
 ## Non-negotiable product rules
 
@@ -33,7 +23,7 @@ Evidence command: `bash .claude/araclar/kontrol.sh [rust|web]` (exit 0 pass · 1
 
 ## Conventions
 
-- Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`) — feeds release-please.
-- Feature branches `feat/<topic>`; `main` stays releasable.
-- Push, create the GitHub repo, make it public or publish releases **only with explicit maintainer approval**.
+- Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`).
+- Commit to `main` and push to the private repo freely. Making the repo public, publishing a release or force-pushing needs the maintainer's explicit approval.
 - Rust: `cargo fmt`, `cargo clippy -- -D warnings`, `cargo test`. TS: typecheck, lint, `vitest`.
+- Real downloaded saves stay in `fixtures/external/` (git-ignored). Never commit them.

@@ -1,71 +1,42 @@
-# Proje: SavePrism — evrensel, yerel, MIT save editörü (Tauri 2 + Rust çekirdek + React/TS)
+# Project: SavePrism — free, local, MIT desktop save editor (Tauri 2 + Rust core + React/TS)
 
 @AGENTS.md
 
-## Kaynaklar (durum sohbetten değil dosyadan okunur)
-- `NOW.md`: tek ekran durum + sıradaki adım · `docs/ROADMAP.md`: milestone ve mikro görevler (talep kaynağı)
-- `docs/architecture/MIMARI.md`: sistemler ve sözleşmeler · `docs/architecture/kararlar.md`: ADR'ler · `docs/research/`: format bilgisi
-- `TASKS.md`: dalgalar ve görevler · `handoff/`: devir notları (en yenisi geçerli) · `.fabrika/`: kartlar, raporlar, farklar, münazaralar
-- Fabrika skill'leri: `fabrika` (yöntem) · `devret` · `munazara` · `dis-motor` (Codex/agy) · `afk`
-- Diğer skill'ler: `i-have-adhd` (çıktı biçimi) · `no-ai-slop` (public metinler) · `tdd` · `shadcn` · `frontend-design` ·
-  `reverse-engineer-anything` (rea MCP, yalnız bu projede kayıtlı)
+## The one goal right now
+Windows v0.1 that a normal player can install: open an RPG Maker MV/MZ, Unity ES3 or Unreal GVAS save, change values, save with a
+backup. Everything else waits in `NOW.md` "Later". Do not plan or build it.
 
-## Ana oturum = CEO (proje yöneticisi). Bu bölüm yalnız ana oturum içindir.
-- Planlar, dağıtır, karar verirsin. **Kod okumaz, kod yazmazsın**; işi alt ajanlara görev kartıyla verirsin (`fabrika` skill'i).
-  Yönetim dosyalarını (NOW, TASKS, docs, handoff, .fabrika) sen yazarsın.
-- Zincir: talep → planla → tasarla → **KAPI-1** → kodla → denetle → doğrula → **KAPI-2** → devret. KAPI'lerin sahibi kullanıcıdır:
-  KAPI-1 = dalga planı onayı, KAPI-2 = uygulamada / oyunda doğrulama. Onaysız dalga başlatma; sessizlik onay değildir.
-- Olguyu kullanıcıya sorma, dosyadan bul; kullanıcıya yalnız **karar** sor.
-- Bağımsız görevleri **tek mesajda paralel** başlat; 3+ görevlik dalgayı `dalga-sefi`ne ver. Arka plan işleri koşarken kullanıcıyla çalışmaya devam et.
-- Yalnız sen git'e yazarsın (alt ajanların Bash'i yok). Sıra: kartlar yazılınca `plan: D<N>` · dalga doğrulanınca `D<N>: <ID'ler> doğrulandı` ·
-  devirde yalnız yönetim dosyaları (doğrulanmamış kod commit'lenmez). **Özel depoya (`huseyincancalti/saveprism`) push sorulmaz**
-  (kullanıcı, 2026-10-22: "githuba göndermek için ne diye bana soru soruyorsun ne alaka?"); doğrulanmış commit'ler push'lanır.
-  Depoyu public yapmak ve release yayınlamak yine kullanıcının açık onayıyla.
-- **Rapor iddiadır, kanıt değildir.** Kanıt = dosya:satır, koşulan komut ve çıktısı (`bash .claude/araclar/kontrol.sh [rust|web]`)
-  ya da kullanıcının yazdığı uygulama/oyun gözlemi. Kanıtsız iş HANDOFF'ta "Çalışan"a yazılmaz.
-- **3 deneme:** denetçi bulgusunu aynı ayarla bir kez düzelttirmek deneme sayılmaz. Bundan sonraki her başarısızlıkta (kalan KRITIK/YUKSEK,
-  `kontrol.sh` hatası, kullanıcı doğrulaması tutmadı) kullanıcıya sor: effort yükselt mi (medium→high→xhigh), üst motora mı geç
-  (haiku→sonnet→opus), kartı mı yeniden yazalım. 3. başarısızlıkta dur, talebe dön.
+## Files
+- `NOW.md`: goal, what is done, short todo list, Later. The only planning file kept up to date.
+- `HANDOFF.md`: one page, overwritten only when switching sessions.
+- Reference, read only the part you need: `docs/architecture/MIMARI.md`, `docs/research/`.
+- History, do not update: `docs/archive/`, `handoff/`, `.fabrika/`.
 
-## SavePrism: sahiplik
-- Her görevin `Sahip` listesi vardır; aynı dalgada iki görev aynı dosyaya sahip olamaz. Dağıtmadan önce kesişimi kontrol et.
-- **Kilitli kaynaklar** (ajanlar yazmaz, makine engeller): `fixtures/samples/**` (kullanıcının gerçek kayıtları, bayt-kesin), `LICENSE`,
-  `.claude/settings.json`, `.claude/settings.local.json`, `.claude/hooks/`, `.claude/araclar/`. Örnek kayıtları kullanıcı koyar; ayarları
-  kullanıcı kendi editöründe değiştirir.
-- **Paylaşılan dosyalar** (`Cargo.toml`, `Cargo.lock`, `package.json`, `pnpm-lock.yaml`, `tauri.conf.json`): dalgada tek görev sahiplenir.
-  Yeni bağımlılık = kullanıcı kararı (ad + lisans + neden); GPL ailesi yasak.
-- Önce sözleşme: ortak tipler (SaveDoc, Codec trait, Recipe, Edit, hata tipleri) dalga 0'da tek görevle yazılır, sonra yalnız okunur.
-- Sahiplik birimi: Rust'ta crate (`crates/<ad>/`), arayüzde özellik klasörü (`apps/desktop/src/<alan>/`).
-- Ürün kuralları (yedek + atomik yazma, round-trip koruması, kod çalıştırma yok, lisans hijyeni, temiz oda) `AGENTS.md`'dedir ve her karta geçer.
+## How we work (user, 2026-10-22: "İş yükünü azalt, rahatlat, hedefe odaklan ve BAŞAR!")
+- The main session writes small changes itself (about 20 lines or one file). Bigger pieces go to one coding subagent with a short brief
+  in the prompt (no card files, no task lists).
+- Subagents do the chores: research, drawing or writing inside a given frame, bulk/mechanical edits, and visual checks with screenshots
+  (screenshots stay out of the main context; the subagent reports in text).
+- Reviewer subagent only for code that writes files or handles passwords/keys.
+- Evidence before "done": `bash .claude/araclar/kontrol.sh [rust|web]` output or what the user saw. Never claim unverified work.
+- Ask the user only two things: how a screen looks (A/B with screenshots) and publishing a release / making the repo public.
+  Everything else: decide, do, tell in one line.
+- New dependency: fine with a permissive license (MIT, Apache-2.0, BSD, MPL-2.0 with NOTICE); mention it in one line. GPL family is banned.
+- Git: commit straight to `main` and push to the private repo `huseyincancalti/saveprism` without asking. Public repo, releases and
+  force-push only with the user's explicit OK.
+- Chat with the user in short, plain Turkish, one question at a time. Everything in the repo is English (code, docs, UI, commits).
 
-## Model ve effort
-- CEO: Opus 5.5, effort xhigh (`.claude/settings.local.json`). Alt ajanlar: kodcu (haiku), denetci (sonnet), tarayici (haiku),
-  dalga-sefi (sonnet), munazaraci (sonnet); hepsi **medium**.
-- Münazara sentezi xhigh. `max` effort ve alt ajana Fable **yalnız kullanıcı açıkça isterse**.
-- **Yetki (kullanıcı, 2026-10-21):** "sana model ve effort değiştirmen için de yetki veriyorum, bu chat dahil". 3 deneme kuralındaki
-  effort/motor yükseltmesini CEO kendisi seçer ve raporda yazar; ana oturumun model/effort'unu da gerekirse CEO değiştirir.
-  `max` ve Fable yine son çare: yalnız opus·xhigh başarısız olduysa, kullanıcıya bildirerek.
-- Codex (tasarım, ikinci göz) ve agy (angarya, ek kota) için `dis-motor` skill'i.
+## Context
+- Keep the main context lean: let a subagent take screenshots, read files partly, keep reports short.
+- At a feature end or about 70% context: write `HANDOFF.md`, commit, push. Then:
+  - user at the desktop → start the new session yourself ("Read HANDOFF.md and continue."), detach it, archive the old one.
+  - user on Remote Control (the app refuses new sessions and clear there) → tell the user in one line:
+    "/clear yaz, sonra şunu gönder: HANDOFF.md'yi oku ve devam et."
+- Measure with `mcp__ccd_session_mgmt__get_usage`.
 
-## Bağlam ve kota
-- Bağlam %55: yeni dalga açma, `devret`. %60'ı geçme. %75+: yalnız HANDOFF. Dalga/özellik bitince devretmek en ucuzudur.
-- 5 saatlik kota %85: yeni dalga yok, HANDOFF. Kancanın eklediği "ANA OTURUM BAGLAMI" uyarısı bir emirdir.
-- HANDOFF her seferinde yeni dosya: `handoff/HANDOFF-YYYYMMDD-N.md`; NOW.md de güncellenir. Konu değişince `/clear`; `/compact` devir değildir.
-- **Yetki (kullanıcı, 2026-10-21):** "Context aşıldığında … bunu sen de yapabilirsin yetki veriyorum. Handoff'tan devam edersin." → devirden
-  sonra devamı CEO kendisi başlatır (yeni oturum; kota doluysa sıfırlanma saatine tek seferlik zamanlanmış görev). Kullanıcıdan mesaj beklemez.
-  Yeni oturumu üst düzeye taşır, eskisini arşivler; ortada tek açık oturum kalır (kullanıcı, 2026-10-22: "böyle kalıntılar bırakma").
-  Adımlar `devret` skill'inde.
-  Bağlam ve kota `mcp__ccd_session_mgmt__get_usage` ile ölçülür.
+## Locked paths (agents never write; the hook enforces it)
+`fixtures/samples/**`, `LICENSE`, `.claude/settings*.json`, `.claude/hooks/`, `.claude/araclar/`.
+Real downloaded saves live in `fixtures/external/` (git-ignored, never pushed).
 
-## Token
-- Ajana yalnız kart dosyası (`Kartın: .fabrika/gorevler/<ID>.md`). Mimariden yalnız ilgili bölüm. Rapor ≤10 satır, uzun çıktı dosyaya.
-- Dalga başına tek denetçi; küçük işte (tek dosya, ≤20 satır VE mimari etkisi yok; sözleşme görevleri hariç) denetçi yok, diff'e sen bakarsın.
-- `target/`, `node_modules/`, `dist/` ve ikili kayıt dosyaları okunmaz. Dosya içeriğini Bash heredoc ile değil Write aracıyla yaz.
-
-## Proje bilgisi (kurulum doldurdu, 2026-10-21)
-- Araçlar: Node 22.23.1 · pnpm 11.19 · Python 3.11 · Git 2.55 · Rust 1.99.1 (rustup, stable-msvc, rustfmt + clippy) · VS 2022/2026 MSVC · WebView2 155
-- Codex: var (açık) · agy: var (açık) · Plan: Pro (paralel kodcu sınırı: 4)
-
-# Compact instructions
-Özetlerken koru: NOW.md'deki faz ve sıradaki adım, en yeni HANDOFF dosyasının yolu, TASKS.md'deki açık dalga ve görevler
-(ID + durum + deneme sayısı), değişen dosyaların listesi, açık hatalar (ham metin), kullanıcının bekleyen kararları.
+## Project facts
+Node 22 · pnpm 11 · Python 3.11 · Rust 1.99 (MSVC) · WebView2. Windows only until v0.1 ships; Linux/macOS at the end.
