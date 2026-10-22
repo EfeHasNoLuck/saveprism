@@ -392,6 +392,29 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
 
 ---
 
+## v0.1 kısa yol (Windows) — D8
+KAPI-1: kullanıcı kısa yolu onayladı 2026-10-22 ("bizim kullanılabilir sürmü çıkarmamız lazımdı?"); ekran tasarımı K-2'de ayrıca sorulur.
+
+- [~] **K-1 Tauri komutları** (M3-1 sade)
+  - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 0/3
+  - Sahip: `apps/desktop/src-tauri/**` · `apps/desktop/src/api/**` · `Cargo.lock` · `.fabrika/raporlar/K-1.md`
+  - Okur: MIMARI §3.4–3.6 · `saveprism-cli/src/lib.rs` · çekirdek genel API
+  - Bağımlı: yok
+  - Kabul: `open_file`, `get_children`, `search`, `edit_value`, `pending_changes`/`discard_changes`, `save` (yedekli, atomik, yeniden
+    açıp doğrulayan; varsayılan "farklı kaydet") · hatalar `{code, message, hint}` · `src/api/commands.ts` tipli sarmalayıcılar ·
+    yeni dış bağımlılık yok
+  - Doğrulama: CEO `kontrol.sh rust` + `pnpm -C apps/desktop typecheck`
+  - Denetim: denetci (güvenli yazma) · Kanıt: —
+
+- [~] **K-2 Ekran tasarımı** (M3-2) 👤
+  - Motor: CEO + v0 (kullanıcı bir kez giriş yapar) · Deneme: 0/3
+  - Sahip: yok (kod dosyası yok; ekran görüntüleri `.fabrika/raporlar/K-2/`)
+  - Bağımlı: yok
+  - Kabul: saveeditonline.com sadeliğinde tek ekran, A/B; kullanıcı birini seçer (kod/metin kopyalanmaz)
+  - Doğrulama: kullanıcının seçimi · Kanıt: —
+
+---
+
 ## Kilitli kaynaklar
 | Kaynak | Şu anki sahip |
 |---|---|
