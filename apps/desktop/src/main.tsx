@@ -4,6 +4,8 @@ import { createRoot } from "react-dom/client";
 import App from "./App";
 import { applyStoredTheme, ThemeProvider } from "@/theme";
 import { initI18n } from "@/i18n";
+import { NotifyProvider } from "./shell/NotifyProvider";
+import { SettingsProvider } from "./shell/SettingsProvider";
 
 applyStoredTheme();
 initI18n();
@@ -18,7 +20,11 @@ if (!container) {
 createRoot(container).render(
   <StrictMode>
     <ThemeProvider>
-      <App />
+      <SettingsProvider>
+        <NotifyProvider>
+          <App />
+        </NotifyProvider>
+      </SettingsProvider>
     </ThemeProvider>
   </StrictMode>,
 );

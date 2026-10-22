@@ -122,10 +122,17 @@ async fn save(
     state.with_session(|session| session.save(&target, overwrite.unwrap_or(false)))
 }
 
+/// Pretty JSON text of the open document (read-only view; at most 50 MB).
+#[tauri::command]
+async fn export_json(state: State<'_, AppState>) -> Result<String, ApiError> {
+    state.with_session(|session| session.export_json())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let result = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
         .manage(AppState::default())
         .invoke_handler(tauri::generate_handler![
             core_version,
@@ -138,6 +145,7 @@ pub fn run() {
             pending_changes,
             discard_changes,
             save,
+            export_json,
         ])
         .run(tauri::generate_context!());
 

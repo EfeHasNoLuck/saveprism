@@ -21,6 +21,7 @@ use saveprism_core::{
 };
 use serde::Serialize;
 
+mod export;
 mod game;
 
 pub use game::{Actor, Bonus, Entry, Field, FieldKind, GameView, RpgMakerView, ValueRow};

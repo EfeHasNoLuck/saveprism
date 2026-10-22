@@ -1,0 +1,38 @@
+/** Pure helpers that turn host facts into display text. */
+
+const EXTENSION_LABELS: Record<string, string> = {
+  rmmzsave: "RPG Maker MZ",
+  rpgsave: "RPG Maker MV",
+  rvdata2: "RPG Maker VX Ace",
+  es3: "Easy Save 3",
+  sav: "SAV",
+};
+
+const CODEC_LABELS: Record<string, string> = {
+  "format.json": "JSON",
+  "format.rpgmaker-json": "RPG Maker",
+  "format.es3": "Easy Save 3",
+  "format.es3-json": "Easy Save 3",
+  "format.gvas": "Unreal",
+};
+
+/** Short engine or format name for the badge; `null` when nothing is known. */
+export function engineLabel(fileName: string, codec: string): string | null {
+  const dot = fileName.lastIndexOf(".");
+  const extension = dot >= 0 ? fileName.slice(dot + 1).toLowerCase() : "";
+  const byExtension = EXTENSION_LABELS[extension];
+  if (byExtension && extension !== "sav") return byExtension;
+  return CODEC_LABELS[codec] ?? byExtension ?? null;
+}
+
+/** Last part of a path, for either kind of separator. */
+export function baseName(path: string): string {
+  const parts = path.split(/[\\/]/);
+  return parts[parts.length - 1] ?? path;
+}
+
+/** Folder part of a path (empty when there is none). */
+export function dirName(path: string): string {
+  const index = Math.max(path.lastIndexOf("/"), path.lastIndexOf("\\"));
+  return index >= 0 ? path.slice(0, index) : "";
+}

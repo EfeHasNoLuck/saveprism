@@ -44,7 +44,7 @@
 | `SP-LAY` · `SP-JSON` · `SP-ES3` · `SP-GVAS` · `SP-RPG` · `SP-PAL` · `SP-GODOT` · `SP-PREFS` · `SP-RENPY` | `saveprism-codecs` (`src/<format>/mod.rs`: `rpgmaker`, `es3`, `gvas`, `palworld`) |
 | `SP-KEYS` | `saveprism-keys` |
 | `SP-CLI` | `saveprism-cli` (`crates/saveprism-cli/src/lib.rs`; ör. `keys try` aday listesi hataları) |
-| `SP-APP` · `SP-UI` | desktop host · UI (`SP-APP-001`: app failed to start → `apps/desktop/src-tauri/src/lib.rs`; `SP-APP-002…009`: open/edit/save session errors → `apps/desktop/src-tauri/src/session/mod.rs` `app_codes`; game view (RPG Maker sections, data-folder names, field limits; `game_view`, `field_info`) → `session/game.rs`; TS wrappers → `apps/desktop/src/api/commands.ts`) |
+| `SP-APP` · `SP-UI` | desktop host · UI (`SP-APP-001`: app failed to start → `apps/desktop/src-tauri/src/lib.rs`; `SP-APP-002…009`: open/edit/save session errors → `apps/desktop/src-tauri/src/session/mod.rs` `app_codes`; game view (RPG Maker sections, data-folder names, field limits; `game_view`, `field_info`) → `session/game.rs`; `export_json` → `session/export.rs`; UI shell (header, start screen, open/save, settings, theme, pattern) → `apps/desktop/src/shell/`; editor views (RPG Maker sections, Values list, field editor) → `apps/desktop/src/editor/`; TS wrappers → `apps/desktop/src/api/commands.ts`) |
 
 ## 4. Docs — which file answers what
 

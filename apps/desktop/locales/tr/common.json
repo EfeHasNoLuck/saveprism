@@ -15,5 +15,123 @@
     "light": "Açık",
     "dark": "Koyu",
     "system": "Sistem"
+  },
+  "common": {
+    "close": "Kapat",
+    "cancel": "Vazgeç",
+    "copy": "Kopyala",
+    "copied": "Kopyalandı",
+    "loading": "Yükleniyor…",
+    "moreInfo": "Daha fazla bilgi"
+  },
+  "header": {
+    "openFile": "Dosya aç",
+    "notifications": "Bildirimler",
+    "settings": "Ayarlar",
+    "engineUnknown": "Bilinmeyen biçim"
+  },
+  "dialog": {
+    "openTitle": "Bir kayıt dosyası aç",
+    "saveTitle": "Farklı kaydet",
+    "saveFiles": "Kayıt dosyaları",
+    "allFiles": "Tüm dosyalar"
+  },
+  "start": {
+    "dropActive": "Açmak için bırak",
+    "openFile": "Dosya aç",
+    "privacy": "Dosyalar bu bilgisayarda kalır. Her kayıttan önce yedek alınır.",
+    "recent": "Son dosyalar",
+    "faqLink": "SSS: kayıt dosyaları nerede?",
+    "faqRpgMaker": "RPG Maker: oyunun save/ klasörü ya da www/save/",
+    "faqUnity": "Unity: %USERPROFILE%\\AppData\\LocalLow\\<Şirket>\\<Oyun>",
+    "faqUnreal": "Unreal: %LOCALAPPDATA%\\<Oyun>\\Saved\\SaveGames"
+  },
+  "banner": {
+    "readOnly": "Bu dosya henüz güvenle yazılamıyor. Bakabilirsin ama kaydedemezsin.",
+    "semantic": "Dosya biraz farklı bir düzenle yazılacak. İçerik aynı kalır."
+  },
+  "bottom": {
+    "changes_one": "{{count}} değişiklik",
+    "changes_other": "{{count}} değişiklik",
+    "noChanges": "Değişiklik yok",
+    "changesTitle": "Bekleyen değişiklikler",
+    "undoAll": "Tümünü geri al",
+    "openJson": "JSON'u aç",
+    "openJsonInfo": "Tüm dosyayı, SavePrism'in anladığı haliyle salt okunur JSON metni olarak gösterir.",
+    "saveAs": "Farklı kaydet…",
+    "saveOverwrite": "Geçerli dosyanın üzerine yaz",
+    "overwriteItem": "Geçerli dosyanın üzerine yaz (önce yedek alınır)",
+    "saveAsItem": "Yeni dosya olarak kaydet…",
+    "saveOptions": "Diğer kaydetme seçenekleri",
+    "backupInfo": "Bir dosya değiştirilmeden önce orijinalin yedek kopyası saklanır.",
+    "invalidTip": "Kaydetmeden önce işaretli değerleri düzelt.",
+    "readOnlyTip": "Bu dosya salt okunur."
+  },
+  "confirm": {
+    "discardOpen_one": "{{count}} değişiklik silinsin ve başka bir dosya açılsın mı?",
+    "discardOpen_other": "{{count}} değişiklik silinsin ve başka bir dosya açılsın mı?",
+    "discardBody": "Kaydedilmemiş değişikliklerin kaybolacak.",
+    "discard": "Sil"
+  },
+  "json": {
+    "title": "Belge JSON olarak",
+    "readOnlyNote": "Salt okunur görünüm. JSON düzenleme henüz yok.",
+    "search": "JSON içinde ara",
+    "matches_one": "{{count}} eşleşme",
+    "matches_other": "{{count}} eşleşme",
+    "noMatches": "Eşleşme yok",
+    "next": "Sonraki eşleşme",
+    "previous": "Önceki eşleşme",
+    "failed": "JSON görünümü oluşturulamadı."
+  },
+  "password": {
+    "title": "Bu dosya şifreli",
+    "body": "{{name}} için oyunun kullandığı parolayı gir. Bir kez kullanılır, saklanmaz.",
+    "label": "Parola",
+    "submit": "Aç",
+    "wrong": "Bu parola dosyayı açmadı. Oyunun Easy Save ayarlarındaki parolayı kontrol edip tekrar dene."
+  },
+  "toast": {
+    "savedTitle": "Kaydedildi · yedek alındı · doğrulandı",
+    "savedNoBackupTitle": "Kaydedildi · doğrulandı",
+    "savedBody": "{{path}}",
+    "showInFolder": "Klasörde göster",
+    "dismiss": "Kapat",
+    "openFailed": "Dosya açılamadı",
+    "saveFailed": "Dosya kaydedilemedi",
+    "verifyFailed": "Kaydedilen dosya doğrulanamadı",
+    "jsonFailed": "JSON görünümü oluşturulamadı",
+    "discardFailed": "Değişiklikler geri alınamadı",
+    "changesFailed": "Değişiklik listesi okunamadı",
+    "errorDetail": "{{reason}} {{fix}}"
+  },
+  "bell": {
+    "title": "Bu oturum",
+    "empty": "Henüz bir şey olmadı.",
+    "opened": "{{name}} açıldı",
+    "saved": "{{name}} kaydedildi",
+    "backup": "Yedek: {{path}}",
+    "undone": "Tüm değişiklikler geri alındı",
+    "clear": "Temizle"
+  },
+  "settings": {
+    "title": "Ayarlar",
+    "appearance": "Görünüm",
+    "theme": "Tema",
+    "pattern": "Arka plan deseni",
+    "patternInfo": "Uygulamanın arkasında silik bir kafes. Düz arka plan için kapat.",
+    "patternStrength": "Desen yoğunluğu",
+    "language": "Dil",
+    "saving": "Kaydetme",
+    "defaultAction": "Varsayılan kaydetme işlemi",
+    "defaultActionInfo": "Ana Kaydet düğmesinin ne yapacağını seç. Diğer seçenek menüsünde kalır.",
+    "saveAsNew": "Yeni dosya olarak kaydet",
+    "overwriteOriginal": "Orijinalin üzerine yaz",
+    "recentSection": "Son dosyalar",
+    "showRecent": "Son dosyaları göster",
+    "showRecentInfo": "Başlangıç ekranında son 5 dosyayı gösterir. Liste yalnız bu bilgisayarda tutulur.",
+    "notificationsSection": "Bildirimler",
+    "showNotifications": "Bildirimleri göster",
+    "showNotificationsInfo": "Bu oturumun olaylarını içeren zili gösterir."
   }
 }

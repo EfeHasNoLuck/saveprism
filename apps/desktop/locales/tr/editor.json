@@ -1,0 +1,72 @@
+{
+  "loading": "Değerler yükleniyor…",
+  "loadFailed": "Değerler okunamadı. {{message}} {{hint}}",
+  "sections": {
+    "gold": "Altın",
+    "characters": "Karakterler",
+    "items": "Eşyalar",
+    "weapons": "Silahlar",
+    "armors": "Zırhlar",
+    "variables": "Değişkenler",
+    "switches": "Anahtarlar",
+    "values": "Değerler",
+    "statBonuses": "Özellik bonusları"
+  },
+  "info": {
+    "gold": "Takımın altını. Alanın altında gösterilen aralıkta kalmalıdır.",
+    "characters": "Seviye, HP, MP, EXP ve özellik bonuslarını düzenlemek için bir karakter seçin.",
+    "namesFrom": "İsimler şuradan: {{folder}}",
+    "noNames": "Oyun veri klasörü bulunamadı; isimler numara olarak gösteriliyor.",
+    "variables": "Oyun değişkenleri. Ne işe yaradıklarını bilmiyorsanız değiştirmeyin.",
+    "switches": "Oyun anahtarları (açık/kapalı).",
+    "values": "Bu dosyada bulunan tüm düzenlenebilir değerler."
+  },
+  "fallback": {
+    "item": "Eşya #{{id}}",
+    "weapon": "Silah #{{id}}",
+    "armor": "Zırh #{{id}}",
+    "variable": "Değişken #{{id}}",
+    "switch": "Anahtar #{{id}}"
+  },
+  "actor": {
+    "level": "Seviye",
+    "hp": "HP",
+    "mp": "MP",
+    "exp": "EXP",
+    "lv": "Sv {{level}}"
+  },
+  "field": {
+    "was": "önceki: {{value}}",
+    "undo": "{{value}} değerine döndür",
+    "increase": "Artır",
+    "decrease": "Azalt",
+    "info": "Daha fazla bilgi"
+  },
+  "search": {
+    "list": "İsim, #id veya değer ara",
+    "values": "Değer ara",
+    "empty": "Aramanızla eşleşen bir şey yok."
+  },
+  "pager": {
+    "previous": "Önceki sayfa",
+    "next": "Sonraki sayfa"
+  },
+  "values": {
+    "name": "Ad",
+    "type": "Tür",
+    "value": "Değer",
+    "expand": "Aç",
+    "collapse": "Kapat",
+    "more": "Daha fazla göster",
+    "items_one": "{{count}} öğe",
+    "items_other": "{{count}} öğe"
+  },
+  "problem": {
+    "empty": "Bir değer girin.",
+    "notNumber": "Bu bir sayı değil.",
+    "notWhole": "Ondalıksız, tam sayı kullanın."
+  },
+  "errors": {
+    "unknown": "Değişiklik uygulanmadı. Tekrar deneyin."
+  }
+}

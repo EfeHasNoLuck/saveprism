@@ -14,10 +14,11 @@
       {
         "label": "main",
         "title": "SavePrism",
-        "width": 1200,
+        "width": 1280,
         "height": 800,
-        "minWidth": 900,
-        "minHeight": 600,
+        "minWidth": 1024,
+        "minHeight": 700,
+        "dragDropEnabled": true,
         "center": true
       }
     ],

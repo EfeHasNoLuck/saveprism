@@ -1,0 +1,72 @@
+{
+  "loading": "Loading values…",
+  "loadFailed": "The values could not be read. {{message}} {{hint}}",
+  "sections": {
+    "gold": "Gold",
+    "characters": "Characters",
+    "items": "Items",
+    "weapons": "Weapons",
+    "armors": "Armors",
+    "variables": "Variables",
+    "switches": "Switches",
+    "values": "Values",
+    "statBonuses": "Stat bonuses"
+  },
+  "info": {
+    "gold": "The party's gold. It must stay within the range shown below the field.",
+    "characters": "Pick a character to edit level, HP, MP, EXP and stat bonuses.",
+    "namesFrom": "Names from {{folder}}",
+    "noNames": "No game data folder was found, so names are shown as numbers.",
+    "variables": "Game variables. Change them only if you know what they do.",
+    "switches": "Game switches (on/off).",
+    "values": "All editable values found in this file."
+  },
+  "fallback": {
+    "item": "Item #{{id}}",
+    "weapon": "Weapon #{{id}}",
+    "armor": "Armor #{{id}}",
+    "variable": "Variable #{{id}}",
+    "switch": "Switch #{{id}}"
+  },
+  "actor": {
+    "level": "Level",
+    "hp": "HP",
+    "mp": "MP",
+    "exp": "EXP",
+    "lv": "Lv {{level}}"
+  },
+  "field": {
+    "was": "was {{value}}",
+    "undo": "Restore {{value}}",
+    "increase": "Increase",
+    "decrease": "Decrease",
+    "info": "More information"
+  },
+  "search": {
+    "list": "Search name, #id or value",
+    "values": "Search values",
+    "empty": "Nothing matches your search."
+  },
+  "pager": {
+    "previous": "Previous page",
+    "next": "Next page"
+  },
+  "values": {
+    "name": "Name",
+    "type": "Type",
+    "value": "Value",
+    "expand": "Expand",
+    "collapse": "Collapse",
+    "more": "Show more",
+    "items_one": "{{count}} item",
+    "items_other": "{{count}} items"
+  },
+  "problem": {
+    "empty": "Enter a value.",
+    "notNumber": "That is not a number.",
+    "notWhole": "Use a whole number, without decimals."
+  },
+  "errors": {
+    "unknown": "The change was not applied. Try again."
+  }
+}

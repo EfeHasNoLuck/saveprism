@@ -1,0 +1,63 @@
+import { useCallback, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  NotifyContext,
+  type AppEvent,
+  type NotifyContextValue,
+  type NotifyInput,
+  type ToastItem,
+} from "./context";
+
+/** Most events the bell keeps. */
+const MAX_EVENTS = 50;
+/** How long a toast stays, in milliseconds. Errors stay longer. */
+const TOAST_MS = 8000;
+const TOAST_ERROR_MS = 14000;
+
+/** Keeps this session's events (the bell) and the toasts on screen. */
+export function NotifyProvider({ children }: { children: ReactNode }) {
+  const [events, setEvents] = useState<AppEvent[]>([]);
+  const [toasts, setToasts] = useState<ToastItem[]>([]);
+  const nextId = useRef(1);
+
+  const dismissToast = useCallback((id: number) => {
+    setToasts((current) => current.filter((toast) => toast.id !== id));
+  }, []);
+
+  const notify = useCallback(
+    (input: NotifyInput) => {
+      const id = nextId.current;
+      nextId.current += 1;
+      if (!input.skipBell) {
+        const event: AppEvent = {
+          id,
+          kind: input.kind,
+          title: input.title,
+          detail: input.detail,
+          at: Date.now(),
+        };
+        setEvents((current) => [event, ...current].slice(0, MAX_EVENTS));
+      }
+      if (input.toast ?? true) {
+        const kind = input.kind === "saved" ? "success" : input.kind === "error" ? "error" : "info";
+        const toast: ToastItem = {
+          id,
+          kind,
+          title: input.title,
+          detail: input.detail,
+          action: input.action,
+        };
+        setToasts((current) => [...current, toast].slice(-4));
+        window.setTimeout(() => dismissToast(id), kind === "error" ? TOAST_ERROR_MS : TOAST_MS);
+      }
+    },
+    [dismissToast],
+  );
+
+  const clearEvents = useCallback(() => setEvents([]), []);
+
+  const value = useMemo<NotifyContextValue>(
+    () => ({ events, toasts, notify, dismissToast, clearEvents }),
+    [events, toasts, notify, dismissToast, clearEvents],
+  );
+  return <NotifyContext.Provider value={value}>{children}</NotifyContext.Provider>;
+}

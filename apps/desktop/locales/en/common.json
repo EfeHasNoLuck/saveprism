@@ -15,5 +15,123 @@
     "light": "Light",
     "dark": "Dark",
     "system": "System"
+  },
+  "common": {
+    "close": "Close",
+    "cancel": "Cancel",
+    "copy": "Copy",
+    "copied": "Copied",
+    "loading": "Loading…",
+    "moreInfo": "More information"
+  },
+  "header": {
+    "openFile": "Open file",
+    "notifications": "Notifications",
+    "settings": "Settings",
+    "engineUnknown": "Unknown format"
+  },
+  "dialog": {
+    "openTitle": "Open a save file",
+    "saveTitle": "Save as",
+    "saveFiles": "Save files",
+    "allFiles": "All files"
+  },
+  "start": {
+    "dropActive": "Release to open",
+    "openFile": "Open file",
+    "privacy": "Files stay on this computer. A backup is made before every save.",
+    "recent": "Recent files",
+    "faqLink": "FAQ: where are save files?",
+    "faqRpgMaker": "RPG Maker: the game's save/ folder, or www/save/",
+    "faqUnity": "Unity: %USERPROFILE%\\AppData\\LocalLow\\<Company>\\<Game>",
+    "faqUnreal": "Unreal: %LOCALAPPDATA%\\<Game>\\Saved\\SaveGames"
+  },
+  "banner": {
+    "readOnly": "This file can't be written safely yet. You can look, but not save.",
+    "semantic": "The file will be written with a slightly different layout. The content stays the same."
+  },
+  "bottom": {
+    "changes_one": "{{count}} change",
+    "changes_other": "{{count}} changes",
+    "noChanges": "No changes",
+    "changesTitle": "Pending changes",
+    "undoAll": "Undo all",
+    "openJson": "Open JSON",
+    "openJsonInfo": "Shows the whole file as read-only JSON text, as SavePrism understands it.",
+    "saveAs": "Save as…",
+    "saveOverwrite": "Overwrite current file",
+    "overwriteItem": "Overwrite current file (backup is made first)",
+    "saveAsItem": "Save as a new file…",
+    "saveOptions": "More save options",
+    "backupInfo": "A backup copy of the original is stored before any file is replaced.",
+    "invalidTip": "Fix the highlighted values before saving.",
+    "readOnlyTip": "This file is read-only."
+  },
+  "confirm": {
+    "discardOpen_one": "Discard {{count}} change and open another file?",
+    "discardOpen_other": "Discard {{count}} changes and open another file?",
+    "discardBody": "Your unsaved changes will be lost.",
+    "discard": "Discard"
+  },
+  "json": {
+    "title": "Document as JSON",
+    "readOnlyNote": "Read-only view. Editing JSON is not available yet.",
+    "search": "Search in JSON",
+    "matches_one": "{{count}} match",
+    "matches_other": "{{count}} matches",
+    "noMatches": "No matches",
+    "next": "Next match",
+    "previous": "Previous match",
+    "failed": "The JSON view could not be created."
+  },
+  "password": {
+    "title": "This file is encrypted",
+    "body": "Enter the password the game uses for {{name}}. It is used once and never stored.",
+    "label": "Password",
+    "submit": "Open",
+    "wrong": "That password did not open the file. Check the password in the game's Easy Save settings and try again."
+  },
+  "toast": {
+    "savedTitle": "Saved · backup created · verified",
+    "savedNoBackupTitle": "Saved · verified",
+    "savedBody": "{{path}}",
+    "showInFolder": "Show in folder",
+    "dismiss": "Dismiss",
+    "openFailed": "The file could not be opened",
+    "saveFailed": "The file could not be saved",
+    "verifyFailed": "The saved file did not check out",
+    "jsonFailed": "The JSON view could not be created",
+    "discardFailed": "The changes could not be undone",
+    "changesFailed": "The list of changes could not be read",
+    "errorDetail": "{{reason}} {{fix}}"
+  },
+  "bell": {
+    "title": "This session",
+    "empty": "Nothing has happened yet.",
+    "opened": "Opened {{name}}",
+    "saved": "Saved {{name}}",
+    "backup": "Backup: {{path}}",
+    "undone": "Undid all changes",
+    "clear": "Clear"
+  },
+  "settings": {
+    "title": "Settings",
+    "appearance": "Appearance",
+    "theme": "Theme",
+    "pattern": "Background pattern",
+    "patternInfo": "A faint lattice behind the app. Turn it off for a plain background.",
+    "patternStrength": "Pattern strength",
+    "language": "Language",
+    "saving": "Saving",
+    "defaultAction": "Default save action",
+    "defaultActionInfo": "Choose what the main Save button does. The other option stays in its menu.",
+    "saveAsNew": "Save as new file",
+    "overwriteOriginal": "Overwrite original",
+    "recentSection": "Recent files",
+    "showRecent": "Show recent files",
+    "showRecentInfo": "Shows the last 5 files on the start screen. The list is stored on this computer only.",
+    "notificationsSection": "Notifications",
+    "showNotifications": "Show notifications",
+    "showNotificationsInfo": "Shows the bell with the events of this session."
   }
 }
