@@ -72,7 +72,7 @@ Kurallar:
 6. [x] **M1-6 `saveprism inspect | decode | encode`** ⏱45 dk ✅ demo komutu çalışıyor — *kanıt: orijinal JS lz-string ile üretilen 4 MV kaydı decode → encode birebir aynı (2026-10-22)*
 7. [x] **M1-7 Round-trip koruması + rapor** ⏱30 dk ✅ eşleşmeyen dosya salt-okunur işaretleniyor — *kanıt: guard.rs testleri (birebir/anlamsal/farklı, `editable`) yeşil (2026-10-21)*
 8. [x] **M1-8 Güvenli yazma modülü** ⏱45 dk ✅ yedek halkası + atomik değiştirme + doğrulama testli — *kanıt: tests/io.rs 8 test; üstüne yazmada her zaman yedek (karar A), 30 gün (2026-10-22)*
-9. [~] **M1-9 Girdi sınırları + ilk fuzz hedefi** ⏱30 dk ✅ sıkıştırma bombası testi panik yerine hata döndürüyor — *bomba/derinlik/girdi testleri yeşil; fuzz koşusu GitHub'da bekliyor*
+9. [x] **M1-9 Girdi sınırları + ilk fuzz hedefi** ⏱30 dk ✅ sıkıştırma bombası testi panik yerine hata döndürüyor — *kanıt: bomba/derinlik/girdi testleri yeşil; GitHub fuzz koşusu 39700556640 yeşil, 3 hedef × 60 sn, çökme yok (2026-10-22)*
 10. [x] **M1-10 Fixture düzeni + altın test koşucusu** ⏱30 dk ✅ `fixtures/samples/<motor>/<ad>` ekleyince test otomatik koşuyor — *kanıt: sentetik 4 dosya, bless akışı çalışıyor (2026-10-21)*
 
 ---

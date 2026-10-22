@@ -228,7 +228,7 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
     · bağımsız doğrulama (kullanıcının oyunu yok, 2026-10-22): `lz-string` 1.5.0 (orijinal JS) ile üretilen 4 MV kaydı `saveprism decode` →
     `saveprism encode` → `cmp` birebir aynı; `inspect` iki adımda `exact` (M1-3 turu 4 sonrası)
 
-- [~] **M1-9 Girdi sınırları + ilk fuzz hedefi**
+- [x] **M1-9 Girdi sınırları + ilk fuzz hedefi**
   - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 0/3
   - Sahip: `fuzz/**` · `.github/workflows/fuzz.yml` · `crates/saveprism-codecs/tests/limits.rs` · `.fabrika/raporlar/M1-9.md`
   - Okur: QUALITY §2 · `crates/saveprism-core/src/limits.rs`
@@ -237,6 +237,8 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
     dedektöre → panik yok · `fuzz/` hedefleri (detect, json, layers) · fuzz.yml: haftalık + elle + `crates/**` push'unda, Linux, 60 sn/hedef
   - Doğrulama: CEO `kontrol.sh rust` · fuzz işi GitHub'da bir kez yeşil
   - Denetim: dalga-şefi denetçisi (1 YUKSEK + 1 ORTA düzeltildi) · Kanıt: tests/limits.rs 7 test yeşil (bombalar, derinlik, girdi, düğüm, proptest) · fuzz/ ve fuzz.yml yazıldı; yerelde nightly yok, fuzz koşusu ilk push'ta GitHub'da (2026-10-21)
+    · GitHub fuzz koşusu 39700556640 (commit abd1a4f) yeşil: json 2,82 M · detect 1,16 M · layers 1,61 M deneme, her biri 61 sn, çökme yok;
+    aynı push'ta ci (ubuntu, windows, macos, web) ve cargo-deny yeşil (2026-10-22)
 
 - [x] **M1-10 Fixture düzeni + altın test koşucusu**
   - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 0/3
