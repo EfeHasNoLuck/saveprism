@@ -6,17 +6,40 @@
 use std::ffi::OsString;
 use std::fmt::Write as _;
 use std::fs;
-use std::io::Write;
+use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 
 use clap::{Parser, Subcommand};
+use saveprism_codecs::es3::ES3_WRONG_PASSWORD;
 use saveprism_core::detect::{DetectOptions, Detection, detect};
 use saveprism_core::guard::{GuardReport, Verdict, check_round_trip};
 use saveprism_core::io::{WriteOptions, default_backup_root, safe_write};
-use saveprism_core::{Error, Limits, Recipe, Registry, Result, Step, codes, pipeline};
+use saveprism_core::{
+    Codec, DecodeCtx, Error, ErrorCode, Limits, Params, Recipe, Registry, Result, Step, codes,
+    pipeline,
+};
 
-/// The only codec the command line tool handles in milestone 1.
+/// The JSON codec: documents are read and written as JSON text with it.
 const JSON_CODEC: &str = "format.json";
+/// Codecs whose input bytes already are the JSON text, so `decode` writes those bytes as the JSON file.
+const JSON_TEXT_CODECS: [&str; 3] = ["format.json", "format.rpgmaker-json", "format.es3"];
+/// Codecs that `decode` and `encode` accept: their document is a JSON tree.
+const JSON_TREE_CODECS: [&str; 4] = [
+    "format.json",
+    "format.rpgmaker-json",
+    "format.es3",
+    "format.gvas",
+];
+/// The layer that `keys try` checks candidate passwords with.
+const ES3_AES_LAYER: &str = "crypto.es3-aes";
+/// Most candidate passwords `keys try` accepts in one run.
+const MAX_CANDIDATES: usize = 100_000;
+/// Largest candidate list file, in bytes (16 MB).
+const MAX_CANDIDATE_FILE_BYTES: u64 = 16 * 1024 * 1024;
+/// The candidate list cannot be used (empty, not UTF-8, too large or too many candidates).
+const KEYS_BAD_LIST: ErrorCode = ErrorCode::new("SP-CLI-001");
+/// No candidate opened the file.
+const KEYS_NOT_FOUND: ErrorCode = ErrorCode::new("SP-CLI-002");
 
 #[derive(Parser, Debug)]
 #[command(
@@ -63,6 +86,23 @@ enum Command {
         /// Directory for backups of overwritten files.
         #[arg(long)]
         backup_dir: Option<PathBuf>,
+    },
+    /// Work with the passwords of encrypted saves.
+    Keys {
+        #[command(subcommand)]
+        action: KeysCommand,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+enum KeysCommand {
+    /// Try candidate passwords on an encrypted Easy Save 3 file and print the first one that opens it.
+    Try {
+        /// The encrypted save file.
+        file: PathBuf,
+        /// UTF-8 text with one candidate per line. Empty lines and lines starting with `#` are skipped.
+        #[arg(long)]
+        candidates: PathBuf,
     },
 }
 
@@ -111,6 +151,11 @@ fn dispatch(command: Command, out: &mut dyn Write) -> Result<()> {
             output,
             backup_dir,
         } => encode(&file, &recipe, &output, backup_dir, &reg, &limits, out),
+        Command::Keys { action } => match action {
+            KeysCommand::Try { file, candidates } => {
+                keys_try(&file, &candidates, &reg, &limits, out)
+            }
+        },
     }
 }
 
@@ -158,15 +203,25 @@ fn detect_file(path: &Path, bytes: &[u8], reg: &Registry, limits: &Limits) -> Re
         .map_err(|e| e.context(format!("while detecting the format of {}", path.display())))
 }
 
+fn json_codec(reg: &Registry) -> Result<&dyn Codec> {
+    reg.codec(JSON_CODEC).ok_or_else(|| {
+        Error::new(
+            codes::CORE_UNKNOWN_STEP,
+            format!("no codec is registered as \"{JSON_CODEC}\""),
+        )
+    })
+}
+
 fn require_json_codec(recipe: &Recipe) -> Result<()> {
     match recipe.steps.last() {
-        Some(step) if step.kind == JSON_CODEC => Ok(()),
+        Some(step) if JSON_TREE_CODECS.contains(&step.kind.as_str()) => Ok(()),
         Some(step) => Err(Error::new(
             codes::CORE_INVALID_RECIPE,
             format!(
-                "the file uses the format \"{}\", but this version only handles \"{JSON_CODEC}\". \
+                "the file uses the format \"{}\", but this version only handles {}. \
                  Use `saveprism inspect` to look at the file instead.",
-                step.kind
+                step.kind,
+                JSON_TREE_CODECS.join(", ")
             ),
         )),
         None => Err(Error::new(
@@ -339,6 +394,28 @@ fn verify_equal(expected: &[u8]) -> impl Fn(&[u8]) -> Result<()> + '_ {
     }
 }
 
+/// The JSON file for a decoded save. Codecs that read JSON text give their input back unchanged;
+/// the others (`format.gvas`) are written by the JSON codec from the document and the codec's
+/// parameters, which is the same write the codec does on `encode`.
+fn json_text(decoded: &pipeline::DecodeOutput, reg: &Registry) -> Result<Vec<u8>> {
+    let codec_step = decoded.recipe.steps.last().ok_or_else(|| {
+        Error::new(
+            codes::CORE_INVALID_RECIPE,
+            "the decoded recipe has no steps",
+        )
+    })?;
+    if JSON_TEXT_CODECS.contains(&codec_step.kind.as_str()) {
+        let input = decoded.frames.last().ok_or_else(|| {
+            Error::new(
+                codes::CORE_INVALID_RECIPE,
+                "the decoded result has no frames",
+            )
+        })?;
+        return Ok(input.clone());
+    }
+    json_codec(reg)?.encode(&decoded.doc, &codec_step.params)
+}
+
 fn decode(
     path: &Path,
     output: &Path,
@@ -351,17 +428,12 @@ fn decode(
     let detection = detect_file(path, &bytes, reg, limits)?;
     require_json_codec(&detection.best.recipe)?;
     let decoded = pipeline::decode(&bytes, &detection.best.recipe, reg, limits)?;
-    let json = decoded.frames.last().ok_or_else(|| {
-        Error::new(
-            codes::CORE_INVALID_RECIPE,
-            "the decoded result has no frames",
-        )
-    })?;
+    let json = json_text(&decoded, reg)?;
     let recipe_text = decoded.recipe.to_toml()?;
     let recipe_path = output.with_extension("recipe.toml");
     let opts = backup_options(backup_dir)?;
 
-    safe_write(output, json, &opts, &verify_equal(json))?;
+    safe_write(output, &json, &opts, &verify_equal(&json))?;
     safe_write(
         &recipe_path,
         recipe_text.as_bytes(),
@@ -418,7 +490,21 @@ fn encode(
     let opts = backup_options(backup_dir)?;
     let verify = |written: &[u8]| -> Result<()> {
         let again = pipeline::decode(written, &recipe, reg, limits)?;
-        if again.doc.tree_eq(&doc) {
+        // The user edits JSON text, so compare the JSON views: codecs such as `format.es3` add
+        // type hints on decode that the plain JSON input does not carry.
+        let same = again.doc.tree_eq(&doc) || {
+            let params = recipe.steps.last().map(|step| &step.params);
+            match (params, json_codec(reg)) {
+                (Some(params), Ok(codec)) => {
+                    match (codec.encode(&again.doc, params), codec.encode(&doc, params)) {
+                        (Ok(written_view), Ok(input_view)) => written_view == input_view,
+                        _ => false,
+                    }
+                }
+                _ => false,
+            }
+        };
+        if same {
             Ok(())
         } else {
             // Not IO_VERIFY_RESTORED: `safe_write` sets that code only after it restored a backup.
@@ -442,6 +528,106 @@ fn encode(
             report.bytes_written
         ),
     )
+}
+
+// --- keys ---
+
+/// Reads the candidate list: `(line number, candidate)` for every line that is neither blank nor a
+/// `#` comment. Line numbers count every line of the file, so they match an editor's numbering.
+fn read_candidates(path: &Path) -> Result<Vec<(usize, String)>> {
+    let file = fs::File::open(path).map_err(|e| read_error(path, e))?;
+    let mut bytes = Vec::new();
+    file.take(MAX_CANDIDATE_FILE_BYTES.saturating_add(1))
+        .read_to_end(&mut bytes)
+        .map_err(|e| read_error(path, e))?;
+    if u64::try_from(bytes.len()).unwrap_or(u64::MAX) > MAX_CANDIDATE_FILE_BYTES {
+        return Err(Error::new(
+            KEYS_BAD_LIST,
+            format!(
+                "the candidate list \"{}\" is larger than 16 MB. Split it into smaller lists.",
+                path.display()
+            ),
+        ));
+    }
+    let text = String::from_utf8(bytes).map_err(|e| {
+        Error::new(
+            KEYS_BAD_LIST,
+            format!(
+                "the candidate list \"{}\" is not UTF-8 text. Save it as UTF-8 with one candidate per line.",
+                path.display()
+            ),
+        )
+        .with_source(e)
+    })?;
+    let mut list = Vec::new();
+    for (index, raw) in text.split('\n').enumerate() {
+        let line = raw.strip_suffix('\r').unwrap_or(raw);
+        if line.is_empty() || line.starts_with('#') {
+            continue;
+        }
+        if list.len() >= MAX_CANDIDATES {
+            return Err(Error::new(
+                KEYS_BAD_LIST,
+                format!(
+                    "the candidate list \"{}\" has more than {MAX_CANDIDATES} candidates. Split it into smaller lists.",
+                    path.display()
+                ),
+            ));
+        }
+        list.push((index + 1, line.to_string()));
+    }
+    Ok(list)
+}
+
+/// Tries each candidate on the encrypted file. Prints `found: <candidate> (line <n>)` for the first
+/// one that opens it. The candidate is never written anywhere else: no log, recipe or file.
+fn keys_try(
+    path: &Path,
+    candidates: &Path,
+    reg: &Registry,
+    limits: &Limits,
+    out: &mut dyn Write,
+) -> Result<()> {
+    let list = read_candidates(candidates)?;
+    if list.is_empty() {
+        return Err(Error::new(
+            KEYS_BAD_LIST,
+            format!(
+                "the candidate list \"{}\" has no candidates. Add one password per line; empty lines and lines starting with # are skipped.",
+                candidates.display()
+            ),
+        ));
+    }
+    let bytes = read_file(path, limits)?;
+    let layer = reg.layer(ES3_AES_LAYER).ok_or_else(|| {
+        Error::new(
+            codes::CORE_UNKNOWN_STEP,
+            format!("no layer is registered as \"{ES3_AES_LAYER}\""),
+        )
+    })?;
+    for (line, candidate) in &list {
+        let mut hints = Params::new();
+        hints.set("password", candidate.as_str());
+        let mut ctx = DecodeCtx::new(limits).with_step(0, hints);
+        match layer.decode(&bytes, &mut ctx) {
+            Ok(_) => return say(out, &format!("found: {candidate} (line {line})\n")),
+            // Any other error is about the file itself and would repeat for every candidate.
+            Err(error) if error.code() == ES3_WRONG_PASSWORD => {}
+            Err(error) => {
+                return Err(
+                    error.context(format!("while trying the candidates on {}", path.display()))
+                );
+            }
+        }
+    }
+    Err(Error::new(
+        KEYS_NOT_FOUND,
+        format!(
+            "none of the {} candidates opened \"{}\". Check the password in the game's Easy Save settings, add it to the list (one per line) and try again.",
+            list.len(),
+            path.display()
+        ),
+    ))
 }
 
 #[cfg(test)]

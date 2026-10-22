@@ -2,13 +2,14 @@
 
 > Her oturumda ilk okunan dosya. Tek ekran. Her görev sonunda güncellenir.
 
-**Faz:** M1 bitti → M2 — ilk motorlar, planlama (2026-10-22)
+**Faz:** M2 — ilk motorlar: kod bitti, makine kanıtlı; kullanıcı kontrolü bekliyor (2026-10-22)
 
-**Son kazanım:** M1 bitti. GitHub'da fuzz yeşil (3 hedef × 60 sn, çökme yok; koşu 39700556640), aynı push'ta ci (3 işletim sistemi + web)
-ve cargo-deny yeşil. Orijinal JS `lz-string` ile üretilen 4 RPG Maker MV kaydı decode → encode birebir aynı; 255 test.
+**Son kazanım:** M2'nin iki turu (D6, D7) bitti: RPG Maker MV/MZ, Easy Save 3 (düz + şifreli), Unreal GVAS, Palworld kabuğu,
+`saveprism keys try`. 301 test, Rust kontrolü 3/3. Gerçek Deep Rock Galactic kaydı (uesave paketinden) aç-yaz birebir.
+Hız: 52 MB GVAS decode 391 ms, encode 103 ms (tek büyük alanlı sentetik dosya).
 
-**Sıradaki tek adım:** M2 planı onaylı (TASKS "M2 — İlk motorlar", D6 + D7; AFK ayarı `.fabrika/durum/afk.md`) → D6'yı yürüt:
-M2-1 RPG Maker MV/MZ, M2-2 ES3 düz, M2-5 GVAS, FIX-1. ⏱ D6 ~2–3 saat, D7 ~2 saat
+**Sıradaki tek adım:** kullanıcı [AFK raporunu](.fabrika/raporlar/AFK-20261022.md) okur → yerel commit'ler GitHub'a gönderilir (AFK'da push
+yok) → M3 planı (masaüstü MVP; önce v0 mockup'ları, ROADMAP M3 notu). ⏱ rapor 5 dk
 
 ---
 
@@ -47,6 +48,9 @@ M2-1 RPG Maker MV/MZ, M2-2 ES3 düz, M2-5 GVAS, FIX-1. ⏱ D6 ~2–3 saat, D7 ~2
 
 - **GVAS fuzz hedefi** (D6 denetimi): uesave bozuk uzunluk alanıyla büyük bellek isteyebilir; `catch_unwind` bunu yakalamaz. Fuzz hedefi
   ekleyip gerekirse girdi öncesi kaba boy kontrolü.
+- **JSON biçim profili `" : "`** (D7): ES3'ün güzel yazımı (`"anahtar" : değer`, tek satır dizi) şu an `semantic` dönüyor (düzenlenebilir
+  ama bayt bayt değil). Profil eklenirse `exact` olur. Önce gerçek bir ES3 kaydıyla biçim doğrulanmalı.
+- **Şifreli ES3 için CLI parola yolu** (D7 denetimi): `decode`/`encode`'a `--password` yok; `keys try` parolayı buluyor ama açma arayüzde (M3) ya da sonraki CLI kartında.
 - Web (WASM) sürümü
 - MCP sunucusu
 - Kod imzalama: SignPath başvurusu, Apple notarization

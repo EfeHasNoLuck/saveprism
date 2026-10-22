@@ -332,8 +332,8 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
 
 ### D7 — ES3 şifre, parola deneme, Palworld, hız · KAPI-1: onaylandı 2026-10-22 · Bağımlı: D6 doğrulandı
 
-- [ ] **M2-3 ES3 AES + GZip**
-  - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 0/3
+- [~] **M2-3 ES3 AES + GZip**
+  - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 1/3 (1: düzeltme turu sonrası test derlenmedi, E0716; CEO kararı: effort high, 2026-10-22)
   - Sahip: `crates/saveprism-codecs/src/es3/**` · `crates/saveprism-codecs/tests/es3_aes.rs` · `.fabrika/raporlar/M2-3.md`
     (örnekler `fixtures/keyed/es3-aes/`, CEO üretti; altın test bu klasörü taramaz çünkü parola ister)
   - Okur: research/02 "Unity — Easy Save 3" · MIMARI §3.3, §3.9
@@ -342,9 +342,12 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
     `DecodeCtx`/`Params` üzerinden (dosyaya yazılmaz) · encode aynı tuzla birebir · ardından isteğe bağlı GZip (mevcut katman) · yanlış
     parola → net SP hatası (dolgu/JSON sezgisi) · sentetik örnekler CEO'nun .NET betiğiyle
   - Doğrulama: CEO `kontrol.sh rust` · .NET ile üretilen örnek decode → encode birebir
-  - Denetim: dalga denetçisi
+  - Denetim: dalga denetçisi (KRITIK/YUKSEK yok; parola tarife/Params'a/log'a sızmıyor) + 3 düzeltme turu (clippy, test katılığı, E0716,
+    gizli kalmış 2 `unwrap`) · Kanıt: `kontrol.sh rust` 3/3, 301 test, cargo deny ok (2026-10-22) · örnekler .NET `Rfc2898DeriveBytes` +
+    `Aes` ile üretildi, Python `cryptography` ile çapraz çözüldü · `settings.es3` decode → encode birebir; GZip'li `progress-gzip.es3` düz
+    metni birebir, yeniden kodlama `semantic` (ES3 `" : "` biçimi, Park) · CLI'de şifreli dosyayı parolayla açma yok (Park) · KAPI-2 bekliyor
 
-- [ ] **M2-4 `saveprism keys try`**
+- [~] **M2-4 `saveprism keys try`**
   - Motor: claude/kodcu·haiku · Effort: medium · Deneme: 0/3
   - Sahip: `crates/saveprism-cli/**` · `.fabrika/raporlar/M2-4.md`
   - Okur: MIMARI §3.9 · M2-3'ün katman API'si
@@ -353,9 +356,12 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
     sınırlı · test: 3 adaydan doğrusu bulunuyor · `decode`/`encode` JSON ağaçlı yeni codec'leri kabul eder (D6 doğrulamasında görüldü:
     yalnız `format.json` geçiyordu)
   - Doğrulama: CEO `kontrol.sh rust`
-  - Denetim: dalga denetçisi
+  - Denetim: dalga denetçisi (ORTA: `SP-CLI` MAP.md'de yoktu → CEO ekledi) + düzeltme turu (doğrulama JSON görünümünü karşılaştırıyor,
+    kullanılmayan import) · Kanıt: `kontrol.sh rust` 3/3 (2026-10-22) · elle: `keys try` 3 adaydan `found: synthetic-test-key (line 3)`
+    çıkış 0, tutmayan liste `SP-CLI-002` çıkış 1 · CLI decode → encode birebir: `progress.es3` ve gerçek `drg-save-test.sav` (GVAS) ·
+    düzenleme: `coins` 250 → 251, yalnız o sayı değişti, `inspect` → exact · KAPI-2 bekliyor
 
-- [ ] **M2-6 Palworld `PlZ` kabuğu**
+- [~] **M2-6 Palworld `PlZ` kabuğu**
   - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 0/3
   - Sahip: `crates/saveprism-codecs/src/palworld/**` · `crates/saveprism-codecs/src/lib.rs` · `crates/saveprism-codecs/tests/palworld.rs` ·
     `.fabrika/raporlar/M2-6.md`
@@ -365,9 +371,11 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
     "desteklenmiyor" hatası · test: uesave ile kurulan GVAS → PlZ kabuğu → decode → encode birebir · `lib.rs`'e palworld `register`
     çağrısı (D7'de `lib.rs`'in tek sahibi)
   - Doğrulama: CEO `kontrol.sh rust`
-  - Denetim: dalga denetçisi
+  - Denetim: dalga denetçisi (KRITIK/YUKSEK yok; boy alanı kuralı kartla aynı) + düzeltme turu (yardımcılardaki `unwrap`) · Kanıt:
+    `kontrol.sh rust` 3/3, `tests/palworld.rs` 6 test (0x31, 0x32, `PlM`, bozuk boy) (2026-10-22) · gerçek Palworld kaydı yok: testler
+    uesave ile kurulan GVAS'tan · KAPI-2 bekliyor
 
-- [ ] **M2-8 Hız ölçümü**
+- [x] **M2-8 Hız ölçümü**
   - Motor: claude/kodcu·haiku · Effort: medium · Deneme: 0/3
   - Sahip: `crates/saveprism-codecs/tests/bench_gvas.rs` · `.fabrika/raporlar/M2-8.md`
   - Okur: M2-5'in test yardımcıları
@@ -375,7 +383,9 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
   - Kabul: `#[ignore]` test: uesave ile ≥50 MB GVAS kurar, decode süresini yazdırır (yeni bağımlılık yok) · CEO `--release` ile koşup
     sonucu NOW.md'ye yazar
   - Doğrulama: CEO `cargo test --release -- --ignored bench_gvas`
-  - Denetim: yok (küçük iş)
+  - Denetim: yok (küçük iş) · Kanıt: `cargo test -p saveprism-codecs --release --test bench_gvas -- --ignored --nocapture` (2026-10-22):
+    52,00 MB girdi · uesave okuma 254 ms · `format.gvas` decode (SaveDoc'a) 391 ms · encode 103 ms · birebir · not: dosya tek büyük metin
+    alanı; çok sayıda küçük alanlı gerçek kayıtta süre farklı olabilir
 
 - [?] **M2-7 [ben] Gerçek kayıtlar** → kullanıcının oyunu yok (2026-10-22). Sahip olduğu bir RPG Maker MZ, Easy Save 3 (Unity) ya da
   Unreal oyunu olursa `fixtures/samples/<motor>/` altına 2 kayıt koyar; altın test kendiliğinden koşar.

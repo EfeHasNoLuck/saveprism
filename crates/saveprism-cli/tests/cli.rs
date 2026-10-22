@@ -209,3 +209,100 @@ fn a_usage_error_exits_with_two() {
     assert_eq!(code, 2);
     assert!(!stderr.is_empty());
 }
+
+/// Synthetic Easy Save 3 file encrypted with the password `synthetic-test-key` (see fixtures/keyed).
+fn keyed_settings() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../fixtures/keyed/es3-aes/settings.es3")
+}
+
+fn write_candidates(dir: &Path, text: &str) -> PathBuf {
+    let path = dir.join("candidates.txt");
+    fs::write(&path, text).unwrap();
+    path
+}
+
+#[test]
+fn keys_try_prints_the_password_and_its_line() {
+    let dir = tempfile::tempdir().unwrap();
+    let list = write_candidates(dir.path(), "wrong-one\nwrong-two\nsynthetic-test-key\n");
+    let (code, stdout, stderr) = cli(&[
+        &os("keys"),
+        &os("try"),
+        &path_arg(&keyed_settings()),
+        &os("--candidates"),
+        &path_arg(&list),
+    ]);
+    assert_eq!(code, 0, "{stderr}");
+    assert_eq!(stdout, "found: synthetic-test-key (line 3)\n");
+}
+
+#[test]
+fn keys_try_without_the_password_exits_one_with_an_sp_code() {
+    let dir = tempfile::tempdir().unwrap();
+    let list = write_candidates(dir.path(), "wrong-one\n# not a candidate\nwrong-two\r\n");
+    let (code, stdout, stderr) = cli(&[
+        &os("keys"),
+        &os("try"),
+        &path_arg(&keyed_settings()),
+        &os("--candidates"),
+        &path_arg(&list),
+    ]);
+    assert_eq!(code, 1, "{stdout}");
+    assert!(stdout.is_empty(), "{stdout}");
+    assert!(stderr.contains("SP-CLI-002"), "{stderr}");
+    // The candidates are never echoed.
+    assert!(!stderr.contains("wrong-one"), "{stderr}");
+}
+
+#[test]
+fn keys_try_with_no_candidates_exits_one_with_an_sp_code() {
+    let dir = tempfile::tempdir().unwrap();
+    let list = write_candidates(dir.path(), "# only a comment\n\n");
+    let (code, stdout, stderr) = cli(&[
+        &os("keys"),
+        &os("try"),
+        &path_arg(&keyed_settings()),
+        &os("--candidates"),
+        &path_arg(&list),
+    ]);
+    assert_eq!(code, 1, "{stdout}");
+    assert!(stderr.contains("SP-CLI-001"), "{stderr}");
+}
+
+#[test]
+fn es3_plain_file_decodes_and_encodes_byte_for_byte() {
+    let dir = tempfile::tempdir().unwrap();
+    let backups = dir.path().join("backups");
+    let original_path =
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../fixtures/synthetic/es3/progress.es3");
+    let original = fs::read(&original_path).unwrap();
+    let save = dir.path().join("progress.es3");
+    fs::write(&save, &original).unwrap();
+
+    let json_out = dir.path().join("progress.json");
+    let (code, _, stderr) = cli(&[
+        &os("decode"),
+        &path_arg(&save),
+        &os("-o"),
+        &path_arg(&json_out),
+        &os("--backup-dir"),
+        &path_arg(&backups),
+    ]);
+    assert_eq!(code, 0, "{stderr}");
+    let recipe_path = dir.path().join("progress.recipe.toml");
+    assert!(recipe_path.exists());
+
+    let rebuilt = dir.path().join("rebuilt.es3");
+    let (code, _, stderr) = cli(&[
+        &os("encode"),
+        &path_arg(&json_out),
+        &os("--recipe"),
+        &path_arg(&recipe_path),
+        &os("-o"),
+        &path_arg(&rebuilt),
+        &os("--backup-dir"),
+        &path_arg(&backups),
+    ]);
+    assert_eq!(code, 0, "{stderr}");
+    assert_eq!(fs::read(&rebuilt).unwrap(), original);
+}

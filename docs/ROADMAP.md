@@ -82,16 +82,16 @@ Kurallar:
 **Hedef:** en çok istenen boşluk formatları. **Demo:** üç motordan gerçek kayıtlar altın testlerden geçiyor.
 
 ### Grup A — Codec'ler
-1. [ ] **M2-1 RPG Maker MV/MZ** ⏱90 dk ✅ JsonEx meta korunuyor; `data/*.json`'dan ad sözlüğü
-2. [ ] **M2-2 ES3 düz** ⏱45 dk ✅ `__type` ipuçları TypeHint'e dönüşüyor
-3. [ ] **M2-3 ES3 AES + GZip** ⏱60 dk ✅ PBKDF2/AES-CBC + düz metin sezgisi; yanlış parola net hata
-4. [ ] **M2-4 `saveprism keys try`** ⏱30 dk ✅ aday listesinden doğru parolayı buluyor
-5. [ ] **M2-5 Unreal GVAS (uesave)** ⏱90 dk ✅ tip ipucu desteğiyle round-trip
+1. [~] **M2-1 RPG Maker MV/MZ** ⏱90 dk ✅ JsonEx meta korunuyor; `data/*.json`'dan ad sözlüğü — *makine kanıtı: MV exact, MZ (Python zlib) semantic; oyunda deneme bekliyor (2026-10-22)*
+2. [~] **M2-2 ES3 düz** ⏱45 dk ✅ `__type` ipuçları TypeHint'e dönüşüyor — *makine kanıtı: 2 örnek exact, CLI'de düzenleme çalışıyor (2026-10-22)*
+3. [~] **M2-3 ES3 AES + GZip** ⏱60 dk ✅ PBKDF2/AES-CBC + düz metin sezgisi; yanlış parola net hata — *makine kanıtı: .NET ile üretilen örnekler açılıyor (2026-10-22)*
+4. [~] **M2-4 `saveprism keys try`** ⏱30 dk ✅ aday listesinden doğru parolayı buluyor — *elle denendi: 3. satırdaki parola bulundu (2026-10-22)*
+5. [~] **M2-5 Unreal GVAS (uesave)** ⏱90 dk ✅ tip ipucu desteğiyle round-trip — *gerçek DRG kaydı (566 KB) birebir (2026-10-22)*
 
 ### Grup B — Gerçek veri
-6. [ ] **M2-6 Palworld `PlZ` kabuğu** ⏱45 dk ✅ zlib kabuklu GVAS açılıyor (`PlM`/Oodle → Park)
+6. [~] **M2-6 Palworld `PlZ` kabuğu** ⏱45 dk ✅ zlib kabuklu GVAS açılıyor (`PlM`/Oodle → Park) — *makine kanıtı; gerçek Palworld kaydı yok (2026-10-22)*
 7. [ ] **M2-7 Fixture toplama** 👤 ⏱30 dk ▶ sahip olduğun oyunlardan her motor için 2 kayıt ✅ `fixtures/samples/` altında, kişisel veri temizlenmiş (bu klasör ajanlara kilitli; dosyaları sen koyarsın)
-8. [ ] **M2-8 Benchmark** ⏱30 dk ✅ ≥50 MB GVAS açılış süresi ölçüldü, NOW.md'ye yazıldı
+8. [x] **M2-8 Benchmark** ⏱30 dk ✅ ≥50 MB GVAS açılış süresi ölçüldü, NOW.md'ye yazıldı — *kanıt: 52 MB, decode 391 ms, encode 103 ms, birebir (2026-10-22)*
 
 ---
 

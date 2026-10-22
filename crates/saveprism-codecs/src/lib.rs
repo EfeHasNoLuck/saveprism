@@ -9,6 +9,7 @@ pub mod es3;
 pub mod gvas;
 pub mod json;
 pub mod layers;
+pub mod palworld;
 pub mod rpgmaker;
 
 /// Registers every layer and codec of this crate into `reg`.
@@ -18,6 +19,7 @@ pub fn register_all(reg: &mut Registry) {
     rpgmaker::register(reg);
     es3::register(reg);
     gvas::register(reg);
+    palworld::register(reg);
 }
 
 #[cfg(test)]

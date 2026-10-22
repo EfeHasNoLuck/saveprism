@@ -6,10 +6,13 @@
 //! `ES3:System.Collections.Generic.List`1[[System.Int32]]`). The `__type` node itself stays in the
 //! tree as read-only information for the user.
 //!
-//! Encrypted files (AES, optional GZip) are not handled here yet; the password layer will be added
-//! next to `plain`.
+//! Encrypted files are opened through the `crypto.es3-aes` layer (see `aes`), optionally followed
+//! by `compression.gzip`: the recipe is `crypto.es3-aes` -> `compression.gzip` -> `format.es3`.
 
+mod aes;
 mod plain;
+
+pub use aes::Es3AesLayer;
 
 use std::sync::Arc;
 
@@ -22,12 +25,20 @@ pub const ES3_ROOT: ErrorCode = ErrorCode::new("SP-ES3-001");
 /// The document holds something Easy Save 3 text cannot write (map, reference) or lost a node.
 pub const ES3_UNSUPPORTED: ErrorCode = ErrorCode::new("SP-ES3-002");
 
+/// The encrypted file is malformed (too short, not whole blocks).
+pub const ES3_BAD_DATA: ErrorCode = ErrorCode::new("SP-ES3-003");
+/// Wrong password, or the file is not Easy Save 3 encrypted.
+pub const ES3_WRONG_PASSWORD: ErrorCode = ErrorCode::new("SP-ES3-004");
+/// The file is encrypted but no password was given.
+pub const ES3_PASSWORD_REQUIRED: ErrorCode = ErrorCode::new("SP-ES3-005");
+
 /// How far into the file `sniff` looks for `"__type"`.
 const SNIFF_WINDOW: usize = 4096;
 const BOM: [u8; 3] = [0xEF, 0xBB, 0xBF];
 
-/// Registers the Easy Save 3 codec as `format.es3`.
+/// Registers the Easy Save 3 codec as `format.es3` and the encryption layer `crypto.es3-aes`.
 pub fn register(reg: &mut Registry) {
+    reg.add_layer(Arc::new(Es3AesLayer));
     reg.add_codec(Arc::new(Es3Codec));
 }
 
