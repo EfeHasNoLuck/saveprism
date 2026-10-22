@@ -37,3 +37,13 @@ Devre hazırım: handoff/HANDOFF-YYYYMMDD-N.md
 ```
 "En yeni" = `handoff/HANDOFF-YYYYMMDD-N.md` kalıbında tarihi ve N'i en büyük olan.
 Yeni pencerede ilk cevabın: iki cümlelik durum özeti + ilk adım. "Nerede kalmıştık?" diye sorman HANDOFF'un eksik olduğunu gösterir.
+
+## Devamı kendin başlatırsan (yetki: CLAUDE.md "Bağlam ve kota")
+
+Kullanıcı 6–8'i yapmaz. Sonunda ortada **tek açık oturum** kalır; eski oturum kalıntı olarak durmaz.
+1. Commit ve push bitmiş olsun.
+2. Yeni oturum: `start_session` (`context: "fresh"`, `use_worktree: false`), istem = 8. adımdaki cümle.
+   Kota doluysa bunun yerine sıfırlanma saatine tek seferlik zamanlanmış görev (yan oturum değildir, 3'ü atla).
+3. `detach_session <yeni oturumun id'si>`. Yapılmazsa 5. adım yeni oturumu da arşivler.
+4. Kullanıcıya tek satır: `Devam burada: [başlık](#local_…). Bu oturumu kapatıyorum.`
+5. `archive_session self`. Bu çağrı oturumu bitirir; ondan sonra bir şey yazma.
