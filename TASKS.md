@@ -412,7 +412,28 @@ KAPI-1: kullanıcı kısa yolu onayladı 2026-10-22 ("bizim kullanılabilir sür
   - Sahip: yok (kod dosyası yok; ekran görüntüleri `.fabrika/raporlar/K-2/`)
   - Bağımlı: yok
   - Kabul: saveeditonline.com sadeliğinde tek ekran, A/B; kullanıcı birini seçer (kod/metin kopyalanmaz)
-  - Doğrulama: kullanıcının seçimi · Kanıt: —
+  - Doğrulama: kullanıcının seçimi · Kanıt: v0 sohbeti "SavePrism desktop app mockup" (m1ypqYGp7Yh), ekran görüntüleri
+    `.fabrika/raporlar/K-2/E1…E5`; kullanıcı yönü kabul etti ("Genel tasarımla alakalı değişikliklere sonra devam ederiz … şimdilik devam et
+    her şeye", 2026-10-22); kalan 6 düzeltme K-3b'de · v0 ücretsiz kredisi bitti
+
+## D9 — tek ekran (K-3) + gerçek kayıtlar
+KAPI-1: kullanıcı "şimdilik devam et her şeye" (2026-10-22). Recent files varsayılan gizli (kullanıcı: "istenmediğinde gözükmesine gerek yok").
+
+- [~] **K-3a Oyun görünümü arka ucu** (RPG Maker bölümleri, veri klasöründen adlar, alan sınırları)
+  - Motor: claude/kodcu·sonnet · Effort: medium · Deneme: 0/3
+  - Sahip: `apps/desktop/src-tauri/**` · `apps/desktop/src/api/**` · `Cargo.lock` · `.fabrika/raporlar/K-3a.md`
+  - Bağımlı: K-1
+  - Kabul: `game_view`, `field_info`, sınırlı `edit_value`; sözleşme kartta (K-3b buna göre yazar)
+  - Doğrulama: CEO `kontrol.sh rust` + typecheck · Denetim: dalga denetçisi · Kanıt: —
+
+- [~] **K-3c Gerçek oyun kayıtları**
+  - Motor: claude/general-purpose·sonnet · Effort: medium · Deneme: 0/3
+  - Sahip: `fixtures/external/**` · `.gitignore` · `.fabrika/raporlar/K-3c.md`
+  - Bağımlı: yok
+  - Kabul: ≥6 gerçek dosya, ≥3 motor, kaynak + lisans + sha256 + `inspect` sonucu `fixtures/external/SOURCES.md`'de
+  - Doğrulama: CEO `inspect` örnek tekrarı · Denetim: yok · Kanıt: —
+
+- [ ] **K-3b Tek ekran (arayüz)** — dosya seçme penceresi kararı bekleniyor (yeni bağımlılık)
 
 ---
 
