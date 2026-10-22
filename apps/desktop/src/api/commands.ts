@@ -135,6 +135,83 @@ export function editValue(path: string, text: string): Promise<NodeRow> {
   return invoke<NodeRow>("edit_value", { path, text });
 }
 
+/** The kind of an editable value. */
+export type FieldKind = "int" | "float" | "bool" | "string";
+
+/** One scalar value with its type and limits. */
+export interface Field {
+  /** Core path string, passed back to `editValue`. */
+  path: string;
+  /** Current value as text. */
+  value: string;
+  /** Value when the file was opened (for "was ..."). */
+  original: string;
+  kind: FieldKind;
+  /** "Whole number", "Decimal number", "On/off", "Text", or the Easy Save 3 type such as "Int32". */
+  typeLabel: string;
+  min: number | null;
+  max: number | null;
+  /** For example "Whole number · 0 to 99,999,999". */
+  hint: string;
+  editable: boolean;
+}
+
+/** An item, weapon, armor, variable or switch. `name` null: show "Item #5". */
+export interface Entry {
+  id: number;
+  name: string | null;
+  field: Field;
+}
+
+export interface Actor {
+  id: number;
+  name: string;
+  level: Field;
+  hp: Field;
+  mp: Field;
+  exp: Field | null;
+  /** Max HP, Max MP, Attack, Defense, M.Attack, M.Defense, Agility, Luck. */
+  bonuses: { label: string; field: Field }[];
+}
+
+export interface RpgMakerView {
+  engine: "mv" | "mz";
+  gold: Field;
+  actors: Actor[];
+  items: Entry[];
+  weapons: Entry[];
+  armors: Entry[];
+  variables: Entry[];
+  switches: Entry[];
+  /** The game data folder the names came from, or null when none was found. */
+  namesFolder: string | null;
+}
+
+/**
+ * One row of the Values list. `path` addresses the value (or group); use it with `getChildren`
+ * to expand a group. `field` is null for groups.
+ */
+export interface ValueRow {
+  name: string;
+  path: string;
+  field: Field | null;
+  children: number;
+}
+
+export type GameView =
+  | { kind: "rpgmaker"; view: RpgMakerView }
+  | { kind: "values"; rows: ValueRow[] };
+
+/** The game view of the open file: RPG Maker sections for MV/MZ saves, else a flat Values list. */
+export function gameView(): Promise<GameView> {
+  return invoke<GameView>("game_view");
+}
+
+/** Type, limits and original value of the scalar at `path`. */
+export function fieldInfo(path: string): Promise<Field> {
+  return invoke<Field>("field_info", { path });
+}
+
 export function pendingChanges(): Promise<Change[]> {
   return invoke<Change[]>("pending_changes");
 }

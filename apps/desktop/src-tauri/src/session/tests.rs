@@ -324,6 +324,208 @@ fn encrypted_gzip_es3_opens_with_the_password() {
     assert!(info.editable);
 }
 
+fn rpg_view(session: &Session) -> Option<RpgMakerView> {
+    match session.game_view().unwrap() {
+        GameView::Rpgmaker { view } => Some(*view),
+        GameView::Values { .. } => None,
+    }
+}
+
+fn ids(entries: &[Entry]) -> Vec<u32> {
+    entries.iter().map(|entry| entry.id).collect()
+}
+
+#[test]
+fn mz_save_becomes_rpg_maker_sections() {
+    let env = env();
+    let path = copy_in(&env, "synthetic/rpgmaker-mz/file1.rmmzsave");
+    let session = open(&env, &path, None).unwrap();
+    let view = rpg_view(&session).unwrap();
+
+    assert_eq!(view.engine, "mz");
+    assert_eq!(view.gold.value, "1250");
+    assert_eq!(view.gold.original, "1250");
+    assert_eq!(view.gold.kind, FieldKind::Int);
+    assert_eq!(view.gold.min, Some(0));
+    assert_eq!(view.gold.max, Some(99_999_999));
+    assert_eq!(view.gold.hint, "Whole number \u{b7} 0 to 99,999,999");
+    assert!(view.gold.editable);
+
+    assert_eq!(view.actors.len(), 1);
+    let actor = &view.actors[0];
+    assert_eq!(actor.name, "Reid");
+    assert_eq!(actor.level.value, "7");
+    assert_eq!(actor.level.min, Some(1));
+    assert_eq!(actor.level.max, Some(99));
+    assert_eq!(actor.hp.value, "450");
+    assert_eq!(actor.hp.hint, "Whole number \u{b7} 0 or higher");
+    assert_eq!(actor.mp.value, "90");
+    assert_eq!(actor.exp.as_ref().map(|f| f.value.as_str()), Some("1820"));
+    assert!(actor.bonuses.is_empty());
+
+    assert_eq!(ids(&view.items), [1, 7]);
+    assert_eq!(view.items[0].field.value, "5");
+    assert_eq!(view.items[0].field.max, Some(99));
+    assert_eq!(ids(&view.weapons), [1]);
+    assert!(view.armors.is_empty());
+    // Variable 2 is 0 and has no name, so it is left out.
+    assert_eq!(ids(&view.variables), [1, 3, 4]);
+    assert_eq!(view.variables[0].field.hint, "Whole number");
+    assert_eq!(view.variables[1].field.kind, FieldKind::Float);
+    assert_eq!(view.variables[2].field.kind, FieldKind::String);
+    assert_eq!(ids(&view.switches), [1, 3]);
+    assert_eq!(view.switches[0].field.hint, "On/off");
+
+    // No data folder next to the save: no names.
+    assert!(view.names_folder.is_none());
+    assert!(view.items.iter().all(|entry| entry.name.is_none()));
+}
+
+#[test]
+fn mv_save_becomes_rpg_maker_sections() {
+    let env = env();
+    let path = copy_in(&env, "synthetic/rpgmaker-mv/file1.rpgsave");
+    let session = open(&env, &path, None).unwrap();
+    let view = rpg_view(&session).unwrap();
+    assert_eq!(view.engine, "mv");
+    assert!(!view.gold.value.is_empty());
+    assert!(!view.actors.is_empty());
+    assert!(!view.actors[0].level.value.is_empty());
+    assert!(!view.actors[0].hp.value.is_empty());
+    assert!(!view.items.is_empty());
+}
+
+#[test]
+fn names_come_from_the_data_folder_next_to_the_save_folder() {
+    let env = env();
+    let path = copy_in(&env, "synthetic/rpgmaker-mz/file1.rmmzsave");
+    let data = env.work.parent().unwrap().join("data");
+    fs::create_dir_all(&data).unwrap();
+    fs::write(
+        data.join("Items.json"),
+        r#"[null,{"id":1,"name":"Potion"},{"id":7,"name":"Elixir"}]"#,
+    )
+    .unwrap();
+    fs::write(
+        data.join("System.json"),
+        r#"{"variables":["","","Counter","","Gate"],"switches":["","Door"]}"#,
+    )
+    .unwrap();
+    // A broken file never fails the view.
+    fs::write(data.join("Weapons.json"), "not json").unwrap();
+
+    let session = open(&env, &path, None).unwrap();
+    let view = rpg_view(&session).unwrap();
+    assert_eq!(view.names_folder, Some(data.to_string_lossy().into_owned()));
+    assert_eq!(view.items[0].name.as_deref(), Some("Potion"));
+    assert_eq!(view.items[1].name.as_deref(), Some("Elixir"));
+    assert_eq!(view.weapons[0].name, None);
+    // The named variable 2 is shown although its value is 0.
+    assert_eq!(ids(&view.variables), [1, 2, 3, 4]);
+    assert_eq!(view.variables[1].name.as_deref(), Some("Counter"));
+    assert_eq!(view.variables[2].name, None);
+    assert_eq!(view.switches[0].name.as_deref(), Some("Door"));
+}
+
+#[test]
+fn easy_save_file_becomes_a_values_list() {
+    let env = env();
+    let path = copy_in(&env, "synthetic/es3/progress.es3");
+    let session = open(&env, &path, None).unwrap();
+    let GameView::Values { rows } = session.game_view().unwrap() else {
+        unreachable!("an Easy Save 3 file has no RPG Maker view");
+    };
+    let coins = rows.iter().find(|r| r.name == "coins").unwrap();
+    let field = coins.field.as_ref().unwrap();
+    assert_eq!(field.type_label, "Int32");
+    assert_eq!(field.max, Some(2_147_483_647));
+    assert_eq!(field.min, Some(-2_147_483_648));
+    assert_eq!(field.value, "250");
+    assert_eq!(coins.path, "/coins/value");
+
+    let levels = rows.iter().find(|r| r.name == "unlockedLevels").unwrap();
+    assert!(levels.field.is_none());
+    assert_eq!(levels.children, 3);
+
+    let info = session.field_info("/coins/value").unwrap();
+    assert_eq!(info.type_label, "Int32");
+    assert_eq!(
+        session.field_info("/unlockedLevels").unwrap_err().code,
+        app_codes::NOT_EDITABLE_NODE
+    );
+
+    // The limit of the Easy Save 3 type is enforced on edit.
+    let mut session = session;
+    let error = session
+        .edit_value("/coins/value", "3000000000")
+        .unwrap_err();
+    assert_eq!(error.code, app_codes::OUT_OF_RANGE);
+    assert!(!error.hint.is_empty());
+    session.edit_value("/coins/value", "300").unwrap();
+}
+
+#[test]
+fn gold_edit_respects_the_rpg_maker_limit_and_keeps_the_original() {
+    let env = env();
+    let path = copy_in(&env, "synthetic/rpgmaker-mz/file1.rmmzsave");
+    let mut session = open(&env, &path, None).unwrap();
+    let gold_path = rpg_view(&session).unwrap().gold.path;
+
+    let error = session.edit_value(&gold_path, "100000000").unwrap_err();
+    assert_eq!(error.code, app_codes::OUT_OF_RANGE);
+    assert!(error.hint.contains("99,999,999"));
+    assert_eq!(rpg_view(&session).unwrap().gold.value, "1250");
+
+    session.edit_value(&gold_path, "500").unwrap();
+    let gold = rpg_view(&session).unwrap().gold;
+    assert_eq!(gold.value, "500");
+    assert_eq!(gold.original, "1250");
+    assert_eq!(
+        session.field_info(&gold_path).unwrap().max,
+        Some(99_999_999)
+    );
+}
+
+#[test]
+fn a_decimal_gold_value_is_checked_against_the_limit_too() {
+    let env = env();
+    let path = copy_in(&env, "synthetic/rpgmaker-mz/file1.rmmzsave");
+    let session = open(&env, &path, None).unwrap();
+    let gold_path = saveprism_core::Path::parse(&rpg_view(&session).unwrap().gold.path).unwrap();
+    // A node as the codec would give it if the game had saved gold as 1250.0.
+    let node = saveprism_core::Node::new(Value::Float {
+        v: 1250.0,
+        width: saveprism_core::FloatWidth::F64,
+    });
+    let error = session
+        .check_bounds(&gold_path, &node, &OwnedValue::Float(1.0e9))
+        .unwrap_err();
+    assert_eq!(error.code, app_codes::OUT_OF_RANGE);
+    assert!(
+        session
+            .check_bounds(&gold_path, &node, &OwnedValue::Float(500.5))
+            .is_ok()
+    );
+}
+
+#[test]
+fn a_plain_json_file_has_a_values_list_with_i64_limits() {
+    let env = env();
+    let session = open_json(&env);
+    let GameView::Values { rows } = session.game_view().unwrap() else {
+        unreachable!("plain JSON has no RPG Maker view");
+    };
+    let level = rows.iter().find(|r| r.name == "level").unwrap();
+    let field = level.field.as_ref().unwrap();
+    assert_eq!(field.kind, FieldKind::Int);
+    // Limits sent to the UI stay within JavaScript's exact integer range.
+    assert_eq!(field.min, Some(-9_007_199_254_740_991));
+    assert_eq!(field.max, Some(9_007_199_254_740_991));
+    let stats = rows.iter().find(|r| r.name == "stats").unwrap();
+    assert!(stats.field.is_none());
+    assert!(stats.children > 0);
+}
+
 #[test]
 fn a_missing_file_is_a_read_error() {
     let env = env();

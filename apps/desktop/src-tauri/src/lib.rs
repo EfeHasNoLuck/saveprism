@@ -7,7 +7,7 @@ pub mod session;
 
 use std::sync::{Mutex, MutexGuard, PoisonError};
 
-use session::{ApiError, Change, NodeRow, OpenInfo, Page, SaveResult, Session};
+use session::{ApiError, Change, Field, GameView, NodeRow, OpenInfo, Page, SaveResult, Session};
 use tauri::State;
 
 /// The one open document (v0.1 keeps a single document at a time).
@@ -88,6 +88,18 @@ async fn edit_value(
     state.with_session(|session| session.edit_value(&path, &text))
 }
 
+/// The game view: RPG Maker sections for MV/MZ saves, else a flat list of values.
+#[tauri::command]
+async fn game_view(state: State<'_, AppState>) -> Result<GameView, ApiError> {
+    state.with_session(|session| session.game_view())
+}
+
+/// Type, limits and original value of the scalar at `path`.
+#[tauri::command]
+async fn field_info(state: State<'_, AppState>, path: String) -> Result<Field, ApiError> {
+    state.with_session(|session| session.field_info(&path))
+}
+
 /// The edits made since opening or the last save.
 #[tauri::command]
 async fn pending_changes(state: State<'_, AppState>) -> Result<Vec<Change>, ApiError> {
@@ -121,6 +133,8 @@ pub fn run() {
             get_children,
             search,
             edit_value,
+            game_view,
+            field_info,
             pending_changes,
             discard_changes,
             save,

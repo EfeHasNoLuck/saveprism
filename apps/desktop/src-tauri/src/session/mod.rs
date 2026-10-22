@@ -21,6 +21,10 @@ use saveprism_core::{
 };
 use serde::Serialize;
 
+mod game;
+
+pub use game::{Actor, Bonus, Entry, Field, FieldKind, GameView, RpgMakerView, ValueRow};
+
 #[cfg(test)]
 mod tests;
 
@@ -769,6 +773,7 @@ impl Session {
         }
         let old = value_text(node).unwrap_or_default();
         let value = parse_input(&node.value, text)?;
+        self.check_bounds(&parsed, node, &value)?;
         apply_edits(
             &mut self.doc,
             &[Edit::Set {
