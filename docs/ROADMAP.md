@@ -102,7 +102,8 @@ Kurallar:
 ### Grup A — Görünüm
 1. [ ] **M3-1 Tauri komutları + tauri-specta bağları** ⏱60 dk ✅ open/children/edit/save TS'ten tipli çağrılıyor
 2. [ ] **M3-2 Uygulama düzeni** ⏱60 dk ✅ kenar çubuğu, sekmeler, denetçi, durum çubuğu — *kullanıcı (2026-10-22): ilk mockup fazla
-   karmaşık; hedef saveeditonline.com kadar kolay anlaşılır bir ekran (önce yeni mockup, onaydan sonra kod)*
+   karmaşık; hedef saveeditonline.com kadar kolay anlaşılır bir ekran (önce yeni mockup, onaydan sonra kod). Mockup'lar v0'da yapılır
+   (kullanıcı bir kez giriş yapar; CEO şifre girmez), A/B seçenekli*
 3. [ ] **M3-3 Tembel sanal ağaç** ⏱90 dk ✅ 1M düğümlü belgede akıcı kaydırma
 4. [ ] **M3-4 Tipe göre değer editörleri** ⏱60 dk ✅ int genişliği/aralık denetimi, float, bool, string
 5. [ ] **M3-5 Geri al / yinele + bekleyen değişiklikler** ⏱45 dk ✅ Ctrl+Z / Ctrl+Y

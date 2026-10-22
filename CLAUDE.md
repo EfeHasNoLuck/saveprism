@@ -18,7 +18,9 @@
 - Olguyu kullanıcıya sorma, dosyadan bul; kullanıcıya yalnız **karar** sor.
 - Bağımsız görevleri **tek mesajda paralel** başlat; 3+ görevlik dalgayı `dalga-sefi`ne ver. Arka plan işleri koşarken kullanıcıyla çalışmaya devam et.
 - Yalnız sen git'e yazarsın (alt ajanların Bash'i yok). Sıra: kartlar yazılınca `plan: D<N>` · dalga doğrulanınca `D<N>: <ID'ler> doğrulandı` ·
-  devirde yalnız yönetim dosyaları (doğrulanmamış kod commit'lenmez). Push / public / release yalnız kullanıcının açık onayıyla.
+  devirde yalnız yönetim dosyaları (doğrulanmamış kod commit'lenmez). **Özel depoya (`huseyincancalti/saveprism`) push sorulmaz**
+  (kullanıcı, 2026-10-22: "githuba göndermek için ne diye bana soru soruyorsun ne alaka?"); doğrulanmış commit'ler push'lanır.
+  Depoyu public yapmak ve release yayınlamak yine kullanıcının açık onayıyla.
 - **Rapor iddiadır, kanıt değildir.** Kanıt = dosya:satır, koşulan komut ve çıktısı (`bash .claude/araclar/kontrol.sh [rust|web]`)
   ya da kullanıcının yazdığı uygulama/oyun gözlemi. Kanıtsız iş HANDOFF'ta "Çalışan"a yazılmaz.
 - **3 deneme:** denetçi bulgusunu aynı ayarla bir kez düzelttirmek deneme sayılmaz. Bundan sonraki her başarısızlıkta (kalan KRITIK/YUKSEK,
