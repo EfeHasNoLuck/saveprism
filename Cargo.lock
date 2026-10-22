@@ -3251,12 +3251,14 @@ dependencies = [
 name = "saveprism-desktop"
 version = "0.0.1"
 dependencies = [
+ "saveprism-codecs",
  "saveprism-core",
  "serde",
  "serde_json",
  "tauri",
  "tauri-build",
  "tauri-plugin-opener",
+ "tempfile",
 ]
 
 [[package]]

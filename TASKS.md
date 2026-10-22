@@ -404,7 +404,8 @@ KAPI-1: kullanıcı kısa yolu onayladı 2026-10-22 ("bizim kullanılabilir sür
     açıp doğrulayan; varsayılan "farklı kaydet") · hatalar `{code, message, hint}` · `src/api/commands.ts` tipli sarmalayıcılar ·
     yeni dış bağımlılık yok
   - Doğrulama: CEO `kontrol.sh rust` + `pnpm -C apps/desktop typecheck`
-  - Denetim: denetci (güvenli yazma) · Kanıt: —
+  - Denetim: denetci (KRITIK/YUKSEK yok; `.fabrika/raporlar/D8-denetim.md`) · Kanıt: `kontrol.sh rust` 3/3, 312 test (11 yeni masaüstü
+    testi), `pnpm -C apps/desktop typecheck` çıkış 0 (2026-10-22) · kullanıcı denemesi K-4'te
 
 - [~] **K-2 Ekran tasarımı** (M3-2) 👤
   - Motor: CEO + v0 (kullanıcı bir kez giriş yapar) · Deneme: 0/3

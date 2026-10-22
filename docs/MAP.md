@@ -44,7 +44,7 @@
 | `SP-LAY` · `SP-JSON` · `SP-ES3` · `SP-GVAS` · `SP-RPG` · `SP-PAL` · `SP-GODOT` · `SP-PREFS` · `SP-RENPY` | `saveprism-codecs` (`src/<format>/mod.rs`: `rpgmaker`, `es3`, `gvas`, `palworld`) |
 | `SP-KEYS` | `saveprism-keys` |
 | `SP-CLI` | `saveprism-cli` (`crates/saveprism-cli/src/lib.rs`; ör. `keys try` aday listesi hataları) |
-| `SP-APP` · `SP-UI` | desktop host · UI (`SP-APP-001`: app failed to start → `apps/desktop/src-tauri/src/lib.rs`) |
+| `SP-APP` · `SP-UI` | desktop host · UI (`SP-APP-001`: app failed to start → `apps/desktop/src-tauri/src/lib.rs`; `SP-APP-002…009`: open/edit/save session errors → `apps/desktop/src-tauri/src/session/mod.rs` `app_codes`; TS wrappers → `apps/desktop/src/api/commands.ts`) |
 
 ## 4. Docs — which file answers what
 
