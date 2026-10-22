@@ -144,7 +144,7 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
     3/3 ilk denemede (fmt, clippy -D warnings, test) · `cargo test --workspace` → core 103 + codecs 1 geçti · Tauri crate derlendi ·
     `cargo deny check` çıkış 0 (yalnız tekrar eden sürüm uyarısı) · düzeltme turu sonrası yine 3/3, core 132 + codecs 1 test (2026-10-21)
 
-- [~] **CI-1 Belge değişikliğinde CI koşmasın**
+- [x] **CI-1 Belge değişikliğinde CI koşmasın**
   - Motor: claude/kodcu·haiku · Effort: medium · Deneme: 0/3
   - Sahip: `.github/workflows/ci.yml`
   - Okur: —
@@ -152,7 +152,8 @@ Talep kaynağı: `docs/ROADMAP.md` (görev ID'leri `M<n>-<k>`). Durumun tek ekra
   - Kabul: `push` ve `pull_request` tetiklerine `paths-ignore`: `docs/**`, `**/*.md`, `handoff/**`, `.fabrika/**`; başka değişiklik yok
   - Doğrulama: CEO diff'e bakar · yalnız belge değiştiren sonraki push'ta GitHub'da CI koşusu açılmaz
   - Denetim: yok (küçük iş) · Kanıt: CEO `git diff` → yalnız `on.push` ve `on.pull_request` altına 4 satırlık `paths-ignore` eklendi,
-    işler aynen (2026-10-21) · GitHub'da belge-push denemesi: bekliyor
+    işler aynen (2026-10-21) · GitHub'da belge-push denemesi: `abd1a4f..eb4e2d2` (yalnız NOW, TASKS, ROADMAP) push'unda hiç koşu
+    açılmadı (`gh run list`, 2026-10-22)
 
 ### D4 — Katmanlar, JSON, koruma, güvenli yazma · KAPI-1: onaylandı 2026-10-21 (M1-8 yedek politikası: A, kullanıcı 2026-10-21 "A seçeneği ile ilerleyelim") · Bağımlı: D3 doğrulandı
 
