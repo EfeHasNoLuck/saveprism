@@ -24,6 +24,7 @@
     "copy": "Copy",
     "copied": "Copied",
     "loading": "Loading…",
+    "opening": "Opening {{name}}…",
     "moreInfo": "More information"
   },
   "header": {
@@ -59,6 +60,10 @@
     "changes_other": "{{count}} changes pending",
     "noChanges": "No changes",
     "changesTitle": "Pending changes",
+    "undo": "Undo",
+    "redo": "Redo",
+    "undoTip": "Undo (Ctrl+Z)",
+    "redoTip": "Redo (Ctrl+Y)",
     "undoAll": "Undo all",
     "openJson": "Open JSON",
     "openJsonInfo": "Shows the whole file as JSON text. You can change values there and apply them.",
@@ -139,6 +144,8 @@
     "exportFailed": "The JSON could not be exported",
     "closeFailed": "The window could not be closed",
     "discardFailed": "The changes could not be undone",
+    "undoFailed": "The change could not be undone",
+    "redoFailed": "The change could not be redone",
     "changesFailed": "The list of changes could not be read",
     "errorDetail": "{{reason}} {{fix}}",
     "jsonApplied_one": "{{count}} change applied",
@@ -172,6 +179,26 @@
     "showRecentInfo": "Shows the last 5 files on the start screen. The list is stored on this computer only.",
     "notificationsSection": "Notifications",
     "showNotifications": "Show notifications",
-    "showNotificationsInfo": "Shows the bell with the events of this session."
+    "showNotificationsInfo": "Shows the bell with the events of this session.",
+    "about": "About SavePrism"
+  },
+  "shortcuts": {
+    "title": "Keyboard shortcuts",
+    "open": "Open file",
+    "save": "Save",
+    "saveAs": "Save as…",
+    "undo": "Undo",
+    "redo": "Redo",
+    "find": "Search the first list"
+  },
+  "about": {
+    "title": "About SavePrism",
+    "version": "Version",
+    "core": "Core",
+    "license": "License",
+    "licenseValue": "MIT license",
+    "privacy": "Files stay on this computer. Backups are kept in %LOCALAPPDATA%\\SavePrism\\backups.",
+    "notices": "Third-party notices",
+    "noticesFailed": "The notices could not be opened"
   }
 }

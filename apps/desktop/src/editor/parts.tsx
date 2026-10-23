@@ -86,6 +86,7 @@ export function SearchBox({
         value={value}
         aria-label={placeholder}
         placeholder={placeholder}
+        data-list-search=""
         onChange={(e) => onChange(e.target.value)}
         className="h-7 w-full rounded-sm border border-input/70 bg-field pr-2 pl-7 text-xs outline-none focus-visible:border-ring dark:border-transparent dark:focus-visible:border-ring"
       />

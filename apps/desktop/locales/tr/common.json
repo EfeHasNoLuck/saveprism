@@ -24,6 +24,7 @@
     "copy": "Kopyala",
     "copied": "Kopyalandı",
     "loading": "Yükleniyor…",
+    "opening": "{{name}} açılıyor…",
     "moreInfo": "Daha fazla bilgi"
   },
   "header": {
@@ -59,6 +60,10 @@
     "changes_other": "{{count}} değişiklik bekliyor",
     "noChanges": "Değişiklik yok",
     "changesTitle": "Bekleyen değişiklikler",
+    "undo": "Geri al",
+    "redo": "Yinele",
+    "undoTip": "Geri al (Ctrl+Z)",
+    "redoTip": "Yinele (Ctrl+Y)",
     "undoAll": "Tümünü geri al",
     "openJson": "JSON'u aç",
     "openJsonInfo": "Tüm dosyayı JSON metni olarak gösterir. Değerleri orada değiştirip uygulayabilirsin.",
@@ -139,6 +144,8 @@
     "exportFailed": "JSON dışa aktarılamadı",
     "closeFailed": "Pencere kapatılamadı",
     "discardFailed": "Değişiklikler geri alınamadı",
+    "undoFailed": "Değişiklik geri alınamadı",
+    "redoFailed": "Değişiklik yinelenemedi",
     "changesFailed": "Değişiklik listesi okunamadı",
     "errorDetail": "{{reason}} {{fix}}",
     "jsonApplied_one": "{{count}} değişiklik uygulandı",
@@ -172,6 +179,26 @@
     "showRecentInfo": "Başlangıç ekranında son 5 dosyayı gösterir. Liste yalnız bu bilgisayarda tutulur.",
     "notificationsSection": "Bildirimler",
     "showNotifications": "Bildirimleri göster",
-    "showNotificationsInfo": "Bu oturumun olaylarını içeren zili gösterir."
+    "showNotificationsInfo": "Bu oturumun olaylarını içeren zili gösterir.",
+    "about": "SavePrism hakkında"
+  },
+  "shortcuts": {
+    "title": "Klavye kısayolları",
+    "open": "Dosya aç",
+    "save": "Kaydet",
+    "saveAs": "Farklı kaydet…",
+    "undo": "Geri al",
+    "redo": "Yinele",
+    "find": "İlk listede ara"
+  },
+  "about": {
+    "title": "SavePrism hakkında",
+    "version": "Sürüm",
+    "core": "Çekirdek",
+    "license": "Lisans",
+    "licenseValue": "MIT lisansı",
+    "privacy": "Dosyalar bu bilgisayarda kalır. Yedekler %LOCALAPPDATA%\\SavePrism\\backups klasöründe tutulur.",
+    "notices": "Üçüncü taraf bildirimleri",
+    "noticesFailed": "Bildirimler açılamadı"
   }
 }

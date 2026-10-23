@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
+import { Info } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -16,6 +18,16 @@ import type { SaveDefault } from "./settings";
 
 const LANGUAGE_NAMES: Record<Language, string> = { en: "English", tr: "Türkçe" };
 const THEMES: ThemePreference[] = ["system", "light", "dark"];
+
+/** The shortcuts of the app (see `shortcuts.ts`); a row lists every key that does the same. */
+const SHORTCUTS: { action: string; keys: string[] }[] = [
+  { action: "open", keys: ["Ctrl+O"] },
+  { action: "save", keys: ["Ctrl+S"] },
+  { action: "saveAs", keys: ["Ctrl+Shift+S"] },
+  { action: "undo", keys: ["Ctrl+Z"] },
+  { action: "redo", keys: ["Ctrl+Y", "Ctrl+Shift+Z"] },
+  { action: "find", keys: ["Ctrl+F"] },
+];
 
 /** A settings group. `aside` puts a single control on the heading's line (no repeated label). */
 function Section({
@@ -90,10 +102,12 @@ function Segmented<T extends string>({
 interface SettingsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Opens the About dialog (the caller closes this one). */
+  onOpenAbout: () => void;
 }
 
 /** Settings as a centered modal (dimmed, blurred backdrop; X, Esc and outside click close it). */
-export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
+export function SettingsDialog({ open, onOpenChange, onOpenAbout }: SettingsDialogProps) {
   const { t, i18n } = useTranslation();
   const { settings, update } = useSettings();
   const { preference, setPreference } = useTheme();
@@ -186,6 +200,33 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
             />
           </Row>
         </Section>
+
+        <Section title={t("shortcuts.title")}>
+          <dl className="grid grid-flow-col grid-cols-2 grid-rows-3 gap-x-6 gap-y-1.5">
+            {SHORTCUTS.map(({ action, keys }) => (
+              <div key={action} className="flex items-center justify-between gap-2 text-[13px]">
+                <dt className="min-w-0 truncate">{t(`shortcuts.${action}`)}</dt>
+                <dd className="flex shrink-0 items-center gap-1">
+                  {keys.map((key) => (
+                    <kbd
+                      key={key}
+                      className="rounded-sm bg-surface-high px-1.5 py-0.5 font-mono text-[11px] text-foreground-variant"
+                    >
+                      {key}
+                    </kbd>
+                  ))}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </Section>
+
+        <div className="-mb-1 flex border-t border-border pt-3">
+          <Button variant="ghost" size="sm" className="text-foreground-variant" onClick={onOpenAbout}>
+            <Info />
+            {t("settings.about")}
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );

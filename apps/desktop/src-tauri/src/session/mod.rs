@@ -3,8 +3,9 @@
 //! v0.1 keeps one document at a time: [`Session::open`] detects and decodes a file and runs the
 //! round-trip guard; [`Session::get_children`] and [`Session::search`] read the tree;
 //! [`Session::edit_value`] changes one scalar and [`Session::apply_json`] the scalars of an edited
-//! JSON view; [`Session::save`] encodes, writes with the core safe write (backup, temp file, atomic
-//! replace) and checks every edited value in the written file.
+//! JSON view; [`Session::undo`] and [`Session::redo`] walk the edit history; [`Session::save`]
+//! encodes, writes with the core safe write (backup, temp file, atomic replace) and checks every
+//! edited value in the written file.
 //!
 //! Errors cross the IPC boundary as [`ApiError`] (`code`, `message`, `hint`). The password of an
 //! encrypted file lives in memory only; it is never logged, put into a message or written to disk.
@@ -25,9 +26,12 @@ use serde::Serialize;
 
 mod export;
 mod game;
+mod history;
 mod json_apply;
 
 pub use game::{Actor, Bonus, Entry, Field, FieldKind, GameView, RpgMakerView, ValueRow};
+use history::{History, Mutation, scalar_owned};
+pub use history::{HistoryResult, HistoryState};
 
 #[cfg(test)]
 mod tests;
@@ -65,6 +69,8 @@ pub mod app_codes {
     pub const JSON_TEXT: &str = "SP-APP-010";
     /// The edited JSON text changes more than values (fields, list items, map keys, placeholders).
     pub const JSON_SHAPE: &str = "SP-APP-011";
+    /// The third-party notices are not part of this build, or could not be opened.
+    pub const NOTICES: &str = "SP-APP-012";
 }
 
 /// An error as the UI receives it.
@@ -284,6 +290,8 @@ pub struct Session {
     editable: bool,
     guard: GuardLevel,
     pending: Vec<Change>,
+    /// Undo and redo steps; empty after opening and after saving.
+    history: History,
 }
 
 fn io_error(path: &FsPath, source: std::io::Error) -> Error {
@@ -603,6 +611,7 @@ impl Session {
             editable: guard != GuardLevel::Failed,
             guard,
             pending: Vec::new(),
+            history: History::default(),
         })
     }
 
@@ -782,6 +791,7 @@ impl Session {
             .into());
         }
         let old = value_text(node).unwrap_or_default();
+        let before = scalar_owned(&node.value);
         let value = parse_input(&node.value, text)?;
         self.check_bounds(&parsed, node, &value)?;
         apply_edits(
@@ -794,6 +804,15 @@ impl Session {
         )?;
         let node = self.doc.get(id).ok_or_else(|| bad_path(path))?;
         let new = value_text(node).unwrap_or_default();
+        if let (Some(before), Some(after)) = (before, scalar_owned(&node.value))
+            && before != after
+        {
+            self.history.record(vec![Mutation {
+                path: parsed.to_string(),
+                before,
+                after,
+            }]);
+        }
         self.record_change(parsed.to_string(), old, new);
         make_row(&self.doc, self.editable, id, &parsed).ok_or_else(|| bad_path(path).into())
     }
@@ -853,15 +872,36 @@ impl Session {
         self.pending.clone()
     }
 
-    /// Throws the edits away by reading the document from its bytes again.
+    /// Throws the edits away by reading the document from its bytes again. This is one history step,
+    /// so "Undo all" can itself be undone.
     pub fn discard_changes(&mut self) -> Result<(), ApiError> {
         if self.pending.is_empty() {
             return Ok(());
         }
         let recipe = with_password(&self.recipe, self.password.as_deref());
         let out = pipeline::decode(&self.original, &recipe, &self.reg, &self.limits)?;
+        let scalar_at = |doc: &SaveDoc, path: &Path| {
+            doc.resolve(path)
+                .and_then(|id| doc.get(id))
+                .and_then(|node| scalar_owned(&node.value))
+        };
+        let step: Vec<Mutation> = self
+            .pending
+            .iter()
+            .filter_map(|change| {
+                let path = Path::parse(&change.path).ok()?;
+                let before = scalar_at(&self.doc, &path)?;
+                let after = scalar_at(&out.doc, &path)?;
+                (before != after).then(|| Mutation {
+                    path: change.path.clone(),
+                    before,
+                    after,
+                })
+            })
+            .collect();
         self.doc = out.doc;
         self.pending.clear();
+        self.history.record(step);
         Ok(())
     }
 
@@ -925,6 +965,7 @@ impl Session {
         self.path = target_path.clone();
         self.original = bytes;
         self.pending.clear();
+        self.history = History::default();
         Ok(SaveResult {
             written_path: target_path.to_string_lossy().into_owned(),
             backup_path: report

@@ -940,6 +940,25 @@ impl Session {
         })
     }
 
+    /// [`Session::field_info`] for many paths with one build of the RPG Maker limits. Paths that
+    /// are not values with a type are left out.
+    pub(super) fn fields_info(&self, paths: &[String]) -> Vec<Field> {
+        let bounds = self.rpg_bounds();
+        let ctx = self.game_ctx();
+        paths
+            .iter()
+            .filter_map(|text| {
+                let parsed = Path::parse(text).ok()?;
+                let id = self.doc.resolve(&parsed)?;
+                let extra = bounds
+                    .get(&parsed.to_string())
+                    .copied()
+                    .unwrap_or(UNLIMITED);
+                ctx.field(&(id, parsed), extra)
+            })
+            .collect()
+    }
+
     /// Refuses a whole number outside the limits of the value at `path` (RPG Maker limits, the
     /// Easy Save 3 type or the integer width).
     pub(super) fn check_bounds(

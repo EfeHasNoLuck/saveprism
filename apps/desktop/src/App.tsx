@@ -11,12 +11,16 @@ import {
   isApiError,
   openFile,
   pendingChanges,
+  redo,
   save,
+  undo,
   type Change,
+  type HistoryState,
   type OpenInfo,
 } from "@/api/commands";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { EditorView } from "@/editor";
+import { EditorView, type EditorHandle } from "@/editor";
+import { AboutDialog } from "./shell/AboutDialog";
 import { BackgroundPattern } from "./shell/BackgroundPattern";
 import { BottomBar } from "./shell/BottomBar";
 import { ConfirmDiscardDialog } from "./shell/ConfirmDiscardDialog";
@@ -26,12 +30,19 @@ import { describeError } from "./shell/errors";
 import { applyJson, exportJson, exportJsonFile } from "./shell/exportApi";
 import { Header } from "./shell/Header";
 import { JsonDialog, type ApplyResult, type JsonState } from "./shell/JsonDialog";
+import { OpeningOverlay } from "./shell/OpeningOverlay";
 import { PasswordDialog } from "./shell/PasswordDialog";
 import { addRecent, loadRecent, saveRecent, type RecentFile } from "./shell/recent";
 import { SettingsDialog } from "./shell/SettingsDialog";
 import { browserStorage } from "./shell/settings";
+import { firstListSearch, isTextEditing, shortcutFor } from "./shell/shortcuts";
 import { StartScreen } from "./shell/StartScreen";
 import { Toasts } from "./shell/Toasts";
+
+/** Opening a file shows the loading cover only when it takes longer than this. */
+const OPEN_COVER_DELAY_MS = 300;
+
+const NO_HISTORY: HistoryState = { canUndo: false, canRedo: false };
 
 interface PasswordRequest {
   path: string;
@@ -52,6 +63,13 @@ function App() {
   const [dragging, setDragging] = useState(false);
   const [recent, setRecent] = useState<RecentFile[]>(() => loadRecent(browserStorage()));
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [aboutOpen, setAboutOpen] = useState(false);
+  /** Name of the file that is taking a while to open (the loading cover), else null. */
+  const [opening, setOpening] = useState<string | null>(null);
+  const [history, setHistory] = useState<HistoryState>(NO_HISTORY);
+  const editorRef = useRef<EditorHandle>(null);
+  /** Undo and redo run one after the other, so a held or fast key press keeps its order. */
+  const historyQueue = useRef<Promise<void>>(Promise.resolve());
   const [passwordRequest, setPasswordRequest] = useState<PasswordRequest | null>(null);
   const [pendingOpen, setPendingOpen] = useState<string | null>(null);
   const [jsonOpen, setJsonOpen] = useState(false);
@@ -93,10 +111,12 @@ function App() {
   const openPath = useCallback(
     async (path: string, password?: string) => {
       setBusy(true);
+      const cover = window.setTimeout(() => setOpening(baseName(path)), OPEN_COVER_DELAY_MS);
       try {
         const info = await openFile(path, password);
         setFile(info);
         setChangeCount(0);
+        setHistory(NO_HISTORY);
         setInvalid(false);
         setEditorKey((key) => key + 1);
         setPasswordRequest(null);
@@ -118,6 +138,8 @@ function App() {
           notifyError(t("toast.openFailed"), error);
         }
       } finally {
+        window.clearTimeout(cover);
+        setOpening(null);
         setBusy(false);
       }
     },
@@ -245,6 +267,7 @@ function App() {
             : current,
         );
         setChangeCount(0);
+        setHistory(NO_HISTORY);
         setEditorKey((key) => key + 1);
         const written = result.writtenPath;
         notify({
@@ -308,6 +331,27 @@ function App() {
       setBusy(false);
     }
   }, [notify, notifyError, t]);
+
+  /**
+   * Undo or redo the last action. The cards show the values it changed in place (scroll position,
+   * searches and open groups stay); a step with very many values makes them read everything again.
+   */
+  const stepHistory = useCallback(
+    (kind: "undo" | "redo") => {
+      historyQueue.current = historyQueue.current.then(async () => {
+        try {
+          const result = await (kind === "undo" ? undo() : redo());
+          if (result.reload) setEditorKey((key) => key + 1);
+          else editorRef.current?.applyHistory(result.fields);
+          setChangeCount(result.pending);
+          setHistory({ canUndo: result.canUndo, canRedo: result.canRedo });
+        } catch (error) {
+          notifyError(t(kind === "undo" ? "toast.undoFailed" : "toast.redoFailed"), error);
+        }
+      });
+    },
+    [notifyError, t],
+  );
 
   const loadChanges = useCallback(async (): Promise<Change[]> => {
     try {
@@ -398,6 +442,62 @@ function App() {
 
   const readOnly = file !== null && !file.editable;
 
+  // Keyboard shortcuts. The listener is registered once and reads the latest state from a ref.
+  const shortcutHandler = useRef<(event: KeyboardEvent) => void>(() => undefined);
+  useEffect(() => {
+    shortcutHandler.current = (event) => {
+      const action = shortcutFor(event);
+      if (action === null) return;
+      // Typing owns Ctrl+Z and Ctrl+Y in a text box and in the JSON editor. A key the editor
+      // already handled (its own Ctrl+F) is left alone too.
+      const target = event.target instanceof Element ? event.target : null;
+      if ((action === "undo" || action === "redo") && isTextEditing(target)) return;
+      if (event.defaultPrevented) return;
+      event.preventDefault();
+      // Nothing happens behind a dialog or an open menu, or while another action runs.
+      const modal =
+        settingsOpen ||
+        aboutOpen ||
+        jsonOpen ||
+        passwordRequest !== null ||
+        pendingOpen !== null ||
+        closeAsked ||
+        document.querySelector('[role="menu"]') !== null;
+      if (modal || busy) return;
+      if (action === "open") {
+        if (!event.repeat) void chooseAndOpen();
+        return;
+      }
+      if (file === null) return;
+      if (action === "undo" || action === "redo") {
+        stepHistory(action);
+      } else if (action === "find") {
+        const root = document.querySelector("main");
+        const box = root ? firstListSearch(root) : null;
+        box?.focus();
+        box?.select();
+      } else if (!event.repeat) {
+        // Save and Save as: the same checks as the buttons of the bottom bar.
+        if (readOnly || invalid) {
+          notify({
+            kind: "info",
+            title: t(readOnly ? "bottom.readOnlyTip" : "bottom.invalidTip"),
+            skipBell: true,
+          });
+        } else if (action === "saveAs" || settings.saveDefault === "saveAs") {
+          void saveAsNew();
+        } else {
+          void overwriteOriginal();
+        }
+      }
+    };
+  });
+  useEffect(() => {
+    const listener = (event: KeyboardEvent) => shortcutHandler.current(event);
+    window.addEventListener("keydown", listener);
+    return () => window.removeEventListener("keydown", listener);
+  }, []);
+
   return (
     <TooltipProvider>
       <div className="relative flex h-screen flex-col bg-background text-foreground">
@@ -418,23 +518,31 @@ function App() {
           </div>
         ) : null}
 
-        {file ? (
-          <main className="dense-scroll relative z-10 min-h-0 flex-1 overflow-y-auto">
-            <EditorView
-              key={editorKey}
-              readOnly={readOnly}
-              onChangesChanged={setChangeCount}
-              onInvalidChanged={setInvalid}
+        <div className="relative flex min-h-0 flex-1 flex-col">
+          {file ? (
+            <main
+              className="dense-scroll relative z-10 min-h-0 flex-1 overflow-y-auto"
+              inert={opening !== null}
+            >
+              <EditorView
+                key={editorKey}
+                ref={editorRef}
+                readOnly={readOnly}
+                onChangesChanged={setChangeCount}
+                onInvalidChanged={setInvalid}
+                onHistoryChanged={setHistory}
+              />
+            </main>
+          ) : (
+            <StartScreen
+              dragging={dragging}
+              recent={recent}
+              onOpenFile={() => void chooseAndOpen()}
+              onOpenRecent={requestOpen}
             />
-          </main>
-        ) : (
-          <StartScreen
-            dragging={dragging}
-            recent={recent}
-            onOpenFile={() => void chooseAndOpen()}
-            onOpenRecent={requestOpen}
-          />
-        )}
+          )}
+          {opening !== null ? <OpeningOverlay name={opening} /> : null}
+        </div>
 
         {file ? (
           <BottomBar
@@ -443,7 +551,11 @@ function App() {
             invalid={invalid}
             busy={busy}
             saveDefault={settings.saveDefault}
+            canUndo={history.canUndo}
+            canRedo={history.canRedo}
             loadChanges={loadChanges}
+            onUndo={() => stepHistory("undo")}
+            onRedo={() => stepHistory("redo")}
             onUndoAll={() => void undoAll()}
             onOpenJson={openJson}
             onSaveAs={() => void saveAsNew()}
@@ -451,7 +563,15 @@ function App() {
           />
         ) : null}
 
-        <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
+        <SettingsDialog
+          open={settingsOpen}
+          onOpenChange={setSettingsOpen}
+          onOpenAbout={() => {
+            setSettingsOpen(false);
+            setAboutOpen(true);
+          }}
+        />
+        <AboutDialog open={aboutOpen} onOpenChange={setAboutOpen} />
         {jsonOpen ? (
           <JsonDialog
             state={jsonState}

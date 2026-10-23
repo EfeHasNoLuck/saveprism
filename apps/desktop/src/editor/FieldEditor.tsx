@@ -76,6 +76,8 @@ export function ValueInput({
         aria-invalid={invalid || undefined}
         disabled={disabled}
         value={edit.draft}
+        // Ctrl+Z undoes the edit (not the typing) while the box shows the committed value.
+        data-committed={field.value}
         title={field.kind === "string" ? edit.draft : undefined}
         onChange={(e) => edit.setDraft(e.target.value)}
         onFocus={() => edit.setFocused(true)}

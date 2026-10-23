@@ -964,3 +964,269 @@ fn a_missing_file_is_a_read_error() {
     assert_eq!(error.code, "SP-IO-007");
     assert!(!error.hint.is_empty());
 }
+
+fn level_of(session: &Session) -> String {
+    row(session, "/level").preview
+}
+
+#[test]
+fn undo_and_redo_walk_single_edits() {
+    let env = env();
+    let mut session = open_json(&env);
+    assert_eq!(
+        session.history_state(),
+        HistoryState {
+            can_undo: false,
+            can_redo: false
+        }
+    );
+    // Nothing to undo or redo is not an error and changes nothing.
+    let none = session.undo().unwrap();
+    assert!(none.fields.is_empty() && !none.reload && none.pending == 0 && !none.state.can_undo);
+    assert!(!session.redo().unwrap().state.can_redo);
+
+    session.edit_value("/level", "43").unwrap();
+    session.edit_value("/name", "Ada").unwrap();
+    session.edit_value("/stats/hp", "7.25").unwrap();
+    assert_eq!(session.pending_changes().len(), 3);
+
+    // Undo twice: the last two edits are taken back, the result names the value and its state.
+    let first = session.undo().unwrap();
+    assert_eq!(first.fields.len(), 1);
+    assert_eq!(first.fields[0].path, "/stats/hp");
+    assert_eq!(first.fields[0].value, "100.5");
+    assert_eq!(first.fields[0].original, "100.5");
+    assert_eq!(first.pending, 2);
+    assert!(first.state.can_undo && first.state.can_redo);
+    let second = session.undo().unwrap();
+    assert_eq!(second.fields[0].value, "Şükrü'nün kaydı");
+    assert_eq!(second.pending, 1);
+    assert_eq!(row(&session, "/name").preview, "Şükrü'nün kaydı");
+    assert_eq!(level_of(&session), "43");
+    assert_eq!(session.pending_changes().len(), 1);
+
+    // Redo once: the name is back, the hit-points edit stays undone.
+    let redone = session.redo().unwrap();
+    assert_eq!(redone.fields[0].path, "/name");
+    assert_eq!(redone.fields[0].value, "Ada");
+    assert_eq!(redone.fields[0].original, "Şükrü'nün kaydı");
+    assert_eq!(redone.pending, 2);
+    assert!(redone.state.can_undo && redone.state.can_redo);
+    assert_eq!(row(&session, "/name").preview, "Ada");
+    assert_eq!(row(&session, "/stats/hp").preview, "100.5");
+
+    // Undo down to the opened file, then there is nothing more to undo.
+    session.undo().unwrap();
+    let last = session.undo().unwrap();
+    assert_eq!(last.pending, 0);
+    assert!(!last.state.can_undo && last.state.can_redo);
+    assert!(session.pending_changes().is_empty());
+    assert_eq!(level_of(&session), "42");
+    assert_eq!(session.undo().unwrap().pending, 0);
+}
+
+#[test]
+fn setting_a_value_back_is_a_step_of_its_own() {
+    let env = env();
+    let mut session = open_json(&env);
+    session.edit_value("/level", "43").unwrap();
+    // The per-field undo is an ordinary edit back to the opened value.
+    session.edit_value("/level", "42").unwrap();
+    assert!(session.pending_changes().is_empty());
+    // Failed and unchanged edits are no steps.
+    assert!(session.edit_value("/level", "abc").is_err());
+    session.edit_value("/level", "42").unwrap();
+
+    session.undo().unwrap();
+    assert_eq!(level_of(&session), "43");
+    let changes = session.pending_changes();
+    assert_eq!(changes.len(), 1);
+    assert_eq!(
+        (changes[0].old.as_str(), changes[0].new.as_str()),
+        ("42", "43")
+    );
+    session.undo().unwrap();
+    assert_eq!(level_of(&session), "42");
+    assert!(session.pending_changes().is_empty());
+    assert!(!session.history_state().can_undo);
+    session.redo().unwrap();
+    session.redo().unwrap();
+    assert_eq!(level_of(&session), "42");
+    assert!(session.pending_changes().is_empty());
+}
+
+#[test]
+fn a_json_apply_is_one_step() {
+    let env = env();
+    let mut session = open_json(&env);
+    session.edit_value("/level", "50").unwrap();
+    let text = edited(&session, |json| {
+        json["level"] = 51.into();
+        json["ratio"] = 2.5.into();
+        json["name"] = "Ada".into();
+        json["stats"]["alive"] = false.into();
+    });
+    assert_eq!(session.apply_json(&text).unwrap(), 4);
+    assert_eq!(session.pending_changes().len(), 4);
+
+    // One undo takes back all four values; the edit before the Apply stays.
+    let undone = session.undo().unwrap();
+    assert_eq!(undone.fields.len(), 4);
+    assert_eq!(undone.pending, 1);
+    assert_eq!(level_of(&session), "50");
+    assert_eq!(row(&session, "/ratio").preview, "1.0");
+    assert_eq!(row(&session, "/name").preview, "Şükrü'nün kaydı");
+    assert_eq!(row(&session, "/stats/alive").preview, "true");
+    let changes = session.pending_changes();
+    assert_eq!(changes.len(), 1);
+    assert_eq!(changes[0].path, "/level");
+
+    // One redo does all four again.
+    let redone = session.redo().unwrap();
+    assert_eq!(redone.fields.len(), 4);
+    assert_eq!(redone.pending, 4);
+    assert_eq!(level_of(&session), "51");
+    assert_eq!(row(&session, "/ratio").preview, "2.5");
+    assert_eq!(row(&session, "/stats/alive").preview, "false");
+    assert!(!redone.state.can_redo);
+}
+
+#[test]
+fn undo_all_can_be_undone() {
+    let env = env();
+    let mut session = open_json(&env);
+    session.edit_value("/level", "43").unwrap();
+    session.edit_value("/name", "Ada").unwrap();
+    session.discard_changes().unwrap();
+    assert!(session.pending_changes().is_empty());
+    assert_eq!(level_of(&session), "42");
+    assert!(session.history_state().can_undo);
+
+    // Undo all is one step: one undo brings both edits back.
+    let back = session.undo().unwrap();
+    assert_eq!(back.fields.len(), 2);
+    assert_eq!(back.pending, 2);
+    assert_eq!(level_of(&session), "43");
+    assert_eq!(row(&session, "/name").preview, "Ada");
+    // The steps before it are still there.
+    session.undo().unwrap();
+    session.undo().unwrap();
+    assert!(session.pending_changes().is_empty());
+    assert!(!session.history_state().can_undo);
+    session.redo().unwrap();
+    session.redo().unwrap();
+    assert_eq!(level_of(&session), "43");
+    // Redo of the Undo all step throws the edits away again.
+    session.redo().unwrap();
+    assert!(session.pending_changes().is_empty());
+    assert_eq!(level_of(&session), "42");
+
+    // Nothing pending: Undo all adds no step, so the next undo is still the Undo all step.
+    session.discard_changes().unwrap();
+    assert_eq!(session.undo().unwrap().pending, 2);
+}
+
+#[test]
+fn a_new_action_clears_the_redo_steps() {
+    let env = env();
+    let mut session = open_json(&env);
+    session.edit_value("/level", "43").unwrap();
+    session.edit_value("/level", "44").unwrap();
+    session.undo().unwrap();
+    assert!(session.history_state().can_redo);
+
+    session.edit_value("/name", "Ada").unwrap();
+    assert!(!session.history_state().can_redo);
+    assert_eq!(session.redo().unwrap().pending, 2);
+    assert_eq!(level_of(&session), "43");
+
+    // A JSON Apply and an Undo all clear it too.
+    session.undo().unwrap();
+    assert!(session.history_state().can_redo);
+    let text = edited(&session, |json| json["ratio"] = 2.5.into());
+    session.apply_json(&text).unwrap();
+    assert!(!session.history_state().can_redo);
+    session.undo().unwrap();
+    assert!(session.history_state().can_redo);
+    session.discard_changes().unwrap();
+    assert!(!session.history_state().can_redo);
+
+    // An edit that changes nothing is no action: the redo step stays.
+    session.undo().unwrap();
+    assert!(session.history_state().can_redo);
+    let level = level_of(&session);
+    session.edit_value("/level", &level).unwrap();
+    assert!(session.history_state().can_redo);
+}
+
+#[test]
+fn saving_clears_the_history() {
+    let env = env();
+    let path = copy_in(&env, "synthetic/json/compact.json");
+    let mut session = open(&env, &path, None).unwrap();
+    session.edit_value("/level", "43").unwrap();
+    session.edit_value("/level", "44").unwrap();
+    session.undo().unwrap();
+    assert!(session.history_state().can_undo && session.history_state().can_redo);
+
+    session.save(path.to_str().unwrap(), false).unwrap();
+    assert_eq!(
+        session.history_state(),
+        HistoryState {
+            can_undo: false,
+            can_redo: false
+        }
+    );
+    // Undo after the save must not change the saved document.
+    assert_eq!(session.undo().unwrap().pending, 0);
+    assert_eq!(level_of(&session), "43");
+    assert!(session.pending_changes().is_empty());
+    // A reopened file starts with an empty history, too.
+    let reopened = open(&env, &path, None).unwrap();
+    assert!(!reopened.history_state().can_undo);
+}
+
+#[test]
+fn the_history_keeps_at_most_200_steps() {
+    let env = env();
+    let mut session = open_json(&env);
+    for value in 1..=250 {
+        session
+            .edit_value("/level", &(1000 + value).to_string())
+            .unwrap();
+    }
+    let mut undone = 0;
+    while session.history_state().can_undo {
+        session.undo().unwrap();
+        undone += 1;
+    }
+    assert_eq!(undone, 200);
+    // The 50 oldest steps are gone: the value is the one before the 51st edit, not the opened one.
+    assert_eq!(level_of(&session), "1050");
+    assert_eq!(session.pending_changes().len(), 1);
+}
+
+#[test]
+fn a_step_with_many_values_asks_the_ui_to_read_everything_again() {
+    let env = env();
+    let count = history::MAX_FIELDS + 100;
+    let body: Vec<String> = (0..count).map(|index| format!("\"k{index}\":0")).collect();
+    let path = env.work.join("many.json");
+    fs::write(&path, format!("{{{}}}", body.join(","))).unwrap();
+    let mut session = open(&env, &path, None).unwrap();
+
+    let text = edited(&session, |json| {
+        for value in json.as_object_mut().unwrap().values_mut() {
+            *value = 5.into();
+        }
+    });
+    assert_eq!(session.apply_json(&text).unwrap(), count);
+    let undone = session.undo().unwrap();
+    assert!(undone.reload);
+    assert!(undone.fields.is_empty());
+    assert_eq!(undone.pending, 0);
+    assert!(session.pending_changes().is_empty());
+    let redone = session.redo().unwrap();
+    assert!(redone.reload);
+    assert_eq!(redone.pending, count);
+}

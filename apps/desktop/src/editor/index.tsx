@@ -1,25 +1,50 @@
 import { Tooltip } from "radix-ui";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+  type Ref,
+} from "react";
 import { useTranslation } from "react-i18next";
 import {
   gameView,
+  historyState,
   pendingChanges,
   type ApiError,
   type Field,
   type GameView,
+  type HistoryState,
 } from "@/api/commands";
 import { EditorContext, toApiError, type EditorContextValue } from "./context";
 import { registerEditorBundles } from "./i18n";
 import { RpgMaker } from "./RpgMaker";
 import { ValuesCard } from "./ValuesCard";
 
+/** What the app can ask of the editor from outside. */
+export interface EditorHandle {
+  /** Shows what an undo or redo changed: the values it touched, then the counts again. */
+  applyHistory: (changed: Field[]) => void;
+}
+
 export interface EditorViewProps {
   readOnly: boolean;
   onChangesChanged: (count: number) => void;
   onInvalidChanged: (invalid: boolean) => void;
+  /** After every change of the document: whether Undo and Redo are possible. */
+  onHistoryChanged: (state: HistoryState) => void;
+  ref?: Ref<EditorHandle>;
 }
 
-export function EditorView({ readOnly, onChangesChanged, onInvalidChanged }: EditorViewProps) {
+export function EditorView({
+  readOnly,
+  onChangesChanged,
+  onInvalidChanged,
+  onHistoryChanged,
+  ref,
+}: EditorViewProps) {
   registerEditorBundles();
   const { t } = useTranslation("editor");
   const [view, setView] = useState<GameView | null>(null);
@@ -32,15 +57,18 @@ export function EditorView({ readOnly, onChangesChanged, onInvalidChanged }: Edi
   // Keep the latest callbacks without re-creating the context functions.
   const changedRef = useRef(onChangesChanged);
   const invalidRef = useRef(onInvalidChanged);
+  const historyRef = useRef(onHistoryChanged);
   useEffect(() => {
     changedRef.current = onChangesChanged;
     invalidRef.current = onInvalidChanged;
+    historyRef.current = onHistoryChanged;
   });
 
   const refreshCount = useCallback(async () => {
     try {
-      const changes = await pendingChanges();
+      const [changes, history] = await Promise.all([pendingChanges(), historyState()]);
       changedRef.current(changes.length);
+      historyRef.current(history);
       setPending(new Set(changes.map((c) => c.path)));
     } catch {
       // The count stays as it was; the next edit refreshes it.
@@ -68,6 +96,21 @@ export function EditorView({ readOnly, onChangesChanged, onInvalidChanged }: Edi
   const setField = useCallback((field: Field) => {
     setFields((prev) => new Map(prev).set(field.path, field));
   }, []);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      applyHistory: (changed) => {
+        setFields((prev) => {
+          const next = new Map(prev);
+          for (const field of changed) next.set(field.path, field);
+          return next;
+        });
+        void refreshCount();
+      },
+    }),
+    [refreshCount],
+  );
 
   const reportInvalid = useCallback((path: string, invalid: boolean) => {
     const set = invalidPaths.current;

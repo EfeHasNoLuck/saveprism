@@ -19,6 +19,7 @@ use super::export::{
     scalar_int, too_big,
 };
 use super::game::{Bounds, check_bounds_in};
+use super::history::{Mutation, scalar_owned};
 use super::{ApiError, Change, Session, app_codes, parse_input, read_only_document, value_text};
 
 /// The fix for any change of the structure.
@@ -365,12 +366,10 @@ impl Session {
         let mut touched = Vec::with_capacity(planned.len());
         let mut edits = Vec::with_capacity(planned.len());
         for item in planned {
-            let old = self
-                .doc
-                .get(item.id)
-                .and_then(value_text)
-                .unwrap_or_default();
-            touched.push((item.id, item.path.to_string(), old));
+            let node = self.doc.get(item.id);
+            let old = node.and_then(value_text).unwrap_or_default();
+            let before = node.and_then(|node| scalar_owned(&node.value));
+            touched.push((item.id, item.path.to_string(), old, before));
             edits.push(Edit::Set {
                 path: item.path,
                 value: item.value,
@@ -378,16 +377,25 @@ impl Session {
         }
         // One atomic step: on an error the document is unchanged.
         apply_edits(&mut self.doc, &edits, &self.limits)?;
-        let changes: Vec<Change> = touched
-            .into_iter()
-            .map(|(id, path, old)| Change {
-                path,
-                old,
-                new: self.doc.get(id).and_then(value_text).unwrap_or_default(),
-            })
-            .collect();
+        let mut changes = Vec::with_capacity(touched.len());
+        let mut step = Vec::with_capacity(touched.len());
+        for (id, path, old, before) in touched {
+            let node = self.doc.get(id);
+            let new = node.and_then(value_text).unwrap_or_default();
+            let after = node.and_then(|node| scalar_owned(&node.value));
+            if let (Some(before), Some(after)) = (before, after) {
+                step.push(Mutation {
+                    path: path.clone(),
+                    before,
+                    after,
+                });
+            }
+            changes.push(Change { path, old, new });
+        }
         let count = changes.len();
         self.record_changes(changes);
+        // The whole Apply is one undo step.
+        self.history.record(step);
         Ok(count)
     }
 }

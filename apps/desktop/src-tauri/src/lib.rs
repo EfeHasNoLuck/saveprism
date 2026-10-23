@@ -5,10 +5,15 @@
 
 pub mod session;
 
+use std::path::PathBuf;
 use std::sync::{Mutex, MutexGuard, PoisonError};
 
-use session::{ApiError, Change, Field, GameView, NodeRow, OpenInfo, Page, SaveResult, Session};
-use tauri::State;
+use session::{
+    ApiError, Change, Field, GameView, HistoryResult, HistoryState, NodeRow, OpenInfo, Page,
+    SaveResult, Session, app_codes,
+};
+use tauri::{AppHandle, Manager, State};
+use tauri_plugin_opener::OpenerExt;
 
 /// The one open document (v0.1 keeps a single document at a time).
 #[derive(Default)]
@@ -142,6 +147,69 @@ async fn apply_json(state: State<'_, AppState>, text: String) -> Result<usize, A
     state.with_session(|session| session.apply_json(&text))
 }
 
+/// Takes back the last action (one edit, "Undo all" or one JSON Apply).
+#[tauri::command]
+async fn undo(state: State<'_, AppState>) -> Result<HistoryResult, ApiError> {
+    state.with_session(|session| session.undo())
+}
+
+/// Does again the action that was taken back last.
+#[tauri::command]
+async fn redo(state: State<'_, AppState>) -> Result<HistoryResult, ApiError> {
+    state.with_session(|session| session.redo())
+}
+
+/// Whether there is something to undo or redo.
+#[tauri::command]
+async fn history_state(state: State<'_, AppState>) -> Result<HistoryState, ApiError> {
+    state.with_session(|session| Ok(session.history_state()))
+}
+
+/// The file name of the third-party notices in the installer.
+const NOTICES_FILE: &str = "THIRD_PARTY_NOTICES.md";
+
+/// The bundled notices file, if this build has it: in the resource folder, either at its top or
+/// where `bundle.resources` puts a path given with `..` (`_up_/_up_/_up_/`).
+fn notices_file(app: &AppHandle) -> Option<PathBuf> {
+    let dir = app.path().resource_dir().ok()?;
+    [
+        dir.join(NOTICES_FILE),
+        dir.join("_up_")
+            .join("_up_")
+            .join("_up_")
+            .join(NOTICES_FILE),
+    ]
+    .into_iter()
+    .find(|path| path.is_file())
+}
+
+/// True when the third-party notices are bundled with this build.
+#[tauri::command]
+fn notices_available(app: AppHandle) -> bool {
+    notices_file(&app).is_some()
+}
+
+/// Opens the bundled third-party notices with the system's default program.
+#[tauri::command]
+fn open_notices(app: AppHandle) -> Result<(), ApiError> {
+    let path = notices_file(&app).ok_or_else(|| {
+        ApiError::new(
+            app_codes::NOTICES,
+            format!("{NOTICES_FILE} is not part of this build"),
+            "Read it in the SavePrism repository instead.",
+        )
+    })?;
+    app.opener()
+        .open_path(path.to_string_lossy(), None::<&str>)
+        .map_err(|error| {
+            ApiError::new(
+                app_codes::NOTICES,
+                format!("{NOTICES_FILE} could not be opened: {error}"),
+                "Open the file by hand from the SavePrism install folder.",
+            )
+        })
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let result = tauri::Builder::default()
@@ -162,6 +230,11 @@ pub fn run() {
             export_json,
             export_json_file,
             apply_json,
+            undo,
+            redo,
+            history_state,
+            notices_available,
+            open_notices,
         ])
         .run(tauri::generate_context!());
 

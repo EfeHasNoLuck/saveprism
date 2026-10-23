@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowRight, Braces, ChevronDown, Save, Undo2 } from "lucide-react";
+import { ArrowRight, Braces, ChevronDown, Redo2, RotateCcw, Save, Undo2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { Change } from "@/api/commands";
 import { Button } from "@/components/ui/button";
@@ -22,7 +22,12 @@ interface BottomBarProps {
   /** A save or another action is running. */
   busy: boolean;
   saveDefault: SaveDefault;
+  /** There is an edit to undo or redo (Ctrl+Z, Ctrl+Y). */
+  canUndo: boolean;
+  canRedo: boolean;
   loadChanges: () => Promise<Change[]>;
+  onUndo: () => void;
+  onRedo: () => void;
   onUndoAll: () => void;
   onOpenJson: () => void;
   onSaveAs: () => void;
@@ -35,7 +40,11 @@ export function BottomBar({
   invalid,
   busy,
   saveDefault,
+  canUndo,
+  canRedo,
   loadChanges,
+  onUndo,
+  onRedo,
   onUndoAll,
   onOpenJson,
   onSaveAs,
@@ -109,12 +118,34 @@ export function BottomBar({
         </Popover>
         <Button
           variant="ghost"
+          size="icon-sm"
+          className="text-foreground-variant"
+          disabled={!canUndo || busy}
+          aria-label={t("bottom.undo")}
+          title={t("bottom.undoTip")}
+          onClick={onUndo}
+        >
+          <Undo2 />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          className="text-foreground-variant"
+          disabled={!canRedo || busy}
+          aria-label={t("bottom.redo")}
+          title={t("bottom.redoTip")}
+          onClick={onRedo}
+        >
+          <Redo2 />
+        </Button>
+        <Button
+          variant="ghost"
           size="sm"
           className="text-foreground-variant"
           disabled={changeCount === 0 || busy}
           onClick={onUndoAll}
         >
-          <Undo2 />
+          <RotateCcw />
           {t("bottom.undoAll")}
         </Button>
         <Button variant="ghost" size="sm" className="text-foreground-variant" onClick={onOpenJson}>

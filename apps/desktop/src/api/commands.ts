@@ -86,6 +86,22 @@ export interface Change {
   new: string;
 }
 
+/** Whether there is something to undo or redo. */
+export interface HistoryState {
+  canUndo: boolean;
+  canRedo: boolean;
+}
+
+/** What `undo` and `redo` return. */
+export interface HistoryResult extends HistoryState {
+  /** The values the step changed, as they are now (empty for "nothing to do" and when `reload`). */
+  fields: Field[];
+  /** The step changed too many values to list: read the document again. */
+  reload: boolean;
+  /** Number of pending changes now. */
+  pending: number;
+}
+
 export interface SaveResult {
   writtenPath: string;
   backupPath: string | null;
@@ -230,6 +246,30 @@ export function pendingChanges(): Promise<Change[]> {
 
 export function discardChanges(): Promise<void> {
   return invoke<void>("discard_changes");
+}
+
+/** Takes back the last action (one edit, "Undo all" or one JSON Apply). */
+export function undo(): Promise<HistoryResult> {
+  return invoke<HistoryResult>("undo");
+}
+
+/** Does again the action that was taken back last. */
+export function redo(): Promise<HistoryResult> {
+  return invoke<HistoryResult>("redo");
+}
+
+export function historyState(): Promise<HistoryState> {
+  return invoke<HistoryState>("history_state");
+}
+
+/** True when the installer includes `THIRD_PARTY_NOTICES.md`. */
+export function noticesAvailable(): Promise<boolean> {
+  return invoke<boolean>("notices_available");
+}
+
+/** Opens the bundled `THIRD_PARTY_NOTICES.md` with the system's default program. */
+export function openNotices(): Promise<void> {
+  return invoke<void>("open_notices");
 }
 
 /**
