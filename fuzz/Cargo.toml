@@ -35,3 +35,10 @@ path = "fuzz_targets/layers.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "marshal"
+path = "fuzz_targets/marshal.rs"
+test = false
+doc = false
+bench = false

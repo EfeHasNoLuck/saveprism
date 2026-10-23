@@ -34,6 +34,11 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
    Done 2026-10-23: Paste code (start screen, header, Ctrl+V on the start screen; the code is kept as
    `%LOCALAPPDATA%\SavePrism\pasted\code-<ms>.txt`, newest 10) and Copy code (pasted sessions' main action; "Copy as save
    code" for text formats; edited values checked first). Codex review: one finding (link in the pasted folder) fixed.
+   Done 2026-10-23: Ruby Marshal codec `format.ruby-marshal` (RPG Maker XP `.rxdata`, VX `.rvdata`, VX Ace `.rvdata2`):
+   data tree only, links never expanded, exact round trip, scalar edits; fuzz target added (not run: no cargo-fuzz here).
+   Codex review: 2 mediums fixed (composite hash keys now read-only inside; deep wrappers). Synthetic fixtures only (no
+   openly licensed real saves found). Next: RPG Maker XP/VX/VX Ace sections (gold, items, actors, variables, switches) on
+   this tree; Map keys show as indices in the generic Values list.
    On the dev PC something outside SavePrism alters clipboard text longer than ~1,400 characters (PowerShell
    `Set-Clipboard` too), so a long copied code pasted back there fails; not an app bug.
 3. Customization: settings for density, font size, save mode (overwrite / save as), number of backups; color settings

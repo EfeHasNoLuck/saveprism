@@ -31,6 +31,10 @@ describe("engine helpers", () => {
     expect(engineLabel("file1.rmmzsave", "format.rpgmaker-json")).toBe("RPG Maker MZ");
     expect(engineLabel("file1.rpgsave", "format.rpgmaker-json")).toBe("RPG Maker MV");
     expect(engineLabel("slot.sav", "format.gvas")).toBe("Unreal");
+    expect(engineLabel("Save1.rxdata", "format.ruby-marshal")).toBe("RPG Maker XP");
+    expect(engineLabel("Save1.rvdata", "format.ruby-marshal")).toBe("RPG Maker VX");
+    expect(engineLabel("Save01.rvdata2", "format.ruby-marshal")).toBe("RPG Maker VX Ace");
+    expect(engineLabel("data.bin", "format.ruby-marshal")).toBe("Ruby Marshal");
     expect(engineLabel("data.bin", "format.json")).toBe("JSON");
     expect(engineLabel("data.bin", "format.unknown")).toBeNull();
     expect(engineLabel("slot1.save", "format.json", "sugarcube")).toBe("SugarCube");

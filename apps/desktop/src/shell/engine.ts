@@ -4,6 +4,8 @@ const EXTENSION_LABELS: Record<string, string> = {
   rmmzsave: "RPG Maker MZ",
   rpgsave: "RPG Maker MV",
   rvdata2: "RPG Maker VX Ace",
+  rvdata: "RPG Maker VX",
+  rxdata: "RPG Maker XP",
   es3: "Easy Save 3",
   sav: "SAV",
 };
@@ -14,6 +16,7 @@ const CODEC_LABELS: Record<string, string> = {
   "format.es3": "Easy Save 3",
   "format.es3-json": "Easy Save 3",
   "format.gvas": "Unreal",
+  "format.ruby-marshal": "Ruby Marshal",
 };
 
 const ENGINE_LABELS: Record<string, string> = {
