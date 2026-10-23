@@ -42,3 +42,10 @@ path = "fuzz_targets/marshal.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "sol"
+path = "fuzz_targets/sol.rs"
+test = false
+doc = false
+bench = false

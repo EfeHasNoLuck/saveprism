@@ -29,9 +29,9 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
    edits and saves with the round-trip guard passing.
    - Done: RPG Maker MV/MZ, Easy Save 3, Unreal GVAS, Palworld, JSON/text, SugarCube, paste/copy code, Ruby Marshal codec,
      RPG Maker XP/VX/VX Ace sections (gold, items, weapons, armors, actors, variables, switches, names from a plain `Data`
-     folder; 2026-10-24, synthetic saves only; XP shows SP as "MP").
+     folder; 2026-10-24, synthetic saves only; XP shows SP as "MP"), Flash `.sol` (AMF0/AMF3, 2026-10-24, synthetic only).
    - Formats left: Ren'Py `.save` (pickle as data only + re-sign), TyranoScript, Godot, Wolf RPG `.sav`, Unity generic
-     `.dat`/`.save` and PlayerPrefs (also in the registry, *new*), Flash `.sol` (AMF0/AMF3), QSP, Pokémon Gen 3, SQLite,
+     `.dat`/`.save` and PlayerPrefs (also in the registry, *new*), QSP, Pokémon Gen 3, SQLite,
      Naninovel view, RPG Maker 2000/2003 `.lsd` (*new*), Rags `.rsv` (*new*), The Witcher 3 `.sav` (*new*), Java-serialized
      data as data only (*new*), packed (zip/gz) saves (*new*).
    - Features left: add/delete a value from the card view, pick the game's data folder by hand.
