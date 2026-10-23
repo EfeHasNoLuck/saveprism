@@ -34,3 +34,6 @@ Thumbs.db
 
 # Real game saves for local testing only; never pushed (user, 2026-10-22)
 fixtures/external/
+
+# External engine briefs, logs and reports (dis-motor skill)
+.motor/

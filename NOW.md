@@ -24,6 +24,8 @@
   files are slow.
 - JSON view/export on huge saves: the 50 MB cap is checked only after the whole text is built, and `unique_key` in
   `session/export.rs` is quadratic on many repeated keys; both run under the session lock (review, 2026-10-22).
+- JSON Apply (review of `9849caa`, no critical/high): many edits in one huge object are O(N·M) under the session lock
+  (core `set` scans keys); documents nested ≥127 levels cannot be applied (serde_json limit), message says 128.
 - Real saves were pushed once in `bed2ed9` (private repo); ask the user before any history cleanup.
 
 ## Later (not now)
