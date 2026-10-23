@@ -1799,3 +1799,251 @@ fn sugarcube_variables_are_capped() {
     assert_eq!(view.variables.len(), 10_000);
     assert_eq!(story_value(&view, "v9999"), "9999");
 }
+
+// Pasted save codes.
+
+/// The pasted-codes folder of a test environment: next to its backup folder.
+fn pasted_folder(env: &Env) -> PathBuf {
+    env.backups.parent().unwrap().join("pasted")
+}
+
+fn paste(env: &Env, text: &str) -> Result<Session, ApiError> {
+    Session::open_code(text, Some(env.backups.clone()))
+}
+
+fn fixture_text(relative: &str) -> String {
+    fs::read_to_string(fixture(relative)).unwrap()
+}
+
+/// Decodes a copied code with the core alone (no session) and returns the value text at `path`.
+fn decoded_value(code: &str, path: &str) -> String {
+    let mut reg = Registry::default();
+    saveprism_codecs::register_all(&mut reg);
+    let limits = Limits::default();
+    let found = detect(code.as_bytes(), &reg, &limits, &DetectOptions::default()).unwrap();
+    let out = pipeline::decode(code.as_bytes(), &found.best.recipe, &reg, &limits).unwrap();
+    let id = out
+        .doc
+        .resolve(&saveprism_core::Path::parse(path).unwrap())
+        .unwrap();
+    value_text(out.doc.get(id).unwrap()).unwrap()
+}
+
+#[test]
+fn a_pasted_mv_code_is_edited_and_copied_back_as_a_code() {
+    let env = env();
+    let text = fixture_text("synthetic/rpgmaker-mv/file1.rpgsave");
+    let mut session = paste(&env, &text).unwrap();
+    let info = session.info();
+    assert!(info.pasted);
+    assert!(info.text_code);
+    assert!(info.editable);
+    assert_eq!(info.guard, GuardLevel::Exact);
+    assert_eq!(info.engine.as_deref(), Some("rpgmaker-mv"));
+    let file = PathBuf::from(&info.path);
+    assert_eq!(file.parent().unwrap(), pasted_folder(&env));
+    assert_eq!(fs::read_to_string(&file).unwrap(), text.trim());
+
+    // Unchanged, the code comes back as it was pasted.
+    assert_eq!(session.copy_code().unwrap(), text.trim());
+
+    let gold = rpg_view(&session).unwrap().gold.path;
+    session.edit_value(&gold, "4321").unwrap();
+    let copied = session.copy_code().unwrap();
+    assert_ne!(copied, text.trim());
+    assert_eq!(decoded_value(&copied, &gold), "4321");
+
+    // Copying is not a save: the edit is still pending, the history and the file are unchanged.
+    assert_eq!(session.pending_changes().len(), 1);
+    assert!(session.history_state().can_undo);
+    assert_eq!(fs::read_to_string(&file).unwrap(), text.trim());
+
+    // The copied code pastes again with the new gold.
+    let again = paste(&env, &copied).unwrap();
+    assert_eq!(rpg_view(&again).unwrap().gold.value, "4321");
+}
+
+#[test]
+fn a_pasted_sugarcube_code_keeps_its_story_view() {
+    let env = env();
+    let text = fixture_text(STORY);
+    let mut session = paste(&env, &text).unwrap();
+    assert!(session.info().pasted);
+    assert_eq!(session.info().engine.as_deref(), Some("sugarcube"));
+    let view = story_view(&session).unwrap();
+    let gold = story_row(&view, "gold").path.clone();
+    session.edit_value(&gold, "777").unwrap();
+
+    let copied = session.copy_code().unwrap();
+    assert_eq!(decoded_value(&copied, &gold), "777");
+    assert_eq!(session.pending_changes().len(), 1);
+    let again = paste(&env, &copied).unwrap();
+    assert_eq!(story_value(&story_view(&again).unwrap(), "gold"), "777");
+}
+
+#[test]
+fn whitespace_around_a_code_is_fine() {
+    let env = env();
+    let text = fixture_text("synthetic/rpgmaker-mv/file1.rpgsave");
+    let session = paste(&env, &format!("\r\n  \t{text}\n\n ")).unwrap();
+    let info = session.info();
+    assert_eq!(info.guard, GuardLevel::Exact);
+    assert_eq!(fs::read_to_string(&info.path).unwrap(), text.trim());
+    assert_eq!(session.copy_code().unwrap(), text.trim());
+}
+
+#[test]
+fn empty_and_bad_codes_are_refused_and_leave_no_file() {
+    let env = env();
+    for empty in ["", "   ", "\r\n\t"] {
+        let error = paste(&env, empty).err().unwrap();
+        assert_eq!(error.code, app_codes::EMPTY_CODE, "{empty:?}");
+    }
+    assert!(!pasted_folder(&env).exists());
+
+    // A code that opens first, so the folder exists and holds one file.
+    let good = paste(&env, &fixture_text(STORY)).unwrap();
+    let kept = file_names(&pasted_folder(&env));
+    assert_eq!(kept.len(), 1);
+
+    for garbage in [
+        "this is not a save code",
+        "N4IgzgnmAuCmC2IBcoD6YCGA3WBRAdhgEYA2sAJstAE4CusANCKvLPrQcWZUjfU6jYBjAPa18cap1IUqdRsyIZo0MgGEx",
+        "\u{1}\u{2}\u{3}",
+    ] {
+        let error = paste(&env, garbage).err().unwrap();
+        assert!(!error.message.is_empty(), "{garbage}");
+        assert!(
+            error.hint.contains("whole code"),
+            "{garbage}: {}",
+            error.hint
+        );
+        assert_eq!(file_names(&pasted_folder(&env)), kept, "{garbage}");
+    }
+    // The document opened before is untouched.
+    assert!(PathBuf::from(good.info().path).exists());
+}
+
+#[test]
+fn binary_formats_refuse_copy_code() {
+    let env = env();
+    let path = copy_in(&env, "keyed/es3-aes/settings.es3");
+    let session = open(&env, &path, Some(PASSWORD)).unwrap();
+    assert!(!session.info().text_code);
+    assert!(!session.info().pasted);
+    let error = session.copy_code().err().unwrap();
+    assert_eq!(error.code, app_codes::NOT_TEXT_CODE);
+    assert!(error.hint.contains("Save as"));
+
+    // RPG Maker MZ files are a deflate stream: UTF-8 in the file, but not a code to paste.
+    let path = copy_in(&env, "synthetic/rpgmaker-mz/file1.rmmzsave");
+    let session = open(&env, &path, None).unwrap();
+    assert!(!session.info().text_code);
+    assert_eq!(
+        session.copy_code().err().unwrap().code,
+        app_codes::NOT_TEXT_CODE
+    );
+}
+
+#[test]
+fn text_files_opened_normally_can_be_copied_as_a_code() {
+    let env = env();
+    let path = copy_in(&env, "synthetic/rpgmaker-mv/file1.rpgsave");
+    let mut session = open(&env, &path, None).unwrap();
+    let info = session.info();
+    assert!(info.text_code);
+    assert!(!info.pasted);
+    // A file's own name tells the engine; only pasted codes get it from the layers.
+    assert_eq!(info.engine, None);
+    let gold = rpg_view(&session).unwrap().gold.path;
+    session.edit_value(&gold, "55").unwrap();
+    assert_eq!(decoded_value(&session.copy_code().unwrap(), &gold), "55");
+    assert_eq!(session.pending_changes().len(), 1);
+}
+
+#[test]
+fn only_the_newest_pasted_codes_are_kept_and_other_files_stay() {
+    let env = env();
+    let dir = pasted_folder(&env);
+    fs::create_dir_all(dir.join("code-5.txt.d")).unwrap();
+    for stamp in 1..=15 {
+        fs::write(dir.join(format!("code-{stamp}.txt")), "old").unwrap();
+    }
+    let foreign = ["notes.txt", "code-abc.txt", "code-7.json", "Code-8.txt"];
+    for name in foreign {
+        fs::write(dir.join(name), "mine").unwrap();
+    }
+
+    let session = paste(&env, &fixture_text(STORY)).unwrap();
+    let opened = PathBuf::from(session.info().path);
+    let opened_name = opened.file_name().unwrap().to_string_lossy().into_owned();
+    let mut codes: Vec<String> = file_names(&dir)
+        .into_iter()
+        .filter(|name| name.starts_with("code-") && name.ends_with(".txt"))
+        .filter(|name| name != "code-abc.txt")
+        .collect();
+    assert_eq!(codes.len(), MAX_PASTED);
+    codes.retain(|name| *name != opened_name);
+    let mut expected: Vec<String> = (7..=15).map(|n| format!("code-{n}.txt")).collect();
+    expected.sort();
+    assert_eq!(codes, expected);
+    for name in foreign {
+        assert!(dir.join(name).exists(), "{name}");
+    }
+    assert!(dir.join("code-5.txt.d").is_dir());
+}
+
+#[test]
+fn the_code_just_pasted_is_kept_even_with_newer_names_around() {
+    let env = env();
+    let dir = pasted_folder(&env);
+    fs::create_dir_all(&dir).unwrap();
+    let future = 99_999_999_999_000_u64;
+    for step in 0..12 {
+        fs::write(dir.join(format!("code-{}.txt", future + step)), "x").unwrap();
+    }
+    let session = paste(&env, &fixture_text(STORY)).unwrap();
+    let opened = PathBuf::from(session.info().path);
+    assert!(opened.exists());
+    assert_eq!(file_names(&dir).len(), MAX_PASTED);
+    assert!(dir.join(format!("code-{}.txt", future + 11)).exists());
+    assert!(!dir.join(format!("code-{future}.txt")).exists());
+}
+
+#[test]
+fn many_pastes_keep_ten_codes() {
+    let env = env();
+    let text = fixture_text(STORY);
+    let mut last = PathBuf::new();
+    for _ in 0..(MAX_PASTED + 3) {
+        last = PathBuf::from(paste(&env, &text).unwrap().info().path);
+    }
+    assert_eq!(file_names(&pasted_folder(&env)).len(), MAX_PASTED);
+    assert!(last.exists());
+}
+
+#[test]
+fn the_pasted_folder_is_never_the_backup_folder() {
+    let env = env();
+    let mut session = paste(&env, &fixture_text(STORY)).unwrap();
+    let file = PathBuf::from(session.info().path);
+    assert!(!file.starts_with(&env.backups));
+    assert_ne!(file.parent().unwrap(), env.backups);
+    assert!(file_names(&env.backups).is_empty());
+
+    // "Save as file" makes it an ordinary file; the pasted copy stays where it was.
+    let view = story_view(&session).unwrap();
+    session
+        .edit_value(&story_row(&view, "gold").path, "1")
+        .unwrap();
+    let target = env.work.join("story.save");
+    let result = session.save(target.to_str().unwrap(), false).unwrap();
+    assert!(result.backup_path.is_none());
+    let info = session.info();
+    assert!(!info.pasted);
+    assert_eq!(PathBuf::from(&info.path), target);
+    assert!(file.exists());
+    assert!(file_names(&env.backups).is_empty());
+    let reopened = open(&env, &target, None).unwrap();
+    assert_eq!(story_value(&story_view(&reopened).unwrap(), "gold"), "1");
+}

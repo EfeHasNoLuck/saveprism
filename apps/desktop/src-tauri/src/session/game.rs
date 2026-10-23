@@ -920,7 +920,7 @@ impl Session {
     }
 
     /// "mv" or "mz" when the file was unpacked by an RPG Maker layer.
-    fn rpg_engine(&self) -> Option<&'static str> {
+    pub(super) fn rpg_engine(&self) -> Option<&'static str> {
         let has = |kind: &str| self.recipe.steps.iter().any(|step| step.kind == kind);
         if has("encoding.js-binary-string") {
             Some("mz")
@@ -950,7 +950,12 @@ impl Session {
             });
         }
         if let Some(engine) = self.rpg_engine() {
-            let names = load_names(&self.path);
+            // A pasted code has no game folder next to it.
+            let names = if self.pasted {
+                GameNames::default()
+            } else {
+                load_names(&self.path)
+            };
             if let Some(view) = ctx.rpg_view(engine, &names) {
                 return Ok(GameView::Rpgmaker {
                     view: Box::new(view),

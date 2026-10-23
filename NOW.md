@@ -31,6 +31,11 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
    partly changed values and revive tuples read-only; synthetic fixtures in `fixtures/synthetic/sugarcube/`). Not yet:
    2.37 saves with `state.history` (no deltas) open as the plain Values list; no real game save tested.
    Format notes for SugarCube/TyranoScript/Ren'Py: `docs/research/formats-sugarcube-tyrano-renpy.md`.
+   Done 2026-10-23: Paste code (start screen, header, Ctrl+V on the start screen; the code is kept as
+   `%LOCALAPPDATA%\SavePrism\pasted\code-<ms>.txt`, newest 10) and Copy code (pasted sessions' main action; "Copy as save
+   code" for text formats; edited values checked first). Codex review: one finding (link in the pasted folder) fixed.
+   On the dev PC something outside SavePrism alters clipboard text longer than ~1,400 characters (PowerShell
+   `Set-Clipboard` too), so a long copied code pasted back there fails; not an app bug.
 3. Customization: settings for density, font size, save mode (overwrite / save as), number of backups; color settings
    (changed, accent, error); own names for unnamed variables/switches, kept per game; a doc on adding a theme in code.
 4. AI: MCP server (open, read, search, propose and apply edits; saving still makes a backup); "Ask AI" copies the selected

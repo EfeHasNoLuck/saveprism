@@ -39,6 +39,10 @@ export const ErrorCodes = {
   /** "Save as" would replace an existing file: ask, then call `save` with `overwrite: true`. */
   targetExists: "SP-APP-006",
   notEditableNode: "SP-APP-007",
+  /** The pasted save code is empty. */
+  emptyCode: "SP-APP-016",
+  /** The format is not text, so `copyCode` has no code to give: use Save as. */
+  notTextCode: "SP-APP-017",
 } as const;
 
 export interface RootInfo {
@@ -59,8 +63,15 @@ export interface OpenInfo {
   editable: boolean;
   warning: string | null;
   root: RootInfo;
-  /** The engine known from the document's shape ("sugarcube"), or null. */
-  engine: "sugarcube" | null;
+  /**
+   * The engine known from the document's shape ("sugarcube"), or null. A pasted code has no file
+   * name to tell the engine, so its RPG Maker layer names it ("rpgmaker-mv", "rpgmaker-mz").
+   */
+  engine: "sugarcube" | "rpgmaker-mv" | "rpgmaker-mz" | null;
+  /** Opened from a pasted save code; `path` is SavePrism's own copy until a "save as". */
+  pasted: boolean;
+  /** The file is text a player can copy and paste, so `copyCode` can give it back as a code. */
+  textCode: boolean;
 }
 
 export interface NodeRow {
@@ -128,6 +139,24 @@ export function coreVersion(): Promise<string> {
 /** Opens a file. `password` is only needed for encrypted Easy Save 3 files. */
 export function openFile(path: string, password?: string): Promise<OpenInfo> {
   return invoke<OpenInfo>("open_file", { path, password: password ?? null });
+}
+
+/**
+ * Opens a pasted save code (surrounding whitespace is fine). The host keeps the text as its own file
+ * in the app data folder; a code that does not open leaves no file behind and its error has a hint
+ * for pasted codes. Empty text fails with `ErrorCodes.emptyCode`.
+ */
+export function openCode(text: string): Promise<OpenInfo> {
+  return invoke<OpenInfo>("open_code", { text });
+}
+
+/**
+ * The open document as a save code, pending edits included (every edited value is checked in it).
+ * Nothing is written and the edits stay pending. Fails with `ErrorCodes.notTextCode` for binary
+ * and encrypted formats.
+ */
+export function copyCode(): Promise<string> {
+  return invoke<string>("copy_code");
 }
 
 /** One page of the children of the node at `path` (`""` is the root). `limit` is capped at 500. */

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDown, FileText, FolderOpen, Upload } from "lucide-react";
+import { ChevronDown, ClipboardPaste, FileText, FolderOpen, Upload } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -10,10 +10,18 @@ interface StartScreenProps {
   dragging: boolean;
   recent: RecentFile[];
   onOpenFile: () => void;
+  /** Opens the dialog that takes a pasted save code. */
+  onPasteCode: () => void;
   onOpenRecent: (path: string) => void;
 }
 
-export function StartScreen({ dragging, recent, onOpenFile, onOpenRecent }: StartScreenProps) {
+export function StartScreen({
+  dragging,
+  recent,
+  onOpenFile,
+  onPasteCode,
+  onOpenRecent,
+}: StartScreenProps) {
   const { t } = useTranslation();
   const { settings } = useSettings();
   const [faqOpen, setFaqOpen] = useState(false);
@@ -34,10 +42,21 @@ export function StartScreen({ dragging, recent, onOpenFile, onOpenRecent }: Star
           <h1 className="text-xl font-semibold tracking-tight">
             {dragging ? t("start.dropActive") : t("empty.title")}
           </h1>
-          <Button onClick={onOpenFile}>
-            <FolderOpen />
-            {t("start.openFile")}
-          </Button>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <Button onClick={onOpenFile}>
+              <FolderOpen />
+              {t("start.openFile")}
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={onPasteCode}
+              className="bg-surface-container hover:bg-surface-high"
+            >
+              <ClipboardPaste />
+              {t("start.pasteCode")}
+            </Button>
+          </div>
+          <p className="text-[13px] text-muted-foreground">{t("start.pasteHint")}</p>
           <p className="text-[13px] text-muted-foreground">{t("start.privacy")}</p>
         </div>
 

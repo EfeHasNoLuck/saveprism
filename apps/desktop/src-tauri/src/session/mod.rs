@@ -7,7 +7,8 @@
 //! [`Session::redo`] walk the edit history; [`Session::save`] encodes, writes with the core safe
 //! write (backup, temp file, atomic replace) and checks every edited value in the written file;
 //! [`Session::backups`] lists the backups of the open file and [`Session::restore_backup`] puts one
-//! back the same safe way.
+//! back the same safe way. [`Session::open_code`] opens a pasted save code and
+//! [`Session::copy_code`] gives the edited document back as a code.
 //!
 //! Errors cross the IPC boundary as [`ApiError`] (`code`, `message`, `hint`). The password of an
 //! encrypted file lives in memory only; it is never logged, put into a message or written to disk.
@@ -27,6 +28,7 @@ use saveprism_core::{
 use serde::Serialize;
 
 mod backups;
+mod code;
 mod export;
 mod game;
 mod history;
@@ -34,6 +36,7 @@ mod json_apply;
 mod sugarcube;
 
 pub use backups::BackupRow;
+pub use code::MAX_PASTED;
 use game::check_bounds_in;
 pub use game::{
     Actor, Bonus, Entry, Field, FieldKind, GameView, NoteKind, RowNote, RpgMakerView, ValueRow,
@@ -86,6 +89,10 @@ pub mod app_codes {
     pub const BACKUP_UNREADABLE: &str = "SP-APP-014";
     /// One edit names more values than one step may hold.
     pub const TOO_MANY_VALUES: &str = "SP-APP-015";
+    /// The pasted save code is empty.
+    pub const EMPTY_CODE: &str = "SP-APP-016";
+    /// The save format is not text, so it has no code to copy.
+    pub const NOT_TEXT_CODE: &str = "SP-APP-017";
 }
 
 /// An error as the UI receives it.
@@ -265,8 +272,14 @@ pub struct OpenInfo {
     /// The root node.
     pub root: RootInfo,
     /// The game engine known from the document's shape (`sugarcube`), when the file name and the
-    /// codec do not tell it.
+    /// codec do not tell it. A pasted code has no telling file name, so its RPG Maker layer names
+    /// the engine too (`rpgmaker-mv`, `rpgmaker-mz`).
     pub engine: Option<String>,
+    /// True when the document was opened from a pasted save code (the file is SavePrism's own copy).
+    pub pasted: bool,
+    /// True when the file is text a player can copy and paste (UTF-8 without control characters),
+    /// so `copy_code` can give it back as a code.
+    pub text_code: bool,
 }
 
 /// One pending edit.
@@ -310,6 +323,8 @@ pub struct Session {
     pending: Vec<Change>,
     /// Undo and redo steps; empty after opening and after saving.
     history: History,
+    /// Opened from a pasted save code; `path` is SavePrism's own copy until a "save as".
+    pasted: bool,
 }
 
 fn io_error(path: &FsPath, source: std::io::Error) -> Error {
@@ -638,6 +653,7 @@ impl Session {
             guard,
             pending: Vec::new(),
             history: History::default(),
+            pasted: false,
         })
     }
 
@@ -675,7 +691,15 @@ impl Session {
                     .get(self.doc.root())
                     .map_or(0, |node| child_count(&node.value)),
             },
-            engine: self.is_sugarcube().then(|| "sugarcube".to_string()),
+            engine: if self.is_sugarcube() {
+                Some("sugarcube".to_string())
+            } else if self.pasted {
+                self.rpg_engine().map(|engine| format!("rpgmaker-{engine}"))
+            } else {
+                None
+            },
+            pasted: self.pasted,
+            text_code: code::is_text_code(&self.original),
         }
     }
 
@@ -1024,31 +1048,13 @@ impl Session {
         let bytes = pipeline::encode(&self.doc, &recipe, &self.reg)?;
         let opts = WriteOptions::new(self.backup_root()?);
 
-        let edited: Vec<Path> = self
-            .pending
-            .iter()
-            .filter_map(|change| Path::parse(&change.path).ok())
-            .collect();
-        let doc = &self.doc;
-        let verify = |written: &[u8]| -> saveprism_core::Result<()> {
-            let again = pipeline::decode(written, &recipe, &self.reg, &self.limits)?;
-            for path in &edited {
-                let expected = doc.resolve(path).and_then(|id| doc.get(id));
-                let found = again.doc.resolve(path).and_then(|id| again.doc.get(id));
-                match (expected, found) {
-                    (Some(want), Some(got)) if want.value == got.value => {}
-                    _ => {
-                        return Err(Error::new(
-                            codes::CORE_EDIT_FAILED,
-                            format!("the written file does not hold the edited value at '{path}'"),
-                        ));
-                    }
-                }
-            }
-            Ok(())
-        };
+        let verify = |written: &[u8]| self.verify_edits(&recipe, written);
         let report = safe_write(&target_path, &bytes, &opts, &verify)?;
 
+        if !same {
+            // A pasted code saved as a file is that file from now on.
+            self.pasted = false;
+        }
         self.path = target_path.clone();
         self.original = bytes;
         self.pending.clear();
@@ -1060,6 +1066,29 @@ impl Session {
                 .map(|path| path.to_string_lossy().into_owned()),
             verified: true,
         })
+    }
+
+    /// Decodes `written` with `recipe` and checks that it holds every edited value of the document.
+    fn verify_edits(&self, recipe: &Recipe, written: &[u8]) -> saveprism_core::Result<()> {
+        let again = pipeline::decode(written, recipe, &self.reg, &self.limits)?;
+        let doc = &self.doc;
+        for change in &self.pending {
+            let Ok(path) = Path::parse(&change.path) else {
+                continue;
+            };
+            let expected = doc.resolve(&path).and_then(|id| doc.get(id));
+            let found = again.doc.resolve(&path).and_then(|id| again.doc.get(id));
+            match (expected, found) {
+                (Some(want), Some(got)) if want.value == got.value => {}
+                _ => {
+                    return Err(Error::new(
+                        codes::CORE_EDIT_FAILED,
+                        format!("the written file does not hold the edited value at '{path}'"),
+                    ));
+                }
+            }
+        }
+        Ok(())
     }
 
     /// The backup folder: the one given to [`Session::open`], else the app's default.

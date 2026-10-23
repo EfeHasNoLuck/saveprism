@@ -88,10 +88,12 @@ impl Session {
             }
         };
         safe_write(&self.path, &bytes, &opts, &verify)?;
-        Session::open_path(
+        let mut restored = Session::open_path(
             self.path.clone(),
             self.password.clone(),
             self.backup_root.clone(),
-        )
+        )?;
+        restored.pasted = self.pasted;
+        Ok(restored)
     }
 }

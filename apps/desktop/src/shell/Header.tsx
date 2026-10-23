@@ -1,4 +1,4 @@
-import { FileText, FolderOpen, Settings as SettingsIcon } from "lucide-react";
+import { ClipboardPaste, FileText, FolderOpen, Settings as SettingsIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { OpenInfo } from "@/api/commands";
 import { Button } from "@/components/ui/button";
@@ -12,10 +12,12 @@ import { Logo } from "./Logo";
 interface HeaderProps {
   file: OpenInfo | null;
   onOpenFile: () => void;
+  /** Opens the dialog that takes a pasted save code. */
+  onPasteCode: () => void;
   onOpenSettings: () => void;
 }
 
-export function Header({ file, onOpenFile, onOpenSettings }: HeaderProps) {
+export function Header({ file, onOpenFile, onPasteCode, onOpenSettings }: HeaderProps) {
   const { t } = useTranslation();
   const { settings } = useSettings();
   const engine = file ? (engineLabel(file.fileName, file.codec, file.engine) ?? t("header.engineUnknown")) : null;
@@ -27,10 +29,21 @@ export function Header({ file, onOpenFile, onOpenSettings }: HeaderProps) {
         <span className="text-sm font-semibold tracking-tight">SavePrism</span>
         {file ? (
           <div className="ml-2 flex min-w-0 items-center gap-1.5 rounded-sm border border-border bg-card px-2 py-0.5 dark:border-transparent">
-            <FileText className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
-            <span className="truncate font-mono text-xs" title={file.path}>
-              {file.fileName}
-            </span>
+            {file.pasted ? (
+              <>
+                <ClipboardPaste className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+                <span className="truncate text-xs font-medium" title={t("header.pastedTip")}>
+                  {t("header.pastedCode")}
+                </span>
+              </>
+            ) : (
+              <>
+                <FileText className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+                <span className="truncate font-mono text-xs" title={file.path}>
+                  {file.fileName}
+                </span>
+              </>
+            )}
             <span className="shrink-0 rounded-sm bg-surface-high px-1 font-mono text-[11px] leading-4 font-medium text-tertiary uppercase">
               {engine}
             </span>
@@ -38,6 +51,16 @@ export function Header({ file, onOpenFile, onOpenSettings }: HeaderProps) {
         ) : null}
       </div>
       <div className="flex shrink-0 items-center gap-0.5">
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={onPasteCode}
+          title={t("header.pasteCodeTip")}
+          className="mr-1 bg-surface-container hover:bg-surface-high"
+        >
+          <ClipboardPaste />
+          {t("header.pasteCode")}
+        </Button>
         <Button
           variant="secondary"
           size="sm"

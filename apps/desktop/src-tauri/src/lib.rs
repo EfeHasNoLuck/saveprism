@@ -61,6 +61,23 @@ async fn open_file(
     Ok(info)
 }
 
+/// Opens a pasted save code (replacing the open document). The text is kept as SavePrism's own file
+/// in the app data folder; a code that does not open leaves no file behind.
+#[tauri::command]
+async fn open_code(state: State<'_, AppState>, text: String) -> Result<OpenInfo, ApiError> {
+    let session = Session::open_code(&text, None)?;
+    let info = session.info();
+    *state.lock() = Some(session);
+    Ok(info)
+}
+
+/// The open document as a save code (pending edits included, every edited value checked). Formats
+/// that are not text are refused. Nothing is written and the pending edits stay.
+#[tauri::command]
+async fn copy_code(state: State<'_, AppState>) -> Result<String, ApiError> {
+    state.with_session(|session| session.copy_code())
+}
+
 /// One page of the children of the node at `path` (`limit` is capped at 500).
 #[tauri::command]
 async fn get_children(
@@ -247,6 +264,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             core_version,
             open_file,
+            open_code,
+            copy_code,
             get_children,
             search,
             edit_value,

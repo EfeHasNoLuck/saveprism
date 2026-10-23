@@ -31,7 +31,11 @@
     "openFile": "Open file",
     "notifications": "Notifications",
     "settings": "Settings",
-    "engineUnknown": "Unknown format"
+    "engineUnknown": "Unknown format",
+    "pasteCode": "Paste code",
+    "pasteCodeTip": "Open a save code copied from a browser game",
+    "pastedCode": "Pasted code",
+    "pastedTip": "Opened from a pasted save code. Copy code gives it back with your changes."
   },
   "dialog": {
     "openTitle": "Open a save file",
@@ -49,7 +53,9 @@
     "faqLink": "FAQ: where are save files?",
     "faqRpgMaker": "RPG Maker: the game's save/ folder, or www/save/",
     "faqUnity": "Unity: %USERPROFILE%\\AppData\\LocalLow\\<Company>\\<Game>",
-    "faqUnreal": "Unreal: %LOCALAPPDATA%\\<Game>\\Saved\\SaveGames"
+    "faqUnreal": "Unreal: %LOCALAPPDATA%\\<Game>\\Saved\\SaveGames",
+    "pasteCode": "Paste code",
+    "pasteHint": "Browser game? Paste the save code it gave you (Ctrl+V)."
   },
   "banner": {
     "readOnly": "This file can't be written safely yet. You can look, but not save.",
@@ -76,7 +82,11 @@
     "saveOptions": "More save options",
     "backupInfo": "A backup copy of the original is stored before any file is replaced.",
     "invalidTip": "Fix the highlighted values before saving.",
-    "readOnlyTip": "This file is read-only."
+    "readOnlyTip": "This file is read-only.",
+    "copyCode": "Copy code",
+    "copyCodeTip": "Copy the edited save code to paste into your game",
+    "saveAsFile": "Save as file…",
+    "copyCodeItem": "Copy as save code"
   },
   "confirm": {
     "discardOpen_one": "Discard {{count}} change and open another file?",
@@ -145,6 +155,22 @@
     "submit": "Open",
     "wrong": "That password did not open the file. Check the password in the game's Easy Save settings and try again."
   },
+  "codeText": {
+    "title": "Your save code",
+    "body": "The clipboard could not be used here. The code is selected: press Ctrl+C to copy it.",
+    "label": "Save code",
+    "selectAll": "Select all"
+  },
+  "paste": {
+    "title": "Paste a save code",
+    "body": "Paste the save code your game gave you, for example from its Export or Save to text option.",
+    "label": "Save code",
+    "placeholder": "Paste the code here (Ctrl+V)",
+    "note": "The code stays on this computer. Ctrl+Enter opens it.",
+    "open": "Open",
+    "opening": "Opening…",
+    "failed": "This code did not open."
+  },
   "toast": {
     "savedTitle": "Saved · backup created · verified",
     "savedNoBackupTitle": "Saved · verified",
@@ -169,7 +195,10 @@
     "setAllFailed": "The values could not be set",
     "restoredTitle": "Backup restored",
     "restoredBody": "{{path}} is back to the backup from {{time}}.",
-    "restoreFailed": "The backup could not be restored"
+    "restoreFailed": "The backup could not be restored",
+    "codeCopied": "Code copied",
+    "codeCopiedBody": "Paste it into your game's import or load box.",
+    "copyCodeFailed": "The code could not be copied"
   },
   "bell": {
     "title": "This session",
@@ -180,7 +209,8 @@
     "undone": "Undid all changes",
     "setAll_one": "Set {{count}} value to {{value}}",
     "setAll_other": "Set {{count}} values to {{value}}",
-    "clear": "Clear"
+    "clear": "Clear",
+    "openedCode": "Opened a pasted code"
   },
   "settings": {
     "title": "Settings",

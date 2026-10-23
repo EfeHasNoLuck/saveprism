@@ -18,6 +18,8 @@ const CODEC_LABELS: Record<string, string> = {
 
 const ENGINE_LABELS: Record<string, string> = {
   sugarcube: "SugarCube",
+  "rpgmaker-mv": "RPG Maker MV",
+  "rpgmaker-mz": "RPG Maker MZ",
 };
 
 /**

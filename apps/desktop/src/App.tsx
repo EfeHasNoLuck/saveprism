@@ -6,10 +6,12 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { TriangleAlert } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import {
+  copyCode,
   discardChanges,
   editValues,
   ErrorCodes,
   isApiError,
+  openCode,
   openFile,
   pendingChanges,
   redo,
@@ -27,6 +29,8 @@ import { AboutDialog } from "./shell/AboutDialog";
 import { BackgroundPattern } from "./shell/BackgroundPattern";
 import { BackupsDialog } from "./shell/BackupsDialog";
 import { BottomBar } from "./shell/BottomBar";
+import { copyCodePlace, pastedText, saveAsDefaultPath } from "./shell/code";
+import { CodeTextDialog, PasteCodeDialog, type OpenCodeResult } from "./shell/CodeDialogs";
 import { ConfirmDiscardDialog } from "./shell/ConfirmDiscardDialog";
 import { useNotify, useSettings } from "./shell/context";
 import { baseName, exportFileName } from "./shell/engine";
@@ -84,6 +88,10 @@ function App() {
   const [exporting, setExporting] = useState(false);
   /** The window's close button was pressed while there were unsaved changes. */
   const [closeAsked, setCloseAsked] = useState(false);
+  /** The "Paste code" dialog is open, with the text it starts with. */
+  const [pasteRequest, setPasteRequest] = useState<{ text: string } | null>(null);
+  /** A copied code the clipboard refused, shown to copy by hand. */
+  const [codeText, setCodeText] = useState<string | null>(null);
 
   const notifyError = useCallback(
     (title: string, error: unknown) => {
@@ -166,6 +174,63 @@ function App() {
     },
     [busy, changeCount, file, jsonOpen, openPath],
   );
+
+  /**
+   * Opens a pasted save code. The paste dialog has already asked about unsaved changes; a refusal
+   * goes back to it to show.
+   */
+  const openPastedCode = useCallback(
+    async (text: string): Promise<OpenCodeResult> => {
+      setBusy(true);
+      try {
+        const info = await openCode(text);
+        setFile(info);
+        setChangeCount(0);
+        setHistory(NO_HISTORY);
+        setInvalid(false);
+        setEditorKey((key) => key + 1);
+        setPasteRequest(null);
+        notify({ kind: "opened", title: t("bell.openedCode"), toast: false });
+        return { ok: true };
+      } catch (error) {
+        return { ok: false, error };
+      } finally {
+        setBusy(false);
+      }
+    },
+    [notify, t],
+  );
+
+  /** Opens the paste dialog, unless another action runs or the JSON editor is open. */
+  const requestPaste = useCallback(
+    (text = "") => {
+      if (busy || jsonOpen) return;
+      setPasteRequest({ text });
+    },
+    [busy, jsonOpen],
+  );
+
+  /**
+   * Copies the open document as a save code (pending edits included; they stay pending). When the
+   * clipboard cannot be written, the code is shown to copy by hand.
+   */
+  const copyAsCode = useCallback(async () => {
+    if (!file) return;
+    setBusy(true);
+    try {
+      const code = await copyCode();
+      try {
+        await navigator.clipboard.writeText(code);
+        notify({ kind: "saved", title: t("toast.codeCopied"), detail: t("toast.codeCopiedBody") });
+      } catch {
+        setCodeText(code);
+      }
+    } catch (error) {
+      notifyError(t("toast.copyCodeFailed"), error);
+    } finally {
+      setBusy(false);
+    }
+  }, [file, notify, notifyError, t]);
 
   const chooseAndOpen = useCallback(async () => {
     if (busy) return;
@@ -268,7 +333,13 @@ function App() {
         }
         setFile((current) =>
           current
-            ? { ...current, path: result.writtenPath, fileName: baseName(result.writtenPath) }
+            ? {
+                ...current,
+                path: result.writtenPath,
+                fileName: baseName(result.writtenPath),
+                // A pasted code saved as a file is that file from now on.
+                pasted: current.pasted && result.writtenPath === current.path,
+              }
             : current,
         );
         setChangeCount(0);
@@ -309,7 +380,7 @@ function App() {
     try {
       const target = await saveDialog({
         title: t("dialog.saveTitle"),
-        defaultPath: file.path,
+        defaultPath: saveAsDefaultPath(file),
       });
       // The system dialog has already asked about replacing an existing file.
       if (typeof target === "string") await afterSave(target, true);
@@ -525,6 +596,8 @@ function App() {
         aboutOpen ||
         backupsOpen ||
         jsonOpen ||
+        pasteRequest !== null ||
+        codeText !== null ||
         passwordRequest !== null ||
         pendingOpen !== null ||
         closeAsked ||
@@ -550,7 +623,8 @@ function App() {
             title: t(readOnly ? "bottom.readOnlyTip" : "bottom.invalidTip"),
             skipBell: true,
           });
-        } else if (action === "saveAs" || settings.saveDefault === "saveAs") {
+        } else if (action === "saveAs" || settings.saveDefault === "saveAs" || file.pasted) {
+          // A pasted code has no file of the player's to overwrite.
           void saveAsNew();
         } else {
           void overwriteOriginal();
@@ -564,6 +638,26 @@ function App() {
     return () => window.removeEventListener("keydown", listener);
   }, []);
 
+  // Ctrl+V on the start screen opens the paste dialog with the pasted text (nothing opens until
+  // the player presses Open). Text boxes and dialogs keep their own paste.
+  const pasteHandler = useRef<(event: ClipboardEvent) => void>(() => undefined);
+  useEffect(() => {
+    pasteHandler.current = (event) => {
+      if (file !== null || busy || settingsOpen || aboutOpen || pasteRequest !== null) return;
+      const target = event.target instanceof Element ? event.target : null;
+      if (isTextEditing(target) || document.querySelector('[role="dialog"]') !== null) return;
+      const text = pastedText(event.clipboardData);
+      if (text === null) return;
+      event.preventDefault();
+      requestPaste(text);
+    };
+  });
+  useEffect(() => {
+    const listener = (event: ClipboardEvent) => pasteHandler.current(event);
+    window.addEventListener("paste", listener);
+    return () => window.removeEventListener("paste", listener);
+  }, []);
+
   return (
     <TooltipProvider>
       <div className="relative flex h-screen flex-col bg-background text-foreground">
@@ -571,6 +665,7 @@ function App() {
         <Header
           file={file}
           onOpenFile={() => void chooseAndOpen()}
+          onPasteCode={() => requestPaste()}
           onOpenSettings={() => setSettingsOpen(true)}
         />
 
@@ -605,6 +700,7 @@ function App() {
               dragging={dragging}
               recent={recent}
               onOpenFile={() => void chooseAndOpen()}
+              onPasteCode={() => requestPaste()}
               onOpenRecent={requestOpen}
             />
           )}
@@ -628,6 +724,8 @@ function App() {
             onOpenBackups={() => setBackupsOpen(true)}
             onSaveAs={() => void saveAsNew()}
             onOverwrite={() => void overwriteOriginal()}
+            copyCode={copyCodePlace(file)}
+            onCopyCode={() => void copyAsCode()}
           />
         ) : null}
 
@@ -659,6 +757,17 @@ function App() {
             onApply={applyJsonText}
             onDirtyChange={setJsonDirty}
           />
+        ) : null}
+        {pasteRequest ? (
+          <PasteCodeDialog
+            initialText={pasteRequest.text}
+            changeCount={file ? changeCount : 0}
+            onOpen={openPastedCode}
+            onClose={() => setPasteRequest(null)}
+          />
+        ) : null}
+        {codeText !== null ? (
+          <CodeTextDialog code={codeText} onClose={() => setCodeText(null)} />
         ) : null}
         {passwordRequest ? (
           <PasswordDialog

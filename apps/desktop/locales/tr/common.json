@@ -31,7 +31,11 @@
     "openFile": "Dosya aç",
     "notifications": "Bildirimler",
     "settings": "Ayarlar",
-    "engineUnknown": "Bilinmeyen biçim"
+    "engineUnknown": "Bilinmeyen biçim",
+    "pasteCode": "Kod yapıştır",
+    "pasteCodeTip": "Tarayıcı oyunundan kopyalanan kayıt kodunu aç",
+    "pastedCode": "Yapıştırılan kod",
+    "pastedTip": "Yapıştırılan bir kayıt kodundan açıldı. Kodu kopyala, değişikliklerinle birlikte geri verir."
   },
   "dialog": {
     "openTitle": "Bir kayıt dosyası aç",
@@ -49,7 +53,9 @@
     "faqLink": "SSS: kayıt dosyaları nerede?",
     "faqRpgMaker": "RPG Maker: oyunun save/ klasörü ya da www/save/",
     "faqUnity": "Unity: %USERPROFILE%\\AppData\\LocalLow\\<Şirket>\\<Oyun>",
-    "faqUnreal": "Unreal: %LOCALAPPDATA%\\<Oyun>\\Saved\\SaveGames"
+    "faqUnreal": "Unreal: %LOCALAPPDATA%\\<Oyun>\\Saved\\SaveGames",
+    "pasteCode": "Kod yapıştır",
+    "pasteHint": "Tarayıcı oyunu mu? Verdiği kayıt kodunu yapıştır (Ctrl+V)."
   },
   "banner": {
     "readOnly": "Bu dosya henüz güvenle yazılamıyor. Bakabilirsin ama kaydedemezsin.",
@@ -76,7 +82,11 @@
     "saveOptions": "Diğer kaydetme seçenekleri",
     "backupInfo": "Bir dosya değiştirilmeden önce orijinalin yedek kopyası saklanır.",
     "invalidTip": "Kaydetmeden önce işaretli değerleri düzelt.",
-    "readOnlyTip": "Bu dosya salt okunur."
+    "readOnlyTip": "Bu dosya salt okunur.",
+    "copyCode": "Kodu kopyala",
+    "copyCodeTip": "Düzenlenen kayıt kodunu oyuna yapıştırmak için kopyala",
+    "saveAsFile": "Dosya olarak kaydet…",
+    "copyCodeItem": "Kayıt kodu olarak kopyala"
   },
   "confirm": {
     "discardOpen_one": "{{count}} değişiklik silinsin ve başka bir dosya açılsın mı?",
@@ -145,6 +155,22 @@
     "submit": "Aç",
     "wrong": "Bu parola dosyayı açmadı. Oyunun Easy Save ayarlarındaki parolayı kontrol edip tekrar dene."
   },
+  "codeText": {
+    "title": "Kayıt kodun",
+    "body": "Pano burada kullanılamadı. Kod seçili: kopyalamak için Ctrl+C'ye bas.",
+    "label": "Kayıt kodu",
+    "selectAll": "Tümünü seç"
+  },
+  "paste": {
+    "title": "Kayıt kodu yapıştır",
+    "body": "Oyunun verdiği kayıt kodunu yapıştır; örneğin Dışa aktar ya da Metne kaydet seçeneğinden.",
+    "label": "Kayıt kodu",
+    "placeholder": "Kodu buraya yapıştır (Ctrl+V)",
+    "note": "Kod bu bilgisayarda kalır. Ctrl+Enter ile açılır.",
+    "open": "Aç",
+    "opening": "Açılıyor…",
+    "failed": "Bu kod açılmadı."
+  },
   "toast": {
     "savedTitle": "Kaydedildi · yedek alındı · doğrulandı",
     "savedNoBackupTitle": "Kaydedildi · doğrulandı",
@@ -169,7 +195,10 @@
     "setAllFailed": "Değerler ayarlanamadı",
     "restoredTitle": "Yedek geri yüklendi",
     "restoredBody": "{{path}}, {{time}} tarihli yedeğe döndü.",
-    "restoreFailed": "Yedek geri yüklenemedi"
+    "restoreFailed": "Yedek geri yüklenemedi",
+    "codeCopied": "Kod kopyalandı",
+    "codeCopiedBody": "Oyunun içe aktarma ya da yükleme kutusuna yapıştır.",
+    "copyCodeFailed": "Kod kopyalanamadı"
   },
   "bell": {
     "title": "Bu oturum",
@@ -180,7 +209,8 @@
     "undone": "Tüm değişiklikler geri alındı",
     "setAll_one": "{{count}} değer {{value}} yapıldı",
     "setAll_other": "{{count}} değer {{value}} yapıldı",
-    "clear": "Temizle"
+    "clear": "Temizle",
+    "openedCode": "Yapıştırılan kod açıldı"
   },
   "settings": {
     "title": "Ayarlar",

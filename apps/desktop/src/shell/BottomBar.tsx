@@ -3,6 +3,7 @@ import {
   ArrowRight,
   Braces,
   ChevronDown,
+  ClipboardCopy,
   History,
   Redo2,
   RotateCcw,
@@ -16,10 +17,12 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { InfoTip } from "@/components/ui/info-tip";
+import type { CopyCodePlace } from "./code";
 import type { SaveDefault } from "./settings";
 
 interface BottomBarProps {
@@ -43,6 +46,12 @@ interface BottomBarProps {
   onOpenBackups: () => void;
   onSaveAs: () => void;
   onOverwrite: () => void;
+  /**
+   * Where "Copy code" is offered: the main action (a pasted code: "Save as file…" sits next to it
+   * and there is no file to overwrite), an item of the save menu (other text files), or nowhere.
+   */
+  copyCode: CopyCodePlace;
+  onCopyCode: () => void;
 }
 
 export function BottomBar({
@@ -61,6 +70,8 @@ export function BottomBar({
   onOpenBackups,
   onSaveAs,
   onOverwrite,
+  copyCode,
+  onCopyCode,
 }: BottomBarProps) {
   const { t } = useTranslation();
   const [changes, setChanges] = useState<Change[] | null>(null);
@@ -180,6 +191,24 @@ export function BottomBar({
           {t("bottom.backups")}
         </Button>
         <InfoTip text={t("bottom.backupInfo")} />
+        {copyCode === "main" ? (
+          <div className="flex items-center gap-2" title={disabledReason}>
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={cannotSave}
+              onClick={onSaveAs}
+              className="bg-surface-container hover:bg-surface-high"
+            >
+              <Save />
+              {t("bottom.saveAsFile")}
+            </Button>
+            <Button size="sm" disabled={cannotSave} onClick={onCopyCode} title={t("bottom.copyCodeTip")}>
+              <ClipboardCopy />
+              {t("bottom.copyCode")}
+            </Button>
+          </div>
+        ) : (
         <div className="flex" title={disabledReason}>
           <Button
             size="sm"
@@ -204,9 +233,16 @@ export function BottomBar({
             <DropdownMenuContent align="end" style={{ width: "auto", minWidth: "16rem" }}>
               <DropdownMenuItem onSelect={onSaveAs}>{t("bottom.saveAsItem")}</DropdownMenuItem>
               <DropdownMenuItem onSelect={onOverwrite}>{t("bottom.overwriteItem")}</DropdownMenuItem>
+              {copyCode === "menu" ? (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onSelect={onCopyCode}>{t("bottom.copyCodeItem")}</DropdownMenuItem>
+                </>
+              ) : null}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
+        )}
       </div>
     </footer>
   );
