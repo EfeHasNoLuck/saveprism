@@ -1,4 +1,4 @@
-import { FolderOpen, Settings as SettingsIcon } from "lucide-react";
+import { FileText, FolderOpen, Settings as SettingsIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { OpenInfo } from "@/api/commands";
 import { Button } from "@/components/ui/button";
@@ -21,23 +21,29 @@ export function Header({ file, onOpenFile, onOpenSettings }: HeaderProps) {
   const engine = file ? (engineLabel(file.fileName, file.codec) ?? t("header.engineUnknown")) : null;
 
   return (
-    <header className="relative z-10 flex h-14 shrink-0 items-center justify-between gap-4 border-b border-border bg-background/80 px-4 backdrop-blur">
-      <div className="flex min-w-0 items-center gap-3">
-        <Logo className="size-7 shrink-0" />
-        <span className="text-base font-semibold">SavePrism</span>
+    <header className="relative z-10 flex h-11 shrink-0 items-center justify-between gap-4 border-b border-border bg-chrome px-3">
+      <div className="flex min-w-0 items-center gap-2">
+        <Logo className="size-5 shrink-0" />
+        <span className="text-sm font-semibold tracking-tight">SavePrism</span>
         {file ? (
-          <div className="ml-2 flex min-w-0 items-center gap-2 border-l border-border pl-4">
-            <span className="truncate text-sm" title={file.path}>
+          <div className="ml-2 flex min-w-0 items-center gap-1.5 rounded-sm border border-border bg-card px-2 py-0.5 dark:border-transparent">
+            <FileText className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+            <span className="truncate font-mono text-xs" title={file.path}>
               {file.fileName}
             </span>
-            <span className="shrink-0 rounded-md bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+            <span className="shrink-0 rounded-sm bg-surface-high px-1 font-mono text-[11px] leading-4 font-medium text-tertiary uppercase">
               {engine}
             </span>
           </div>
         ) : null}
       </div>
-      <div className="flex shrink-0 items-center gap-1">
-        <Button onClick={onOpenFile} className="mr-2">
+      <div className="flex shrink-0 items-center gap-0.5">
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={onOpenFile}
+          className="mr-1.5 bg-surface-container hover:bg-surface-high"
+        >
           <FolderOpen />
           {t("header.openFile")}
         </Button>
@@ -46,9 +52,11 @@ export function Header({ file, onOpenFile, onOpenSettings }: HeaderProps) {
         {settings.showNotifications ? <Bell /> : null}
         <Button
           variant="ghost"
-          size="icon"
+          size="icon-sm"
           aria-label={t("header.settings")}
+          title={t("header.settings")}
           onClick={onOpenSettings}
+          className="text-foreground-variant"
         >
           <SettingsIcon />
         </Button>

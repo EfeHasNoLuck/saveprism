@@ -14,23 +14,29 @@ export function Toasts() {
   return (
     <div
       data-toasts
-      className="pointer-events-none fixed right-4 bottom-20 z-[60] flex w-96 max-w-[calc(100vw-2rem)] flex-col gap-2"
+      className="pointer-events-none fixed right-3 bottom-13 z-[60] flex w-96 max-w-[calc(100vw-2rem)] flex-col gap-2"
     >
       {toasts.map((toast) => (
         <div
           key={toast.id}
           role={toast.kind === "error" ? "alert" : "status"}
           className={cn(
-            "pointer-events-auto flex flex-col gap-1 rounded-xl border bg-popover p-4 text-popover-foreground shadow-lg",
-            toast.kind === "success" && "border-success/60",
-            toast.kind === "error" && "border-destructive/60",
-            toast.kind === "info" && "border-border",
+            "pointer-events-auto relative flex flex-col gap-1 overflow-hidden rounded-md border border-border bg-popover py-2.5 pr-2.5 pl-4 text-popover-foreground shadow-lg shadow-black/20",
           )}
         >
+          <span
+            aria-hidden="true"
+            className={cn(
+              "absolute inset-y-0 left-0 w-[3px]",
+              toast.kind === "success" && "bg-success",
+              toast.kind === "error" && "bg-destructive",
+              toast.kind === "info" && "bg-primary",
+            )}
+          />
           <div className="flex items-start justify-between gap-2">
             <p
               className={cn(
-                "text-sm font-semibold",
+                "text-[13px] font-semibold",
                 toast.kind === "success" && "text-success",
                 toast.kind === "error" && "text-destructive",
               )}
@@ -41,7 +47,7 @@ export function Toasts() {
               type="button"
               aria-label={t("toast.dismiss")}
               onClick={() => dismissToast(toast.id)}
-              className="rounded-md p-0.5 text-muted-foreground outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
+              className="rounded-sm p-0.5 text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60"
             >
               <X className="size-4" />
             </button>
@@ -55,7 +61,7 @@ export function Toasts() {
             <Button
               variant="outline"
               size="sm"
-              className="mt-1"
+              className="mt-1 self-start"
               onClick={() => {
                 toast.action?.run();
               }}

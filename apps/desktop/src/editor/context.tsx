@@ -1,6 +1,6 @@
 import { createContext, useContext, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { isApiError, type ApiError, type Field } from "@/api/commands";
+import { isApiError, type Actor, type ApiError, type Field } from "@/api/commands";
 import type { FormatNumber } from "./helpers";
 
 export interface EditorContextValue {
@@ -11,6 +11,8 @@ export interface EditorContextValue {
   reportInvalid: (path: string, invalid: boolean) => void;
   /** Call after a successful edit: refreshes the pending-changes count. */
   afterEdit: () => Promise<void>;
+  /** Paths of the values that differ from the file (the host's pending changes). */
+  pending: ReadonlySet<string>;
 }
 
 export const EditorContext = createContext<EditorContextValue | null>(null);
@@ -41,4 +43,26 @@ export function useFormatNumber(): FormatNumber {
 export function toApiError(error: unknown, fallbackMessage: string): ApiError {
   if (isApiError(error)) return error;
   return { code: "", message: fallbackMessage, hint: "" };
+}
+
+/** Number of `paths` that have a pending change. */
+export function countPending(pending: ReadonlySet<string>, paths: readonly string[]): number {
+  if (pending.size === 0) return 0;
+  let count = 0;
+  for (const path of paths) if (pending.has(path)) count += 1;
+  return count;
+}
+
+/** Number of pending changes at `path` or below it. */
+export function countPendingUnder(pending: ReadonlySet<string>, path: string): number {
+  let count = 0;
+  for (const p of pending) if (p === path || p.startsWith(`${path}/`)) count += 1;
+  return count;
+}
+
+/** Every field of a character, for the change counts. */
+export function actorPaths(actor: Actor): string[] {
+  const paths = [actor.level.path, actor.hp.path, actor.mp.path, ...actor.bonuses.map((b) => b.field.path)];
+  if (actor.exp !== null) paths.push(actor.exp.path);
+  return paths;
 }

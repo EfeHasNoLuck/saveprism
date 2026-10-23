@@ -55,8 +55,8 @@
     "semantic": "Dosya biraz farklı bir düzenle yazılacak. İçerik aynı kalır."
   },
   "bottom": {
-    "changes_one": "{{count}} değişiklik",
-    "changes_other": "{{count}} değişiklik",
+    "changes_one": "{{count}} değişiklik bekliyor",
+    "changes_other": "{{count}} değişiklik bekliyor",
     "noChanges": "Değişiklik yok",
     "changesTitle": "Bekleyen değişiklikler",
     "undoAll": "Tümünü geri al",

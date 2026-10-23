@@ -11,7 +11,7 @@ import {
 import { EditorContext, toApiError, type EditorContextValue } from "./context";
 import { registerEditorBundles } from "./i18n";
 import { RpgMaker } from "./RpgMaker";
-import { ValuesCard } from "./ValuesCard";
+import { ValuesView } from "./ValuesCard";
 
 export interface EditorViewProps {
   readOnly: boolean;
@@ -25,6 +25,7 @@ export function EditorView({ readOnly, onChangesChanged, onInvalidChanged }: Edi
   const [view, setView] = useState<GameView | null>(null);
   const [loadError, setLoadError] = useState<ApiError | null>(null);
   const [fields, setFields] = useState<ReadonlyMap<string, Field>>(new Map());
+  const [pending, setPending] = useState<ReadonlySet<string>>(new Set());
   const invalidPaths = useRef<Set<string>>(new Set());
   const lastInvalid = useRef(false);
 
@@ -40,6 +41,7 @@ export function EditorView({ readOnly, onChangesChanged, onInvalidChanged }: Edi
     try {
       const changes = await pendingChanges();
       changedRef.current(changes.length);
+      setPending(new Set(changes.map((c) => c.path)));
     } catch {
       // The count stays as it was; the next edit refreshes it.
     }
@@ -79,25 +81,27 @@ export function EditorView({ readOnly, onChangesChanged, onInvalidChanged }: Edi
   }, []);
 
   const ctx = useMemo<EditorContextValue>(
-    () => ({ readOnly, fields, setField, reportInvalid, afterEdit: refreshCount }),
-    [readOnly, fields, setField, reportInvalid, refreshCount],
+    () => ({ readOnly, fields, setField, reportInvalid, afterEdit: refreshCount, pending }),
+    [readOnly, fields, setField, reportInvalid, refreshCount, pending],
   );
 
   if (loadError !== null) {
     return (
-      <p role="alert" className="p-4 text-sm text-destructive">
+      <p role="alert" className="p-4 text-[13px] text-destructive">
         {t("loadFailed", { message: loadError.message, hint: loadError.hint }).trim()}
       </p>
     );
   }
   if (view === null) {
-    return <p className="p-4 text-sm text-muted-foreground">{t("loading")}</p>;
+    return <p className="p-4 text-[13px] text-muted-foreground">{t("loading")}</p>;
   }
 
   return (
     <EditorContext.Provider value={ctx}>
       <Tooltip.Provider delayDuration={200}>
-        {view.kind === "rpgmaker" ? <RpgMaker view={view.view} /> : <ValuesCard rows={view.rows} />}
+        <div className="flex min-h-0 flex-1 flex-col p-2">
+          {view.kind === "rpgmaker" ? <RpgMaker view={view.view} /> : <ValuesView rows={view.rows} />}
+        </div>
       </Tooltip.Provider>
     </EditorContext.Provider>
   );

@@ -14,7 +14,7 @@ import { json } from "@codemirror/lang-json";
 import { bracketMatching, HighlightStyle, syntaxHighlighting } from "@codemirror/language";
 import { linter, type Diagnostic } from "@codemirror/lint";
 import { highlightSelectionMatches, SearchCursor } from "@codemirror/search";
-import { EditorState, StateField, type Extension, type Text } from "@codemirror/state";
+import { Compartment, EditorState, StateField, type Extension, type Text } from "@codemirror/state";
 import {
   drawSelection,
   EditorView,
@@ -102,40 +102,46 @@ const loadedText = StateField.define<Text>({
 const jsonHighlight = HighlightStyle.define([
   { tag: tags.propertyName, color: "var(--primary)" },
   { tag: tags.string, color: "var(--success)" },
-  { tag: [tags.bool, tags.null], color: "var(--warning)" },
+  { tag: tags.number, color: "var(--tertiary)" },
+  { tag: [tags.bool, tags.null], color: "var(--tertiary)", fontWeight: "600" },
   { tag: [tags.brace, tags.squareBracket, tags.separator, tags.punctuation], color: "var(--muted-foreground)" },
 ]);
+
+/** Read-only while the file is read-only or while Apply runs (typing then would be overwritten). */
+const editable = new Compartment();
 
 const editorTheme = EditorView.theme({
   "&": {
     height: "100%",
     fontSize: "12px",
-    backgroundColor: "var(--background)",
+    backgroundColor: "var(--card)",
     color: "var(--foreground)",
   },
   "&.cm-focused": { outline: "none" },
   ".cm-scroller": {
-    fontFamily: "var(--font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace)",
+    fontFamily: "var(--font-mono, ui-monospace, Consolas, monospace)",
     lineHeight: "20px",
+    scrollbarWidth: "thin",
+    scrollbarColor: "var(--surface-highest) transparent",
   },
-  ".cm-content": { caretColor: "var(--foreground)" },
-  ".cm-cursor, .cm-dropCursor": { borderLeftColor: "var(--foreground)" },
+  ".cm-content": { caretColor: "var(--primary)" },
+  ".cm-cursor, .cm-dropCursor": { borderLeftColor: "var(--primary)" },
   ".cm-gutters": {
-    backgroundColor: "var(--muted)",
+    backgroundColor: "var(--chrome)",
     color: "var(--muted-foreground)",
     borderRight: "1px solid var(--border)",
   },
-  ".cm-activeLine": { backgroundColor: "color-mix(in oklch, var(--muted) 70%, transparent)" },
-  ".cm-activeLineGutter": { backgroundColor: "var(--accent)", color: "var(--foreground)" },
+  ".cm-activeLine": { backgroundColor: "var(--surface-container)" },
+  ".cm-activeLineGutter": { backgroundColor: "var(--surface-high)", color: "var(--foreground)" },
   ".cm-selectionBackground": {
-    backgroundColor: "color-mix(in oklch, var(--brand) 25%, transparent) !important",
+    backgroundColor: "color-mix(in srgb, var(--primary) 22%, transparent) !important",
   },
   "&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground": {
-    backgroundColor: "color-mix(in oklch, var(--brand) 35%, transparent) !important",
+    backgroundColor: "color-mix(in srgb, var(--primary) 30%, transparent) !important",
   },
-  ".cm-selectionMatch": { backgroundColor: "color-mix(in oklch, var(--brand) 15%, transparent)" },
+  ".cm-selectionMatch": { backgroundColor: "color-mix(in srgb, var(--primary) 14%, transparent)" },
   "&.cm-focused .cm-matchingBracket": {
-    backgroundColor: "color-mix(in oklch, var(--brand) 20%, transparent)",
+    backgroundColor: "color-mix(in srgb, var(--primary) 22%, transparent)",
   },
   ".cm-lintRange-error": {
     backgroundImage: "none",
@@ -146,7 +152,7 @@ const editorTheme = EditorView.theme({
     backgroundColor: "var(--popover)",
     color: "var(--popover-foreground)",
     border: "1px solid var(--border)",
-    borderRadius: "6px",
+    borderRadius: "4px",
   },
   ".cm-diagnostic-error": { borderLeftColor: "var(--destructive)" },
 });
@@ -193,7 +199,7 @@ function editorExtensions(hooks: EditorHooks): Extension[] {
     syntaxHighlighting(jsonHighlight),
     keymap.of([{ key: "Mod-f", run: hooks.focusSearch }, ...historyKeymap, ...defaultKeymap]),
     linter(lint, { delay: LINT_DELAY_MS }),
-    EditorState.readOnly.of(hooks.readOnly),
+    editable.of(EditorState.readOnly.of(hooks.readOnly)),
     EditorView.contentAttributes.of({ "aria-label": hooks.label }),
     EditorView.updateListener.of((update) => {
       if (update.docChanged) hooks.onDoc(update.state.field(loadedText), update.state.doc);
@@ -305,6 +311,13 @@ export function JsonDialog({
     },
     [],
   );
+
+  // No typing while Apply runs: the text that comes back after it replaces the editor's text.
+  useEffect(() => {
+    viewRef.current?.dispatch({
+      effects: editable.reconfigure(EditorState.readOnly.of(readOnly || applying)),
+    });
+  }, [applying, editorState, readOnly]);
 
   useEffect(() => {
     onDirtyChange(dirty);
@@ -437,7 +450,7 @@ export function JsonDialog({
 
         <div className="flex items-center gap-2">
           <div className="relative flex-1">
-            <Search className="pointer-events-none absolute top-2.5 left-2.5 size-4 text-muted-foreground" />
+            <Search className="pointer-events-none absolute top-1/2 left-2 size-3.5 -translate-y-1/2 text-muted-foreground" />
             <input
               id={searchId}
               type="search"
@@ -453,11 +466,11 @@ export function JsonDialog({
               }}
               placeholder={t("json.search")}
               aria-label={t("json.search")}
-              className="h-9 w-full rounded-lg border border-input bg-background pr-3 pl-8 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              className="h-7 w-full rounded-sm border border-input bg-field pr-2 pl-7 text-xs outline-none focus-visible:border-ring"
             />
           </div>
           {query.trim() !== "" ? (
-            <span className="text-sm whitespace-nowrap text-muted-foreground tabular-nums">
+            <span className="font-mono text-xs whitespace-nowrap text-muted-foreground tabular-nums">
               {matches.length === 0
                 ? t("json.noMatches")
                 : `${Math.min(current, matches.length - 1) + 1} / ${matches.length}${
@@ -467,7 +480,7 @@ export function JsonDialog({
           ) : null}
           <Button
             variant="ghost"
-            size="icon"
+            size="icon-sm"
             aria-label={t("json.previous")}
             disabled={matches.length === 0}
             onClick={() => jumpTo(current - 1)}
@@ -476,19 +489,25 @@ export function JsonDialog({
           </Button>
           <Button
             variant="ghost"
-            size="icon"
+            size="icon-sm"
             aria-label={t("json.next")}
             disabled={matches.length === 0}
             onClick={() => jumpTo(current + 1)}
           >
             <ChevronDown />
           </Button>
-          <Button variant="outline" disabled={state.status !== "ready"} onClick={() => void copy()}>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={state.status !== "ready"}
+            onClick={() => void copy()}
+          >
             <Copy />
             {copied ? t("common.copied") : t("common.copy")}
           </Button>
           <Button
             variant="outline"
+            size="sm"
             disabled={state.status !== "ready" || exporting || dirty}
             title={dirty ? t("json.exportApplyFirst") : undefined}
             onClick={onExport}
@@ -497,18 +516,18 @@ export function JsonDialog({
             {t("json.exportJson")}
           </Button>
           {readOnly ? null : (
-            <Button disabled={!dirty || applying} onClick={() => void apply()}>
+            <Button size="sm" disabled={!dirty || applying} onClick={() => void apply()}>
               <Check />
               {applying ? t("json.applying") : t("json.apply")}
             </Button>
           )}
         </div>
 
-        <div className="min-h-0 flex-1 overflow-hidden rounded-lg border border-border bg-background">
+        <div className="min-h-0 flex-1 overflow-hidden rounded-sm border border-border bg-card">
           {state.status === "loading" ? (
-            <p className="p-4 text-sm text-muted-foreground">{t("common.loading")}</p>
+            <p className="p-4 text-[13px] text-muted-foreground">{t("common.loading")}</p>
           ) : state.status === "error" ? (
-            <p role="alert" className="p-4 text-sm text-destructive">
+            <p role="alert" className="p-4 text-[13px] text-destructive">
               {state.message}
             </p>
           ) : (
@@ -516,7 +535,7 @@ export function JsonDialog({
           )}
         </div>
 
-        <div className="-mt-1 min-h-5 text-sm" aria-live="polite">
+        <div className="-mt-1 min-h-5 text-xs" aria-live="polite">
           {statusLine}
         </div>
 

@@ -55,8 +55,8 @@
     "semantic": "The file will be written with a slightly different layout. The content stays the same."
   },
   "bottom": {
-    "changes_one": "{{count}} change",
-    "changes_other": "{{count}} changes",
+    "changes_one": "{{count}} change pending",
+    "changes_other": "{{count}} changes pending",
     "noChanges": "No changes",
     "changesTitle": "Pending changes",
     "undoAll": "Undo all",

@@ -54,8 +54,8 @@ export function BottomBar({
   const mainLabel = saveDefault === "overwrite" ? t("bottom.saveOverwrite") : t("bottom.saveAs");
 
   return (
-    <footer className="relative z-10 flex h-14 shrink-0 items-center justify-between gap-4 border-t border-border bg-background/90 px-4 backdrop-blur">
-      <div className="flex items-center gap-2">
+    <footer className="relative z-10 flex h-10 shrink-0 items-center justify-between gap-4 border-t border-border bg-chrome px-3">
+      <div className="flex items-center gap-1">
         <Popover
           onOpenChange={(open) => {
             if (!open) return;
@@ -66,14 +66,19 @@ export function BottomBar({
           }}
         >
           <PopoverTrigger asChild>
-            {/* Amber like the changed fields, so the count and the tints read as one thing. */}
+            {/* Violet like the changed rows, so the count and the tints read as one thing. */}
             <Button
               variant="ghost"
+              size="sm"
               disabled={changeCount === 0}
-              className={changeCount > 0 ? "text-changed-foreground" : undefined}
+              className={
+                changeCount > 0
+                  ? "mr-1 bg-surface-high font-mono text-xs text-changed-foreground hover:bg-surface-highest hover:text-changed-foreground"
+                  : "mr-1 text-xs"
+              }
             >
               {changeCount === 0 ? null : (
-                <span className="size-2 rounded-full bg-changed" aria-hidden="true" />
+                <span className="size-1.5 rounded-full bg-changed" aria-hidden="true" />
               )}
               {changeCount === 0
                 ? t("bottom.noChanges")
@@ -81,20 +86,20 @@ export function BottomBar({
             </Button>
           </PopoverTrigger>
           <PopoverContent align="start" className="w-[28rem]">
-            <p className="mb-2 text-sm font-medium">{t("bottom.changesTitle")}</p>
+            <p className="mb-2 text-[13px] font-semibold">{t("bottom.changesTitle")}</p>
             {changes === null ? (
-              <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
+              <p className="text-[13px] text-muted-foreground">{t("common.loading")}</p>
             ) : (
-              <ul className="flex max-h-72 flex-col gap-1.5 overflow-y-auto">
+              <ul className="dense-scroll flex max-h-72 flex-col gap-1 overflow-y-auto">
                 {changes.map((change) => (
-                  <li key={change.path} className="rounded-md bg-muted px-3 py-1.5 text-xs">
-                    <span className="block truncate font-mono text-muted-foreground" title={change.path}>
+                  <li key={change.path} className="rounded-sm bg-surface-high px-2.5 py-1 text-xs">
+                    <span className="block truncate font-mono text-[11px] text-muted-foreground" title={change.path}>
                       {change.path}
                     </span>
-                    <span className="mt-0.5 flex items-center gap-1.5">
+                    <span className="mt-0.5 flex items-center gap-1.5 font-mono text-changed-foreground">
                       <span className="truncate">{change.old}</span>
                       <ArrowRight className="size-3 shrink-0 text-muted-foreground" />
-                      <span className="truncate font-medium">{change.new}</span>
+                      <span className="truncate rounded-sm bg-changed-chip px-1 font-medium">{change.new}</span>
                     </span>
                   </li>
                 ))}
@@ -102,11 +107,17 @@ export function BottomBar({
             )}
           </PopoverContent>
         </Popover>
-        <Button variant="ghost" disabled={changeCount === 0 || busy} onClick={onUndoAll}>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-foreground-variant"
+          disabled={changeCount === 0 || busy}
+          onClick={onUndoAll}
+        >
           <Undo2 />
           {t("bottom.undoAll")}
         </Button>
-        <Button variant="ghost" onClick={onOpenJson}>
+        <Button variant="ghost" size="sm" className="text-foreground-variant" onClick={onOpenJson}>
           <Braces />
           {t("bottom.openJson")}
         </Button>
@@ -117,6 +128,7 @@ export function BottomBar({
         <InfoTip text={t("bottom.backupInfo")} />
         <div className="flex">
           <Button
+            size="sm"
             disabled={cannotSave}
             onClick={mainAction}
             className="rounded-r-none"
@@ -127,6 +139,7 @@ export function BottomBar({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
+                size="sm"
                 disabled={cannotSave}
                 aria-label={t("bottom.saveOptions")}
                 className="rounded-l-none border-l-primary-foreground/30 px-1.5 disabled:border-l-border"

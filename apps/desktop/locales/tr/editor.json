@@ -11,7 +11,8 @@
     "switches": "Anahtarlar",
     "values": "Değerler",
     "statBonuses": "Özellik bonusları",
-    "character": "Karakter"
+    "character": "Karakter",
+    "party": "Takım"
   },
   "info": {
     "gold": "Takımın altını. Alanın altında gösterilen aralıkta kalmalıdır.",
@@ -34,7 +35,8 @@
     "hp": "HP",
     "mp": "MP",
     "exp": "EXP",
-    "lv": "Sv {{level}}"
+    "lv": "Sv {{level}}",
+    "name": "Ad"
   },
   "field": {
     "undo": "Geri al (önceki: {{value}})",
@@ -45,7 +47,8 @@
   "search": {
     "list": "İsim, #id veya değer ara",
     "values": "Değer ara",
-    "empty": "Aramanızla eşleşen bir şey yok."
+    "empty": "Aramanızla eşleşen bir şey yok.",
+    "characters": "İsim veya #id ara"
   },
   "pager": {
     "previous": "Önceki sayfa",
@@ -59,12 +62,16 @@
     "collapse": "Kapat",
     "more": "Daha fazla göster",
     "items_one": "{{count}} öğe",
-    "items_other": "{{count}} öğe"
+    "items_other": "{{count}} öğe",
+    "id": "No",
+    "change": "Değişiklik"
   },
   "problem": {
     "empty": "Bir değer girin.",
     "notNumber": "Bu bir sayı değil.",
-    "notWhole": "Ondalıksız, tam sayı kullanın."
+    "notWhole": "Ondalıksız, tam sayı kullanın.",
+    "aboveMax": "En çok {{max}}",
+    "belowMin": "En az {{min}}"
   },
   "errors": {
     "unknown": "Değişiklik uygulanmadı. Tekrar deneyin."
@@ -99,5 +106,25 @@
     "switch": "Bu kayıtta anahtar yok.",
     "values": "Bu dosyada değer yok.",
     "characters": "Bu kayıtta karakter yok."
+  },
+  "nav": {
+    "label": "Bölümler",
+    "find": "Bölüm bul",
+    "sections": "Bölümler"
+  },
+  "table": {
+    "total_one": "{{total}} toplam",
+    "total_other": "{{total}} toplam",
+    "changed_one": "{{changed}} değişti",
+    "changed_other": "{{changed}} değişti"
+  },
+  "party": {
+    "open": "{{name}} karakterini aç"
+  },
+  "tag": {
+    "int": "tam",
+    "float": "ondalık",
+    "bool": "bool",
+    "string": "metin"
   }
 }

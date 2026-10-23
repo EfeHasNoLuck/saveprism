@@ -3,10 +3,11 @@ import { cn } from "@/lib/utils";
 
 const OPTIONS = ["true", "false"] as const;
 
-const SELECTED =
-  "h-full rounded-[5px] bg-card px-2.5 font-mono text-xs font-semibold text-foreground shadow-sm ring-1 ring-border outline-none focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input dark:ring-0";
-const IDLE =
-  "h-full rounded-[5px] px-2.5 font-mono text-xs text-muted-foreground outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none";
+const SEGMENT =
+  "h-full rounded-[3px] px-2 font-mono text-[11px] leading-none outline-none focus-visible:ring-2 focus-visible:ring-ring/60";
+const SELECTED = `${SEGMENT} bg-surface-highest font-semibold text-foreground`;
+const SELECTED_CHANGED = `${SEGMENT} bg-changed-tag font-semibold text-changed-tag-foreground`;
+const IDLE = `${SEGMENT} text-muted-foreground hover:text-foreground disabled:pointer-events-none`;
 
 interface Props {
   value: boolean;
@@ -32,13 +33,17 @@ export function BoolChoice({ value, onChange, label, disabled = false, changed =
       disabled={disabled}
       orientation="horizontal"
       className={cn(
-        "inline-flex h-7 shrink-0 items-center gap-0.5 rounded-md border bg-muted p-0.5 dark:bg-background",
-        changed && "border-changed bg-changed/10 dark:bg-changed/10",
-        disabled && "cursor-not-allowed opacity-60",
+        "inline-flex h-6 shrink-0 items-center gap-0.5 justify-self-start rounded-sm border border-input/70 bg-field p-0.5 dark:border-transparent",
+        changed && "border-changed dark:border-changed",
+        disabled && "cursor-not-allowed",
       )}
     >
       {OPTIONS.map((option) => (
-        <RadioGroup.Item key={option} value={option} className={option === current ? SELECTED : IDLE}>
+        <RadioGroup.Item
+          key={option}
+          value={option}
+          className={option !== current ? IDLE : changed ? SELECTED_CHANGED : SELECTED}
+        >
           {option}
         </RadioGroup.Item>
       ))}

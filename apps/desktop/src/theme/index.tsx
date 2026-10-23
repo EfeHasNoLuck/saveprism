@@ -152,9 +152,10 @@ export function ThemeToggle() {
   return (
     <Button
       variant="ghost"
-      size="icon"
+      size="icon-sm"
       aria-label={label}
       title={label}
+      className="text-foreground-variant"
       onClick={() => setPreference(dark ? "light" : "dark")}
     >
       {dark ? <Moon /> : <Sun />}

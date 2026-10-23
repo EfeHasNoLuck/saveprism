@@ -411,23 +411,21 @@ function App() {
         {readOnly ? (
           <div
             role="status"
-            className="relative z-10 flex items-center gap-2 border-b border-warning/40 bg-warning/10 px-4 py-2 text-sm text-warning"
+            className="relative z-10 flex h-8 shrink-0 items-center gap-2 border-b border-warning/40 bg-chrome px-3 text-xs font-medium text-warning"
           >
-            <TriangleAlert className="size-4 shrink-0" />
+            <TriangleAlert className="size-3.5 shrink-0" />
             {t("banner.readOnly")}
           </div>
         ) : null}
 
         {file ? (
-          <main className="relative z-10 min-h-0 flex-1 overflow-auto">
-            <div className="mx-auto w-full max-w-7xl px-6 py-6">
-              <EditorView
-                key={editorKey}
-                readOnly={readOnly}
-                onChangesChanged={setChangeCount}
-                onInvalidChanged={setInvalid}
-              />
-            </div>
+          <main className="relative z-10 flex min-h-0 flex-1 flex-col">
+            <EditorView
+              key={editorKey}
+              readOnly={readOnly}
+              onChangesChanged={setChangeCount}
+              onInvalidChanged={setInvalid}
+            />
           </main>
         ) : (
           <StartScreen

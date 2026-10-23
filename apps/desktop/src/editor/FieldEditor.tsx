@@ -1,264 +1,212 @@
 import { Minus, Plus, Undo2 } from "lucide-react";
-import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { editValue, fieldInfo, type ApiError, type Field } from "@/api/commands";
 import { cn } from "@/lib/utils";
-import { toApiError, useEditorContext, useFormatNumber } from "./context";
-import {
-  changeText,
-  checkRange,
-  fieldHint,
-  formatValue,
-  hintLine,
-  stepValue,
-  type RangeProblem,
-} from "./helpers";
-import { BoolChoice } from "./BoolChoice";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useFormatNumber } from "./context";
+import { changeText, changeValue } from "./helpers";
+import { BoolChoice } from "./BoolChoice";
+import type { FieldEdit } from "./useFieldEdit";
 
-interface Props {
-  field: Field;
-  /** Show the type hint all the time (Gold). */
-  alwaysHint?: boolean;
-  /** Show the hint as a floating line while focused, so the row keeps its height (lists). */
-  floatingHint?: boolean;
-  /**
-   * Show "old → new" under a changed field (default). Compact rows turn it off and show it next
-   * to their label instead; floating-hint rows never show it here.
-   */
-  showChange?: boolean;
+const STEP =
+  "inline-flex h-6 w-5 items-center justify-center text-muted-foreground outline-none hover:bg-surface-container hover:text-foreground focus-visible:bg-surface-container focus-visible:text-foreground disabled:pointer-events-none";
+
+/**
+ * The value control of a field: a text box (with − and + for whole numbers) or the `true | false`
+ * choice. A changed value is violet, a value that cannot be saved is red.
+ */
+export function ValueInput({
+  edit,
+  label,
+  inputClassName,
+  className,
+}: {
+  edit: FieldEdit;
   /** Accessible name of the control. */
   label: string;
+  /** Extra classes of the text box (width, accent colour). */
+  inputClassName?: string;
   className?: string;
-}
-
-/** One editor for every scalar: number (with steppers), true/false or text. */
-export function FieldEditor({
-  field: initial,
-  alwaysHint = false,
-  floatingHint = false,
-  showChange = true,
-  label,
-  className,
-}: Props) {
+}) {
   const { t } = useTranslation("editor");
-  const format = useFormatNumber();
-  const ctx = useEditorContext();
-  const field = ctx.fields.get(initial.path) ?? initial;
-  const path = field.path;
-
-  const [draft, setDraft] = useState(field.value);
-  const [focused, setFocused] = useState(false);
-  const [backendError, setBackendError] = useState<ApiError | null>(null);
-
-  // A new committed value (edit or undo) replaces the draft.
-  const [syncedValue, setSyncedValue] = useState(field.value);
-  if (syncedValue !== field.value) {
-    setSyncedValue(field.value);
-    setDraft(field.value);
-    setBackendError(null);
-  }
-
-  const isBool = field.kind === "bool";
+  const { field, disabled, changed, invalid } = edit;
   const isNumber = field.kind === "int" || field.kind === "float";
-  const disabled = ctx.readOnly || !field.editable;
-  const changed = field.value !== field.original;
-  const problem: RangeProblem | null =
-    draft === field.value ? null : checkRange(field.kind, draft, field.min, field.max);
-  const invalid = problem !== null || backendError !== null;
 
-  const { reportInvalid } = ctx;
-  useEffect(() => {
-    reportInvalid(path, invalid);
-  }, [invalid, path, reportInvalid]);
-  useEffect(() => () => reportInvalid(path, false), [path, reportInvalid]);
-
-  async function apply(text: string) {
-    try {
-      await editValue(path, text);
-      const fresh = await fieldInfo(path);
-      ctx.setField(fresh);
-      setBackendError(null);
-      await ctx.afterEdit();
-    } catch (e) {
-      setBackendError(toApiError(e, t("errors.unknown")));
-    }
-  }
-
-  function commit(text: string) {
-    if (disabled || text === field.value) return;
-    if (checkRange(field.kind, text, field.min, field.max) !== null) return;
-    void apply(text);
-  }
-
-  function step(delta: number) {
-    const base = checkRange(field.kind, draft, field.min, field.max) === null ? draft : field.value;
-    const next = stepValue(base, delta, field.min, field.max);
-    if (next === null) return;
-    setDraft(next);
-    commit(next);
-  }
-
-  function undo() {
-    void apply(field.original);
-  }
-
-  const originalText = formatValue(field.original, format);
-  const typeHint = fieldHint(field.kind, field.min, field.max, t, format);
-  let hintText = typeHint;
-  if (backendError !== null) {
-    hintText = `${backendError.message} ${backendError.hint}`.trim();
-  } else if (problem === "empty" || problem === "notNumber" || problem === "notWhole") {
-    hintText = t(`problem.${problem}`);
-  }
-  const line = hintLine({
-    hint: hintText,
-    focused: !isBool && focused,
-    always: !isBool && alwaysHint,
-    invalid,
-    change:
-      changed && showChange && !floatingHint
-        ? changeText(field.kind, field.original, field.value, format)
-        : null,
-  });
-
-  // The undo slot is always there, so the input keeps its width when the button appears. Its
-  // tooltip names the value in the file ("Undo (was 1,250)"); the field itself is only tinted.
-  const undoButton = changed ? (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={undo}
-      aria-label={t("field.undo", { value: originalText })}
-      title={t("field.undo", { value: originalText })}
-      className="inline-flex size-6 shrink-0 items-center justify-center rounded-md text-primary outline-none hover:bg-primary/10 focus-visible:ring-3 focus-visible:ring-ring/50 disabled:text-muted-foreground"
-    >
-      <Undo2 className="size-3.5" />
-    </button>
-  ) : (
-    <span className="size-6 shrink-0" aria-hidden="true" />
-  );
-
-  const stepperClass =
-    "inline-flex size-8 shrink-0 items-center justify-center rounded-md border bg-background text-muted-foreground outline-none hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:bg-muted";
-
-  const controls = (
-    <div className={cn("flex items-center gap-1", isBool && "justify-end")}>
-      {isBool ? (
-        <div className="flex shrink-0 justify-end">
-          <BoolChoice
-            label={label}
-            value={field.value.toLowerCase() === "true"}
-            disabled={disabled}
-            changed={changed}
-            onChange={(next) => commit(next ? "true" : "false")}
-          />
-        </div>
-      ) : (
-        <>
-          {field.kind === "int" ? (
-            <button
-              type="button"
-              aria-label={t("field.decrease")}
-              disabled={disabled}
-              onClick={() => step(-1)}
-              className={stepperClass}
-            >
-              <Minus className="size-3.5" />
-            </button>
-          ) : null}
-          <input
-            type="text"
-            inputMode={field.kind === "int" ? "numeric" : isNumber ? "decimal" : "text"}
-            aria-label={label}
-            aria-invalid={invalid || undefined}
-            disabled={disabled}
-            value={draft}
-            onChange={(e) => {
-              setDraft(e.target.value);
-              setBackendError(null);
-            }}
-            onFocus={() => setFocused(true)}
-            onBlur={() => {
-              setFocused(false);
-              commit(draft);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                commit(draft);
-              } else if (e.key === "Escape") {
-                setDraft(field.value);
-                setBackendError(null);
-              }
-            }}
-            className={cn(
-              "h-8 w-full min-w-0 rounded-md border bg-background px-2 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:bg-muted",
-              isNumber && "text-right tabular-nums",
-              changed && !invalid && "border-changed bg-changed/10",
-              invalid &&
-                "border-destructive bg-destructive/5 focus-visible:border-destructive focus-visible:ring-destructive/20",
-            )}
-          />
-          {field.kind === "int" ? (
-            <button
-              type="button"
-              aria-label={t("field.increase")}
-              disabled={disabled}
-              onClick={() => step(1)}
-              className={stepperClass}
-            >
-              <Plus className="size-3.5" />
-            </button>
-          ) : null}
-        </>
-      )}
-      {undoButton}
-    </div>
-  );
-
-  if (floatingHint) {
-    // Table rows: the line floats under the field while it is focused or wrong, so the row
-    // keeps its height.
-    const floating = line !== null && (focused || invalid) ? line : null;
+  if (field.kind === "bool") {
     return (
-      <Tooltip open={floating !== null}>
-        <TooltipTrigger asChild>
-          <div className={cn("min-w-0", className)}>{controls}</div>
-        </TooltipTrigger>
-        {floating !== null ? (
-          <TooltipContent
-            side="bottom"
-            align="end"
-            sideOffset={4}
-            className={cn("max-w-72", floating.error && "text-destructive")}
-          >
-            <span role={floating.error ? "alert" : undefined}>{floating.text}</span>
-          </TooltipContent>
-        ) : null}
-      </Tooltip>
+      <BoolChoice
+        label={label}
+        value={field.value.toLowerCase() === "true"}
+        disabled={disabled}
+        changed={changed}
+        onChange={(next) => edit.commit(next ? "true" : "false")}
+      />
     );
   }
 
   return (
-    <div className={cn("min-w-0", className)}>
-      {controls}
-      {line !== null ? (
-        <p
-          className={cn(
-            "mt-1 truncate text-xs",
-            line.error
-              ? "text-destructive"
-              : line.change
-                ? "text-changed-foreground tabular-nums"
-                : "text-muted-foreground",
-          )}
-          role={line.error ? "alert" : undefined}
-          // "old → new" keeps the type and limits in its tooltip (they also show on focus).
-          title={line.change ? typeHint : undefined}
-        >
-          {line.text}
-        </p>
+    <div className={cn("flex min-w-0 items-center gap-1", className)}>
+      <input
+        type="text"
+        inputMode={field.kind === "int" ? "numeric" : isNumber ? "decimal" : "text"}
+        aria-label={label}
+        aria-invalid={invalid || undefined}
+        disabled={disabled}
+        value={edit.draft}
+        onChange={(e) => edit.setDraft(e.target.value)}
+        onFocus={() => edit.setFocused(true)}
+        onBlur={() => {
+          edit.setFocused(false);
+          edit.commit(edit.draft);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") edit.commit(edit.draft);
+          else if (e.key === "Escape") edit.reset();
+        }}
+        className={cn(
+          "h-6 w-full min-w-0 rounded-sm border border-input/70 bg-field px-1.5 text-[13px] text-foreground outline-none transition-colors focus-visible:border-ring dark:border-transparent dark:focus-visible:border-ring",
+          isNumber && "font-mono text-xs tabular-nums",
+          "disabled:cursor-not-allowed disabled:text-muted-foreground",
+          inputClassName,
+          changed && !invalid && "font-semibold text-changed-foreground",
+          invalid &&
+            "border-destructive bg-error-container font-semibold text-destructive dark:border-destructive",
+        )}
+      />
+      {field.kind === "int" ? (
+        <div className="flex shrink-0 overflow-hidden rounded-sm bg-surface-highest">
+          <button
+            type="button"
+            aria-label={t("field.decrease")}
+            disabled={disabled}
+            onClick={() => edit.step(-1)}
+            className={STEP}
+          >
+            <Minus className="size-3" />
+          </button>
+          <button
+            type="button"
+            aria-label={t("field.increase")}
+            disabled={disabled}
+            onClick={() => edit.step(1)}
+            className={STEP}
+          >
+            <Plus className="size-3" />
+          </button>
+        </div>
       ) : null}
     </div>
+  );
+}
+
+/** Per-field undo; an empty slot of the same size while the value is unchanged. */
+export function UndoButton({ edit }: { edit: FieldEdit }) {
+  const { t } = useTranslation("editor");
+  if (!edit.changed) return <span className="size-6 shrink-0" aria-hidden="true" />;
+  const text = t("field.undo", { value: edit.originalText });
+  return (
+    <button
+      type="button"
+      disabled={edit.disabled}
+      onClick={edit.undo}
+      aria-label={text}
+      title={text}
+      className="inline-flex size-6 shrink-0 items-center justify-center rounded-sm text-primary outline-none hover:bg-primary/10 focus-visible:ring-2 focus-visible:ring-ring/60 disabled:text-muted-foreground"
+    >
+      <Undo2 className="size-3.5" />
+    </button>
+  );
+}
+
+/** "old → new" with the new value on a violet chip. */
+export function ChangeChip({ edit }: { edit: FieldEdit }) {
+  const format = useFormatNumber();
+  const { field } = edit;
+  return (
+    <span
+      className="inline-flex min-w-0 items-center gap-1 font-mono text-xs text-changed-foreground tabular-nums"
+      title={changeText(field.kind, field.original, field.value, format, Infinity)}
+    >
+      <span className="min-w-0 truncate">{changeValue(field.kind, field.original, format)}</span>
+      <span aria-hidden="true" className="shrink-0 text-muted-foreground">
+        →
+      </span>
+      <span className="min-w-0 truncate rounded-sm bg-changed-chip px-1 font-medium">
+        {changeValue(field.kind, field.value, format)}
+      </span>
+    </span>
+  );
+}
+
+/**
+ * The Change column: why the value cannot be saved, the type and limits while the box is focused,
+ * "old → new" when changed, else an em dash.
+ */
+export function ChangeCell({ edit }: { edit: FieldEdit }) {
+  const line = edit.line;
+  if (line?.error) {
+    return (
+      <span role="alert" title={line.text} className="truncate text-xs font-medium text-destructive">
+        {line.text}
+      </span>
+    );
+  }
+  if (line !== null && !line.change) {
+    return (
+      <span title={line.text} className="truncate text-xs text-muted-foreground">
+        {line.text}
+      </span>
+    );
+  }
+  if (edit.changed) return <ChangeChip edit={edit} />;
+  return (
+    <span aria-hidden="true" className="text-muted-foreground">
+      —
+    </span>
+  );
+}
+
+/**
+ * A field in a tight spot (roster cells, Gold): the value control and its undo. The hint (type and
+ * limits, or the error) floats under it while it is focused or wrong, so nothing moves.
+ */
+export function InlineField({
+  edit,
+  label,
+  inputClassName,
+  showChange = false,
+  className,
+}: {
+  edit: FieldEdit;
+  label: string;
+  inputClassName?: string;
+  /** Show the "old → new" chip after the control (Gold). */
+  showChange?: boolean;
+  className?: string;
+}) {
+  const line = edit.line;
+  const floating = line !== null && (edit.focused || edit.invalid) && !line.change ? line : null;
+  return (
+    <Tooltip open={floating !== null}>
+      <TooltipTrigger asChild>
+        <div
+          className={cn("flex min-w-0 items-center gap-1", className)}
+          title={edit.changed && !showChange && edit.change !== null ? edit.change : undefined}
+        >
+          <ValueInput edit={edit} label={label} inputClassName={inputClassName} />
+          {showChange && edit.changed ? <ChangeChip edit={edit} /> : null}
+          <UndoButton edit={edit} />
+        </div>
+      </TooltipTrigger>
+      {floating !== null ? (
+        <TooltipContent
+          side="bottom"
+          align="start"
+          sideOffset={4}
+          className={cn("max-w-72", floating.error && "text-destructive")}
+        >
+          <span role={floating.error ? "alert" : undefined}>{floating.text}</span>
+        </TooltipContent>
+      ) : null}
+    </Tooltip>
   );
 }

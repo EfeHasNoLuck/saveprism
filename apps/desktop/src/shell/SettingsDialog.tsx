@@ -30,7 +30,7 @@ function Section({
   return (
     <section className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-4">
-        <h3 className="text-sm font-semibold">{title}</h3>
+        <h3 className="text-[11px] font-medium tracking-wider text-muted-foreground uppercase">{title}</h3>
         {aside}
       </div>
       {children ? <div className="flex flex-col gap-3">{children}</div> : null}
@@ -40,7 +40,7 @@ function Section({
 
 function Row({ label, info, children }: { label: string; info?: string; children: ReactNode }) {
   return (
-    <div className="flex items-center justify-between gap-4 text-sm">
+    <div className="flex items-center justify-between gap-4 text-[13px]">
       <span className="flex items-center gap-1">
         {label}
         {info ? <InfoTip text={info} /> : null}
@@ -65,7 +65,7 @@ function Segmented<T extends string>({
     <div
       role="radiogroup"
       aria-label={label}
-      className="inline-flex rounded-lg bg-muted p-0.5 dark:bg-background"
+      className="inline-flex rounded-sm bg-field p-0.5 ring-1 ring-border"
     >
       {options.map((option) => (
         <button
@@ -76,8 +76,8 @@ function Segmented<T extends string>({
           onClick={() => onChange(option.value)}
           className={
             option.value === value
-              ? "rounded-md bg-card px-3 py-1 text-sm font-medium text-foreground shadow-sm ring-1 ring-border outline-none focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input dark:ring-0"
-              : "rounded-md px-3 py-1 text-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
+              ? "rounded-[3px] bg-primary/15 px-2.5 py-0.5 text-xs font-semibold text-primary outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+              : "rounded-[3px] px-2.5 py-0.5 text-xs text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60"
           }
         >
           {option.label}
@@ -101,7 +101,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl overflow-y-auto">
+      <DialogContent className="max-w-lg gap-5 overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{t("settings.title")}</DialogTitle>
           <DialogDescription className="sr-only">{t("settings.title")}</DialogDescription>
@@ -133,7 +133,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
               disabled={!settings.patternOn}
               onChange={(event) => update({ patternStrength: Number(event.target.value) })}
               aria-label={t("settings.patternStrength")}
-              className="w-40 accent-brand disabled:opacity-50"
+              className="w-40 accent-primary disabled:opacity-50"
             />
           </Row>
         </Section>

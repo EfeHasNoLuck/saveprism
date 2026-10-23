@@ -1,98 +1,25 @@
 import { ChevronRight } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  fieldInfo,
-  getChildren,
-  type Field,
-  type NodeRow,
-  type ValueRow,
-} from "@/api/commands";
+import { fieldInfo, getChildren, type Field, type NodeRow, type ValueRow } from "@/api/commands";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { isChanged, useEditorContext } from "./context";
-import { FieldEditor } from "./FieldEditor";
-import { ChangeNote, EmptyText, SearchBox, Section } from "./parts";
+import { countPending, countPendingUnder, useEditorContext } from "./context";
+import { VALUE_COLUMNS } from "./layout";
+import { SectionNav, type SectionLink } from "./Sidebar";
+import {
+  ColumnHeader,
+  FieldRow,
+  PlainRow,
+  SectionTitle,
+  TableNote,
+  TablePanel,
+  VirtualRows,
+} from "./table";
 
 const CHILD_PAGE = 200;
-/** Name · Type · Value. The type column fits "Decimal number" in English and Turkish. */
-const COLUMNS = "grid grid-cols-[minmax(0,1fr)_8.5rem_minmax(0,15rem)] items-center gap-3";
-
-/** The kind of a value in words; the file's own type name (Int32) is in the tooltip. */
-function TypeTag({ field }: { field: Field }) {
-  const { t } = useTranslation("editor");
-  const label = t(`type.${field.kind}`);
-  return (
-    <span
-      className="max-w-full truncate rounded bg-muted px-1.5 py-0.5 text-xs leading-4 text-muted-foreground"
-      title={field.typeName ? t("type.source", { name: field.typeName }) : label}
-    >
-      {label}
-    </span>
-  );
-}
-
-interface NodeProps {
-  name: string;
-  path: string;
-  field: Field | null;
-  childCount: number;
-  depth: number;
-}
-
-/**
- * One row: a value with its editor (tinted and "old → new" next to the name when changed), or a
- * group that expands to its children.
- */
-function ValueNode({ name, path, field, childCount, depth }: NodeProps) {
-  const { t } = useTranslation("editor");
-  const ctx = useEditorContext();
-  const [open, setOpen] = useState(false);
-  const indent = { paddingLeft: `${depth * 16 + 8}px` };
-  const changed = field !== null && isChanged(ctx.fields, field);
-
-  return (
-    <>
-      <div
-        className={cn(COLUMNS, "min-h-11 border-b py-1.5 pr-2", changed && "bg-changed/10")}
-        style={indent}
-      >
-        <div className="flex min-w-0 items-center gap-1">
-          {field === null ? (
-            <button
-              type="button"
-              aria-expanded={open}
-              aria-label={open ? t("values.collapse") : t("values.expand")}
-              onClick={() => setOpen((o) => !o)}
-              className="inline-flex size-5 shrink-0 items-center justify-center rounded text-muted-foreground outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50"
-            >
-              <ChevronRight className={cn("size-3.5 transition-transform", open && "rotate-90")} />
-            </button>
-          ) : (
-            <span className="size-5 shrink-0" />
-          )}
-          <span className="truncate text-[13px]" title={name}>
-            {name}
-          </span>
-          {field === null ? (
-            <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
-              {t("values.items", { count: childCount })}
-            </span>
-          ) : (
-            <ChangeNote field={field} className="ml-auto max-w-[60%] shrink-0 pl-2" />
-          )}
-        </div>
-        <div className="flex min-w-0 items-center">
-          {field !== null ? <TypeTag field={field} /> : null}
-        </div>
-        <div className="min-w-0">
-          {field !== null ? <FieldEditor field={field} label={name} floatingHint /> : null}
-        </div>
-      </div>
-      {field === null && open ? <GroupChildren path={path} depth={depth + 1} /> : null}
-    </>
-  );
-}
+/** Indent per tree level, in pixels. */
+const INDENT = 16;
 
 interface ChildNode {
   name: string;
@@ -102,6 +29,17 @@ interface ChildNode {
   preview: string;
   isGroup: boolean;
 }
+
+interface Loaded {
+  nodes: ChildNode[];
+  total: number;
+  loading: boolean;
+}
+
+type FlatRow =
+  | { type: "node"; node: ChildNode; depth: number }
+  | { type: "loading"; key: string; depth: number }
+  | { type: "more"; path: string; depth: number; loading: boolean };
 
 async function describeChild(row: NodeRow): Promise<ChildNode> {
   const isGroup = row.kind === "object" || row.kind === "array";
@@ -137,125 +75,318 @@ async function fetchChildren(
   }
 }
 
-function GroupChildren({ path, depth }: { path: string; depth: number }) {
-  const { t } = useTranslation("editor");
-  const [nodes, setNodes] = useState<ChildNode[]>([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
+function fromRow(row: ValueRow): ChildNode {
+  return {
+    name: row.name,
+    path: row.path,
+    field: row.field,
+    children: row.children,
+    preview: "",
+    isGroup: row.field === null && row.children > 0,
+  };
+}
 
-  function apply(offset: number, result: { described: ChildNode[]; total: number } | null) {
-    if (result !== null) {
-      setNodes((prev) => (offset === 0 ? result.described : [...prev, ...result.described]));
-      setTotal(result.total);
-    } else if (offset === 0) {
-      setTotal(0);
-    }
-    setLoading(false);
+interface ValueSection {
+  id: string;
+  name: string;
+  /** The group whose children the section shows, or null for the top-level values. */
+  groupPath: string | null;
+  /** Top-level values (when `groupPath` is null). */
+  rows: ChildNode[];
+  count: number;
+}
+
+/**
+ * Sections of a generic save: the top-level values (if any) and one section per top-level group;
+ * one "Values" section when the file has no groups.
+ */
+function valueSections(rows: ValueRow[], valuesName: string): ValueSection[] {
+  const groups = rows.filter((r) => r.field === null && r.children > 0);
+  if (groups.length === 0) {
+    return [
+      { id: "values", name: valuesName, groupPath: null, rows: rows.map(fromRow), count: rows.length },
+    ];
+  }
+  const scalars = rows.filter((r) => !groups.includes(r));
+  const sections: ValueSection[] =
+    scalars.length > 0
+      ? [
+          {
+            id: "values",
+            name: valuesName,
+            groupPath: null,
+            rows: scalars.map(fromRow),
+            count: scalars.length,
+          },
+        ]
+      : [];
+  for (const group of groups) {
+    sections.push({
+      id: `group:${group.path}`,
+      name: group.name,
+      groupPath: group.path,
+      rows: [],
+      count: group.children,
+    });
+  }
+  return sections;
+}
+
+function matches(node: ChildNode, q: string): boolean {
+  return (
+    node.name.toLowerCase().includes(q) ||
+    (node.field !== null && node.field.value.toLowerCase().includes(q))
+  );
+}
+
+function Indent({ depth }: { depth: number }) {
+  return depth > 0 ? <span className="shrink-0" style={{ width: depth * INDENT }} /> : null;
+}
+
+/** The rows of one section as a tree: groups expand in place and load their children on demand. */
+function SectionTable({ section, changed }: { section: ValueSection; changed: number }) {
+  const { t } = useTranslation("editor");
+  const [loaded, setLoaded] = useState<ReadonlyMap<string, Loaded>>(new Map());
+  const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
+  const [query, setQuery] = useState("");
+
+  function load(path: string, offset: number) {
+    void fetchChildren(path, offset).then((result) => {
+      setLoaded((prev) => {
+        const next = new Map(prev);
+        const before = prev.get(path);
+        const nodes = offset === 0 ? [] : (before?.nodes ?? []);
+        next.set(path, {
+          nodes: result === null ? nodes : [...nodes, ...result.described],
+          total: result?.total ?? nodes.length,
+          loading: false,
+        });
+        return next;
+      });
+    });
   }
 
+  const groupPath = section.groupPath;
   useEffect(() => {
+    if (groupPath === null) return;
     let cancelled = false;
-    void fetchChildren(path, 0).then((result) => {
+    void fetchChildren(groupPath, 0).then((result) => {
       if (cancelled) return;
-      setNodes(result?.described ?? []);
-      setTotal(result?.total ?? 0);
-      setLoading(false);
+      setLoaded((prev) =>
+        new Map(prev).set(groupPath, {
+          nodes: result?.described ?? [],
+          total: result?.total ?? 0,
+          loading: false,
+        }),
+      );
     });
     return () => {
       cancelled = true;
     };
-  }, [path]);
+  }, [groupPath]);
 
-  function loadMore() {
-    setLoading(true);
-    const offset = nodes.length;
-    void fetchChildren(path, offset).then((result) => apply(offset, result));
+  function toggle(node: ChildNode) {
+    const open = expanded.has(node.path);
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (open) next.delete(node.path);
+      else next.add(node.path);
+      return next;
+    });
+    if (!open && !loaded.has(node.path)) load(node.path, 0);
   }
 
+  function showMore(path: string) {
+    const current = loaded.get(path);
+    if (current === undefined || current.loading) return;
+    setLoaded((prev) => new Map(prev).set(path, { ...current, loading: true }));
+    load(path, current.nodes.length);
+  }
+
+  const root = groupPath === null ? section.rows : (loaded.get(groupPath)?.nodes ?? null);
+  const rootTotal = groupPath === null ? section.rows.length : (loaded.get(groupPath)?.total ?? 0);
+  const rootLoading = groupPath !== null && loaded.get(groupPath)?.loading === true;
+
+  const flat = useMemo(() => {
+    const out: FlatRow[] = [];
+    const walk = (nodes: ChildNode[], depth: number) => {
+      for (const node of nodes) {
+        out.push({ type: "node", node, depth });
+        if (!node.isGroup || !expanded.has(node.path)) continue;
+        const children = loaded.get(node.path);
+        if (children === undefined) {
+          out.push({ type: "loading", key: `${node.path}#loading`, depth: depth + 1 });
+          continue;
+        }
+        walk(children.nodes, depth + 1);
+        if (children.nodes.length < children.total) {
+          out.push({ type: "more", path: node.path, depth: depth + 1, loading: children.loading });
+        }
+      }
+    };
+    if (root !== null) walk(root, 0);
+    if (root !== null && groupPath !== null && root.length < rootTotal) {
+      out.push({ type: "more", path: groupPath, depth: 0, loading: rootLoading });
+    }
+    const q = query.trim().toLowerCase();
+    if (q === "") return out;
+    return out.filter((row) => row.type === "node" && matches(row.node, q));
+  }, [expanded, groupPath, loaded, query, root, rootLoading, rootTotal]);
+
   return (
-    <>
-      {nodes.map((n) =>
-        n.field === null && !n.isGroup ? (
-          <div
-            key={n.path}
-            className="flex min-h-11 items-center gap-3 border-b py-1.5 pr-2 text-[13px]"
-            style={{ paddingLeft: `${depth * 16 + 8 + 24}px` }}
-          >
-            <span className="truncate">{n.name}</span>
-            <span className="truncate text-muted-foreground">{n.preview}</span>
-          </div>
-        ) : (
-          <ValueNode
-            key={n.path}
-            name={n.name}
-            path={n.path}
-            field={n.field}
-            childCount={n.children}
-            depth={depth}
-          />
-        ),
+    <TablePanel>
+      <SectionTitle
+        title={section.name}
+        info={t("info.values")}
+        total={section.count}
+        changed={changed}
+        query={query}
+        onQuery={setQuery}
+        placeholder={t("search.values")}
+      />
+      <ColumnHeader
+        columns={VALUE_COLUMNS}
+        labels={[t("values.name"), t("values.type"), t("values.value"), t("values.change"), null]}
+      />
+      {root === null ? (
+        <TableNote>{t("loading")}</TableNote>
+      ) : root.length === 0 ? (
+        <TableNote>{t("empty.values")}</TableNote>
+      ) : flat.length === 0 ? (
+        <TableNote>{t("search.empty")}</TableNote>
+      ) : (
+        <VirtualRows
+          label={section.name}
+          items={flat}
+          itemKey={(row) =>
+            row.type === "node" ? row.node.path : row.type === "loading" ? row.key : `${row.path}#more`
+          }
+          render={(row) => {
+            if (row.type === "loading") {
+              return (
+                <PlainRow columns={VALUE_COLUMNS}>
+                  <span className="flex min-w-0 items-center text-muted-foreground">
+                    <Indent depth={row.depth} />
+                    <span className="w-5 shrink-0" />
+                    {t("loading")}
+                  </span>
+                </PlainRow>
+              );
+            }
+            if (row.type === "more") {
+              return (
+                <PlainRow columns={VALUE_COLUMNS}>
+                  <span className="flex min-w-0 items-center">
+                    <Indent depth={row.depth} />
+                    <span className="w-5 shrink-0" />
+                    <Button
+                      variant="ghost"
+                      size="xs"
+                      disabled={row.loading}
+                      onClick={() => showMore(row.path)}
+                    >
+                      {t("values.more")}
+                    </Button>
+                  </span>
+                </PlainRow>
+              );
+            }
+            const { node, depth } = row;
+            if (node.field !== null) {
+              return (
+                <FieldRow
+                  name={node.name}
+                  field={node.field}
+                  columns={VALUE_COLUMNS}
+                  lead={
+                    <>
+                      <Indent depth={depth} />
+                      <span className="w-5 shrink-0" />
+                    </>
+                  }
+                />
+              );
+            }
+            const open = expanded.has(node.path);
+            return (
+              <PlainRow columns={VALUE_COLUMNS}>
+                <span className="flex min-w-0 items-center gap-1">
+                  <Indent depth={depth} />
+                  {node.isGroup ? (
+                    <button
+                      type="button"
+                      aria-expanded={open}
+                      aria-label={open ? t("values.collapse") : t("values.expand")}
+                      onClick={() => toggle(node)}
+                      className="inline-flex size-5 shrink-0 items-center justify-center rounded-sm text-muted-foreground outline-none hover:bg-surface-high hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60"
+                    >
+                      <ChevronRight className={cn("size-3.5 transition-transform", open && "rotate-90")} />
+                    </button>
+                  ) : (
+                    <span className="w-5 shrink-0" />
+                  )}
+                  <span className="truncate" title={node.name}>
+                    {node.name}
+                  </span>
+                  {node.isGroup ? (
+                    <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
+                      {t("values.items", { count: node.children })}
+                    </span>
+                  ) : null}
+                </span>
+                <span />
+                <span className="col-span-3 truncate font-mono text-xs text-muted-foreground" title={node.preview}>
+                  {node.isGroup ? null : node.preview}
+                </span>
+              </PlainRow>
+            );
+          }}
+        />
       )}
-      {nodes.length < total ? (
-        <div style={{ paddingLeft: `${depth * 16 + 8}px` }} className="py-1.5">
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled={loading}
-            onClick={loadMore}
-          >
-            {t("values.more")}
-          </Button>
-        </div>
-      ) : null}
-    </>
+    </TablePanel>
   );
 }
 
-export function ValuesCard({ rows }: { rows: ValueRow[] }) {
+/** Easy Save 3, GVAS and plain JSON saves: sections on the left, one dense table on the right. */
+export function ValuesView({ rows }: { rows: ValueRow[] }) {
   const { t } = useTranslation("editor");
-  const [query, setQuery] = useState("");
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (q === "") return rows;
-    return rows.filter(
-      (r) =>
-        r.name.toLowerCase().includes(q) ||
-        (r.field !== null && r.field.value.toLowerCase().includes(q)),
-    );
-  }, [rows, query]);
+  const { pending } = useEditorContext();
+  const sections = useMemo(() => valueSections(rows, t("sections.values")), [rows, t]);
+  const [selected, setSelected] = useState(sections[0]?.id ?? "values");
+  const section = sections.find((s) => s.id === selected) ?? sections[0];
+
+  const links = useMemo<SectionLink[]>(
+    () =>
+      sections.map((s) => ({
+        id: s.id,
+        name: s.name,
+        count: s.count,
+        changed:
+          s.groupPath === null
+            ? countPending(
+                pending,
+                s.rows.map((r) => r.path),
+              )
+            : countPendingUnder(pending, s.groupPath),
+      })),
+    [pending, sections],
+  );
 
   return (
-    <Section title={t("sections.values")} info={t("info.values")}>
-      {rows.length === 0 ? (
-        <EmptyText>{t("empty.values")}</EmptyText>
+    <div className="flex min-h-0 flex-1 gap-2">
+      <SectionNav sections={links} selected={section?.id ?? ""} onSelect={setSelected} />
+      {section === undefined ? (
+        <TablePanel>
+          <SectionTitle title={t("sections.values")} total={0} changed={0} />
+          <TableNote>{t("empty.values")}</TableNote>
+        </TablePanel>
       ) : (
-        <>
-          <SearchBox value={query} onChange={setQuery} placeholder={t("search.values")} />
-          <div>
-            <div
-              className={cn(COLUMNS, "border-b py-1.5 pr-2 pl-8 text-xs text-muted-foreground")}
-            >
-              <span>{t("values.name")}</span>
-              <span>{t("values.type")}</span>
-              <span>{t("values.value")}</span>
-            </div>
-            {filtered.length === 0 ? (
-              <EmptyText>{t("search.empty")}</EmptyText>
-            ) : (
-              filtered.map((r) => (
-                <ValueNode
-                  key={r.path}
-                  name={r.name}
-                  path={r.path}
-                  field={r.field}
-                  childCount={r.children}
-                  depth={0}
-                />
-              ))
-            )}
-          </div>
-        </>
+        <SectionTable
+          key={section.id}
+          section={section}
+          changed={links.find((l) => l.id === section.id)?.changed ?? 0}
+        />
       )}
-    </Section>
+    </div>
   );
 }

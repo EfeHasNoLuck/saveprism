@@ -107,8 +107,15 @@ export function LanguageSwitcher() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" aria-label={t("language.label")}>
+        <Button
+          variant="ghost"
+          size="sm"
+          aria-label={t("language.label")}
+          title={t("language.label")}
+          className="gap-1 px-1.5 font-mono text-[11px] text-foreground-variant uppercase"
+        >
           <Languages />
+          {current}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">

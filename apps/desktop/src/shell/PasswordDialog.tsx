@@ -39,7 +39,7 @@ export function PasswordDialog({ name, wrong, onSubmit, onCancel }: PasswordDial
             <DialogTitle>{t("password.title")}</DialogTitle>
             <DialogDescription>{t("password.body", { name })}</DialogDescription>
           </DialogHeader>
-          <label className="flex flex-col gap-1.5 text-sm">
+          <label className="flex flex-col gap-1.5 text-[13px]">
             {t("password.label")}
             <input
               type="password"
@@ -48,11 +48,11 @@ export function PasswordDialog({ name, wrong, onSubmit, onCancel }: PasswordDial
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               aria-invalid={wrong}
-              className="h-9 rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-destructive"
+              className="h-8 rounded-sm border border-input bg-field px-2.5 text-[13px] outline-none focus-visible:border-ring aria-invalid:border-destructive"
             />
           </label>
           {wrong ? (
-            <p role="alert" className="text-sm text-destructive">
+            <p role="alert" className="text-[13px] text-destructive">
               {t("password.wrong")}
             </p>
           ) : null}

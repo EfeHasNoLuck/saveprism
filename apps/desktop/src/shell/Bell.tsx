@@ -26,13 +26,14 @@ export function Bell() {
       <PopoverTrigger asChild>
         <Button
           variant="ghost"
-          size="icon"
-          className="relative"
+          size="icon-sm"
+          className="relative text-foreground-variant"
           aria-label={t("header.notifications")}
+          title={t("header.notifications")}
         >
           <BellIcon />
           {unseen > 0 ? (
-            <span className="absolute -top-0.5 -right-0.5 flex min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] leading-4 font-medium text-primary-foreground">
+            <span className="absolute -top-1 -right-1 flex min-w-4 items-center justify-center rounded-full bg-primary px-1 font-mono text-[10px] leading-4 font-semibold text-primary-foreground">
               {unseen > 9 ? "9+" : unseen}
             </span>
           ) : null}
@@ -40,7 +41,7 @@ export function Bell() {
       </PopoverTrigger>
       <PopoverContent align="end" className="w-96">
         <div className="mb-2 flex items-center justify-between">
-          <p className="text-sm font-medium">{t("bell.title")}</p>
+          <p className="text-[13px] font-semibold">{t("bell.title")}</p>
           {count > 0 ? (
             <Button variant="ghost" size="xs" onClick={clearEvents}>
               {t("bell.clear")}
@@ -48,22 +49,22 @@ export function Bell() {
           ) : null}
         </div>
         {count === 0 ? (
-          <p className="py-4 text-center text-sm text-muted-foreground">{t("bell.empty")}</p>
+          <p className="py-4 text-center text-[13px] text-muted-foreground">{t("bell.empty")}</p>
         ) : (
-          <ul className="flex max-h-72 flex-col gap-2 overflow-y-auto">
+          <ul className="dense-scroll flex max-h-72 flex-col gap-1 overflow-y-auto">
             {events.map((event) => (
-              <li key={event.id} className="rounded-md bg-muted px-3 py-2">
+              <li key={event.id} className="rounded-sm bg-surface-high px-2.5 py-1.5">
                 <div className="flex items-baseline justify-between gap-2">
                   <span
                     className={
                       event.kind === "error"
-                        ? "min-w-0 text-sm font-medium break-words text-destructive"
-                        : "min-w-0 text-sm font-medium break-words"
+                        ? "min-w-0 text-[13px] font-medium break-words text-destructive"
+                        : "min-w-0 text-[13px] font-medium break-words"
                     }
                   >
                     <PathText text={event.title} />
                   </span>
-                  <span className="shrink-0 text-xs text-muted-foreground">
+                  <span className="shrink-0 font-mono text-[11px] text-muted-foreground">
                     {timeText(event.at, i18n.language)}
                   </span>
                 </div>

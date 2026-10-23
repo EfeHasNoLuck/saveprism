@@ -11,7 +11,7 @@ export function InfoTip({ text }: { text: string }) {
         <button
           type="button"
           aria-label={t("common.moreInfo")}
-          className="inline-flex size-5 items-center justify-center rounded-full text-muted-foreground outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
+          className="inline-flex size-5 shrink-0 items-center justify-center rounded-full text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60"
         >
           <Info className="size-3.5" />
         </button>
