@@ -1,18 +1,25 @@
 # HANDOFF
 
-**State:** process simplified (CLAUDE.md "How we work", NOW.md is the single plan). Desktop UI is built and machine-checked but nobody has
-looked at the running app yet. Last code commit `5922b85`.
+**State:** v0.1 was widened by the user on 2026-10-23 (NOW.md goal: a local saveeditonline.com with nothing less, plus polish,
+customization and an AI bridge). The user approved the dense card layout with the Stitch colors. Last code commit `f6b9fc5`.
 
 **Works (with evidence)**
-- `bash .claude/araclar/kontrol.sh rust` 3/3 (322 tests), `kontrol.sh web` 3/3 (60 tests), on 2026-10-22.
-- Reviewer: no critical/high findings on the desktop backend and UI.
+- `bash .claude/araclar/kontrol.sh rust` 3/3 and `kontrol.sh web` 3/3 (80 tests) after `f6b9fc5`, 2026-10-23.
+- Undo/redo, shortcuts, opening overlay and About checked in the running app over CDP by the coding subagent.
+- `pnpm -C apps/desktop tauri build` produced `SavePrism_0.0.1_x64-setup.exe` and the `.msi` (2026-10-23, before `f6b9fc5`).
+- `THIRD_PARTY_NOTICES.md`: 244 crates + 76 bundled npm packages, no GPL family (`d412a60`).
+- External engines answer from this repo: Codex `gpt-6-luna`, agy, opencode `evren/deepseek-v4.1-flash`, `cursor-agent.cmd`.
+  agy did the parity research well; EVREN failed a file-writing task twice (see memory `external-engines`).
 
 **Broken / not checked**
-- The running app was never looked at: computer-use access to `saveprism-desktop.exe` was denied while the user was on the phone, and the
-  browser pane could not reach `http://localhost:1420`. Next time ask for computer-use access while the user is at the desktop, and let a
-  subagent take the screenshots.
-- The context-warning hook `.claude/hooks/baglam_uyari.sh` still warns at 55% (locked file; only the user can change it to ~70%).
+- `CLAUDE.md` is changed but not committed (new goal line + "chores go to external engines first"): the auto-mode check blocks me
+  from committing it; the user commits it.
+- The user saw an odd mouse cursor in the app window (photo: arrow with a small ring). The app sets no CSS cursor (computed
+  `auto` everywhere). Open question to the user: dev window or installed app?
+- The JSON Apply review left mediums in NOW.md "Known gaps".
+- Visual checks: `scripts/cdp/README.md` (start `tauri dev` with the WebView2 debug port, drive it over CDP).
 
 **Next step**
-NOW.md todo 1: start `pnpm -C apps/desktop tauri dev`, check the app through a subagent with screenshots (dark + light), fix what looks
-wrong, then show the user.
+NOW.md todo 1: ask the cursor question, then the backups screen (list + restore, reviewer for the restore write) and bulk edit
+per list. Chores to external engines first (agy for research, EVREN only for repo-local read-mostly work), Claude subagents for
+UI. The user hates being asked step by step and wants plain short Turkish.

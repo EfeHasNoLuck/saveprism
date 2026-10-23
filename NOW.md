@@ -20,17 +20,19 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
 - 65 real saves for local tests in `fixtures/external/` (git-ignored; sources and licenses in `fixtures/external/SOURCES.md`).
 
 ## Todo (in order; widened by the user on 2026-10-23)
-1. Polish: Ctrl+Z / Ctrl+Y undo/redo across all edits; shortcuts Ctrl+O, Ctrl+S, Ctrl+Shift+S, Ctrl+F; backups screen (list the
-   backups of the open save, restore one); bulk edit per list ("set all to …", "all switches true/false"); loading state for big
-   files; About.
-2. Parity with saveeditonline.com: gap list in `docs/research/parity.md` (formats + features); known gaps so far: paste a save
-   code (Base64/LZString) instead of a file, pick the game's data folder by hand when names are not found, many more formats.
+1. Polish, rest: backups screen (list the backups of the open save, restore one; writes files → reviewer); bulk edit per list
+   ("set all to …", "all switches true/false"); the odd mouse cursor the user saw in the app (ask which window: dev or installed).
+   Done 2026-10-23 (`f6b9fc5`): undo/redo history + buttons, Ctrl+Z/Y/O/S/Shift+S/F, opening overlay, About.
+2. Parity with saveeditonline.com: gap list done in `docs/research/parity.md`. Top gaps: Ren'Py, RPG Maker XP/VX/VX Ace (Ruby
+   Marshal, parse as data only), Twine/SugarCube, paste a save code instead of a file, Godot, other Unity saves, Wolf RPG, add a
+   value from the card view, pick the game's data folder by hand when names are not found.
 3. Customization: settings for density, font size, save mode (overwrite / save as), number of backups; color settings
    (changed, accent, error); own names for unnamed variables/switches, kept per game; a doc on adding a theme in code.
 4. AI: MCP server (open, read, search, propose and apply edits; saving still makes a backup); "Ask AI" copies the selected
    values with a short context; docs.
-5. Installer: `tauri build` works (test build `0.0.1`, 2026-10-23); version 0.1.0, `THIRD_PARTY_NOTICES`, README install
-   section, then ask the user to publish.
+5. Installer: `tauri build` works (test build `0.0.1`, 2026-10-23); `THIRD_PARTY_NOTICES.md` generated and bundled
+   (`scripts/third-party-notices/generate.sh`). Left: version 0.1.0, README install section (user: not before the work is
+   done), then ask the user to publish.
 
 ## Known gaps
 - RPG Maker saves re-compress to different bytes: editable, not byte-exact. ES3 dicts with number keys don't open. Palworld PlZ2 world
