@@ -12,6 +12,7 @@ pub mod layers;
 pub mod marshal;
 pub mod palworld;
 pub mod rpgmaker;
+pub mod sol;
 
 /// Registers every layer and codec of this crate into `reg`.
 pub fn register_all(reg: &mut Registry) {
@@ -22,6 +23,7 @@ pub fn register_all(reg: &mut Registry) {
     gvas::register(reg);
     palworld::register(reg);
     marshal::register(reg);
+    sol::register(reg);
 }
 
 #[cfg(test)]
