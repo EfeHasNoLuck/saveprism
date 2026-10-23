@@ -2,15 +2,17 @@
 //!
 //! v0.1 keeps one document at a time: [`Session::open`] detects and decodes a file and runs the
 //! round-trip guard; [`Session::get_children`] and [`Session::search`] read the tree;
-//! [`Session::edit_value`] changes one scalar and [`Session::apply_json`] the scalars of an edited
-//! JSON view; [`Session::undo`] and [`Session::redo`] walk the edit history; [`Session::save`]
-//! encodes, writes with the core safe write (backup, temp file, atomic replace) and checks every
-//! edited value in the written file.
+//! [`Session::edit_value`] changes one scalar, [`Session::edit_values`] many scalars to the same text
+//! and [`Session::apply_json`] the scalars of an edited JSON view; [`Session::undo`] and
+//! [`Session::redo`] walk the edit history; [`Session::save`] encodes, writes with the core safe
+//! write (backup, temp file, atomic replace) and checks every edited value in the written file;
+//! [`Session::backups`] lists the backups of the open file and [`Session::restore_backup`] puts one
+//! back the same safe way.
 //!
 //! Errors cross the IPC boundary as [`ApiError`] (`code`, `message`, `hint`). The password of an
 //! encrypted file lives in memory only; it is never logged, put into a message or written to disk.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::{Path as FsPath, PathBuf};
 
@@ -24,13 +26,16 @@ use saveprism_core::{
 };
 use serde::Serialize;
 
+mod backups;
 mod export;
 mod game;
 mod history;
 mod json_apply;
 
+pub use backups::BackupRow;
+use game::check_bounds_in;
 pub use game::{Actor, Bonus, Entry, Field, FieldKind, GameView, RpgMakerView, ValueRow};
-use history::{History, Mutation, scalar_owned};
+use history::{History, MAX_VALUES, Mutation, scalar_owned};
 pub use history::{HistoryResult, HistoryState};
 
 #[cfg(test)]
@@ -71,6 +76,12 @@ pub mod app_codes {
     pub const JSON_SHAPE: &str = "SP-APP-011";
     /// The third-party notices are not part of this build, or could not be opened.
     pub const NOTICES: &str = "SP-APP-012";
+    /// The backup asked for does not exist (any more).
+    pub const BACKUP_NOT_FOUND: &str = "SP-APP-013";
+    /// The backup does not open as a save, so it is not put back.
+    pub const BACKUP_UNREADABLE: &str = "SP-APP-014";
+    /// One edit names more values than one step may hold.
+    pub const TOO_MANY_VALUES: &str = "SP-APP-015";
 }
 
 /// An error as the UI receives it.
@@ -580,7 +591,15 @@ impl Session {
         password: Option<String>,
         backup_root: Option<PathBuf>,
     ) -> Result<Session, ApiError> {
-        let path = PathBuf::from(path);
+        Self::open_path(PathBuf::from(path), password, backup_root)
+    }
+
+    /// [`Session::open`] with the path already as a file system path.
+    fn open_path(
+        path: PathBuf,
+        password: Option<String>,
+        backup_root: Option<PathBuf>,
+    ) -> Result<Session, ApiError> {
         let mut reg = Registry::default();
         saveprism_codecs::register_all(&mut reg);
         let limits = Limits::default();
@@ -817,6 +836,76 @@ impl Session {
         make_row(&self.doc, self.editable, id, &parsed).ok_or_else(|| bad_path(path).into())
     }
 
+    /// Changes every scalar in `paths` to `text`, each parsed by its own type and checked against its
+    /// own limits. Everything is checked first: on any problem nothing is changed. The whole edit is
+    /// one undo step. Returns the values that changed, like an undo does.
+    pub fn edit_values(&mut self, paths: &[String], text: &str) -> Result<HistoryResult, ApiError> {
+        if !self.editable {
+            return Err(read_only_document());
+        }
+        if paths.len() > MAX_VALUES {
+            return Err(ApiError::new(
+                app_codes::TOO_MANY_VALUES,
+                format!(
+                    "{} values were sent at once; the limit is {MAX_VALUES}",
+                    paths.len()
+                ),
+                "Narrow the list with its search box and set the values in parts.",
+            ));
+        }
+        let bounds = self.rpg_bounds();
+        let mut seen = HashSet::with_capacity(paths.len());
+        let mut touched = Vec::with_capacity(paths.len());
+        let mut edits = Vec::with_capacity(paths.len());
+        for path in paths {
+            let parsed = Path::parse(path)?;
+            let id = self.doc.resolve(&parsed).ok_or_else(|| bad_path(path))?;
+            if !seen.insert(id) {
+                continue;
+            }
+            let node = self.doc.get(id).ok_or_else(|| bad_path(path))?;
+            if node.flags.contains(NodeFlags::READ_ONLY) {
+                return Err(Error::new(
+                    codes::CORE_READ_ONLY,
+                    format!("node at '{parsed}' is read-only"),
+                )
+                .into());
+            }
+            let value = parse_input(&node.value, text)?;
+            check_bounds_in(&bounds, &parsed, node, &value)?;
+            let old = value_text(node).unwrap_or_default();
+            let before = scalar_owned(&node.value);
+            touched.push((id, parsed.to_string(), old, before));
+            edits.push(Edit::Set {
+                path: parsed,
+                value,
+            });
+        }
+        // One atomic edit: on an error the document is unchanged.
+        apply_edits(&mut self.doc, &edits, &self.limits)?;
+        let mut changes = Vec::with_capacity(touched.len());
+        let mut step = Vec::with_capacity(touched.len());
+        for (id, path, old, before) in touched {
+            let node = self.doc.get(id);
+            let new = node.and_then(value_text).unwrap_or_default();
+            let after = node.and_then(|node| scalar_owned(&node.value));
+            if let (Some(before), Some(after)) = (before, after)
+                && before != after
+            {
+                step.push(Mutation {
+                    path: path.clone(),
+                    before,
+                    after,
+                });
+            }
+            changes.push(Change { path, old, new });
+        }
+        let changed: Vec<String> = step.iter().map(|mutation| mutation.path.clone()).collect();
+        self.record_changes(changes);
+        self.history.record(step);
+        Ok(self.history_result(changed))
+    }
+
     /// Keeps the oldest `old` per path; an edit back to the first value cancels the entry.
     fn record_change(&mut self, path: String, old: String, new: String) {
         match self.pending.iter().position(|c| c.path == path) {
@@ -925,17 +1014,7 @@ impl Session {
 
         let recipe = with_password(&self.recipe, self.password.as_deref());
         let bytes = pipeline::encode(&self.doc, &recipe, &self.reg)?;
-        let backup_root = self
-            .backup_root
-            .clone()
-            .or_else(default_backup_root)
-            .ok_or_else(|| {
-                Error::new(
-                    codes::IO_NO_BACKUP_ROOT,
-                    "no backup directory is known for this system",
-                )
-            })?;
-        let opts = WriteOptions::new(backup_root);
+        let opts = WriteOptions::new(self.backup_root()?);
 
         let edited: Vec<Path> = self
             .pending
@@ -973,5 +1052,19 @@ impl Session {
                 .map(|path| path.to_string_lossy().into_owned()),
             verified: true,
         })
+    }
+
+    /// The backup folder: the one given to [`Session::open`], else the app's default.
+    fn backup_root(&self) -> Result<PathBuf, ApiError> {
+        self.backup_root
+            .clone()
+            .or_else(default_backup_root)
+            .ok_or_else(|| {
+                Error::new(
+                    codes::IO_NO_BACKUP_ROOT,
+                    "no backup directory is known for this system",
+                )
+                .into()
+            })
     }
 }

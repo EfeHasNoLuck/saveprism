@@ -35,6 +35,8 @@ export interface EditorViewProps {
   onInvalidChanged: (invalid: boolean) => void;
   /** After every change of the document: whether Undo and Redo are possible. */
   onHistoryChanged: (state: HistoryState) => void;
+  /** A list's "Set all": many values to one text as one undo step (see `EditorContextValue`). */
+  onEditMany: (paths: string[], text: string) => Promise<boolean>;
   ref?: Ref<EditorHandle>;
 }
 
@@ -43,6 +45,7 @@ export function EditorView({
   onChangesChanged,
   onInvalidChanged,
   onHistoryChanged,
+  onEditMany,
   ref,
 }: EditorViewProps) {
   registerEditorBundles();
@@ -124,8 +127,16 @@ export function EditorView({
   }, []);
 
   const ctx = useMemo<EditorContextValue>(
-    () => ({ readOnly, fields, setField, reportInvalid, afterEdit: refreshCount, pending }),
-    [readOnly, fields, setField, reportInvalid, refreshCount, pending],
+    () => ({
+      readOnly,
+      fields,
+      setField,
+      reportInvalid,
+      afterEdit: refreshCount,
+      pending,
+      editMany: onEditMany,
+    }),
+    [readOnly, fields, setField, reportInvalid, refreshCount, pending, onEditMany],
   );
 
   if (loadError !== null) {

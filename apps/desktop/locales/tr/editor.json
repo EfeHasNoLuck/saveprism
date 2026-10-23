@@ -49,6 +49,27 @@
     "previous": "Önceki sayfa",
     "next": "Sonraki sayfa"
   },
+  "bulk": {
+    "trigger": "Tümünü ayarla",
+    "triggerTip": "Bu listenin gösterdiği tüm değerleri aynı değere ayarla",
+    "titleNumber": "Tümünü şuna ayarla…",
+    "titleSwitch": "Tümünü aç ya da kapat",
+    "scope_one": "Bu listenin gösterdiği {{shown}} değeri, tüm sayfalarda değiştirir. Tek bir Geri al ile geri alınır.",
+    "scope_other": "Bu listenin gösterdiği {{shown}} değeri, tüm sayfalarda değiştirir. Tek bir Geri al hepsini geri alır.",
+    "scopeSearch_one": "Aramaya uyan {{shown}} değeri, tüm sayfalarda değiştirir. Tek bir Geri al ile geri alınır.",
+    "scopeSearch_other": "Aramaya uyan {{shown}} değeri, tüm sayfalarda değiştirir. Tek bir Geri al hepsini geri alır.",
+    "valueLabel": "Yeni değer",
+    "apply_one": "{{changed}} değeri ayarla",
+    "apply_other": "{{changed}} değeri ayarla",
+    "applyIdle": "Uygula",
+    "nothing": "Değişecek bir şey yok",
+    "allOn": "Tümünü aç",
+    "allOff": "Tümünü kapat",
+    "turnOn_one": "{{changed}} anahtarı açar",
+    "turnOn_other": "{{changed}} anahtarı açar",
+    "turnOff_one": "{{changed}} anahtarı kapatır",
+    "turnOff_other": "{{changed}} anahtarı kapatır"
+  },
   "values": {
     "more": "Daha fazla göster",
     "items_one": "{{count}} öğe",

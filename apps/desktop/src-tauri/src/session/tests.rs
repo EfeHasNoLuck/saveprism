@@ -1230,3 +1230,153 @@ fn a_step_with_many_values_asks_the_ui_to_read_everything_again() {
     assert!(redone.reload);
     assert_eq!(redone.pending, count);
 }
+
+#[test]
+fn edit_values_sets_many_values_as_one_undo_step() {
+    let env = env();
+    let path = copy_in(&env, "synthetic/rpgmaker-mz/file1.rmmzsave");
+    let mut session = open(&env, &path, None).unwrap();
+    let view = rpg_view(&session).unwrap();
+    let items: Vec<String> = view.items.iter().map(|e| e.field.path.clone()).collect();
+    let switches: Vec<String> = view.switches.iter().map(|e| e.field.path.clone()).collect();
+    assert_eq!(items.len(), 2);
+
+    let result = session.edit_values(&items, "42").unwrap();
+    assert_eq!(result.fields.len(), 2);
+    assert!(result.fields.iter().all(|field| field.value == "42"));
+    assert_eq!(result.pending, 2);
+    assert!(result.state.can_undo);
+
+    // Over the item limit (99): nothing changes.
+    let error = session.edit_values(&items, "150").unwrap_err();
+    assert_eq!(error.code, app_codes::OUT_OF_RANGE);
+    let view = rpg_view(&session).unwrap();
+    assert!(view.items.iter().all(|entry| entry.field.value == "42"));
+
+    // A value that does not parse for one entry: nothing changes either.
+    let error = session.edit_values(&switches, "7").unwrap_err();
+    assert_eq!(error.code, app_codes::BAD_VALUE);
+
+    let result = session.edit_values(&switches, "false").unwrap();
+    assert!(result.fields.iter().all(|field| field.value == "false"));
+
+    // One undo takes back the whole switch step, the next the whole item step.
+    session.undo().unwrap();
+    let view = rpg_view(&session).unwrap();
+    assert!(
+        view.switches
+            .iter()
+            .all(|entry| entry.field.value == entry.field.original)
+    );
+    assert!(view.items.iter().all(|entry| entry.field.value == "42"));
+    session.undo().unwrap();
+    assert!(session.pending_changes().is_empty());
+
+    // Setting values to what they already are changes nothing and records no step.
+    let state = session.history_state();
+    let current: Vec<String> = view
+        .items
+        .iter()
+        .map(|e| e.field.original.clone())
+        .collect();
+    let same = session.edit_values(&items[..1], &current[0]).unwrap();
+    assert!(same.fields.is_empty());
+    assert_eq!(session.history_state(), state);
+}
+
+#[test]
+fn edit_values_refuses_read_only_files_and_missing_paths() {
+    let env = env();
+    let mut session = open_json(&env);
+    let error = session
+        .edit_values(&["/level".into(), "/missing".into()], "5")
+        .unwrap_err();
+    assert_eq!(error.code, "SP-CORE-011");
+    assert!(session.pending_changes().is_empty());
+}
+
+#[test]
+fn backups_are_listed_and_restored_with_a_backup_of_the_current_file() {
+    let env = env();
+    let path = copy_in(&env, "synthetic/json/compact.json");
+    let first = fs::read(&path).unwrap();
+    let mut session = open(&env, &path, None).unwrap();
+    assert!(session.backups().unwrap().is_empty());
+
+    session.edit_value("/level", "50").unwrap();
+    session.save(path.to_str().unwrap(), false).unwrap();
+    session.edit_value("/level", "60").unwrap();
+    session.save(path.to_str().unwrap(), false).unwrap();
+    let saved = fs::read(&path).unwrap();
+
+    let list = session.backups().unwrap();
+    assert_eq!(list.len(), 2);
+    assert!(list[0].created_ms >= list[1].created_ms);
+    let oldest = list[1].clone();
+    assert_eq!(oldest.byte_size, u64::try_from(first.len()).unwrap());
+
+    // Unsaved edits are dropped by a restore.
+    session.edit_value("/level", "70").unwrap();
+    let restored = session.restore_backup(&oldest.name).unwrap();
+    assert_eq!(fs::read(&path).unwrap(), first);
+    assert_eq!(row(&restored, "/level").preview, "42");
+    assert!(restored.pending_changes().is_empty());
+    assert!(!restored.history_state().can_undo);
+
+    // The file that was replaced is the newest backup now, so the restore can be taken back.
+    let list = restored.backups().unwrap();
+    assert_eq!(list.len(), 3);
+    let back = restored.restore_backup(&list[0].name).unwrap();
+    assert_eq!(fs::read(&path).unwrap(), saved);
+    assert_eq!(row(&back, "/level").preview, "60");
+}
+
+#[test]
+fn restore_refuses_unknown_names_and_unreadable_backups() {
+    let env = env();
+    let path = copy_in(&env, "synthetic/json/compact.json");
+    let mut session = open(&env, &path, None).unwrap();
+    session.edit_value("/level", "50").unwrap();
+    let result = session.save(path.to_str().unwrap(), false).unwrap();
+    let saved = fs::read(&path).unwrap();
+
+    for name in ["../compact.json", "source.txt", "1.bak", ""] {
+        let error = session.restore_backup(name).err().unwrap();
+        assert_eq!(error.code, app_codes::BACKUP_NOT_FOUND, "{name}");
+    }
+
+    // A backup that does not open as a save is never written.
+    let backup = PathBuf::from(result.backup_path.unwrap());
+    fs::write(&backup, b"\x00\x01 not a save").unwrap();
+    let name = backup.file_name().unwrap().to_str().unwrap();
+    let error = session.restore_backup(name).err().unwrap();
+    assert_eq!(error.code, app_codes::BACKUP_UNREADABLE);
+    assert_eq!(fs::read(&path).unwrap(), saved);
+}
+
+#[test]
+fn unnamed_entries_set_to_empty_stay_in_the_list_until_saved() {
+    let env = env();
+    let path = copy_in(&env, "synthetic/rpgmaker-mz/file1.rmmzsave");
+    let mut session = open(&env, &path, None).unwrap();
+    let view = rpg_view(&session).unwrap();
+    let switches: Vec<String> = view.switches.iter().map(|e| e.field.path.clone()).collect();
+    let variable = view.variables[0].field.path.clone();
+
+    session.edit_values(&switches, "false").unwrap();
+    session.edit_value(&variable, "0").unwrap();
+    let view = rpg_view(&session).unwrap();
+    assert_eq!(ids(&view.switches), [1, 3]);
+    assert!(
+        view.switches
+            .iter()
+            .all(|entry| entry.field.value == "false")
+    );
+    assert_eq!(ids(&view.variables), [1, 3, 4]);
+
+    // Once saved, the empty unnamed entries are unused again and left out.
+    session.save(path.to_str().unwrap(), false).unwrap();
+    let view = rpg_view(&session).unwrap();
+    assert!(view.switches.is_empty());
+    assert_eq!(ids(&view.variables), [3, 4]);
+}

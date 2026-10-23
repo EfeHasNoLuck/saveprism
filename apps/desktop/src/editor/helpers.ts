@@ -172,6 +172,40 @@ export function filterEntries<T extends Searchable>(entries: readonly T[], query
   );
 }
 
+/** What a list's "Set all" writes: true or false (switches) or one number (the other lists). */
+export type BulkKind = "bool" | "number";
+
+export interface BulkField {
+  path: string;
+  value: string;
+  kind: FieldKindLike;
+  editable: boolean;
+}
+
+/**
+ * The values a list's "Set all" may change: the editable ones of the fitting kind. A variable that
+ * holds text is left out of a number.
+ */
+export function bulkTargets<T extends BulkField>(fields: readonly T[], kind: BulkKind): T[] {
+  return fields.filter(
+    (f) =>
+      f.editable && (kind === "bool" ? f.kind === "bool" : f.kind === "int" || f.kind === "float"),
+  );
+}
+
+/** True when `value` already is `text`: the same number ("42" and "42.0") or the same true/false. */
+export function sameValue(value: string, text: string): boolean {
+  const a = value.trim();
+  const b = text.trim();
+  if (FLOAT_RE.test(a) && FLOAT_RE.test(b)) return Number(a) === Number(b);
+  return a.toLowerCase() === b.toLowerCase();
+}
+
+/** Paths of the `targets` that setting them all to `text` would change. */
+export function bulkPaths(targets: readonly BulkField[], text: string): string[] {
+  return targets.filter((f) => !sameValue(f.value, text)).map((f) => f.path);
+}
+
 export function pageCount(total: number, size: number): number {
   if (total <= 0 || size <= 0) return 1;
   return Math.ceil(total / size);

@@ -669,7 +669,8 @@ impl Ctx<'_> {
     }
 
     /// Variables or switches: `<root>._data[index]`. Index 0 is never used. An entry with no name
-    /// and an empty value (0, "", off) is unused and left out.
+    /// and an empty value (0, "", off) is unused and left out, unless it was changed to that value
+    /// since the file was opened (so an edit to off does not make the entry disappear).
     fn indexed(&self, root: &At, names: &HashMap<u32, String>) -> Vec<Entry> {
         let Some(data) = self.entry(root, "_data") else {
             return Vec::new();
@@ -690,7 +691,7 @@ impl Ctx<'_> {
             };
             let named = names.contains_key(&id);
             let empty = matches!(field.value.as_str(), "0" | "" | "false" | "0.0");
-            if !named && empty {
+            if !named && empty && field.value == field.original {
                 continue;
             }
             out.push(Entry {

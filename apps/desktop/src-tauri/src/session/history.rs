@@ -200,7 +200,7 @@ impl Session {
         Ok(paths)
     }
 
-    fn history_result(&self, paths: Vec<String>) -> HistoryResult {
+    pub(super) fn history_result(&self, paths: Vec<String>) -> HistoryResult {
         let reload = paths.len() > MAX_FIELDS;
         let fields = if reload {
             Vec::new()

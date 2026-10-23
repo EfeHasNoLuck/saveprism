@@ -20,10 +20,10 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
 - 65 real saves for local tests in `fixtures/external/` (git-ignored; sources and licenses in `fixtures/external/SOURCES.md`).
 
 ## Todo (in order; widened by the user on 2026-10-23)
-1. Polish, rest: backups screen (list the backups of the open save, restore one; writes files → reviewer); bulk edit per list
-   ("set all to …", "all switches true/false"). (The odd busy-looking cursor was only in the dev window started from a
-   background shell and is gone now; not an app bug.)
-   Done 2026-10-23 (`f6b9fc5`): undo/redo history + buttons, Ctrl+Z/Y/O/S/Shift+S/F, opening overlay, About.
+1. Polish: done 2026-10-23. Undo/redo, shortcuts, opening overlay, About (`f6b9fc5`); Backups dialog in the bottom bar (list
+   the backups of the open save, restore one: the current file is backed up first, the backup must open as a save, written
+   bytes are checked; Codex review: no critical/high, symlink backup fixed); "Set all" per RPG Maker list (number box, switches
+   all on/off; filtered entries; one undo step; all or nothing). Checked in the running app over CDP (dark/light, EN/TR).
 2. Parity with saveeditonline.com: gap list done in `docs/research/parity.md`. Top gaps: Ren'Py, RPG Maker XP/VX/VX Ace (Ruby
    Marshal, parse as data only), Twine/SugarCube, paste a save code instead of a file, Godot, other Unity saves, Wolf RPG, add a
    value from the card view, pick the game's data folder by hand when names are not found.
@@ -42,6 +42,8 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
   `session/export.rs` is quadratic on many repeated keys; both run under the session lock (review, 2026-10-22).
 - JSON Apply (review of `9849caa`, no critical/high): many edits in one huge object are O(N·M) under the session lock
   (core `set` scans keys); documents nested ≥127 levels cannot be applied (serde_json limit), message says 128.
+- A save opened through a symbolic link: saving or restoring replaces the link with a plain file (the core atomic replace
+  does not keep links), and its backups list is then empty (Codex review, 2026-10-23). Rare for game saves.
 - Real saves were pushed once in `bed2ed9` (private repo); ask the user before any history cleanup.
 
 ## Later (not now)

@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   allocateColumns,
+  bulkPaths,
+  bulkTargets,
   cardWidth,
   changeText,
   changeValue,
@@ -14,6 +16,7 @@ import {
   pageCount,
   pageItems,
   pagerLabel,
+  sameValue,
   stepValue,
 } from "./helpers";
 
@@ -174,6 +177,41 @@ describe("filterEntries", () => {
   });
   it("matches by value", () => {
     expect(filterEntries(entries, "99").map((e) => e.id)).toEqual([12]);
+  });
+});
+
+describe("set all", () => {
+  const field = (path: string, kind: "int" | "float" | "bool" | "string", value: string, editable = true) => ({
+    path,
+    kind,
+    value,
+    editable,
+  });
+  const fields = [
+    field("/a", "int", "5"),
+    field("/b", "float", "1.5"),
+    field("/c", "string", "Ann"),
+    field("/d", "bool", "true"),
+    field("/e", "int", "7", false),
+  ];
+  it("takes the editable numbers for a number and skips text", () => {
+    expect(bulkTargets(fields, "number").map((f) => f.path)).toEqual(["/a", "/b"]);
+  });
+  it("takes the editable true/false values for switches", () => {
+    expect(bulkTargets(fields, "bool").map((f) => f.path)).toEqual(["/d"]);
+  });
+  it("compares numbers by value and true/false without case", () => {
+    expect(sameValue("42", "42.0")).toBe(true);
+    expect(sameValue("42", " 42 ")).toBe(true);
+    expect(sameValue("42", "43")).toBe(false);
+    expect(sameValue("True", "true")).toBe(true);
+    expect(sameValue("false", "true")).toBe(false);
+  });
+  it("sends only the values that would change", () => {
+    const targets = [field("/a", "int", "42"), field("/b", "int", "3"), field("/c", "float", "42.0")];
+    expect(bulkPaths(targets, "42")).toEqual(["/b"]);
+    expect(bulkPaths(targets, "0")).toEqual(["/a", "/b", "/c"]);
+    expect(bulkPaths([], "1")).toEqual([]);
   });
 });
 

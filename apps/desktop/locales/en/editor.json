@@ -49,6 +49,27 @@
     "previous": "Previous page",
     "next": "Next page"
   },
+  "bulk": {
+    "trigger": "Set all",
+    "triggerTip": "Set every value this list shows to the same value",
+    "titleNumber": "Set all to…",
+    "titleSwitch": "Turn all on or off",
+    "scope_one": "Changes the {{shown}} value this list shows, on every page. One Undo takes it back.",
+    "scope_other": "Changes the {{shown}} values this list shows, on every page. One Undo takes it all back.",
+    "scopeSearch_one": "Changes the {{shown}} value that matches the search, on every page. One Undo takes it back.",
+    "scopeSearch_other": "Changes the {{shown}} values that match the search, on every page. One Undo takes it all back.",
+    "valueLabel": "New value",
+    "apply_one": "Set {{changed}} value",
+    "apply_other": "Set {{changed}} values",
+    "applyIdle": "Apply",
+    "nothing": "Nothing to change",
+    "allOn": "All on",
+    "allOff": "All off",
+    "turnOn_one": "Turns on {{changed}} switch",
+    "turnOn_other": "Turns on {{changed}} switches",
+    "turnOff_one": "Turns off {{changed}} switch",
+    "turnOff_other": "Turns off {{changed}} switches"
+  },
   "values": {
     "more": "Show more",
     "items_one": "{{count}} item",

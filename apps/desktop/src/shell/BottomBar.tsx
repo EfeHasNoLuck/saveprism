@@ -1,5 +1,14 @@
 import { useState } from "react";
-import { ArrowRight, Braces, ChevronDown, Redo2, RotateCcw, Save, Undo2 } from "lucide-react";
+import {
+  ArrowRight,
+  Braces,
+  ChevronDown,
+  History,
+  Redo2,
+  RotateCcw,
+  Save,
+  Undo2,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { Change } from "@/api/commands";
 import { Button } from "@/components/ui/button";
@@ -30,6 +39,8 @@ interface BottomBarProps {
   onRedo: () => void;
   onUndoAll: () => void;
   onOpenJson: () => void;
+  /** Opens the list of backups of the open file. */
+  onOpenBackups: () => void;
   onSaveAs: () => void;
   onOverwrite: () => void;
 }
@@ -47,6 +58,7 @@ export function BottomBar({
   onRedo,
   onUndoAll,
   onOpenJson,
+  onOpenBackups,
   onSaveAs,
   onOverwrite,
 }: BottomBarProps) {
@@ -155,9 +167,20 @@ export function BottomBar({
         <InfoTip text={t("bottom.openJsonInfo")} />
       </div>
 
-      <div className="flex items-center gap-2" title={disabledReason}>
+      <div className="flex items-center gap-2">
+        {/* Next to Save: every save over the file makes the backups this list shows. */}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-foreground-variant"
+          title={t("bottom.backupsTip")}
+          onClick={onOpenBackups}
+        >
+          <History />
+          {t("bottom.backups")}
+        </Button>
         <InfoTip text={t("bottom.backupInfo")} />
-        <div className="flex">
+        <div className="flex" title={disabledReason}>
           <Button
             size="sm"
             disabled={cannotSave}

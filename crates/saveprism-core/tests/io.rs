@@ -5,7 +5,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
-use saveprism_core::io::{WriteOptions, safe_write};
+use saveprism_core::io::{WriteOptions, find_backup, list_backups, safe_write};
 use saveprism_core::{Error, Result, codes};
 
 fn ok(_bytes: &[u8]) -> Result<()> {
@@ -229,4 +229,35 @@ fn existing_file_keeps_its_unix_permissions() {
     assert_eq!(fs::read(&target).unwrap(), b"new bytes");
     let mode = fs::metadata(&target).unwrap().permissions().mode() & 0o777;
     assert_eq!(mode, 0o644);
+}
+
+#[test]
+fn backups_are_listed_newest_first_and_found_by_name() {
+    let (_tmp, saves, backups) = setup();
+    let target = saves.join("slot1.sav");
+    let opts = WriteOptions::new(backups.clone());
+    assert!(list_backups(&backups, &target).is_empty());
+
+    fs::write(&target, b"v1").unwrap();
+    safe_write(&target, b"v2", &opts, &ok).unwrap();
+    safe_write(&target, b"v3!", &opts, &ok).unwrap();
+    let folder = only_backup_folder(&backups);
+    fs::write(folder.join("notes.bak.txt"), b"stranger").unwrap();
+
+    let list = list_backups(&backups, &target);
+    assert_eq!(list.len(), 2);
+    assert!(list[0].created_ms >= list[1].created_ms);
+    assert_eq!(fs::read(&list[0].path).unwrap(), b"v2");
+    assert_eq!(list[0].byte_size, 2);
+    assert_eq!(fs::read(&list[1].path).unwrap(), b"v1");
+
+    let found = find_backup(&backups, &target, &list[1].name).unwrap();
+    assert_eq!(found, list[1].path);
+    // Only backup names are accepted: no other files, no paths out of the folder.
+    assert_eq!(find_backup(&backups, &target, "source.txt"), None);
+    assert_eq!(find_backup(&backups, &target, "notes.bak.txt"), None);
+    assert_eq!(find_backup(&backups, &target, "../1.bak"), None);
+    assert_eq!(find_backup(&backups, &target, "1.bak"), None);
+    // Another file has its own folder.
+    assert!(list_backups(&backups, &saves.join("slot2.sav")).is_empty());
 }

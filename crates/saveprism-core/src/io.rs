@@ -48,6 +48,59 @@ pub struct WriteReport {
     pub pruned: usize,
 }
 
+/// One backup of a file, as [`list_backups`] finds it.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct BackupInfo {
+    /// Full path of the backup file.
+    pub path: PathBuf,
+    /// File name of the backup (`<unix_ms>.bak` or `<unix_ms>-<n>.bak`).
+    pub name: String,
+    /// When the backup was made, in milliseconds since the Unix epoch.
+    pub created_ms: u64,
+    /// Size of the backup in bytes.
+    pub byte_size: u64,
+}
+
+/// The backups of `target` under `backup_root`, newest first. A missing folder gives an empty list;
+/// files that are not backups are left out.
+pub fn list_backups(backup_root: &std::path::Path, target: &std::path::Path) -> Vec<BackupInfo> {
+    let Ok(entries) = fs::read_dir(backup_folder(backup_root, target)) else {
+        return Vec::new();
+    };
+    let mut backups: Vec<(u64, u32, BackupInfo)> = entries
+        .flatten()
+        .filter_map(|entry| {
+            let meta = entry.metadata().ok().filter(fs::Metadata::is_file)?;
+            let name = entry.file_name().to_str()?.to_string();
+            let (ms, counter) = parse_backup_name(&name)?;
+            let info = BackupInfo {
+                path: entry.path(),
+                name,
+                created_ms: ms,
+                byte_size: meta.len(),
+            };
+            Some((ms, counter, info))
+        })
+        .collect();
+    backups.sort_by_key(|&(ms, counter, _)| std::cmp::Reverse((ms, counter)));
+    backups.into_iter().map(|(_, _, info)| info).collect()
+}
+
+/// The backup of `target` called `name`, if `name` is a backup file name and that file exists.
+/// Only names made by the backup itself are accepted, so `name` cannot point outside the folder;
+/// a symbolic link is not a backup either, so it cannot lead out of the folder.
+pub fn find_backup(
+    backup_root: &std::path::Path,
+    target: &std::path::Path,
+    name: &str,
+) -> Option<PathBuf> {
+    parse_backup_name(name)?;
+    let path = backup_folder(backup_root, target).join(name);
+    fs::symlink_metadata(&path)
+        .is_ok_and(|meta| meta.is_file())
+        .then_some(path)
+}
+
 /// Writes `bytes` to `target` safely: backup, temporary file, atomic replace, then `verify` on the
 /// bytes read back; on a failed verification the backup is restored.
 ///
@@ -200,6 +253,12 @@ fn same_directory(a: &std::path::Path, b: &std::path::Path) -> bool {
     normalized(a) == normalized(b)
 }
 
+/// The folder that holds the backups of `target`: `<backup_root>/<fnv64-hex(full path)>`.
+fn backup_folder(backup_root: &std::path::Path, target: &std::path::Path) -> PathBuf {
+    let full_text = normalized(target).to_string_lossy().into_owned();
+    backup_root.join(format!("{:016x}", fnv1a_64(full_text.as_bytes())))
+}
+
 /// Copies the current target into `<backup_root>/<fnv64-hex(full path)>/<unix_ms>.bak`.
 fn make_backup(target: &std::path::Path, opts: &WriteOptions) -> Result<PathBuf> {
     let backup_error = |message: String, source: std::io::Error| {
@@ -213,11 +272,8 @@ fn make_backup(target: &std::path::Path, opts: &WriteOptions) -> Result<PathBuf>
         )
     })?;
 
-    let full = normalized(target);
-    let full_text = full.to_string_lossy();
-    let folder = opts
-        .backup_root
-        .join(format!("{:016x}", fnv1a_64(full_text.as_bytes())));
+    let full_text = normalized(target).to_string_lossy().into_owned();
+    let folder = backup_folder(&opts.backup_root, target);
     fs::create_dir_all(&folder).map_err(|error| {
         backup_error(
             format!("cannot create the backup directory {}", folder.display()),

@@ -13,6 +13,11 @@ export interface EditorContextValue {
   afterEdit: () => Promise<void>;
   /** Paths of the values that differ from the file (the host's pending changes). */
   pending: ReadonlySet<string>;
+  /**
+   * Sets every value in `paths` to `text` as one undo step (a list's "Set all"). Resolves to false
+   * when nothing changed; the app has shown why.
+   */
+  editMany: (paths: string[], text: string) => Promise<boolean>;
 }
 
 export const EditorContext = createContext<EditorContextValue | null>(null);

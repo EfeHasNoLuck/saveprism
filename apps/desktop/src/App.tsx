@@ -7,14 +7,17 @@ import { TriangleAlert } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import {
   discardChanges,
+  editValues,
   ErrorCodes,
   isApiError,
   openFile,
   pendingChanges,
   redo,
+  restoreBackup,
   save,
   undo,
   type Change,
+  type HistoryResult,
   type HistoryState,
   type OpenInfo,
 } from "@/api/commands";
@@ -22,6 +25,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { EditorView, type EditorHandle } from "@/editor";
 import { AboutDialog } from "./shell/AboutDialog";
 import { BackgroundPattern } from "./shell/BackgroundPattern";
+import { BackupsDialog } from "./shell/BackupsDialog";
 import { BottomBar } from "./shell/BottomBar";
 import { ConfirmDiscardDialog } from "./shell/ConfirmDiscardDialog";
 import { useNotify, useSettings } from "./shell/context";
@@ -64,6 +68,7 @@ function App() {
   const [recent, setRecent] = useState<RecentFile[]>(() => loadRecent(browserStorage()));
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
+  const [backupsOpen, setBackupsOpen] = useState(false);
   /** Name of the file that is taking a while to open (the loading cover), else null. */
   const [opening, setOpening] = useState<string | null>(null);
   const [history, setHistory] = useState<HistoryState>(NO_HISTORY);
@@ -333,24 +338,84 @@ function App() {
   }, [notify, notifyError, t]);
 
   /**
-   * Undo or redo the last action. The cards show the values it changed in place (scroll position,
-   * searches and open groups stay); a step with very many values makes them read everything again.
+   * Shows what an undo, a redo or a "Set all" did. The cards show the values it changed in place
+   * (scroll position, searches and open groups stay); a step with very many values makes them read
+   * everything again.
    */
+  const showHistoryResult = useCallback((result: HistoryResult) => {
+    if (result.reload) setEditorKey((key) => key + 1);
+    else editorRef.current?.applyHistory(result.fields);
+    setChangeCount(result.pending);
+    setHistory({ canUndo: result.canUndo, canRedo: result.canRedo });
+  }, []);
+
+  /** Undo or redo the last action. */
   const stepHistory = useCallback(
     (kind: "undo" | "redo") => {
       historyQueue.current = historyQueue.current.then(async () => {
         try {
-          const result = await (kind === "undo" ? undo() : redo());
-          if (result.reload) setEditorKey((key) => key + 1);
-          else editorRef.current?.applyHistory(result.fields);
-          setChangeCount(result.pending);
-          setHistory({ canUndo: result.canUndo, canRedo: result.canRedo });
+          showHistoryResult(await (kind === "undo" ? undo() : redo()));
         } catch (error) {
           notifyError(t(kind === "undo" ? "toast.undoFailed" : "toast.redoFailed"), error);
         }
       });
     },
-    [notifyError, t],
+    [notifyError, showHistoryResult, t],
+  );
+
+  /**
+   * A list's "Set all": every value in `paths` to `text` as one undo step, in line with undo and
+   * redo. All or nothing: a value the host refuses (out of range) leaves every value as it was.
+   */
+  const editMany = useCallback(
+    (paths: string[], text: string): Promise<boolean> => {
+      const step = historyQueue.current.then(async () => {
+        try {
+          showHistoryResult(await editValues(paths, text));
+          notify({
+            kind: "info",
+            title: t("bell.setAll", { count: paths.length, value: text }),
+            toast: false,
+          });
+          return true;
+        } catch (error) {
+          notifyError(t("toast.setAllFailed"), error);
+          return false;
+        }
+      });
+      historyQueue.current = step.then(() => undefined);
+      return step;
+    },
+    [notify, notifyError, showHistoryResult, t],
+  );
+
+  /**
+   * Puts a backup back in place of the open file. The host backs up the current file first and
+   * opens the file again, so the cards start over: no pending changes, no undo history.
+   */
+  const restoreFrom = useCallback(
+    async (name: string, when: string) => {
+      setBusy(true);
+      try {
+        const info = await restoreBackup(name);
+        setFile(info);
+        setChangeCount(0);
+        setHistory(NO_HISTORY);
+        setInvalid(false);
+        setEditorKey((key) => key + 1);
+        setBackupsOpen(false);
+        notify({
+          kind: "saved",
+          title: t("toast.restoredTitle"),
+          detail: t("toast.restoredBody", { path: info.path, time: when }),
+        });
+      } catch (error) {
+        notifyError(t("toast.restoreFailed"), error);
+      } finally {
+        setBusy(false);
+      }
+    },
+    [notify, notifyError, t],
   );
 
   const loadChanges = useCallback(async (): Promise<Change[]> => {
@@ -458,6 +523,7 @@ function App() {
       const modal =
         settingsOpen ||
         aboutOpen ||
+        backupsOpen ||
         jsonOpen ||
         passwordRequest !== null ||
         pendingOpen !== null ||
@@ -531,6 +597,7 @@ function App() {
                 onChangesChanged={setChangeCount}
                 onInvalidChanged={setInvalid}
                 onHistoryChanged={setHistory}
+                onEditMany={editMany}
               />
             </main>
           ) : (
@@ -558,6 +625,7 @@ function App() {
             onRedo={() => stepHistory("redo")}
             onUndoAll={() => void undoAll()}
             onOpenJson={openJson}
+            onOpenBackups={() => setBackupsOpen(true)}
             onSaveAs={() => void saveAsNew()}
             onOverwrite={() => void overwriteOriginal()}
           />
@@ -572,6 +640,15 @@ function App() {
           }}
         />
         <AboutDialog open={aboutOpen} onOpenChange={setAboutOpen} />
+        {file && backupsOpen ? (
+          <BackupsDialog
+            fileName={file.fileName}
+            changeCount={changeCount}
+            busy={busy}
+            onClose={() => setBackupsOpen(false)}
+            onRestore={restoreFrom}
+          />
+        ) : null}
         {jsonOpen ? (
           <JsonDialog
             state={jsonState}

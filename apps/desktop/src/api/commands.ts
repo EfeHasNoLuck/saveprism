@@ -262,6 +262,36 @@ export function historyState(): Promise<HistoryState> {
   return invoke<HistoryState>("history_state");
 }
 
+/**
+ * Changes every value in `paths` to `text` (each parsed by its own type and checked against its own
+ * limits) as one undo step. On any error nothing changes. The result lists the values that changed.
+ */
+export function editValues(paths: string[], text: string): Promise<HistoryResult> {
+  return invoke<HistoryResult>("edit_values", { paths, text });
+}
+
+/** One backup of the open file. */
+export interface BackupRow {
+  /** File name of the backup; pass it to `restoreBackup`. */
+  name: string;
+  /** When the backup was made, in milliseconds since the Unix epoch. */
+  createdMs: number;
+  byteSize: number;
+}
+
+/** The backups of the open file, newest first (empty when it was never saved over). */
+export function listBackups(): Promise<BackupRow[]> {
+  return invoke<BackupRow[]>("list_backups");
+}
+
+/**
+ * Puts a backup back in place of the open file and opens the file again. The current file is
+ * backed up first, so it shows up in the list as the newest backup. Pending edits are lost.
+ */
+export function restoreBackup(name: string): Promise<OpenInfo> {
+  return invoke<OpenInfo>("restore_backup", { name });
+}
+
 /** True when the installer includes `THIRD_PARTY_NOTICES.md`. */
 export function noticesAvailable(): Promise<boolean> {
   return invoke<boolean>("notices_available");

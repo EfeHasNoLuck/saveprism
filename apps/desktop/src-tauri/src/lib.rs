@@ -9,8 +9,8 @@ use std::path::PathBuf;
 use std::sync::{Mutex, MutexGuard, PoisonError};
 
 use session::{
-    ApiError, Change, Field, GameView, HistoryResult, HistoryState, NodeRow, OpenInfo, Page,
-    SaveResult, Session, app_codes,
+    ApiError, BackupRow, Change, Field, GameView, HistoryResult, HistoryState, NodeRow, OpenInfo,
+    Page, SaveResult, Session, app_codes,
 };
 use tauri::{AppHandle, Manager, State};
 use tauri_plugin_opener::OpenerExt;
@@ -93,6 +93,16 @@ async fn edit_value(
     state.with_session(|session| session.edit_value(&path, &text))
 }
 
+/// Changes every value in `paths` to `text` as one undo step; nothing changes on an error.
+#[tauri::command]
+async fn edit_values(
+    state: State<'_, AppState>,
+    paths: Vec<String>,
+    text: String,
+) -> Result<HistoryResult, ApiError> {
+    state.with_session(|session| session.edit_values(&paths, &text))
+}
+
 /// The game view: RPG Maker sections for MV/MZ saves, else a flat list of values.
 #[tauri::command]
 async fn game_view(state: State<'_, AppState>) -> Result<GameView, ApiError> {
@@ -165,6 +175,24 @@ async fn history_state(state: State<'_, AppState>) -> Result<HistoryState, ApiEr
     state.with_session(|session| Ok(session.history_state()))
 }
 
+/// The backups of the open file, newest first.
+#[tauri::command]
+async fn list_backups(state: State<'_, AppState>) -> Result<Vec<BackupRow>, ApiError> {
+    state.with_session(|session| session.backups())
+}
+
+/// Puts the backup `name` back in place of the open file (the current file is backed up first) and
+/// opens the file again. Pending edits are lost.
+#[tauri::command]
+async fn restore_backup(state: State<'_, AppState>, name: String) -> Result<OpenInfo, ApiError> {
+    let mut guard = state.lock();
+    let session = guard.as_ref().ok_or_else(ApiError::no_document)?;
+    let restored = session.restore_backup(&name)?;
+    let info = restored.info();
+    *guard = Some(restored);
+    Ok(info)
+}
+
 /// The file name of the third-party notices in the installer.
 const NOTICES_FILE: &str = "THIRD_PARTY_NOTICES.md";
 
@@ -222,6 +250,7 @@ pub fn run() {
             get_children,
             search,
             edit_value,
+            edit_values,
             game_view,
             field_info,
             pending_changes,
@@ -233,6 +262,8 @@ pub fn run() {
             undo,
             redo,
             history_state,
+            list_backups,
+            restore_backup,
             notices_available,
             open_notices,
         ])

@@ -67,6 +67,8 @@
     "undoAll": "Tümünü geri al",
     "openJson": "JSON'u aç",
     "openJsonInfo": "Tüm dosyayı JSON metni olarak gösterir. Değerleri orada değiştirip uygulayabilirsin.",
+    "backups": "Yedekler",
+    "backupsTip": "Bu dosyanın yedekleri: gör ve birini geri yükle",
     "saveAs": "Farklı kaydet…",
     "saveOverwrite": "Geçerli dosyanın üzerine yaz",
     "overwriteItem": "Geçerli dosyanın üzerine yaz (önce yedek alınır)",
@@ -123,6 +125,19 @@
       "trailing": "JSON bittikten sonra fazladan metin var."
     }
   },
+  "backups": {
+    "title": "Yedekler",
+    "description": "{{name}} dosyasının üzerine kaydedilmeden önce alınan kopyalar, en yenisi üstte.",
+    "retention": "Her dosyanın son 10 yedeği en çok 30 gün saklanır.",
+    "empty": "Bu dosyanın henüz yedeği yok. Üzerine her kaydettiğinde bir yedek alınır.",
+    "failed": "Yedekler okunamadı.",
+    "restore": "Geri yükle",
+    "restoring": "Geri yükleniyor…",
+    "confirmTitle": "Bu yedek geri yüklensin mi?",
+    "confirmBody": "{{name}}, {{time}} tarihli yedekle değiştirilecek. Önce şimdiki dosyanın yedeği alınır, böylece bu listeden ona geri dönebilirsin.",
+    "confirmLoss_one": "Kaydedilmemiş {{count}} değişikliğin kaybolacak.",
+    "confirmLoss_other": "Kaydedilmemiş {{count}} değişikliğin kaybolacak."
+  },
   "password": {
     "title": "Bu dosya şifreli",
     "body": "{{name}} için oyunun kullandığı parolayı gir. Bir kez kullanılır, saklanmaz.",
@@ -150,7 +165,11 @@
     "errorDetail": "{{reason}} {{fix}}",
     "jsonApplied_one": "{{count}} değişiklik uygulandı",
     "jsonApplied_other": "{{count}} değişiklik uygulandı",
-    "jsonNoChanges": "Hiçbir değer değişmedi"
+    "jsonNoChanges": "Hiçbir değer değişmedi",
+    "setAllFailed": "Değerler ayarlanamadı",
+    "restoredTitle": "Yedek geri yüklendi",
+    "restoredBody": "{{path}}, {{time}} tarihli yedeğe döndü.",
+    "restoreFailed": "Yedek geri yüklenemedi"
   },
   "bell": {
     "title": "Bu oturum",
@@ -159,6 +178,8 @@
     "saved": "{{name}} kaydedildi",
     "backup": "Yedek: {{path}}",
     "undone": "Tüm değişiklikler geri alındı",
+    "setAll_one": "{{count}} değer {{value}} yapıldı",
+    "setAll_other": "{{count}} değer {{value}} yapıldı",
     "clear": "Temizle"
   },
   "settings": {
