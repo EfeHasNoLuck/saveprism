@@ -31,12 +31,16 @@ mod export;
 mod game;
 mod history;
 mod json_apply;
+mod sugarcube;
 
 pub use backups::BackupRow;
 use game::check_bounds_in;
-pub use game::{Actor, Bonus, Entry, Field, FieldKind, GameView, RpgMakerView, ValueRow};
+pub use game::{
+    Actor, Bonus, Entry, Field, FieldKind, GameView, NoteKind, RowNote, RpgMakerView, ValueRow,
+};
 use history::{History, MAX_VALUES, Mutation, scalar_owned};
 pub use history::{HistoryResult, HistoryState};
+pub use sugarcube::SugarCubeView;
 
 #[cfg(test)]
 mod tests;
@@ -260,6 +264,9 @@ pub struct OpenInfo {
     pub warning: Option<String>,
     /// The root node.
     pub root: RootInfo,
+    /// The game engine known from the document's shape (`sugarcube`), when the file name and the
+    /// codec do not tell it.
+    pub engine: Option<String>,
 }
 
 /// One pending edit.
@@ -668,6 +675,7 @@ impl Session {
                     .get(self.doc.root())
                     .map_or(0, |node| child_count(&node.value)),
             },
+            engine: self.is_sugarcube().then(|| "sugarcube".to_string()),
         }
     }
 

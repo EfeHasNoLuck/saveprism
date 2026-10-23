@@ -10,7 +10,9 @@
     "variables": "Variables",
     "switches": "Switches",
     "values": "Values",
-    "character": "Character"
+    "character": "Character",
+    "story": "Story",
+    "storyVariables": "Story variables"
   },
   "info": {
     "gold": "The party's gold. It must stay within the range shown below the field.",
@@ -19,7 +21,9 @@
     "noNames": "No game data folder was found, so names are shown as numbers.",
     "variables": "Game variables. Change them only if you know what they do.",
     "switches": "Game switches (true or false).",
-    "values": "All editable values found in this file."
+    "values": "All editable values found in this file.",
+    "moment": "A SugarCube save keeps a history of moments, one for each passage played. The game resumes at the moment shown here, and your edits apply to that moment. The other moments keep their own values.",
+    "storyVariables": "The story's variables ($name in the story) with the values the game will load. A lock marks values you cannot change here: values changed in parts during play and special values such as Map, Set or Date. Change those in the JSON editor."
   },
   "fallback": {
     "item": "Item #{{id}}",
@@ -119,5 +123,26 @@
   "count": {
     "changed_one": "{{changed}} changed",
     "changed_other": "{{changed}} changed"
+  },
+  "story": {
+    "title": "Save",
+    "passage": "Passage",
+    "saved": "Saved",
+    "moment": "Moment",
+    "momentOf": "{{current}} of {{total}}",
+    "unknown": "Unknown"
+  },
+  "note": {
+    "changed": "changed during play",
+    "changedTip": "This value was changed in parts during play, so the list cannot show it. Change it in the JSON editor.",
+    "map_one": "Map · {{shown}} entry",
+    "map_other": "Map · {{shown}} entries",
+    "set_one": "Set · {{shown}} item",
+    "set_other": "Set · {{shown}} items",
+    "date": "Date · {{date}}",
+    "code": "special value",
+    "specialTip": "The game rebuilds this value with its own code. Change it in the JSON editor.",
+    "empty": "empty",
+    "emptyTip": "This value is empty (null or an empty list)."
   }
 }

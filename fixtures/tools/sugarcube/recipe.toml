@@ -1,0 +1,16 @@
+version = 1
+
+[[layer]]
+kind = "compression.lz-string"
+variant = "base64"
+
+[[layer]]
+kind = "format.json"
+bom = false
+empty = "[]"
+indent = "none"
+item_sep = ","
+key_sep = ":"
+newline = "lf"
+regular = true
+trailing_newline = false

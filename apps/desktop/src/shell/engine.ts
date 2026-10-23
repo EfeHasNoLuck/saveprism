@@ -16,8 +16,17 @@ const CODEC_LABELS: Record<string, string> = {
   "format.gvas": "Unreal",
 };
 
-/** Short engine or format name for the badge; `null` when nothing is known. */
-export function engineLabel(fileName: string, codec: string): string | null {
+const ENGINE_LABELS: Record<string, string> = {
+  sugarcube: "SugarCube",
+};
+
+/**
+ * Short engine or format name for the badge; `null` when nothing is known. `engine` is the engine
+ * the host found by the document's shape; it wins over the file name and the codec.
+ */
+export function engineLabel(fileName: string, codec: string, engine?: string | null): string | null {
+  const byShape = engine ? ENGINE_LABELS[engine] : undefined;
+  if (byShape) return byShape;
   const dot = fileName.lastIndexOf(".");
   const extension = dot >= 0 ? fileName.slice(dot + 1).toLowerCase() : "";
   const byExtension = EXTENSION_LABELS[extension];

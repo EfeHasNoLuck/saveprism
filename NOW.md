@@ -25,8 +25,12 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
    bytes are checked; Codex review: no critical/high, symlink backup fixed); "Set all" per RPG Maker list (number box, switches
    all on/off; filtered entries; one undo step; all or nothing). Checked in the running app over CDP (dark/light, EN/TR).
 2. Parity with saveeditonline.com: gap list done in `docs/research/parity.md`. Top gaps: Ren'Py, RPG Maker XP/VX/VX Ace (Ruby
-   Marshal, parse as data only), Twine/SugarCube, paste a save code instead of a file, Godot, other Unity saves, Wolf RPG, add a
+   Marshal, parse as data only), paste a save code instead of a file, Godot, other Unity saves, Wolf RPG, TyranoScript, add a
    value from the card view, pick the game's data folder by hand when names are not found.
+   Done 2026-10-23: Twine SugarCube 2 story view (current-moment variables edited at their last writer in `state.delta`;
+   partly changed values and revive tuples read-only; synthetic fixtures in `fixtures/synthetic/sugarcube/`). Not yet:
+   2.37 saves with `state.history` (no deltas) open as the plain Values list; no real game save tested.
+   Format notes for SugarCube/TyranoScript/Ren'Py: `docs/research/formats-sugarcube-tyrano-renpy.md`.
 3. Customization: settings for density, font size, save mode (overwrite / save as), number of backups; color settings
    (changed, accent, error); own names for unnamed variables/switches, kept per game; a doc on adding a theme in code.
 4. AI: MCP server (open, read, search, propose and apply edits; saving still makes a backup); "Ask AI" copies the selected

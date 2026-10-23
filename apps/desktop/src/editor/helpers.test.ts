@@ -11,8 +11,10 @@ import {
   columnsIn,
   fieldHint,
   filterEntries,
+  formatDateTime,
   formatValue,
   hintLine,
+  noteText,
   pageCount,
   pageItems,
   pagerLabel,
@@ -258,5 +260,44 @@ describe("entry columns", () => {
   it("sizes a card for its columns", () => {
     expect(cardWidth(0)).toBe(192);
     expect(cardWidth(2)).toBe(2 * 232 + 12 + 26);
+  });
+});
+
+describe("story notes", () => {
+  const t = (key: string, options?: Record<string, unknown>) =>
+    options ? `${key} ${JSON.stringify(options)}` : key;
+  const format = (n: number) => n.toLocaleString("en");
+
+  it("counts the entries of a Map and a Set", () => {
+    expect(noteText({ kind: "map", count: 1200, text: null }, t, format, "en")).toEqual({
+      text: 'note.map {"count":1200,"shown":"1,200"}',
+      tip: "note.specialTip",
+    });
+    expect(noteText({ kind: "set", count: null, text: null }, t, format, "en").text).toBe(
+      'note.set {"count":0,"shown":"0"}',
+    );
+  });
+
+  it("shows a Date in the UI language and keeps text it cannot read", () => {
+    const iso = "2025-10-09T12:00:00.000Z";
+    const shown = formatDateTime(Date.parse(iso), "en");
+    expect(shown).toMatch(/2025/);
+    expect(noteText({ kind: "date", count: null, text: iso }, t, format, "en").text).toBe(
+      `note.date ${JSON.stringify({ date: shown })}`,
+    );
+    expect(noteText({ kind: "date", count: null, text: "soon" }, t, format, "en").text).toBe(
+      'note.date {"date":"soon"}',
+    );
+    expect(formatDateTime(Number.NaN, "en")).toBeNull();
+    expect(formatDateTime(1e20, "en")).toBeNull();
+  });
+
+  it("explains values changed during play, code values and empty values", () => {
+    expect(noteText({ kind: "changed", count: null, text: null }, t, format, "en")).toEqual({
+      text: "note.changed",
+      tip: "note.changedTip",
+    });
+    expect(noteText({ kind: "code", count: null, text: null }, t, format, "en").tip).toBe("note.specialTip");
+    expect(noteText({ kind: "empty", count: null, text: null }, t, format, "en").tip).toBe("note.emptyTip");
   });
 });

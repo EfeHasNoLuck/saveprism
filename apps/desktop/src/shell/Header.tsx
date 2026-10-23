@@ -18,7 +18,7 @@ interface HeaderProps {
 export function Header({ file, onOpenFile, onOpenSettings }: HeaderProps) {
   const { t } = useTranslation();
   const { settings } = useSettings();
-  const engine = file ? (engineLabel(file.fileName, file.codec) ?? t("header.engineUnknown")) : null;
+  const engine = file ? (engineLabel(file.fileName, file.codec, file.engine) ?? t("header.engineUnknown")) : null;
 
   return (
     <header className="relative z-10 flex h-11 shrink-0 items-center justify-between gap-4 border-b border-border bg-chrome px-3">

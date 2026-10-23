@@ -10,7 +10,9 @@
     "variables": "Değişkenler",
     "switches": "Anahtarlar",
     "values": "Değerler",
-    "character": "Karakter"
+    "character": "Karakter",
+    "story": "Hikâye",
+    "storyVariables": "Hikâye değişkenleri"
   },
   "info": {
     "gold": "Takımın altını. Alanın altında gösterilen aralıkta kalmalıdır.",
@@ -19,7 +21,9 @@
     "noNames": "Oyun veri klasörü bulunamadı; isimler numara olarak gösteriliyor.",
     "variables": "Oyun değişkenleri. Ne işe yaradıklarını bilmiyorsanız değiştirmeyin.",
     "switches": "Oyun anahtarları (true ya da false).",
-    "values": "Bu dosyada bulunan tüm düzenlenebilir değerler."
+    "values": "Bu dosyada bulunan tüm düzenlenebilir değerler.",
+    "moment": "SugarCube kaydı, oynanan her pasaj için bir adım tutar. Oyun burada gösterilen adımdan devam eder ve değişikliklerin o adıma uygulanır. Diğer adımlar kendi değerlerini korur.",
+    "storyVariables": "Hikâyenin değişkenleri (hikâyede $ad), oyunun yükleyeceği değerlerle. Kilitli değerleri burada değiştiremezsin: oyun sırasında parça parça değişen değerler ve Map, Set, Date gibi özel değerler. Onları JSON düzenleyicide değiştir."
   },
   "fallback": {
     "item": "Eşya #{{id}}",
@@ -119,5 +123,26 @@
   "count": {
     "changed_one": "{{changed}} değişti",
     "changed_other": "{{changed}} değişti"
+  },
+  "story": {
+    "title": "Kayıt",
+    "passage": "Pasaj",
+    "saved": "Kaydedildi",
+    "moment": "Adım",
+    "momentOf": "{{current}} / {{total}}",
+    "unknown": "Bilinmiyor"
+  },
+  "note": {
+    "changed": "oyunda değişti",
+    "changedTip": "Bu değer oyun sırasında parça parça değişti, bu yüzden listede gösterilemiyor. JSON düzenleyicide değiştir.",
+    "map_one": "Map · {{shown}} kayıt",
+    "map_other": "Map · {{shown}} kayıt",
+    "set_one": "Set · {{shown}} öğe",
+    "set_other": "Set · {{shown}} öğe",
+    "date": "Tarih · {{date}}",
+    "code": "özel değer",
+    "specialTip": "Oyun bu değeri kendi koduyla yeniden kurar. JSON düzenleyicide değiştir.",
+    "empty": "boş",
+    "emptyTip": "Bu değer boş (null ya da boş liste)."
   }
 }

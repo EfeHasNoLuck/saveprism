@@ -1,13 +1,20 @@
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Lock } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { fieldInfo, getChildren, type Field, type NodeRow, type ValueRow } from "@/api/commands";
+import {
+  fieldInfo,
+  getChildren,
+  type Field,
+  type NodeRow,
+  type RowNote,
+  type ValueRow,
+} from "@/api/commands";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { countPendingUnder, useEditorContext, useFormatNumber } from "./context";
 import { FieldCell } from "./FieldEditor";
 import { useGridColumns } from "./grid";
-import { pageCount, pageItems, ROWS_PER_PAGE } from "./helpers";
+import { noteText, pageCount, pageItems, ROWS_PER_PAGE } from "./helpers";
 import { DenseGrid, EmptyText, Pager, SearchBox, Section } from "./parts";
 
 const CHILD_PAGE = 200;
@@ -21,6 +28,8 @@ interface ValueNode {
   children: number;
   /** Short text of a value that cannot be edited. */
   preview: string;
+  /** Why a story value is read-only (shown instead of `preview`), else null. */
+  note: RowNote | null;
   isGroup: boolean;
 }
 
@@ -31,6 +40,7 @@ function fromRow(row: ValueRow): ValueNode {
     field: row.field,
     children: row.children,
     preview: "",
+    note: row.note,
     isGroup: row.field === null && row.children > 0,
   };
 }
@@ -51,6 +61,7 @@ async function describeChild(row: NodeRow): Promise<ValueNode> {
     field,
     children: row.childCount,
     preview: row.preview,
+    note: null,
     isGroup,
   };
 }
@@ -78,7 +89,23 @@ function matches(node: ValueNode, q: string): boolean {
 
 /** A grid cell for a value: its editor, or its text when it cannot be edited. */
 function LeafCell({ node }: { node: ValueNode }) {
-  const { t } = useTranslation("editor");
+  const { t, i18n } = useTranslation("editor");
+  const format = useFormatNumber();
+  if (node.note !== null) {
+    const { text, tip } = noteText(node.note, t, format, i18n.resolvedLanguage ?? "en");
+    return (
+      <div
+        className="flex h-7 min-w-0 items-center gap-1.5 rounded-sm pr-2 pl-2 text-xs"
+        title={`${node.name} · ${tip}`}
+      >
+        <span className="min-w-0 truncate">{node.name}</span>
+        <span className="ml-auto flex min-w-0 items-center gap-1 text-[11px] text-muted-foreground">
+          <Lock aria-hidden="true" className="size-3 shrink-0" />
+          <span className="min-w-0 truncate">{text}</span>
+        </span>
+      </div>
+    );
+  }
   if (node.field !== null) {
     const typeName = node.field.typeName;
     return (
@@ -237,9 +264,20 @@ function GroupBlock({
 
 /**
  * Easy Save 3, GVAS and plain JSON saves: one Values card. The top-level values flow in as many
- * columns as fit, a page at a time; groups follow as headings that open in place.
+ * columns as fit, a page at a time; groups follow as headings that open in place. The story view
+ * reuses it for the story variables with its own `title` and `info`.
  */
-export function ValuesCard({ rows }: { rows: ValueRow[] }) {
+export function ValuesCard({
+  rows,
+  title,
+  info,
+  className,
+}: {
+  rows: ValueRow[];
+  title?: string;
+  info?: string;
+  className?: string;
+}) {
   const { t } = useTranslation("editor");
   const format = useFormatNumber();
   const { pending } = useEditorContext();
@@ -263,10 +301,11 @@ export function ValuesCard({ rows }: { rows: ValueRow[] }) {
 
   return (
     <Section
-      title={t("sections.values")}
+      title={title ?? t("sections.values")}
       count={count}
       changed={pending.size}
-      info={t("info.values")}
+      info={info ?? t("info.values")}
+      className={className}
       aside={
         rows.length === 0 ? null : (
           <>

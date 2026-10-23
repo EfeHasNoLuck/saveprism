@@ -59,6 +59,8 @@ export interface OpenInfo {
   editable: boolean;
   warning: string | null;
   root: RootInfo;
+  /** The engine known from the document's shape ("sugarcube"), or null. */
+  engine: "sugarcube" | null;
 }
 
 export interface NodeRow {
@@ -215,22 +217,55 @@ export interface RpgMakerView {
   namesFolder: string | null;
 }
 
+/** What a read-only row of the story view holds. */
+export type NoteKind = "changed" | "map" | "set" | "date" | "code" | "empty";
+
+/** Why a row cannot be edited in the list, with what the UI shows instead of a value. */
+export interface RowNote {
+  kind: NoteKind;
+  /** Entries of a Map or Set, else null. */
+  count: number | null;
+  /** The text of a Date as the game wrote it (ISO 8601), else null. */
+  text: string | null;
+}
+
 /**
  * One row of the Values list. `path` addresses the value (or group); use it with `getChildren`
- * to expand a group. `field` is null for groups.
+ * to expand a group. `field` is null for groups and read-only rows.
  */
 export interface ValueRow {
   name: string;
   path: string;
   field: Field | null;
   children: number;
+  /** Why the value is read-only (story view only), else null. */
+  note: RowNote | null;
+}
+
+/** A SugarCube (Twine) save: its facts and the story variables at the moment the game resumes at. */
+export interface SugarCubeView {
+  /** The save's title, or null. */
+  title: string | null;
+  /** The passage the game resumes at, or null when unknown. */
+  passage: string | null;
+  /** When the game was saved (milliseconds since 1970), or null. */
+  date: number | null;
+  /** Number of moments in the history. */
+  moments: number;
+  /** The moment the game resumes at (0-based). */
+  index: number;
+  variables: ValueRow[];
 }
 
 export type GameView =
   | { kind: "rpgmaker"; view: RpgMakerView }
+  | { kind: "sugarcube"; view: SugarCubeView }
   | { kind: "values"; rows: ValueRow[] };
 
-/** The game view of the open file: RPG Maker sections for MV/MZ saves, else a flat Values list. */
+/**
+ * The game view of the open file: RPG Maker sections for MV/MZ saves, the story view for SugarCube
+ * saves, else a flat Values list.
+ */
 export function gameView(): Promise<GameView> {
   return invoke<GameView>("game_view");
 }

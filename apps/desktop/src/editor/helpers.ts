@@ -281,3 +281,48 @@ export function cardWidth(columns: number): number {
   if (columns <= 0) return EMPTY_CARD;
   return columns * MIN_COLUMN + (columns - 1) * COLUMN_GAP + CARD_EDGES;
 }
+
+/** What a read-only row of the story view holds (mirrors `RowNote` of the host). */
+export interface NoteLike {
+  kind: "changed" | "map" | "set" | "date" | "code" | "empty";
+  count: number | null;
+  text: string | null;
+}
+
+/** A date and time in the UI language ("Oct 9, 2025, 12:00 PM"); `null` for an invalid time. */
+export function formatDateTime(ms: number, language: string): string | null {
+  if (!Number.isFinite(ms)) return null;
+  const date = new Date(ms);
+  if (Number.isNaN(date.getTime())) return null;
+  return new Intl.DateTimeFormat(language, { dateStyle: "medium", timeStyle: "short" }).format(date);
+}
+
+/**
+ * The short text a read-only story value shows instead of an editor ("Map · 3 entries", "changed
+ * during play"), and the longer reason for its tooltip.
+ */
+export function noteText(
+  note: NoteLike,
+  t: Translate,
+  format: FormatNumber,
+  language: string,
+): { text: string; tip: string } {
+  const count = note.count ?? 0;
+  switch (note.kind) {
+    case "map":
+      return { text: t("note.map", { count, shown: format(count) }), tip: t("note.specialTip") };
+    case "set":
+      return { text: t("note.set", { count, shown: format(count) }), tip: t("note.specialTip") };
+    case "date": {
+      const raw = note.text ?? "";
+      const shown = formatDateTime(Date.parse(raw), language) ?? raw;
+      return { text: t("note.date", { date: shown }), tip: t("note.specialTip") };
+    }
+    case "code":
+      return { text: t("note.code"), tip: t("note.specialTip") };
+    case "empty":
+      return { text: t("note.empty"), tip: t("note.emptyTip") };
+    default:
+      return { text: t("note.changed"), tip: t("note.changedTip") };
+  }
+}

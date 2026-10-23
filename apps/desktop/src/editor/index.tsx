@@ -21,6 +21,7 @@ import {
 import { EditorContext, toApiError, type EditorContextValue } from "./context";
 import { registerEditorBundles } from "./i18n";
 import { RpgMaker } from "./RpgMaker";
+import { SugarCube } from "./SugarCube";
 import { ValuesCard } from "./ValuesCard";
 
 /** What the app can ask of the editor from outside. */
@@ -154,7 +155,13 @@ export function EditorView({
     <EditorContext.Provider value={ctx}>
       <Tooltip.Provider delayDuration={200}>
         <div className="mx-auto w-full max-w-[1600px] p-3">
-          {view.kind === "rpgmaker" ? <RpgMaker view={view.view} /> : <ValuesCard rows={view.rows} />}
+          {view.kind === "rpgmaker" ? (
+            <RpgMaker view={view.view} />
+          ) : view.kind === "sugarcube" ? (
+            <SugarCube view={view.view} />
+          ) : (
+            <ValuesCard rows={view.rows} />
+          )}
         </div>
       </Tooltip.Provider>
     </EditorContext.Provider>

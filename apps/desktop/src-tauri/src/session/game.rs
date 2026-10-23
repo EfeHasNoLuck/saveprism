@@ -1,9 +1,10 @@
 //! The game view of the open document.
 //!
 //! RPG Maker MV/MZ saves become game sections (gold, characters, items, weapons, armors,
-//! variables, switches) with real names read from the game's `data` folder. Every other format
-//! becomes a flat "Values" list. Every editable value carries its type and limits as a [`Field`],
-//! so the UI can say "Whole number · 0 to 99,999,999 · was 10,000" and block out-of-range input.
+//! variables, switches) with real names read from the game's `data` folder. SugarCube (Twine) saves
+//! become a story view (see `sugarcube.rs`). Every other format becomes a flat "Values" list. Every
+//! editable value carries its type and limits as a [`Field`], so the UI can say
+//! "Whole number · 0 to 99,999,999 · was 10,000" and block out-of-range input.
 //!
 //! The view only reads the tree and the game's data files; nothing is executed.
 
@@ -16,12 +17,13 @@ use std::path::{Path as FsPath, PathBuf};
 use saveprism_core::{Node, NodeFlags, NodeId, OwnedValue, Path, SaveDoc, Value};
 use serde::Serialize;
 
+use super::sugarcube::SugarCubeView;
 use super::{ApiError, Change, Session, app_codes, bad_path, child_count, value_text};
 
 /// Largest game data file that is read for names.
 const MAX_DATA_FILE: u64 = 32 * 1024 * 1024;
 /// Most rows of the generic Values list.
-const MAX_VALUE_ROWS: usize = 10_000;
+pub(super) const MAX_VALUE_ROWS: usize = 10_000;
 /// Stable keys of `_paramPlus[0..8]`; the UI translates them.
 const BONUS_KEYS: [&str; 8] = [
     "maxHp",
@@ -147,6 +149,37 @@ pub struct ValueRow {
     pub field: Option<Field>,
     /// Number of children of a group.
     pub children: usize,
+    /// Why the value is shown read-only (story view); `None` elsewhere.
+    pub note: Option<RowNote>,
+}
+
+/// What a read-only row of the story view holds; the UI translates `kind`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum NoteKind {
+    /// The value was partly changed during play (a nested change of a later moment).
+    Changed,
+    /// A JavaScript `Map`.
+    Map,
+    /// A JavaScript `Set`.
+    Set,
+    /// A JavaScript `Date`.
+    Date,
+    /// A value the game rebuilds with its own code (a class, `undefined`, a function).
+    Code,
+    /// `null`, or an empty list or object.
+    Empty,
+}
+
+/// Why a row cannot be edited in the list, with what the UI shows instead of a value.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+pub struct RowNote {
+    /// What the value is.
+    pub kind: NoteKind,
+    /// Entries of a `Map` or `Set`.
+    pub count: Option<usize>,
+    /// The text of a `Date` as the game wrote it.
+    pub text: Option<String>,
 }
 
 /// What `game_view` returns.
@@ -157,6 +190,11 @@ pub enum GameView {
     Rpgmaker {
         /// The sections.
         view: Box<RpgMakerView>,
+    },
+    /// SugarCube (Twine) story: the save's facts and the story variables.
+    Sugarcube {
+        /// The story view.
+        view: Box<SugarCubeView>,
     },
     /// Flat list of the top-level values.
     Values {
@@ -176,7 +214,7 @@ const GOLD: Bounds = Bounds::new(Some(0), Some(99_999_999));
 const COUNT: Bounds = Bounds::new(Some(0), Some(99));
 const LEVEL: Bounds = Bounds::new(Some(1), Some(99));
 const NON_NEGATIVE: Bounds = Bounds::new(Some(0), None);
-const UNLIMITED: Bounds = Bounds::new(None, None);
+pub(super) const UNLIMITED: Bounds = Bounds::new(None, None);
 
 fn pick(a: Option<i128>, b: Option<i128>, choose: fn(i128, i128) -> i128) -> Option<i128> {
     match (a, b) {
@@ -364,11 +402,11 @@ fn type_name(node: &Node) -> Option<String> {
 }
 
 /// A node and its path.
-type At = (NodeId, Path);
+pub(super) type At = (NodeId, Path);
 
 /// Read access to the tree with everything a [`Field`] needs.
-struct Ctx<'a> {
-    doc: &'a SaveDoc,
+pub(super) struct Ctx<'a> {
+    pub(super) doc: &'a SaveDoc,
     editable: bool,
     /// True for formats other than RPG Maker: whole numbers with no width get the `i64` range.
     wide: bool,
@@ -529,7 +567,7 @@ fn collect_ids(doc: &SaveDoc) -> HashMap<i128, At> {
 
 impl Ctx<'_> {
     /// The scalar at `at` as a field, with `extra` limits on top of the type's own.
-    fn field(&self, at: &(NodeId, Path), extra: Bounds) -> Option<Field> {
+    pub(super) fn field(&self, at: &(NodeId, Path), extra: Bounds) -> Option<Field> {
         let (id, path) = at;
         let node = self.doc.get(*id)?;
         let kind = scalar_kind(&node.value)?;
@@ -836,6 +874,7 @@ impl Ctx<'_> {
             path: at.1.to_string(),
             field: self.field(&at, UNLIMITED),
             children,
+            note: None,
         }
     }
 
@@ -869,7 +908,7 @@ impl Ctx<'_> {
 }
 
 impl Session {
-    fn game_ctx(&self) -> Ctx<'_> {
+    pub(super) fn game_ctx(&self) -> Ctx<'_> {
         Ctx {
             doc: &self.doc,
             editable: self.editable,
@@ -902,9 +941,14 @@ impl Session {
         ctx.seen.into_inner()
     }
 
-    /// The RPG Maker sections for MV/MZ saves, else the flat Values list.
+    /// The SugarCube story view, the RPG Maker sections for MV/MZ saves, else the flat Values list.
     pub fn game_view(&self) -> Result<GameView, ApiError> {
         let ctx = self.game_ctx();
+        if let Some(view) = ctx.sugarcube_view() {
+            return Ok(GameView::Sugarcube {
+                view: Box::new(view),
+            });
+        }
         if let Some(engine) = self.rpg_engine() {
             let names = load_names(&self.path);
             if let Some(view) = ctx.rpg_view(engine, &names) {

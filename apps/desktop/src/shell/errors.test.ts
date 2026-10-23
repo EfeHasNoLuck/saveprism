@@ -33,6 +33,8 @@ describe("engine helpers", () => {
     expect(engineLabel("slot.sav", "format.gvas")).toBe("Unreal");
     expect(engineLabel("data.bin", "format.json")).toBe("JSON");
     expect(engineLabel("data.bin", "format.unknown")).toBeNull();
+    expect(engineLabel("slot1.save", "format.json", "sugarcube")).toBe("SugarCube");
+    expect(engineLabel("file1.rpgsave", "format.json", null)).toBe("RPG Maker MV");
   });
 
   it("splits paths with either separator", () => {

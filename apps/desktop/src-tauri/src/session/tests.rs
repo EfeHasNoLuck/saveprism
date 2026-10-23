@@ -740,7 +740,7 @@ fn encrypted_gzip_es3_opens_with_the_password() {
 fn rpg_view(session: &Session) -> Option<RpgMakerView> {
     match session.game_view().unwrap() {
         GameView::Rpgmaker { view } => Some(*view),
-        GameView::Values { .. } => None,
+        GameView::Values { .. } | GameView::Sugarcube { .. } => None,
     }
 }
 
@@ -1379,4 +1379,423 @@ fn unnamed_entries_set_to_empty_stay_in_the_list_until_saved() {
     let view = rpg_view(&session).unwrap();
     assert!(view.switches.is_empty());
     assert_eq!(ids(&view.variables), [3, 4]);
+}
+
+// SugarCube (Twine) saves.
+
+const STORY: &str = "synthetic/sugarcube/multi-moment.save";
+
+fn story_view(session: &Session) -> Option<SugarCubeView> {
+    match session.game_view().unwrap() {
+        GameView::Sugarcube { view } => Some(*view),
+        GameView::Rpgmaker { .. } | GameView::Values { .. } => None,
+    }
+}
+
+fn story_row<'a>(view: &'a SugarCubeView, name: &str) -> &'a ValueRow {
+    view.variables
+        .iter()
+        .find(|row| row.name == name)
+        .unwrap_or_else(|| panic!("no variable {name}"))
+}
+
+fn story_value(view: &SugarCubeView, name: &str) -> String {
+    story_row(view, name).field.as_ref().unwrap().value.clone()
+}
+
+/// Writes `json` as a plain JSON file and opens it.
+fn open_text(env: &Env, json: &str) -> Session {
+    let path = env.work.join("story.json");
+    fs::write(&path, json).unwrap();
+    open(env, &path, None).unwrap()
+}
+
+/// The source JSON of the multi-moment fixture (see fixtures/README.md).
+fn story_source() -> String {
+    fs::read_to_string(fixture("tools/sugarcube/multi-moment.json")).unwrap()
+}
+
+fn json_of(session: &Session) -> serde_json::Value {
+    serde_json::from_str(&session.export_json().unwrap()).unwrap()
+}
+
+fn json_get<'a>(value: &'a serde_json::Value, key: &str) -> Option<&'a serde_json::Value> {
+    match value {
+        serde_json::Value::Object(map) => map.get(key),
+        serde_json::Value::Array(items) => items.get(key.parse::<usize>().ok()?),
+        _ => None,
+    }
+}
+
+fn json_set(value: &mut serde_json::Value, key: &str, new: serde_json::Value) {
+    match value {
+        serde_json::Value::Object(map) => {
+            map.insert(key.to_string(), new);
+        }
+        serde_json::Value::Array(items) => {
+            if let Some(slot) = key.parse::<usize>().ok().and_then(|i| items.get_mut(i)) {
+                *slot = new;
+            }
+        }
+        _ => {}
+    }
+}
+
+/// SugarCube's documented `Diff.patch` rules, written here as an independent reference: `0`
+/// deletes, `[1, a, b]` removes array items a..=b, `[2, v]` copies `v`, an object patches deeper.
+fn sc_patch(orig: &serde_json::Value, delta: &serde_json::Value) -> serde_json::Value {
+    let mut out = orig.clone();
+    let Some(entries) = delta.as_object() else {
+        return out;
+    };
+    for (key, change) in entries {
+        if change.as_f64() == Some(0.0) {
+            if let serde_json::Value::Object(map) = &mut out {
+                map.remove(key);
+            }
+            continue;
+        }
+        if let Some(op) = change.as_array() {
+            let number = |i: usize| {
+                op.get(i)
+                    .and_then(serde_json::Value::as_u64)
+                    .and_then(|n| usize::try_from(n).ok())
+            };
+            match number(0) {
+                Some(1) => {
+                    let (from, to) = (number(1).unwrap(), number(2).unwrap());
+                    if let serde_json::Value::Array(items) = &mut out {
+                        items.drain(from..=to);
+                    }
+                }
+                Some(2) => json_set(&mut out, key, op[1].clone()),
+                _ => {}
+            }
+            continue;
+        }
+        let inner = sc_patch(json_get(&out, key).unwrap(), change);
+        json_set(&mut out, key, inner);
+    }
+    out
+}
+
+/// Every moment of the save, rebuilt from `state.delta` with [`sc_patch`].
+fn sc_moments(save: &serde_json::Value) -> Vec<serde_json::Value> {
+    let delta = save["state"]["delta"].as_array().unwrap();
+    let mut moments = vec![delta[0].clone()];
+    for change in &delta[1..] {
+        let next = sc_patch(moments.last().unwrap(), change);
+        moments.push(next);
+    }
+    moments
+}
+
+/// The JSON value at a core path ("/state/delta/0/variables/gold").
+fn json_at<'a>(value: &'a serde_json::Value, path: &str) -> &'a serde_json::Value {
+    path.split('/')
+        .skip(1)
+        .fold(value, |at, key| json_get(at, key).unwrap())
+}
+
+/// Every row of the view shows the value the game loads at the current moment.
+fn assert_rows_match_the_game(session: &Session) {
+    let view = story_view(session).unwrap();
+    let save = json_of(session);
+    let moments = sc_moments(&save);
+    let current = &moments[view.index]["variables"];
+    assert_eq!(view.variables.len(), current.as_object().unwrap().len());
+    for row in &view.variables {
+        let want = &current[row.name.as_str()];
+        if row
+            .note
+            .as_ref()
+            .is_some_and(|n| n.kind == NoteKind::Changed)
+        {
+            continue; // shown without a value
+        }
+        let found = json_at(&save, &row.path);
+        assert_eq!(found, want, "{}", row.name);
+        if let Some(field) = &row.field {
+            let text = match want {
+                serde_json::Value::String(text) => text.clone(),
+                other => other.to_string(),
+            };
+            assert_eq!(field.value, text, "{}", row.name);
+        }
+    }
+}
+
+#[test]
+fn sugarcube_save_becomes_a_story_view() {
+    let env = env();
+    let path = copy_in(&env, STORY);
+    let session = open(&env, &path, None).unwrap();
+    assert_eq!(session.info().guard, GuardLevel::Exact);
+    assert_eq!(session.info().engine.as_deref(), Some("sugarcube"));
+    let view = story_view(&session).unwrap();
+    assert_eq!(view.title.as_deref(), Some("Lake shore"));
+    assert_eq!(view.passage.as_deref(), Some("Lake"));
+    assert_eq!(view.date, Some(1_760_000_000_000));
+    assert_eq!((view.moments, view.index), (5, 3));
+
+    let names: Vec<&str> = view.variables.iter().map(|r| r.name.as_str()).collect();
+    assert_eq!(
+        names,
+        [
+            "name", "gold", "hasKey", "mood", "hp", "bag", "stats", "flags", "met", "visited",
+            "since", "rival", "lantern"
+        ],
+        "torch was deleted in moment 2"
+    );
+
+    // Scalars at their last writer: the first moment, or a copy of a later one (not moment 4,
+    // which comes after the one the game resumes at).
+    for (name, path, value) in [
+        ("name", "/state/delta/0/variables/name", "Ash"),
+        ("gold", "/state/delta/3/variables/gold/1", "140"),
+        ("hasKey", "/state/delta/2/variables/hasKey/1", "true"),
+        ("mood", "/state/delta/3/variables/mood/1", "brave"),
+        ("hp", "/state/delta/0/variables/hp", "10.5"),
+        ("lantern", "/state/delta/1/variables/lantern/1", "3"),
+    ] {
+        let row = story_row(&view, name);
+        let field = row.field.as_ref().unwrap();
+        assert_eq!(
+            (row.path.as_str(), field.path.as_str()),
+            (path, path),
+            "{name}"
+        );
+        assert_eq!(field.value, value, "{name}");
+        assert!(field.editable, "{name}");
+        assert!(row.note.is_none(), "{name}");
+    }
+
+    // An object nothing later touched is a group of the first moment.
+    let stats = story_row(&view, "stats");
+    assert_eq!(stats.path, "/state/delta/0/variables/stats");
+    assert_eq!((stats.children, stats.field.is_none()), (2, true));
+    assert!(stats.note.is_none());
+
+    // Partly changed values and revive tuples are read-only notes.
+    let note = |name: &str| {
+        let row = story_row(&view, name);
+        assert!(row.field.is_none() && row.children == 0, "{name}");
+        (row.path.clone(), row.note.clone().unwrap())
+    };
+    let (path, bag) = note("bag");
+    assert_eq!(path, "/state/delta/1/variables/bag");
+    assert_eq!(bag.kind, NoteKind::Changed);
+    assert_eq!(note("flags").1.kind, NoteKind::Changed);
+    let (path, met) = note("met");
+    assert_eq!(path, "/state/delta/2/variables/met/1");
+    assert_eq!((met.kind, met.count), (NoteKind::Map, Some(3)));
+    let visited = note("visited").1;
+    assert_eq!((visited.kind, visited.count), (NoteKind::Set, Some(1)));
+    let since = note("since").1;
+    assert_eq!(since.kind, NoteKind::Date);
+    assert_eq!(since.text.as_deref(), Some("2025-10-09T12:00:00.000Z"));
+    assert_eq!(note("rival").1.kind, NoteKind::Empty);
+
+    assert_rows_match_the_game(&session);
+}
+
+#[test]
+fn one_moment_sugarcube_save() {
+    let env = env();
+    let path = copy_in(&env, "synthetic/sugarcube/one-moment.save");
+    let session = open(&env, &path, None).unwrap();
+    let view = story_view(&session).unwrap();
+    assert_eq!(view.passage.as_deref(), Some("Start"));
+    assert_eq!((view.moments, view.index), (1, 0));
+    assert_eq!(story_value(&view, "gold"), "120");
+    assert_eq!(story_row(&view, "bag").children, 2);
+    assert_eq!(story_row(&view, "seen").children, 1);
+    assert_rows_match_the_game(&session);
+}
+
+#[test]
+fn sugarcube_edit_changes_the_current_value_and_nothing_else() {
+    let env = env();
+    let path = copy_in(&env, STORY);
+    let mut session = open(&env, &path, None).unwrap();
+    let before = json_of(&session);
+    let view = story_view(&session).unwrap();
+    let gold = story_row(&view, "gold").path.clone();
+    let name = story_row(&view, "name").path.clone();
+    session.edit_value(&gold, "150").unwrap();
+    session.edit_value(&name, "Kai").unwrap();
+    session
+        .edit_value("/state/delta/0/variables/stats/dex", "9")
+        .unwrap();
+    let view = story_view(&session).unwrap();
+    assert_eq!(story_value(&view, "gold"), "150");
+    assert_eq!(
+        story_row(&view, "gold").field.as_ref().unwrap().original,
+        "140"
+    );
+
+    session.save(path.to_str().unwrap(), false).unwrap();
+    let reopened = open(&env, &path, None).unwrap();
+    assert_eq!(reopened.info().guard, GuardLevel::Exact);
+    let view = story_view(&reopened).unwrap();
+    assert_eq!(story_value(&view, "gold"), "150");
+    assert_eq!(story_value(&view, "name"), "Kai");
+    assert_rows_match_the_game(&reopened);
+
+    // The file differs from the original in exactly the three edited values.
+    let after = json_of(&reopened);
+    let mut expected = before.clone();
+    expected["state"]["delta"][3]["variables"]["gold"][1] = 150.into();
+    expected["state"]["delta"][0]["variables"]["name"] = "Kai".into();
+    expected["state"]["delta"][0]["variables"]["stats"]["dex"] = 9.into();
+    assert_eq!(after, expected);
+
+    // What the game sees: the current moment changed; the moments around it keep their own values.
+    let moments = sc_moments(&after);
+    let gold_at = |i: usize| moments[i]["variables"]["gold"].clone();
+    assert_eq!(
+        (gold_at(2), gold_at(3), gold_at(4)),
+        (95.into(), 150.into(), 999.into())
+    );
+    assert_eq!(moments[3]["variables"]["name"], "Kai");
+    assert_eq!(moments[4]["variables"]["name"], "Ashe");
+    assert_eq!(moments[3]["variables"]["stats"]["dex"], 9);
+    let old = sc_moments(&before);
+    for key in ["hasKey", "mood", "bag", "flags", "met", "lantern"] {
+        assert_eq!(
+            moments[3]["variables"][key], old[3]["variables"][key],
+            "{key}"
+        );
+    }
+}
+
+#[test]
+fn sugarcube_read_only_rows_cannot_be_edited() {
+    let env = env();
+    let path = copy_in(&env, STORY);
+    let mut session = open(&env, &path, None).unwrap();
+    let view = story_view(&session).unwrap();
+    let read_only: Vec<&ValueRow> = view.variables.iter().filter(|r| r.note.is_some()).collect();
+    assert_eq!(read_only.len(), 6);
+    for row in read_only {
+        assert!(row.field.is_none(), "{}", row.name);
+        let error = session.edit_value(&row.path, "1").unwrap_err();
+        assert_eq!(error.code, app_codes::NOT_EDITABLE_NODE, "{}", row.name);
+        assert!(session.field_info(&row.path).is_err(), "{}", row.name);
+    }
+    assert!(session.pending_changes().is_empty());
+}
+
+#[test]
+fn sugarcube_index_picks_the_moment() {
+    let env = env();
+    let source = story_source();
+    assert!(source.contains("\"index\":3,"));
+    let with_index = |text: &str| source.replace("\"index\":3,", text);
+
+    // Moment 1: gold was copied there, the torch still exists, the bag is partly changed.
+    let session = open_text(&env, &with_index("\"index\":1,"));
+    let view = story_view(&session).unwrap();
+    assert_eq!((view.index, view.passage.as_deref()), (1, Some("Forest")));
+    assert_eq!(story_value(&view, "gold"), "95");
+    assert_eq!(story_value(&view, "torch"), "true");
+    assert_eq!(
+        story_row(&view, "bag").note.as_ref().unwrap().kind,
+        NoteKind::Changed
+    );
+    assert_rows_match_the_game(&session);
+
+    // Moment 0: everything is in the first moment; the bag is a group again.
+    let session = open_text(&env, &with_index("\"index\":0,"));
+    let view = story_view(&session).unwrap();
+    assert_eq!(view.passage.as_deref(), Some("Start"));
+    assert_eq!(story_row(&view, "bag").children, 2);
+    assert!(view.variables.iter().all(|r| r.name != "lantern"));
+    assert_rows_match_the_game(&session);
+
+    // Missing, negative, too large or not a number: the last moment.
+    for text in ["", "\"index\":-1,", "\"index\":99,", "\"index\":\"2\","] {
+        let session = open_text(&env, &with_index(text));
+        let view = story_view(&session).unwrap();
+        assert_eq!(view.index, 4, "{text}");
+        assert_eq!(view.passage.as_deref(), Some("Village"), "{text}");
+        assert_eq!(story_value(&view, "gold"), "999", "{text}");
+        assert_eq!(story_value(&view, "name"), "Ashe", "{text}");
+        assert_eq!(
+            story_row(&view, "stats").note.as_ref().unwrap().kind,
+            NoteKind::Changed
+        );
+    }
+}
+
+#[test]
+fn odd_sugarcube_shapes_fall_back_to_the_values_list() {
+    let env = env();
+    for json in [
+        r#"{"state":{"delta":[]}}"#,
+        r#"{"state":{"delta":[5]}}"#,
+        r#"{"state":{"delta":[{"title":"A"}]}}"#,
+        r#"{"state":{"delta":[{"variables":3}]}}"#,
+        r#"{"state":{"delta":{"0":{"variables":{}}}}}"#,
+        r#"{"state":"x"}"#,
+        r#"[{"state":{"delta":[{"variables":{}}]}}]"#,
+        r#"{"state":{"index":1,"delta":[{"variables":{"a":1}},7]}}"#,
+        r#"{"state":{"index":1,"delta":[{"variables":{"a":1}},{"variables":[2,{"a":2}]}]}}"#,
+        r#"{"state":{"delta":[{"variables":{"a":1},"variables":{"a":2}}]}}"#,
+        r#"{"state":{"delta":[{"variables":{"a":1}}]},"state":{"delta":[]}}"#,
+        "42",
+    ] {
+        let session = open_text(&env, json);
+        assert!(story_view(&session).is_none(), "{json}");
+        assert!(session.info().engine.is_none(), "{json}");
+    }
+}
+
+#[test]
+fn odd_sugarcube_values_are_read_only_and_never_stale() {
+    let env = env();
+    let json = r#"{"desc":"Turn 4","type":3,"date":1760000000000.5,"id":"x","state":{"index":2,"delta":[
+        {"title":"A","variables":{"a":1,"b":2,"c":3,"d":4,"e":5,"f":6,"g":7,"h":8,"h":9,"u":["(revive:)",["undefined"]]}},
+        null,
+        {"title":[2,5],"variables":{"a":[9,1],"b":"x","c":[2,5,6],"d":[2,7],"d":[2,8],"f":0.0,"g":[3,1760000000000]}},
+        {"variables":{"e":[2,50]}}
+    ]}}"#;
+    let session = open_text(&env, json);
+    let view = story_view(&session).unwrap();
+    assert_eq!(view.title.as_deref(), Some("Turn 4"));
+    assert_eq!(view.date, None, "a decimal date is not shown");
+    assert_eq!(
+        view.passage, None,
+        "a title copy that is not text is unknown"
+    );
+    for name in ["a", "b", "c", "d", "g", "h"] {
+        let row = story_row(&view, name);
+        assert!(row.field.is_none(), "{name}");
+        assert_eq!(row.note.as_ref().unwrap().kind, NoteKind::Changed, "{name}");
+    }
+    assert!(view.variables.iter().all(|r| r.name != "f"), "0.0 deletes");
+    assert_eq!(
+        story_row(&view, "u").note.as_ref().unwrap().kind,
+        NoteKind::Code
+    );
+    // `e` is changed only after the current moment.
+    let e = story_row(&view, "e").field.as_ref().unwrap();
+    assert_eq!(
+        (e.value.as_str(), e.path.as_str()),
+        ("5", "/state/delta/0/variables/e")
+    );
+}
+
+#[test]
+fn sugarcube_variables_are_capped() {
+    let env = env();
+    let names: Vec<String> = (0..10_050).map(|i| format!("\"v{i}\":{i}")).collect();
+    let json = format!(
+        r#"{{"state":{{"index":0,"delta":[{{"title":"A","variables":{{{}}}}}]}}}}"#,
+        names.join(",")
+    );
+    let session = open_text(&env, &json);
+    let view = story_view(&session).unwrap();
+    assert_eq!(view.variables.len(), 10_000);
+    assert_eq!(story_value(&view, "v9999"), "9999");
 }
