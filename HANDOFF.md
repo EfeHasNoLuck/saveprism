@@ -1,25 +1,26 @@
 # HANDOFF
 
-**State:** v0.1 was widened by the user on 2026-10-23 (NOW.md goal: a local saveeditonline.com with nothing less, plus polish,
-customization and an AI bridge). The user approved the dense card layout with the Stitch colors. Last code commit `f6b9fc5`.
+**State (2026-10-23):** NOW.md todo 1 (polish) is done; todo 2 (parity with saveeditonline.com) is in progress.
+Last code commit `3cee490`. All pushed to the private repo.
 
 **Works (with evidence)**
-- `bash .claude/araclar/kontrol.sh rust` 3/3 and `kontrol.sh web` 3/3 (80 tests) after `f6b9fc5`, 2026-10-23.
-- Undo/redo, shortcuts, opening overlay and About checked in the running app over CDP by the coding subagent.
-- `pnpm -C apps/desktop tauri build` produced `SavePrism_0.0.1_x64-setup.exe` and the `.msi` (2026-10-23, before `f6b9fc5`).
-- `THIRD_PARTY_NOTICES.md`: 244 crates + 76 bundled npm packages, no GPL family (`d412a60`).
-- External engines answer from this repo: Codex `gpt-6-luna`, agy, opencode `evren/deepseek-v4.1-flash`, `cursor-agent.cmd`.
-  agy did the parity research well; EVREN failed a file-writing task twice (see memory `external-engines`).
+- `bash .claude/araclar/kontrol.sh rust` 3/3 and `kontrol.sh web` 3/3 after `3cee490`.
+- `4d1db11` Backups dialog (list + restore; current file backed up first; backup must open; bytes checked) and "Set all" per
+  RPG Maker list. Codex review: no critical/high; symlink backup fixed. Checked over CDP (dark/light, EN/TR).
+- `115286c` Twine SugarCube 2 story view (variables edited at their last writer in `state.delta`). Synthetic fixtures only.
+- `3cee490` Paste code / Copy code. Codex review finding (link in the pasted folder) fixed. Checked over CDP.
+- Format notes: `docs/research/formats-sugarcube-tyrano-renpy.md` (SugarCube part corrected from the source).
 
 **Broken / not checked**
-- `CLAUDE.md` is changed but not committed (new goal line + "chores go to external engines first"): the auto-mode check blocks me
-  from committing it; the user commits it.
-- The odd mouse cursor the user saw was only in the dev window started from a background shell, and is gone now (user,
-  2026-10-23). The app sets no CSS cursor. No action unless it shows in the installed app.
-- The JSON Apply review left mediums in NOW.md "Known gaps".
-- Visual checks: `scripts/cdp/README.md` (start `tauri dev` with the WebView2 debug port, drive it over CDP).
+- `CLAUDE.md` is changed but not committed (new goal line + "chores go to external engines first"); the user commits it.
+- No real SugarCube save tested; SugarCube 2.37 `state.history` saves (no deltas) open as the plain Values list.
+- On the dev PC something outside SavePrism alters clipboard text over ~1,400 characters; a long copied code pasted back
+  there fails. Not an app bug.
+- Remote Control is disabled by the organization's policy (user tried to turn it on, 2026-10-23).
 
 **Next step**
-NOW.md todo 1: the backups screen (list + restore, reviewer for the restore write) and bulk edit
-per list. Chores to external engines first (agy for research, EVREN only for repo-local read-mostly work), Claude subagents for
-UI. The user hates being asked step by step and wants plain short Turkish.
+NOW.md todo 2, next gap: RPG Maker XP/VX/VX Ace (Ruby Marshal codec, data only; then the RPG Maker sections for VX Ace).
+After it: TyranoScript (URL-escaped JSON), Ren'Py (zip + pickle as data only; signature prompt can be accepted by the
+player), Godot, Wolf RPG, add a value from the card view, pick the data folder by hand.
+How chores went today: Claude subagents built the UI/codec pieces with a visual check over CDP; Codex `gpt-6-luna`
+read-only reviews were useful; agy research needs the brief on stdin (see memory `external-engines`).
