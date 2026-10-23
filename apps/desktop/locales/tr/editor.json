@@ -10,14 +10,12 @@
     "variables": "Değişkenler",
     "switches": "Anahtarlar",
     "values": "Değerler",
-    "statBonuses": "Özellik bonusları",
-    "character": "Karakter",
-    "party": "Takım"
+    "character": "Karakter"
   },
   "info": {
     "gold": "Takımın altını. Alanın altında gösterilen aralıkta kalmalıdır.",
-    "characters": "Seviye, HP, MP, EXP ve özellik bonuslarını düzenlemek için bir karakter seçin.",
-    "namesFrom": "İsimler şuradan: {{folder}}",
+    "characters": "Düzenlemek için bir karakter seçin. Özellik bonusları (Maks. HP'den Şans'a) karakterin oyun veritabanındaki değerlerine eklenir; son değerler değildir.",
+    "namesFrom": "İsimler şuradan: {{folder}}.",
     "noNames": "Oyun veri klasörü bulunamadı; isimler numara olarak gösteriliyor.",
     "variables": "Oyun değişkenleri. Ne işe yaradıklarını bilmiyorsanız değiştirmeyin.",
     "switches": "Oyun anahtarları (true ya da false).",
@@ -35,36 +33,26 @@
     "hp": "HP",
     "mp": "MP",
     "exp": "EXP",
-    "lv": "Sv {{level}}",
-    "name": "Ad"
+    "lv": "Sv {{level}}"
   },
   "field": {
     "undo": "Geri al (önceki: {{value}})",
     "increase": "Artır",
-    "decrease": "Azalt",
-    "info": "Daha fazla bilgi"
+    "decrease": "Azalt"
   },
   "search": {
     "list": "İsim, #id veya değer ara",
     "values": "Değer ara",
-    "empty": "Aramanızla eşleşen bir şey yok.",
-    "characters": "İsim veya #id ara"
+    "empty": "Aramanızla eşleşen bir şey yok."
   },
   "pager": {
     "previous": "Önceki sayfa",
     "next": "Sonraki sayfa"
   },
   "values": {
-    "name": "Ad",
-    "type": "Tür",
-    "value": "Değer",
-    "expand": "Aç",
-    "collapse": "Kapat",
     "more": "Daha fazla göster",
     "items_one": "{{count}} öğe",
-    "items_other": "{{count}} öğe",
-    "id": "No",
-    "change": "Değişiklik"
+    "items_other": "{{count}} öğe"
   },
   "problem": {
     "empty": "Bir değer girin.",
@@ -93,8 +81,8 @@
     "maxMp": "Maks. MP",
     "attack": "Saldırı",
     "defense": "Savunma",
-    "magicAttack": "Büyü saldırısı",
-    "magicDefense": "Büyü savunması",
+    "magicAttack": "B.Saldırı",
+    "magicDefense": "B.Savunma",
     "agility": "Çeviklik",
     "luck": "Şans"
   },
@@ -107,24 +95,8 @@
     "values": "Bu dosyada değer yok.",
     "characters": "Bu kayıtta karakter yok."
   },
-  "nav": {
-    "label": "Bölümler",
-    "find": "Bölüm bul",
-    "sections": "Bölümler"
-  },
-  "table": {
-    "total_one": "{{total}} toplam",
-    "total_other": "{{total}} toplam",
+  "count": {
     "changed_one": "{{changed}} değişti",
     "changed_other": "{{changed}} değişti"
-  },
-  "party": {
-    "open": "{{name}} karakterini aç"
-  },
-  "tag": {
-    "int": "tam",
-    "float": "ondalık",
-    "bool": "bool",
-    "string": "metin"
   }
 }

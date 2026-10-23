@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  allocateColumns,
+  cardWidth,
   changeText,
   changeValue,
   checkRange,
   clampPage,
+  columnsIn,
   fieldHint,
   filterEntries,
   formatValue,
@@ -191,5 +194,31 @@ describe("pager", () => {
   });
   it("labels", () => {
     expect(pagerLabel(0, 101, 50)).toBe("1 / 3");
+  });
+});
+
+describe("entry columns", () => {
+  it("fits whole columns, at least one", () => {
+    expect(columnsIn(0)).toBe(1);
+    expect(columnsIn(475)).toBe(1);
+    expect(columnsIn(476)).toBe(2);
+  });
+  it("gives the spare columns of a row to the longest lists", () => {
+    // 990 px row: Items with 25 entries, Weapons and Armors empty.
+    expect(allocateColumns(990, [25, 0, 0])).toEqual([2, 0, 0]);
+    // Variables 56, Switches 70: each gets one, then the tallest takes the next.
+    expect(allocateColumns(990, [56, 70])).toEqual([1, 2]);
+    expect(allocateColumns(1246, [56, 70])).toEqual([2, 2]);
+  });
+  it("never gives a list more columns than entries", () => {
+    expect(allocateColumns(3000, [3, 0])).toEqual([3, 0]);
+  });
+  it("keeps one column per list when the row is too narrow", () => {
+    expect(allocateColumns(0, [5, 5])).toEqual([1, 1]);
+    expect(allocateColumns(800, [0, 0])).toEqual([0, 0]);
+  });
+  it("sizes a card for its columns", () => {
+    expect(cardWidth(0)).toBe(192);
+    expect(cardWidth(2)).toBe(2 * 232 + 12 + 26);
   });
 });

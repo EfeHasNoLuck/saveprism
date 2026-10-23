@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 const OPTIONS = ["true", "false"] as const;
 
 const SEGMENT =
-  "h-full rounded-[3px] px-2 font-mono text-[11px] leading-none outline-none focus-visible:ring-2 focus-visible:ring-ring/60";
+  "h-full rounded-[3px] px-1.5 font-mono text-[11px] leading-none outline-none focus-visible:ring-2 focus-visible:ring-ring/60";
 const SELECTED = `${SEGMENT} bg-surface-highest font-semibold text-foreground`;
 const SELECTED_CHANGED = `${SEGMENT} bg-changed-tag font-semibold text-changed-tag-foreground`;
 const IDLE = `${SEGMENT} text-muted-foreground hover:text-foreground disabled:pointer-events-none`;
@@ -33,7 +33,7 @@ export function BoolChoice({ value, onChange, label, disabled = false, changed =
       disabled={disabled}
       orientation="horizontal"
       className={cn(
-        "inline-flex h-6 shrink-0 items-center gap-0.5 justify-self-start rounded-sm border border-input/70 bg-field p-0.5 dark:border-transparent",
+        "inline-flex h-6.5 shrink-0 items-center gap-0.5 justify-self-start rounded-sm border border-input/70 bg-field p-0.5 dark:border-transparent",
         changed && "border-changed dark:border-changed",
         disabled && "cursor-not-allowed",
       )}

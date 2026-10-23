@@ -1,166 +1,131 @@
-import { useMemo } from "react";
+import { Check, ChevronDown } from "lucide-react";
+import { Select } from "radix-ui";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { Actor, Field } from "@/api/commands";
-import { cn } from "@/lib/utils";
-import { actorPaths, countPending, useEditorContext } from "./context";
-import { InlineField } from "./FieldEditor";
-import { ROW_HEIGHT, VALUE_COLUMNS } from "./layout";
-import {
-  ColumnHeader,
-  FieldRow,
-  RowBar,
-  SectionTitle,
-  TableNote,
-  TablePanel,
-} from "./table";
-import { useFieldEdit } from "./useFieldEdit";
+import type { Actor } from "@/api/commands";
+import { actorPaths, countPending, useEditorContext, useFormatNumber } from "./context";
+import { FieldCell } from "./FieldEditor";
+import { EmptyText, Section } from "./parts";
 
-/** # · Name · Level · HP · MP · EXP */
-const ROSTER_COLUMNS =
-  "grid grid-cols-[2.5rem_minmax(6rem,1fr)_repeat(4,minmax(0,8.5rem))] items-center gap-x-2 pr-2 pl-3";
-
-function StatCell({ field, label }: { field: Field; label: string }) {
-  const edit = useFieldEdit(field);
-  return <InlineField edit={edit} label={label} />;
+/** The character picker: "#1 Harold · Lv 7", with the number of changed values per character. */
+function ActorSelect({
+  actors,
+  value,
+  onChange,
+}: {
+  actors: Actor[];
+  value: number;
+  onChange: (id: number) => void;
+}) {
+  const { t } = useTranslation("editor");
+  const format = useFormatNumber();
+  const ctx = useEditorContext();
+  return (
+    <Select.Root value={String(value)} onValueChange={(v) => onChange(Number(v))}>
+      <Select.Trigger
+        aria-label={t("sections.character")}
+        className="inline-flex h-7 max-w-64 min-w-0 items-center gap-1.5 rounded-sm border border-input/70 bg-field px-2 text-xs outline-none focus-visible:border-ring dark:border-transparent dark:focus-visible:border-ring"
+      >
+        <span className="min-w-0 truncate">
+          <Select.Value />
+        </span>
+        <Select.Icon className="shrink-0 text-muted-foreground">
+          <ChevronDown className="size-3.5" />
+        </Select.Icon>
+      </Select.Trigger>
+      <Select.Portal>
+        <Select.Content
+          position="popper"
+          sideOffset={4}
+          collisionPadding={8}
+          className="z-50 max-h-(--radix-select-content-available-height) min-w-(--radix-select-trigger-width) overflow-hidden rounded-md border border-border bg-popover text-popover-foreground shadow-lg shadow-black/25"
+        >
+          <Select.Viewport className="p-1">
+            {actors.map((a) => {
+              const level = ctx.fields.get(a.level.path)?.value ?? a.level.value;
+              const changed = countPending(ctx.pending, actorPaths(a));
+              return (
+                <Select.Item
+                  key={a.id}
+                  value={String(a.id)}
+                  className="relative flex h-7 cursor-default items-center gap-3 rounded-sm pr-2 pl-6 text-xs outline-none select-none data-highlighted:bg-accent data-highlighted:text-accent-foreground"
+                >
+                  <Select.ItemIndicator className="absolute left-1.5 inline-flex">
+                    <Check className="size-3.5" />
+                  </Select.ItemIndicator>
+                  <Select.ItemText>
+                    #{a.id} {a.name} · {t("actor.lv", { level })}
+                  </Select.ItemText>
+                  {changed > 0 ? (
+                    <span className="ml-auto text-[11px] font-medium text-changed-foreground">
+                      {t("count.changed", { count: changed, changed: format(changed) })}
+                    </span>
+                  ) : null}
+                </Select.Item>
+              );
+            })}
+          </Select.Viewport>
+        </Select.Content>
+      </Select.Portal>
+    </Select.Root>
+  );
 }
 
 /**
- * The Characters section: a dense roster (Level, HP, MP, EXP editable in place) and, under it,
- * the stat bonuses of the selected character as rows.
+ * The Characters card: a picker for the character, and under it the picked character's Level, HP,
+ * MP, EXP and stat bonuses in a compact grid (label, value, undo).
  */
-export function CharactersTable({
+export function Characters({
   actors,
-  info,
-  selectedId,
-  onSelect,
-  changed,
-  query,
-  onQuery,
+  namesFolder,
+  className,
 }: {
   actors: Actor[];
-  info: string;
-  selectedId: number | null;
-  onSelect: (id: number) => void;
-  changed: number;
-  query: string;
-  onQuery: (query: string) => void;
+  namesFolder: string | null;
+  className?: string;
 }) {
   const { t } = useTranslation("editor");
+  const format = useFormatNumber();
   const ctx = useEditorContext();
+  const [selectedId, setSelectedId] = useState<number | null>(actors[0]?.id ?? null);
   const actor = actors.find((a) => a.id === selectedId) ?? actors[0];
-  const shown = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (q === "") return actors;
-    return actors.filter((a) => a.name.toLowerCase().includes(q) || `#${a.id}`.includes(q));
-  }, [actors, query]);
+  const changed = useMemo(
+    () => countPending(ctx.pending, actors.flatMap(actorPaths)),
+    [actors, ctx.pending],
+  );
+
+  const info = namesFolder
+    ? `${t("info.characters")} ${t("info.namesFrom", { folder: namesFolder })}`
+    : t("info.characters");
+
+  const stat = (label: string, field: Actor["level"]) => (
+    <FieldCell key={field.path} field={field} name={label} fixedLabel />
+  );
 
   return (
-    <TablePanel>
-      <SectionTitle
-        title={t("sections.characters")}
-        info={info}
-        total={actors.length}
-        changed={changed}
-        query={query}
-        onQuery={onQuery}
-        placeholder={t("search.characters")}
-      />
-      <div
-        className={cn(
-          ROSTER_COLUMNS,
-          "h-7 shrink-0 border-b border-border bg-chrome text-[11px] font-medium tracking-wider text-muted-foreground uppercase",
-        )}
-        aria-hidden="true"
-      >
-        <span>{t("values.id")}</span>
-        <span>{t("actor.name")}</span>
-        <span>{t("actor.level")}</span>
-        <span>{t("actor.hp")}</span>
-        <span>{t("actor.mp")}</span>
-        <span>{t("actor.exp")}</span>
-      </div>
-      {actors.length === 0 ? (
-        <TableNote>{t("empty.characters")}</TableNote>
+    <Section
+      title={t("sections.characters")}
+      count={format(actors.length)}
+      changed={changed}
+      info={info}
+      className={className}
+      aside={
+        actor === undefined ? null : (
+          <ActorSelect actors={actors} value={actor.id} onChange={setSelectedId} />
+        )
+      }
+    >
+      {actor === undefined ? (
+        <EmptyText>{t("empty.characters")}</EmptyText>
       ) : (
-        <div className="dense-scroll min-h-[60px] flex-initial overflow-y-auto" role="list" aria-label={t("sections.characters")}>
-          {shown.length === 0 ? <TableNote>{t("search.empty")}</TableNote> : null}
-          {shown.map((a) => {
-            const active = a.id === actor?.id;
-            const rowChanged = countPending(ctx.pending, actorPaths(a)) > 0;
-            return (
-              <div
-                key={a.id}
-                role="listitem"
-                onClick={() => onSelect(a.id)}
-                style={{ height: ROW_HEIGHT }}
-                className={cn(
-                  ROSTER_COLUMNS,
-                  "relative border-b border-border text-[13px]",
-                  active ? "bg-primary/10" : rowChanged ? "bg-changed-row" : "hover:bg-surface-container",
-                )}
-              >
-                {rowChanged ? (
-                  <RowBar state="changed" />
-                ) : active ? (
-                  <span aria-hidden="true" className="absolute inset-y-0 left-0 w-[3px] bg-primary" />
-                ) : null}
-                <span
-                  className={cn(
-                    "font-mono text-xs tabular-nums",
-                    rowChanged ? "font-semibold text-changed-foreground" : "text-muted-foreground",
-                  )}
-                >
-                  #{a.id}
-                </span>
-                <button
-                  type="button"
-                  aria-current={active || undefined}
-                  onClick={() => onSelect(a.id)}
-                  className={cn(
-                    "min-w-0 truncate rounded-sm text-left outline-none focus-visible:ring-2 focus-visible:ring-ring/60",
-                    active ? "font-semibold text-primary" : "font-medium",
-                  )}
-                  title={a.name}
-                >
-                  {a.name}
-                </button>
-                <StatCell field={a.level} label={`${a.name} · ${t("actor.level")}`} />
-                <StatCell field={a.hp} label={`${a.name} · ${t("actor.hp")}`} />
-                <StatCell field={a.mp} label={`${a.name} · ${t("actor.mp")}`} />
-                {a.exp !== null ? (
-                  <StatCell field={a.exp} label={`${a.name} · ${t("actor.exp")}`} />
-                ) : (
-                  <span aria-hidden="true" className="text-muted-foreground">
-                    —
-                  </span>
-                )}
-              </div>
-            );
-          })}
+        <div className="grid grid-cols-1 gap-x-3 gap-y-0.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {stat(t("actor.level"), actor.level)}
+          {stat(t("actor.hp"), actor.hp)}
+          {stat(t("actor.mp"), actor.mp)}
+          {actor.exp !== null ? stat(t("actor.exp"), actor.exp) : null}
+          {actor.bonuses.map((b) => stat(t(`stat.${b.key}`, { defaultValue: b.key }), b.field))}
         </div>
       )}
-      {actor !== undefined && actor.bonuses.length > 0 ? (
-        <div className="flex shrink-0 flex-col">
-          <div className="flex h-8 items-center gap-2 border-y border-border bg-table-head px-3">
-            <h3 className="text-[13px] font-semibold">{t("sections.statBonuses")}</h3>
-            <span className="truncate text-[13px] text-muted-foreground">{actor.name}</span>
-          </div>
-          <ColumnHeader
-            columns={VALUE_COLUMNS}
-            labels={[t("values.name"), t("values.type"), t("values.value"), t("values.change"), null]}
-          />
-          <div role="list" aria-label={t("sections.statBonuses")}>
-            {actor.bonuses.map((b) => {
-              const label = t(`stat.${b.key}`, { defaultValue: b.key });
-              return (
-                <div key={b.field.path} role="listitem" style={{ height: ROW_HEIGHT }}>
-                  <FieldRow name={label} field={b.field} columns={VALUE_COLUMNS} />
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      ) : null}
-    </TablePanel>
+    </Section>
   );
 }

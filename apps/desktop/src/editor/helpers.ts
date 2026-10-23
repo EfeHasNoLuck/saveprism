@@ -190,3 +190,60 @@ export function pageItems<T>(items: readonly T[], page: number, size: number): T
 export function pagerLabel(page: number, total: number, size: number): string {
   return `${clampPage(page, total, size) + 1} / ${pageCount(total, size)}`;
 }
+
+/** Narrowest column of the entry grids, in pixels. */
+export const MIN_COLUMN = 232;
+/** Space between the columns, in pixels (Tailwind `gap-x-3`). */
+export const COLUMN_GAP = 12;
+/** Rows on one page of a list; a page holds this many entries per column. */
+export const ROWS_PER_PAGE = 20;
+/** Padding and border of a card, left and right together, in pixels (`p-3` and a 1 px border). */
+export const CARD_EDGES = 26;
+/** Space between the cards of a row, in pixels (Tailwind `gap-2.5`). */
+export const CARD_GAP = 10;
+/** Width of a card with nothing to list, in pixels. */
+export const EMPTY_CARD = 192;
+
+/** Entry columns that fit in a box `width` pixels wide (at least one). */
+export function columnsIn(width: number): number {
+  return Math.max(1, Math.floor((width + COLUMN_GAP) / (MIN_COLUMN + COLUMN_GAP)));
+}
+
+/**
+ * Columns for each list card of a row `width` pixels wide, given the number of entries of each
+ * card. Every card with entries gets one column; each further column that fits goes to the card
+ * that is tallest at that moment, so the cards end at similar heights. An empty card gets 0.
+ */
+export function allocateColumns(width: number, counts: readonly number[]): number[] {
+  const columns: number[] = counts.map((n) => (n > 0 ? 1 : 0));
+  const filled = columns.filter((c) => c > 0).length;
+  if (filled === 0) return columns;
+  const empty = counts.length - filled;
+  const room =
+    width - (counts.length - 1) * CARD_GAP - empty * EMPTY_CARD - filled * CARD_EDGES;
+  // c columns take c * MIN_COLUMN + (c - 1) * COLUMN_GAP.
+  let spare = Math.floor((room + filled * COLUMN_GAP) / (MIN_COLUMN + COLUMN_GAP)) - filled;
+  while (spare > 0) {
+    let tallest = -1;
+    let rows = 1;
+    counts.forEach((n, i) => {
+      const c = columns[i] ?? 0;
+      if (c === 0 || n <= c) return;
+      const r = Math.ceil(n / c);
+      if (r > rows) {
+        rows = r;
+        tallest = i;
+      }
+    });
+    if (tallest < 0) break;
+    columns[tallest] = (columns[tallest] ?? 0) + 1;
+    spare -= 1;
+  }
+  return columns;
+}
+
+/** Width a card needs for `columns` entry columns, in pixels. */
+export function cardWidth(columns: number): number {
+  if (columns <= 0) return EMPTY_CARD;
+  return columns * MIN_COLUMN + (columns - 1) * COLUMN_GAP + CARD_EDGES;
+}

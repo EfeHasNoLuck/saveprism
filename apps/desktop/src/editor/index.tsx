@@ -11,7 +11,7 @@ import {
 import { EditorContext, toApiError, type EditorContextValue } from "./context";
 import { registerEditorBundles } from "./i18n";
 import { RpgMaker } from "./RpgMaker";
-import { ValuesView } from "./ValuesCard";
+import { ValuesCard } from "./ValuesCard";
 
 export interface EditorViewProps {
   readOnly: boolean;
@@ -99,8 +99,8 @@ export function EditorView({ readOnly, onChangesChanged, onInvalidChanged }: Edi
   return (
     <EditorContext.Provider value={ctx}>
       <Tooltip.Provider delayDuration={200}>
-        <div className="flex min-h-0 flex-1 flex-col p-2">
-          {view.kind === "rpgmaker" ? <RpgMaker view={view.view} /> : <ValuesView rows={view.rows} />}
+        <div className="mx-auto w-full max-w-[1600px] p-3">
+          {view.kind === "rpgmaker" ? <RpgMaker view={view.view} /> : <ValuesCard rows={view.rows} />}
         </div>
       </Tooltip.Provider>
     </EditorContext.Provider>

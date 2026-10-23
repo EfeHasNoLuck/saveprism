@@ -14,7 +14,7 @@ import {
   type RangeProblem,
 } from "./helpers";
 
-/** The editing state of one scalar field, shared by the table rows, the roster cells and Gold. */
+/** The editing state of one scalar field, shared by the grid cells and Gold. */
 export interface FieldEdit {
   /** Latest known state of the field. */
   field: Field;
@@ -146,4 +146,17 @@ export function useFieldEdit(initial: Field): FieldEdit {
     originalText: formatValue(field.original, format),
     line,
   };
+}
+
+export type FieldState = "idle" | "changed" | "error";
+
+export function fieldState(edit: FieldEdit): FieldState {
+  return edit.invalid ? "error" : edit.changed ? "changed" : "idle";
+}
+
+/** Background of a field's row: violet when changed, red when it cannot be saved. */
+export function stateTone(state: FieldState): string {
+  if (state === "changed") return "bg-changed-row";
+  if (state === "error") return "bg-error-row";
+  return "hover:bg-surface-container";
 }

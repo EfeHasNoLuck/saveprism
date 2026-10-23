@@ -227,6 +227,3 @@
   scrollbar-color: var(--surface-highest) transparent;
   scrollbar-gutter: stable;
 }
-.no-scrollbar {
-  scrollbar-width: none;
-}

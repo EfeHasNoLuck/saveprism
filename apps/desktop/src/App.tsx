@@ -419,7 +419,7 @@ function App() {
         ) : null}
 
         {file ? (
-          <main className="relative z-10 flex min-h-0 flex-1 flex-col">
+          <main className="dense-scroll relative z-10 min-h-0 flex-1 overflow-y-auto">
             <EditorView
               key={editorKey}
               readOnly={readOnly}

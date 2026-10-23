@@ -1,29 +1,53 @@
 import { Minus, Plus, Undo2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import type { Field } from "@/api/commands";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useFormatNumber } from "./context";
-import { changeText, changeValue } from "./helpers";
+import { changeValue } from "./helpers";
 import { BoolChoice } from "./BoolChoice";
-import type { FieldEdit } from "./useFieldEdit";
+import {
+  fieldState,
+  stateTone,
+  useFieldEdit,
+  type FieldEdit,
+  type FieldState,
+} from "./useFieldEdit";
+
+/** The violet (changed) or red (cannot be saved) bar on the left edge of a row. */
+export function StateBar({ state }: { state: FieldState }) {
+  if (state === "idle") return null;
+  return (
+    <span
+      aria-hidden="true"
+      className={cn(
+        "absolute inset-y-0 left-0 w-[3px] rounded-l-sm",
+        state === "changed" ? "bg-changed" : "bg-destructive",
+      )}
+    />
+  );
+}
 
 const STEP =
-  "inline-flex h-6 w-5 items-center justify-center text-muted-foreground outline-none hover:bg-surface-container hover:text-foreground focus-visible:bg-surface-container focus-visible:text-foreground disabled:pointer-events-none";
+  "inline-flex h-6.5 w-6 items-center justify-center text-muted-foreground outline-none hover:bg-surface-container hover:text-foreground focus-visible:bg-surface-container focus-visible:text-foreground disabled:pointer-events-none";
 
 /**
- * The value control of a field: a text box (with − and + for whole numbers) or the `true | false`
- * choice. A changed value is violet, a value that cannot be saved is red.
+ * The value control of a field: a text box or the `true | false` choice. A changed value is
+ * violet, a value that cannot be saved is red. Arrow up and down step a number by one; `steppers`
+ * adds − and + buttons for whole numbers (Gold).
  */
 export function ValueInput({
   edit,
   label,
+  steppers = false,
   inputClassName,
   className,
 }: {
   edit: FieldEdit;
   /** Accessible name of the control. */
   label: string;
-  /** Extra classes of the text box (width, accent colour). */
+  steppers?: boolean;
+  /** Extra classes of the text box (accent colour). */
   inputClassName?: string;
   className?: string;
 }) {
@@ -52,6 +76,7 @@ export function ValueInput({
         aria-invalid={invalid || undefined}
         disabled={disabled}
         value={edit.draft}
+        title={field.kind === "string" ? edit.draft : undefined}
         onChange={(e) => edit.setDraft(e.target.value)}
         onFocus={() => edit.setFocused(true)}
         onBlur={() => {
@@ -61,10 +86,14 @@ export function ValueInput({
         onKeyDown={(e) => {
           if (e.key === "Enter") edit.commit(edit.draft);
           else if (e.key === "Escape") edit.reset();
+          else if (isNumber && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
+            e.preventDefault();
+            edit.step(e.key === "ArrowUp" ? 1 : -1);
+          }
         }}
         className={cn(
-          "h-6 w-full min-w-0 rounded-sm border border-input/70 bg-field px-1.5 text-[13px] text-foreground outline-none transition-colors focus-visible:border-ring dark:border-transparent dark:focus-visible:border-ring",
-          isNumber && "font-mono text-xs tabular-nums",
+          "h-6.5 w-full min-w-0 rounded-sm border border-input/70 bg-field px-1.5 text-xs text-foreground outline-none transition-colors focus-visible:border-ring dark:border-transparent dark:focus-visible:border-ring",
+          isNumber && "text-right font-mono tabular-nums",
           "disabled:cursor-not-allowed disabled:text-muted-foreground",
           inputClassName,
           changed && !invalid && "font-semibold text-changed-foreground",
@@ -72,7 +101,7 @@ export function ValueInput({
             "border-destructive bg-error-container font-semibold text-destructive dark:border-destructive",
         )}
       />
-      {field.kind === "int" ? (
+      {steppers && field.kind === "int" ? (
         <div className="flex shrink-0 overflow-hidden rounded-sm bg-surface-highest">
           <button
             type="button"
@@ -117,92 +146,107 @@ export function UndoButton({ edit }: { edit: FieldEdit }) {
   );
 }
 
-/** "old → new" with the new value on a violet chip. */
-export function ChangeChip({ edit }: { edit: FieldEdit }) {
+/**
+ * The value in the file followed by an arrow ("1,250 →"), placed in front of the box that holds
+ * the new value, so the pair reads "old → new". Nothing while the value is unchanged.
+ */
+export function ChangeFrom({ edit, className }: { edit: FieldEdit; className?: string }) {
   const format = useFormatNumber();
+  if (!edit.changed) return null;
   const { field } = edit;
   return (
     <span
-      className="inline-flex min-w-0 items-center gap-1 font-mono text-xs text-changed-foreground tabular-nums"
-      title={changeText(field.kind, field.original, field.value, format, Infinity)}
+      className={cn(
+        "flex min-w-0 shrink items-center gap-1 font-mono text-[11px] text-changed-foreground tabular-nums",
+        className,
+      )}
+      title={edit.change ?? undefined}
     >
       <span className="min-w-0 truncate">{changeValue(field.kind, field.original, format)}</span>
-      <span aria-hidden="true" className="shrink-0 text-muted-foreground">
+      <span aria-hidden="true" className="shrink-0">
         →
       </span>
-      <span className="min-w-0 truncate rounded-sm bg-changed-chip px-1 font-medium">
-        {changeValue(field.kind, field.value, format)}
-      </span>
     </span>
   );
 }
 
 /**
- * The Change column: why the value cannot be saved, the type and limits while the box is focused,
- * "old → new" when changed, else an em dash.
+ * One value in a dense grid: name (and #id), "old →" when changed, the value box and undo, on one
+ * 28 px line. A changed value is tinted violet with a violet bar, a value that cannot be saved is
+ * tinted red; the type and limits (or why the value cannot be saved) float under it while it is
+ * focused or wrong, so nothing moves.
  */
-export function ChangeCell({ edit }: { edit: FieldEdit }) {
-  const line = edit.line;
-  if (line?.error) {
-    return (
-      <span role="alert" title={line.text} className="truncate text-xs font-medium text-destructive">
-        {line.text}
-      </span>
-    );
-  }
-  if (line !== null && !line.change) {
-    return (
-      <span title={line.text} className="truncate text-xs text-muted-foreground">
-        {line.text}
-      </span>
-    );
-  }
-  if (edit.changed) return <ChangeChip edit={edit} />;
-  return (
-    <span aria-hidden="true" className="text-muted-foreground">
-      —
-    </span>
-  );
-}
-
-/**
- * A field in a tight spot (roster cells, Gold): the value control and its undo. The hint (type and
- * limits, or the error) floats under it while it is focused or wrong, so nothing moves.
- */
-export function InlineField({
-  edit,
-  label,
-  inputClassName,
-  showChange = false,
-  className,
+export function FieldCell({
+  field,
+  name,
+  id,
+  fixedLabel = false,
+  title,
 }: {
-  edit: FieldEdit;
-  label: string;
-  inputClassName?: string;
-  /** Show the "old → new" chip after the control (Gold). */
-  showChange?: boolean;
-  className?: string;
+  field: Field;
+  /** Shown name; also the accessible name of the control. */
+  name: string;
+  /** Shown as "#12" after the name. */
+  id?: number;
+  /** A short label of fixed width (character stats), so the boxes line up. */
+  fixedLabel?: boolean;
+  /** Tooltip of the name (defaults to the name). */
+  title?: string;
 }) {
+  const edit = useFieldEdit(field);
+  const state = fieldState(edit);
+  const kind = edit.field.kind;
   const line = edit.line;
   const floating = line !== null && (edit.focused || edit.invalid) && !line.change ? line : null;
+
   return (
     <Tooltip open={floating !== null}>
       <TooltipTrigger asChild>
         <div
-          className={cn("flex min-w-0 items-center gap-1", className)}
-          title={edit.changed && !showChange && edit.change !== null ? edit.change : undefined}
+          className={cn(
+            "relative flex h-7 min-w-0 items-center gap-1 rounded-sm pr-0.5 pl-2 text-xs",
+            stateTone(state),
+          )}
         >
-          <ValueInput edit={edit} label={label} inputClassName={inputClassName} />
-          {showChange && edit.changed ? <ChangeChip edit={edit} /> : null}
+          <StateBar state={state} />
+          <span
+            className={cn(
+              "truncate",
+              fixedLabel ? "w-[4.5rem] shrink-0 text-muted-foreground" : "min-w-0",
+              kind === "string" && !fixedLabel && "max-w-[45%]",
+            )}
+            title={title ?? name}
+          >
+            {name}
+          </span>
+          {id !== undefined ? (
+            <span className="shrink-0 font-mono text-[11px] text-muted-foreground tabular-nums">
+              #{id}
+            </span>
+          ) : null}
+          {fixedLabel || kind === "string" ? null : (
+            <span aria-hidden="true" className="min-w-1 flex-1" />
+          )}
+          {kind === "bool" ? null : (
+            <ChangeFrom edit={edit} className={fixedLabel ? "max-w-[45%]" : "max-w-[4.5rem]"} />
+          )}
+          <ValueInput
+            edit={edit}
+            label={name}
+            className={cn(
+              "shrink-0",
+              fixedLabel || kind === "string" ? "min-w-12 flex-1" : "w-16",
+            )}
+          />
           <UndoButton edit={edit} />
         </div>
       </TooltipTrigger>
       {floating !== null ? (
         <TooltipContent
           side="bottom"
-          align="start"
-          sideOffset={4}
-          className={cn("max-w-72", floating.error && "text-destructive")}
+          align="end"
+          sideOffset={2}
+          className={cn("max-w-72", floating.error && "font-medium text-destructive")}
         >
           <span role={floating.error ? "alert" : undefined}>{floating.text}</span>
         </TooltipContent>

@@ -4,44 +4,38 @@ import { useTranslation } from "react-i18next";
 import { fieldInfo, getChildren, type Field, type NodeRow, type ValueRow } from "@/api/commands";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { countPending, countPendingUnder, useEditorContext } from "./context";
-import { VALUE_COLUMNS } from "./layout";
-import { SectionNav, type SectionLink } from "./Sidebar";
-import {
-  ColumnHeader,
-  FieldRow,
-  PlainRow,
-  SectionTitle,
-  TableNote,
-  TablePanel,
-  VirtualRows,
-} from "./table";
+import { countPendingUnder, useEditorContext, useFormatNumber } from "./context";
+import { FieldCell } from "./FieldEditor";
+import { useGridColumns } from "./grid";
+import { pageCount, pageItems, ROWS_PER_PAGE } from "./helpers";
+import { DenseGrid, EmptyText, Pager, SearchBox, Section } from "./parts";
 
 const CHILD_PAGE = 200;
-/** Indent per tree level, in pixels. */
-const INDENT = 16;
 
-interface ChildNode {
+/** A value or group as the Values card shows it. */
+interface ValueNode {
   name: string;
   path: string;
+  /** The editable value, or null for a group or a value that cannot be edited. */
   field: Field | null;
   children: number;
+  /** Short text of a value that cannot be edited. */
   preview: string;
   isGroup: boolean;
 }
 
-interface Loaded {
-  nodes: ChildNode[];
-  total: number;
-  loading: boolean;
+function fromRow(row: ValueRow): ValueNode {
+  return {
+    name: row.name,
+    path: row.path,
+    field: row.field,
+    children: row.children,
+    preview: "",
+    isGroup: row.field === null && row.children > 0,
+  };
 }
 
-type FlatRow =
-  | { type: "node"; node: ChildNode; depth: number }
-  | { type: "loading"; key: string; depth: number }
-  | { type: "more"; path: string; depth: number; loading: boolean };
-
-async function describeChild(row: NodeRow): Promise<ChildNode> {
+async function describeChild(row: NodeRow): Promise<ValueNode> {
   const isGroup = row.kind === "object" || row.kind === "array";
   let field: Field | null = null;
   if (!isGroup) {
@@ -65,7 +59,7 @@ async function describeChild(row: NodeRow): Promise<ChildNode> {
 async function fetchChildren(
   path: string,
   offset: number,
-): Promise<{ described: ChildNode[]; total: number } | null> {
+): Promise<{ described: ValueNode[]; total: number } | null> {
   try {
     const page = await getChildren(path, offset, CHILD_PAGE);
     const described = await Promise.all(page.items.map(describeChild));
@@ -75,318 +69,246 @@ async function fetchChildren(
   }
 }
 
-function fromRow(row: ValueRow): ChildNode {
-  return {
-    name: row.name,
-    path: row.path,
-    field: row.field,
-    children: row.children,
-    preview: "",
-    isGroup: row.field === null && row.children > 0,
-  };
-}
-
-interface ValueSection {
-  id: string;
-  name: string;
-  /** The group whose children the section shows, or null for the top-level values. */
-  groupPath: string | null;
-  /** Top-level values (when `groupPath` is null). */
-  rows: ChildNode[];
-  count: number;
-}
-
-/**
- * Sections of a generic save: the top-level values (if any) and one section per top-level group;
- * one "Values" section when the file has no groups.
- */
-function valueSections(rows: ValueRow[], valuesName: string): ValueSection[] {
-  const groups = rows.filter((r) => r.field === null && r.children > 0);
-  if (groups.length === 0) {
-    return [
-      { id: "values", name: valuesName, groupPath: null, rows: rows.map(fromRow), count: rows.length },
-    ];
-  }
-  const scalars = rows.filter((r) => !groups.includes(r));
-  const sections: ValueSection[] =
-    scalars.length > 0
-      ? [
-          {
-            id: "values",
-            name: valuesName,
-            groupPath: null,
-            rows: scalars.map(fromRow),
-            count: scalars.length,
-          },
-        ]
-      : [];
-  for (const group of groups) {
-    sections.push({
-      id: `group:${group.path}`,
-      name: group.name,
-      groupPath: group.path,
-      rows: [],
-      count: group.children,
-    });
-  }
-  return sections;
-}
-
-function matches(node: ChildNode, q: string): boolean {
+function matches(node: ValueNode, q: string): boolean {
   return (
     node.name.toLowerCase().includes(q) ||
     (node.field !== null && node.field.value.toLowerCase().includes(q))
   );
 }
 
-function Indent({ depth }: { depth: number }) {
-  return depth > 0 ? <span className="shrink-0" style={{ width: depth * INDENT }} /> : null;
+/** A grid cell for a value: its editor, or its text when it cannot be edited. */
+function LeafCell({ node }: { node: ValueNode }) {
+  const { t } = useTranslation("editor");
+  if (node.field !== null) {
+    const typeName = node.field.typeName;
+    return (
+      <FieldCell
+        field={node.field}
+        name={node.name}
+        title={typeName ? `${node.name} · ${t("type.source", { name: typeName })}` : undefined}
+      />
+    );
+  }
+  return (
+    <div className="flex h-7 min-w-0 items-center gap-1.5 rounded-sm pr-2 pl-2 text-xs">
+      <span className="min-w-0 truncate" title={node.name}>
+        {node.name}
+      </span>
+      <span
+        className="ml-auto min-w-0 truncate font-mono text-[11px] text-muted-foreground"
+        title={node.preview}
+      >
+        {node.preview}
+      </span>
+    </div>
+  );
 }
 
-/** The rows of one section as a tree: groups expand in place and load their children on demand. */
-function SectionTable({ section, changed }: { section: ValueSection; changed: number }) {
+/** Values of one level in as many columns as fit (measured here, for nested groups). */
+function LeafGrid({ nodes }: { nodes: ValueNode[] }) {
+  const { ref, columns } = useGridColumns();
+  return (
+    <div ref={ref} className="min-w-0">
+      {nodes.length > 0 ? (
+        <DenseGrid columns={columns} count={nodes.length}>
+          {nodes.map((n) => (
+            <LeafCell key={n.path} node={n} />
+          ))}
+        </DenseGrid>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * The children of an open group: its values in a grid, then its own groups; "Show more" loads
+ * the next 200.
+ */
+function GroupChildren({ path, query }: { path: string; query: string }) {
   const { t } = useTranslation("editor");
-  const [loaded, setLoaded] = useState<ReadonlyMap<string, Loaded>>(new Map());
-  const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
-  const [query, setQuery] = useState("");
+  const [nodes, setNodes] = useState<ValueNode[] | null>(null);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
 
-  function load(path: string, offset: number) {
-    void fetchChildren(path, offset).then((result) => {
-      setLoaded((prev) => {
-        const next = new Map(prev);
-        const before = prev.get(path);
-        const nodes = offset === 0 ? [] : (before?.nodes ?? []);
-        next.set(path, {
-          nodes: result === null ? nodes : [...nodes, ...result.described],
-          total: result?.total ?? nodes.length,
-          loading: false,
-        });
-        return next;
-      });
-    });
-  }
-
-  const groupPath = section.groupPath;
   useEffect(() => {
-    if (groupPath === null) return;
     let cancelled = false;
-    void fetchChildren(groupPath, 0).then((result) => {
+    void fetchChildren(path, 0).then((result) => {
       if (cancelled) return;
-      setLoaded((prev) =>
-        new Map(prev).set(groupPath, {
-          nodes: result?.described ?? [],
-          total: result?.total ?? 0,
-          loading: false,
-        }),
-      );
+      setNodes(result?.described ?? []);
+      setTotal(result?.total ?? 0);
+      setLoading(false);
     });
     return () => {
       cancelled = true;
     };
-  }, [groupPath]);
+  }, [path]);
 
-  function toggle(node: ChildNode) {
-    const open = expanded.has(node.path);
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      if (open) next.delete(node.path);
-      else next.add(node.path);
-      return next;
-    });
-    if (!open && !loaded.has(node.path)) load(node.path, 0);
-  }
-
-  function showMore(path: string) {
-    const current = loaded.get(path);
-    if (current === undefined || current.loading) return;
-    setLoaded((prev) => new Map(prev).set(path, { ...current, loading: true }));
-    load(path, current.nodes.length);
-  }
-
-  const root = groupPath === null ? section.rows : (loaded.get(groupPath)?.nodes ?? null);
-  const rootTotal = groupPath === null ? section.rows.length : (loaded.get(groupPath)?.total ?? 0);
-  const rootLoading = groupPath !== null && loaded.get(groupPath)?.loading === true;
-
-  const flat = useMemo(() => {
-    const out: FlatRow[] = [];
-    const walk = (nodes: ChildNode[], depth: number) => {
-      for (const node of nodes) {
-        out.push({ type: "node", node, depth });
-        if (!node.isGroup || !expanded.has(node.path)) continue;
-        const children = loaded.get(node.path);
-        if (children === undefined) {
-          out.push({ type: "loading", key: `${node.path}#loading`, depth: depth + 1 });
-          continue;
-        }
-        walk(children.nodes, depth + 1);
-        if (children.nodes.length < children.total) {
-          out.push({ type: "more", path: node.path, depth: depth + 1, loading: children.loading });
-        }
+  function loadMore() {
+    if (nodes === null) return;
+    setLoading(true);
+    const offset = nodes.length;
+    void fetchChildren(path, offset).then((result) => {
+      if (result !== null) {
+        setNodes((prev) => [...(prev ?? []), ...result.described]);
+        setTotal(result.total);
       }
-    };
-    if (root !== null) walk(root, 0);
-    if (root !== null && groupPath !== null && root.length < rootTotal) {
-      out.push({ type: "more", path: groupPath, depth: 0, loading: rootLoading });
-    }
-    const q = query.trim().toLowerCase();
-    if (q === "") return out;
-    return out.filter((row) => row.type === "node" && matches(row.node, q));
-  }, [expanded, groupPath, loaded, query, root, rootLoading, rootTotal]);
+      setLoading(false);
+    });
+  }
+
+  if (nodes === null) return <EmptyText>{t("loading")}</EmptyText>;
+  const q = query.trim().toLowerCase();
+  const leaves = nodes.filter((n) => !n.isGroup && (q === "" || matches(n, q)));
+  const groups = nodes.filter((n) => n.isGroup);
 
   return (
-    <TablePanel>
-      <SectionTitle
-        title={section.name}
-        info={t("info.values")}
-        total={section.count}
-        changed={changed}
-        query={query}
-        onQuery={setQuery}
-        placeholder={t("search.values")}
-      />
-      <ColumnHeader
-        columns={VALUE_COLUMNS}
-        labels={[t("values.name"), t("values.type"), t("values.value"), t("values.change"), null]}
-      />
-      {root === null ? (
-        <TableNote>{t("loading")}</TableNote>
-      ) : root.length === 0 ? (
-        <TableNote>{t("empty.values")}</TableNote>
-      ) : flat.length === 0 ? (
-        <TableNote>{t("search.empty")}</TableNote>
-      ) : (
-        <VirtualRows
-          label={section.name}
-          items={flat}
-          itemKey={(row) =>
-            row.type === "node" ? row.node.path : row.type === "loading" ? row.key : `${row.path}#more`
-          }
-          render={(row) => {
-            if (row.type === "loading") {
-              return (
-                <PlainRow columns={VALUE_COLUMNS}>
-                  <span className="flex min-w-0 items-center text-muted-foreground">
-                    <Indent depth={row.depth} />
-                    <span className="w-5 shrink-0" />
-                    {t("loading")}
-                  </span>
-                </PlainRow>
-              );
-            }
-            if (row.type === "more") {
-              return (
-                <PlainRow columns={VALUE_COLUMNS}>
-                  <span className="flex min-w-0 items-center">
-                    <Indent depth={row.depth} />
-                    <span className="w-5 shrink-0" />
-                    <Button
-                      variant="ghost"
-                      size="xs"
-                      disabled={row.loading}
-                      onClick={() => showMore(row.path)}
-                    >
-                      {t("values.more")}
-                    </Button>
-                  </span>
-                </PlainRow>
-              );
-            }
-            const { node, depth } = row;
-            if (node.field !== null) {
-              return (
-                <FieldRow
-                  name={node.name}
-                  field={node.field}
-                  columns={VALUE_COLUMNS}
-                  lead={
-                    <>
-                      <Indent depth={depth} />
-                      <span className="w-5 shrink-0" />
-                    </>
-                  }
-                />
-              );
-            }
-            const open = expanded.has(node.path);
-            return (
-              <PlainRow columns={VALUE_COLUMNS}>
-                <span className="flex min-w-0 items-center gap-1">
-                  <Indent depth={depth} />
-                  {node.isGroup ? (
-                    <button
-                      type="button"
-                      aria-expanded={open}
-                      aria-label={open ? t("values.collapse") : t("values.expand")}
-                      onClick={() => toggle(node)}
-                      className="inline-flex size-5 shrink-0 items-center justify-center rounded-sm text-muted-foreground outline-none hover:bg-surface-high hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60"
-                    >
-                      <ChevronRight className={cn("size-3.5 transition-transform", open && "rotate-90")} />
-                    </button>
-                  ) : (
-                    <span className="w-5 shrink-0" />
-                  )}
-                  <span className="truncate" title={node.name}>
-                    {node.name}
-                  </span>
-                  {node.isGroup ? (
-                    <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
-                      {t("values.items", { count: node.children })}
-                    </span>
-                  ) : null}
-                </span>
-                <span />
-                <span className="col-span-3 truncate font-mono text-xs text-muted-foreground" title={node.preview}>
-                  {node.isGroup ? null : node.preview}
-                </span>
-              </PlainRow>
-            );
-          }}
-        />
-      )}
-    </TablePanel>
+    <div className="flex flex-col gap-1">
+      <LeafGrid nodes={leaves} />
+      {groups.map((g) => (
+        <GroupBlock key={g.path} node={g} query={query} />
+      ))}
+      {nodes.length < total ? (
+        <div>
+          <Button variant="ghost" size="xs" disabled={loading} onClick={loadMore}>
+            {t("values.more")}
+          </Button>
+        </div>
+      ) : null}
+    </div>
   );
 }
 
-/** Easy Save 3, GVAS and plain JSON saves: sections on the left, one dense table on the right. */
-export function ValuesView({ rows }: { rows: ValueRow[] }) {
+/**
+ * A group as a small heading ("› Player · 12 items · 1 changed") that opens to show its values.
+ * While searching, a closed group shows only when its name matches.
+ */
+function GroupBlock({
+  node,
+  query,
+  defaultOpen = false,
+}: {
+  node: ValueNode;
+  query: string;
+  defaultOpen?: boolean;
+}) {
   const { t } = useTranslation("editor");
+  const format = useFormatNumber();
   const { pending } = useEditorContext();
-  const sections = useMemo(() => valueSections(rows, t("sections.values")), [rows, t]);
-  const [selected, setSelected] = useState(sections[0]?.id ?? "values");
-  const section = sections.find((s) => s.id === selected) ?? sections[0];
-
-  const links = useMemo<SectionLink[]>(
-    () =>
-      sections.map((s) => ({
-        id: s.id,
-        name: s.name,
-        count: s.count,
-        changed:
-          s.groupPath === null
-            ? countPending(
-                pending,
-                s.rows.map((r) => r.path),
-              )
-            : countPendingUnder(pending, s.groupPath),
-      })),
-    [pending, sections],
-  );
+  const [open, setOpen] = useState(defaultOpen);
+  const changed = countPendingUnder(pending, node.path);
+  const q = query.trim().toLowerCase();
+  if (!open && q !== "" && !node.name.toLowerCase().includes(q)) return null;
 
   return (
-    <div className="flex min-h-0 flex-1 gap-2">
-      <SectionNav sections={links} selected={section?.id ?? ""} onSelect={setSelected} />
-      {section === undefined ? (
-        <TablePanel>
-          <SectionTitle title={t("sections.values")} total={0} changed={0} />
-          <TableNote>{t("empty.values")}</TableNote>
-        </TablePanel>
-      ) : (
-        <SectionTable
-          key={section.id}
-          section={section}
-          changed={links.find((l) => l.id === section.id)?.changed ?? 0}
+    <div className="flex min-w-0 flex-col gap-0.5">
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+        className="flex h-7 min-w-0 items-center gap-1.5 rounded-sm px-1 text-left text-xs outline-none hover:bg-surface-container focus-visible:ring-2 focus-visible:ring-ring/60"
+      >
+        <ChevronRight
+          aria-hidden="true"
+          className={cn(
+            "size-3.5 shrink-0 text-muted-foreground transition-transform",
+            open && "rotate-90",
+          )}
         />
-      )}
+        <span className="min-w-0 truncate font-semibold" title={node.name}>
+          {node.name}
+        </span>
+        <span className="shrink-0 text-[11px] text-muted-foreground tabular-nums">
+          {t("values.items", { count: node.children })}
+        </span>
+        {changed > 0 ? (
+          <span className="shrink-0 text-[11px] font-medium text-changed-foreground tabular-nums">
+            {t("count.changed", { count: changed, changed: format(changed) })}
+          </span>
+        ) : null}
+      </button>
+      {open ? (
+        <div className="ml-2.5 border-l border-border pl-2">
+          <GroupChildren path={node.path} query={query} />
+        </div>
+      ) : null}
     </div>
+  );
+}
+
+/**
+ * Easy Save 3, GVAS and plain JSON saves: one Values card. The top-level values flow in as many
+ * columns as fit, a page at a time; groups follow as headings that open in place.
+ */
+export function ValuesCard({ rows }: { rows: ValueRow[] }) {
+  const { t } = useTranslation("editor");
+  const format = useFormatNumber();
+  const { pending } = useEditorContext();
+  const [query, setQuery] = useState("");
+  const [page, setPage] = useState(0);
+  const { ref, columns } = useGridColumns();
+
+  const nodes = useMemo(() => rows.map(fromRow), [rows]);
+  const leaves = useMemo(() => nodes.filter((n) => !n.isGroup), [nodes]);
+  const groups = useMemo(() => nodes.filter((n) => n.isGroup), [nodes]);
+  const q = query.trim().toLowerCase();
+  const filtered = useMemo(
+    () => (q === "" ? leaves : leaves.filter((n) => matches(n, q))),
+    [leaves, q],
+  );
+  const size = columns * ROWS_PER_PAGE;
+  const shown = pageItems(filtered, page, size);
+  // A file with one group and nothing else opens it right away.
+  const openFirst = leaves.length === 0 && groups.length === 1;
+  const count = q === "" ? format(rows.length) : `${format(filtered.length)} / ${format(leaves.length)}`;
+
+  return (
+    <Section
+      title={t("sections.values")}
+      count={count}
+      changed={pending.size}
+      info={t("info.values")}
+      aside={
+        rows.length === 0 ? null : (
+          <>
+            <SearchBox
+              value={query}
+              onChange={(v) => {
+                setQuery(v);
+                setPage(0);
+              }}
+              placeholder={t("search.values")}
+            />
+            {pageCount(filtered.length, size) > 1 ? (
+              <Pager page={page} total={filtered.length} size={size} onPage={setPage} />
+            ) : null}
+          </>
+        )
+      }
+    >
+      <div ref={ref} className="flex min-w-0 flex-col gap-1">
+        {rows.length === 0 ? (
+          <EmptyText>{t("empty.values")}</EmptyText>
+        ) : (
+          <>
+            {shown.length > 0 ? (
+              <DenseGrid columns={columns} count={shown.length}>
+                {shown.map((n) => (
+                  <LeafCell key={n.path} node={n} />
+                ))}
+              </DenseGrid>
+            ) : q !== "" && leaves.length > 0 ? (
+              <EmptyText>{t("search.empty")}</EmptyText>
+            ) : null}
+            {groups.length > 0 ? (
+              <div className={cn("flex flex-col gap-0.5", shown.length > 0 && "border-t border-border pt-1.5")}>
+                {groups.map((g) => (
+                  <GroupBlock key={g.path} node={g} query={query} defaultOpen={openFirst} />
+                ))}
+              </div>
+            ) : null}
+          </>
+        )}
+      </div>
+    </Section>
   );
 }

@@ -10,14 +10,12 @@
     "variables": "Variables",
     "switches": "Switches",
     "values": "Values",
-    "statBonuses": "Stat bonuses",
-    "character": "Character",
-    "party": "Party"
+    "character": "Character"
   },
   "info": {
     "gold": "The party's gold. It must stay within the range shown below the field.",
-    "characters": "Pick a character to edit level, HP, MP, EXP and stat bonuses.",
-    "namesFrom": "Names from {{folder}}",
+    "characters": "Pick a character to edit. The stat bonuses (Max HP to Luck) are added to the character's stats from the game database; they are not the final values.",
+    "namesFrom": "Names from {{folder}}.",
     "noNames": "No game data folder was found, so names are shown as numbers.",
     "variables": "Game variables. Change them only if you know what they do.",
     "switches": "Game switches (true or false).",
@@ -35,36 +33,26 @@
     "hp": "HP",
     "mp": "MP",
     "exp": "EXP",
-    "lv": "Lv {{level}}",
-    "name": "Name"
+    "lv": "Lv {{level}}"
   },
   "field": {
     "undo": "Undo (was {{value}})",
     "increase": "Increase",
-    "decrease": "Decrease",
-    "info": "More information"
+    "decrease": "Decrease"
   },
   "search": {
     "list": "Search name, #id or value",
     "values": "Search values",
-    "empty": "Nothing matches your search.",
-    "characters": "Search name or #id"
+    "empty": "Nothing matches your search."
   },
   "pager": {
     "previous": "Previous page",
     "next": "Next page"
   },
   "values": {
-    "name": "Name",
-    "type": "Type",
-    "value": "Value",
-    "expand": "Expand",
-    "collapse": "Collapse",
     "more": "Show more",
     "items_one": "{{count}} item",
-    "items_other": "{{count}} items",
-    "id": "ID",
-    "change": "Change"
+    "items_other": "{{count}} items"
   },
   "problem": {
     "empty": "Enter a value.",
@@ -107,24 +95,8 @@
     "values": "No values in this file.",
     "characters": "No characters in this save."
   },
-  "nav": {
-    "label": "Sections",
-    "find": "Find section",
-    "sections": "Sections"
-  },
-  "table": {
-    "total_one": "{{total}} total",
-    "total_other": "{{total}} total",
+  "count": {
     "changed_one": "{{changed}} changed",
     "changed_other": "{{changed}} changed"
-  },
-  "party": {
-    "open": "Open {{name}}"
-  },
-  "tag": {
-    "int": "int",
-    "float": "float",
-    "bool": "bool",
-    "string": "text"
   }
 }
