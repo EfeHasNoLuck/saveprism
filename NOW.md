@@ -24,9 +24,16 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
    the backups of the open save, restore one: the current file is backed up first, the backup must open as a save, written
    bytes are checked; Codex review: no critical/high, symlink backup fixed); "Set all" per RPG Maker list (number box, switches
    all on/off; filtered entries; one undo step; all or nothing). Checked in the running app over CDP (dark/light, EN/TR).
-2. Parity with saveeditonline.com: gap list done in `docs/research/parity.md`. Top gaps: Ren'Py, RPG Maker XP/VX/VX Ace (Ruby
-   Marshal, parse as data only), paste a save code instead of a file, Godot, other Unity saves, Wolf RPG, TyranoScript, add a
-   value from the card view, pick the game's data folder by hand when names are not found.
+2. Parity with saveeditonline.com: everything the site opens must open and edit here. Full list (site home page checked
+   2026-10-24; `docs/research/parity.md` missed the rows marked *new*). A row is done only when a real or synthetic save opens,
+   edits and saves with the round-trip guard passing.
+   - Done: RPG Maker MV/MZ, Easy Save 3, Unreal GVAS, Palworld, JSON/text, SugarCube, paste/copy code, Ruby Marshal codec.
+   - In progress: RPG Maker XP/VX/VX Ace sections (gold, items, weapons, armors, actors, variables, switches, Data names).
+   - Formats left: Ren'Py `.save` (pickle as data only + re-sign), TyranoScript, Godot, Wolf RPG `.sav`, Unity generic
+     `.dat`/`.save` and PlayerPrefs (also in the registry, *new*), Flash `.sol` (AMF0/AMF3), QSP, Pokémon Gen 3, SQLite,
+     Naninovel view, RPG Maker 2000/2003 `.lsd` (*new*), Rags `.rsv` (*new*), The Witcher 3 `.sav` (*new*), Java-serialized
+     data as data only (*new*), packed (zip/gz) saves (*new*).
+   - Features left: add/delete a value from the card view, pick the game's data folder by hand.
    Done 2026-10-23: Twine SugarCube 2 story view (current-moment variables edited at their last writer in `state.delta`;
    partly changed values and revive tuples read-only; synthetic fixtures in `fixtures/synthetic/sugarcube/`). Not yet:
    2.37 saves with `state.history` (no deltas) open as the plain Values list; no real game save tested.
