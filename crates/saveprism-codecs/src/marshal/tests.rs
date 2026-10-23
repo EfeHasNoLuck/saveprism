@@ -113,6 +113,7 @@ fn all_fixtures() -> Vec<PathBuf> {
     let mut found = Vec::new();
     let mut stack = vec![
         fixtures().join("synthetic/rpgmaker-vxace"),
+        fixtures().join("synthetic/rpgmaker-vx"),
         fixtures().join("synthetic/rpgmaker-xp"),
         // Real saves kept locally only (git-ignored); missing folders are skipped.
         fixtures().join("external/rpgmaker-xp"),

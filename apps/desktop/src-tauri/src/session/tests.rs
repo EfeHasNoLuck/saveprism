@@ -2047,3 +2047,342 @@ fn the_pasted_folder_is_never_the_backup_folder() {
     let reopened = open(&env, &target, None).unwrap();
     assert_eq!(story_value(&story_view(&reopened).unwrap(), "gold"), "1");
 }
+
+// RPG Maker XP, VX and VX Ace saves (Ruby Marshal).
+
+const XP_SAVE: &str = "synthetic/rpgmaker-xp/Save1.rxdata";
+const VX_SAVE: &str = "synthetic/rpgmaker-vx/Save1.rvdata";
+const VXACE_SAVE: &str = "synthetic/rpgmaker-vxace/Save03.rvdata2";
+
+/// Copies a synthetic game database (`fixtures/<relative>/*`) to `Data` next to the copied save.
+fn copy_data(env: &Env, relative: &str) -> PathBuf {
+    let target = env.work.join("Data");
+    fs::create_dir_all(&target).unwrap();
+    for entry in fs::read_dir(fixture(relative)).unwrap() {
+        let entry = entry.unwrap();
+        fs::copy(entry.path(), target.join(entry.file_name())).unwrap();
+    }
+    target
+}
+
+fn values(entries: &[Entry]) -> Vec<&str> {
+    entries
+        .iter()
+        .map(|entry| entry.field.value.as_str())
+        .collect()
+}
+
+fn names(entries: &[Entry]) -> Vec<Option<&str>> {
+    entries.iter().map(|entry| entry.name.as_deref()).collect()
+}
+
+fn bonuses(actor: &Actor) -> Vec<(&str, &str)> {
+    actor
+        .bonuses
+        .iter()
+        .map(|bonus| (bonus.key.as_str(), bonus.field.value.as_str()))
+        .collect()
+}
+
+fn actor_names(view: &RpgMakerView) -> Vec<&str> {
+    view.actors
+        .iter()
+        .map(|actor| actor.name.as_str())
+        .collect()
+}
+
+fn open_rgss(env: &Env, relative: &str) -> Session {
+    let path = copy_in(env, relative);
+    let session = open(env, &path, None).unwrap();
+    assert_eq!(session.info().guard, GuardLevel::Exact, "{relative}");
+    session
+}
+
+/// The view of a copied save with a copied `Data` folder next to it, and that folder.
+fn view_with_data(save: &str, data: &str) -> (RpgMakerView, String) {
+    let env = env();
+    let folder = copy_data(&env, data);
+    let view = rpg_view(&open_rgss(&env, save)).unwrap();
+    (view, folder.to_string_lossy().into_owned())
+}
+
+#[test]
+fn xp_save_becomes_rpg_maker_sections() {
+    let env = env();
+    let view = rpg_view(&open_rgss(&env, XP_SAVE)).unwrap();
+
+    assert_eq!(view.engine, "xp");
+    assert_eq!(view.gold.value, "5000");
+    assert_eq!(view.gold.max, Some(9_999_999));
+    assert_eq!(view.gold.hint, "Whole number \u{b7} 0 to 9,999,999");
+    assert!(view.gold.editable);
+
+    assert_eq!(actor_names(&view), ["Aluxes", "Basil"]);
+    let actor = &view.actors[0];
+    assert_eq!(actor.id, 1);
+    assert_eq!(actor.level.value, "7");
+    assert_eq!(actor.level.max, Some(99));
+    assert_eq!(actor.hp.value, "741");
+    assert_eq!(actor.mp.value, "534");
+    assert_eq!(actor.exp.as_ref().map(|f| f.value.as_str()), Some("500"));
+    assert_eq!(
+        bonuses(actor),
+        [
+            ("maxHp", "0"),
+            ("maxMp", "0"),
+            ("strength", "0"),
+            ("dexterity", "0"),
+            ("agility", "0"),
+            ("intelligence", "0"),
+        ]
+    );
+    // The party keeps copies of the actors, but the game loads them from Game_Actors (dump 7).
+    assert_eq!(actor.hp.path, "/7/@data/1/@hp");
+    assert_eq!(actor.mp.path, "/7/@data/1/@sp");
+    assert_eq!(view.actors[1].level.path, "/7/@data/2/@level");
+    assert!(actor.hp.editable);
+
+    assert_eq!(ids(&view.items), [1, 4]);
+    assert_eq!(values(&view.items), ["3", "1"]);
+    assert_eq!(view.items[0].field.max, Some(99));
+    assert_eq!(ids(&view.weapons), [1]);
+    assert!(view.armors.is_empty());
+    // Variable 2 is 0 and has no name, so it is left out.
+    assert_eq!(ids(&view.variables), [1, 3, 4]);
+    assert_eq!(values(&view.variables), ["100", "-7", "8589934592"]);
+    assert_eq!(ids(&view.switches), [1, 3]);
+    assert_eq!(view.switches[0].field.kind, FieldKind::Bool);
+
+    // No Data folder next to the save: no names.
+    assert!(view.names_folder.is_none());
+    assert!(view.items.iter().all(|entry| entry.name.is_none()));
+}
+
+#[test]
+fn vx_save_becomes_rpg_maker_sections() {
+    let env = env();
+    let view = rpg_view(&open_rgss(&env, VX_SAVE)).unwrap();
+
+    assert_eq!(view.engine, "vx");
+    assert_eq!(view.gold.value, "9000");
+    assert_eq!(view.gold.max, Some(9_999_999));
+
+    // The party keeps actor ids (1 and 3); the name of actor 3 is not UTF-8.
+    assert_eq!(actor_names(&view), ["Ralph", "Benn\u{fffd}tt"]);
+    let actor = &view.actors[0];
+    assert_eq!(actor.level.value, "9");
+    assert_eq!(actor.hp.value, "612");
+    assert_eq!(actor.mp.value, "88");
+    assert_eq!(actor.exp.as_ref().map(|f| f.value.as_str()), Some("2500"));
+    assert_eq!(
+        bonuses(actor),
+        [
+            ("maxHp", "50"),
+            ("maxMp", "0"),
+            ("attack", "5"),
+            ("defense", "3"),
+            ("spirit", "0"),
+            ("agility", "2"),
+        ]
+    );
+    assert_eq!(view.actors[1].hp.path, "/9/@data/3/@hp");
+    assert_eq!(view.actors[1].mp.path, "/9/@data/3/@mp");
+
+    assert_eq!(ids(&view.items), [1, 9]);
+    assert_eq!(values(&view.items), ["3", "2"]);
+    assert_eq!(ids(&view.weapons), [2]);
+    assert_eq!(ids(&view.armors), [5]);
+    assert_eq!(ids(&view.variables), [1, 3, 4]);
+    assert_eq!(view.variables[2].field.kind, FieldKind::String);
+    assert_eq!(ids(&view.switches), [2, 4]);
+    assert!(view.names_folder.is_none());
+}
+
+#[test]
+fn vxace_save_becomes_rpg_maker_sections() {
+    let env = env();
+    let view = rpg_view(&open_rgss(&env, VXACE_SAVE)).unwrap();
+
+    assert_eq!(view.engine, "vxace");
+    assert_eq!(view.gold.value, "1250");
+    assert_eq!(view.gold.max, Some(99_999_999));
+
+    assert_eq!(actor_names(&view), ["Eric", "Natalie"]);
+    let eric = &view.actors[0];
+    assert_eq!(eric.level.value, "12");
+    assert_eq!(eric.hp.value, "451");
+    assert_eq!(eric.mp.value, "80");
+    // `@exp` is {2 => 100, 1 => 4200} and the class is 1.
+    let exp = eric.exp.as_ref().unwrap();
+    assert_eq!(exp.value, "4200");
+    assert_eq!(exp.path, "/1/actors/@data/1/@exp/1");
+    assert!(exp.editable);
+    assert_eq!(
+        bonuses(eric),
+        [
+            ("maxHp", "50"),
+            ("maxMp", "10"),
+            ("attack", "5"),
+            ("defense", "4"),
+            ("magicAttack", "3"),
+            ("magicDefense", "2"),
+            ("agility", "1"),
+            ("luck", "0"),
+        ]
+    );
+
+    // The slot of Natalie in Game_Actors is a link to the object kept in Game_System.
+    let natalie = &view.actors[1];
+    assert_eq!(natalie.hp.value, "452");
+    assert_eq!(natalie.hp.path, "/1/system/@companion/@hp");
+    assert!(natalie.hp.editable);
+    assert_eq!(natalie.bonuses.len(), 8);
+
+    assert_eq!(ids(&view.items), [1, 2]);
+    assert_eq!(values(&view.items), ["5", "1"]);
+    assert_eq!(view.items[0].field.path, "/1/party/@items/0");
+    assert_eq!(ids(&view.weapons), [1]);
+    assert!(view.armors.is_empty());
+    assert_eq!(ids(&view.variables), (1..=10).collect::<Vec<u32>>());
+    assert_eq!(view.variables[5].field.kind, FieldKind::Float);
+    assert_eq!(ids(&view.switches), [1, 4]);
+    assert!(view.names_folder.is_none());
+
+    // The first VX Ace save has no stat bonuses.
+    let view = rpg_view(&open_rgss(&env, "synthetic/rpgmaker-vxace/Save01.rvdata2")).unwrap();
+    assert_eq!(view.engine, "vxace");
+    assert_eq!(actor_names(&view), ["Eric", "Natalie"]);
+    assert!(view.actors[0].bonuses.is_empty());
+}
+
+#[test]
+fn rgss_names_come_from_the_data_folder_next_to_the_save() {
+    let (view, data) = view_with_data(XP_SAVE, "synthetic/rpgmaker-xp/Data");
+    assert_eq!(view.names_folder, Some(data));
+    assert_eq!(
+        names(&view.items),
+        [Some("Herb Tonic"), Some("Phoenix Ash")]
+    );
+    assert_eq!(names(&view.weapons), [Some("Bronze Sword")]);
+    // The named variable 2 is shown although its value is 0.
+    assert_eq!(ids(&view.variables), [1, 2, 3, 4]);
+    assert_eq!(
+        names(&view.variables),
+        [
+            Some("Gold Found"),
+            Some("Steps Taken"),
+            None,
+            Some("Big Number")
+        ]
+    );
+    assert_eq!(ids(&view.switches), [1, 2, 3]);
+    assert_eq!(view.switches[1].name.as_deref(), Some("Lamp Lit"));
+
+    let (view, data) = view_with_data(VX_SAVE, "synthetic/rpgmaker-vx/Data");
+    assert_eq!(view.names_folder, Some(data));
+    assert_eq!(names(&view.items), [Some("Herb"), Some("Smelling Salts")]);
+    assert_eq!(names(&view.weapons), [Some("Long Spear")]);
+    assert_eq!(names(&view.armors), [Some("Round Shield")]);
+    assert_eq!(
+        names(&view.variables),
+        [Some("Coins"), Some("Day"), None, None]
+    );
+    assert_eq!(ids(&view.switches), [1, 2, 4]);
+    assert_eq!(view.switches[0].name.as_deref(), Some("Bell Rung"));
+
+    let (view, data) = view_with_data(VXACE_SAVE, "synthetic/rpgmaker-vxace/Data");
+    assert_eq!(view.names_folder, Some(data));
+    assert_eq!(
+        names(&view.items),
+        [Some("Healing Herb"), Some("Ether Drop")]
+    );
+    assert_eq!(names(&view.weapons), [Some("\u{c9}p\u{e9}e courte")]);
+    assert_eq!(ids(&view.variables), (1..=11).collect::<Vec<u32>>());
+    assert_eq!(view.variables[10].name.as_deref(), Some("Zero Counter"));
+    assert_eq!(
+        names(&view.switches),
+        [Some("Door Open"), Some("Lights Off"), Some("Met Natalie")]
+    );
+}
+
+#[test]
+fn rgss_names_also_come_from_the_folder_above_and_only_for_the_same_engine() {
+    // A save in a subfolder of the game: `<game>/Saves/Save1.rxdata` and `<game>/Data`.
+    let env = env();
+    let saves = env.work.join("Saves");
+    fs::create_dir_all(&saves).unwrap();
+    let path = saves.join("Save1.rxdata");
+    fs::copy(fixture(XP_SAVE), &path).unwrap();
+    let data = copy_data(&env, "synthetic/rpgmaker-xp/Data");
+    let view = rpg_view(&open(&env, &path, None).unwrap()).unwrap();
+    assert_eq!(view.names_folder, Some(data.to_string_lossy().into_owned()));
+
+    // VX Ace data files next to an XP save are not read.
+    let (view, _) = view_with_data(XP_SAVE, "synthetic/rpgmaker-vxace/Data");
+    assert!(view.names_folder.is_none());
+}
+
+#[test]
+fn rgss_edits_through_the_view_survive_a_save() {
+    for relative in [XP_SAVE, VX_SAVE, VXACE_SAVE] {
+        let env = env();
+        let path = copy_in(&env, relative);
+        let mut session = open(&env, &path, None).unwrap();
+        let view = rpg_view(&session).unwrap();
+        let last = view.actors.len() - 1;
+        session.edit_value(&view.gold.path, "4321").unwrap();
+        session.edit_value(&view.items[0].field.path, "42").unwrap();
+        session
+            .edit_value(&view.actors[last].hp.path, "999")
+            .unwrap();
+        session.save(path.to_str().unwrap(), false).unwrap();
+
+        let reopened = open(&env, &path, None).unwrap();
+        let info = reopened.info();
+        assert_eq!(info.guard, GuardLevel::Exact, "{relative}");
+        assert!(info.editable, "{relative}");
+        let again = rpg_view(&reopened).unwrap();
+        assert_eq!(again.gold.value, "4321", "{relative}");
+        assert_eq!(again.items[0].field.value, "42", "{relative}");
+        assert_eq!(again.actors[last].hp.value, "999", "{relative}");
+        assert_eq!(again.actors[last].hp.path, view.actors[last].hp.path);
+    }
+}
+
+#[test]
+fn rgss_limits_are_enforced() {
+    for (relative, max, over) in [
+        (XP_SAVE, 9_999_999, "10000000"),
+        (VX_SAVE, 9_999_999, "10000000"),
+        (VXACE_SAVE, 99_999_999, "100000000"),
+    ] {
+        let env = env();
+        let mut session = open_rgss(&env, relative);
+        let view = rpg_view(&session).unwrap();
+        let gold = view.gold.path.clone();
+
+        let error = session.edit_value(&gold, over).unwrap_err();
+        assert_eq!(error.code, app_codes::OUT_OF_RANGE, "{relative}");
+        assert_eq!(session.field_info(&gold).unwrap().max, Some(max));
+        session.edit_value(&gold, &max.to_string()).unwrap();
+
+        let count = view.items[0].field.path.clone();
+        let error = session.edit_value(&count, "100").unwrap_err();
+        assert_eq!(error.code, app_codes::OUT_OF_RANGE, "{relative}");
+        let level = view.actors[0].level.path.clone();
+        let error = session.edit_value(&level, "0").unwrap_err();
+        assert_eq!(error.code, app_codes::OUT_OF_RANGE, "{relative}");
+    }
+
+    // JSON Apply checks the same limit.
+    let env = env();
+    let mut session = open_rgss(&env, XP_SAVE);
+    let gold = rpg_view(&session).unwrap().gold.path;
+    let text = edited(&session, |json| {
+        *json.pointer_mut(&gold).unwrap() = 10_000_000.into();
+    });
+    let error = session.apply_json(&text).unwrap_err();
+    assert_eq!(error.code, app_codes::OUT_OF_RANGE);
+    assert!(error.message.contains("9,999,999"), "{}", error.message);
+    assert!(session.pending_changes().is_empty());
+}

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Writes synthetic RPG Maker XP / VX Ace saves as Ruby Marshal 4.8 data.
+"""Writes synthetic RPG Maker XP / VX / VX Ace saves as Ruby Marshal 4.8 data.
 
 Written from the public format description (doc/language/marshal.rdoc in the Ruby repository)
 and public knowledge of what RPG Maker stores in a save. Ruby is not used and nothing is
@@ -10,7 +10,12 @@ executed: this script only emits bytes. The data is invented.
 writes
     fixtures/synthetic/rpgmaker-vxace/Save01.rvdata2  a VX Ace save (header hash, contents hash)
     fixtures/synthetic/rpgmaker-vxace/Save02.rvdata2  the same plus script data with rarer types
+    fixtures/synthetic/rpgmaker-vxace/Save03.rvdata2  stat bonuses (@param_plus), experience of two
+                                                      classes, an actor slot that is an object link
     fixtures/synthetic/rpgmaker-xp/Save1.rxdata       an XP save (one dump per game object, Ruby 1.8)
+    fixtures/synthetic/rpgmaker-vx/Save1.rvdata       a VX save (one dump per game object, Ruby 1.8)
+    fixtures/synthetic/rpgmaker-*/Data/               a small game database for each engine (Items,
+                                                      Weapons, Armors, System): the names of the saves
 
 Like Ruby, the writer stores an object seen before as a link ("@", by Python object identity)
 and a symbol seen before as a symbol link (";").
@@ -390,8 +395,9 @@ def base_item(class_name=None, item_id=0):
     return Obj("Game_BaseItem", [("@class", cls), ("@item_id", item_id)])
 
 
-def vxace_actor(actor_id, name, nickname, character_name, level, exp):
-    return Obj(
+def vxace_actor(actor_id, name, nickname, character_name, level, exp, param_plus=None, exp_by_class=None):
+    """`param_plus` adds @param_plus (8 stat bonuses); `exp_by_class` replaces {actor_id => exp}."""
+    actor = Obj(
         "Game_Actor",
         [
             ("@hp", 450 + actor_id),
@@ -413,22 +419,29 @@ def vxace_actor(actor_id, name, nickname, character_name, level, exp):
             ("@level", level),
             ("@action_input_index", 0),
             ("@last_skill", base_item()),
-            ("@exp", RHash([(actor_id, exp)])),
+            ("@exp", RHash(exp_by_class or [(actor_id, exp)])),
             ("@equips", [base_item("RPG::Weapon", 1), base_item("RPG::Armor", 2), base_item()]),
             ("@skills", [3, 4]),
             ("@battler_name", RStr("")),
             ("@battler_hue", 0),
         ],
     )
+    if param_plus is not None:
+        # Game_BattlerBase sets @param_plus right after @hp, @mp and @tp.
+        actor.ivars.insert(3, ("@param_plus", param_plus))
+    return actor
 
 
-def vxace_contents(extra=None):
+def vxace_contents(extra=None, actors=None, system_extra=None):
+    """`actors` replaces Game_Actors' @data; `system_extra` adds an instance variable to Game_System
+    (the first object of the hash, so an object in it is written before the actors)."""
     hero_sprite = RStr("Actor1")  # shared by the actor and the player: written once, then linked
-    actors = [
-        None,
-        vxace_actor(1, "Eric", "The Brave", hero_sprite, 12, 4200),
-        vxace_actor(2, "Natalie", "Ünal's friend ✦ ナタリー", RStr("Actor1"), 11, 3900),
-    ]
+    if actors is None:
+        actors = [
+            None,
+            vxace_actor(1, "Eric", "The Brave", hero_sprite, 12, 4200),
+            vxace_actor(2, "Natalie", "Ünal's friend ✦ ナタリー", RStr("Actor1"), 11, 3900),
+        ]
     screen = Obj(
         "Game_Screen",
         [
@@ -491,26 +504,29 @@ def vxace_contents(extra=None):
             ("@vehicle_type", Sym("walk")),
         ],
     )
+    system = Obj(
+        "Game_System",
+        [
+            ("@save_disabled", False),
+            ("@menu_disabled", False),
+            ("@encounter_disabled", False),
+            ("@formation_disabled", False),
+            ("@battle_count", 7),
+            ("@save_count", 2),
+            ("@version_id", 87654321),
+            ("@window_tone", tone(-34.0, 0.0, 68.0, 0.0)),
+            ("@battle_bgm", audio("RPG::BGM", "Battle1")),
+            ("@battle_end_me", audio("RPG::ME", "Victory1")),
+            ("@saved_bgm", None),
+            ("@frames_on_save", 302400),
+            ("@bgm_on_save", audio("RPG::BGM", "Town1")),
+            ("@bgs_on_save", audio("RPG::BGS", "", 80)),
+        ],
+    )
+    if system_extra:
+        system.ivars.append(system_extra)
     pairs = [
-        (Sym("system"), Obj(
-            "Game_System",
-            [
-                ("@save_disabled", False),
-                ("@menu_disabled", False),
-                ("@encounter_disabled", False),
-                ("@formation_disabled", False),
-                ("@battle_count", 7),
-                ("@save_count", 2),
-                ("@version_id", 87654321),
-                ("@window_tone", tone(-34.0, 0.0, 68.0, 0.0)),
-                ("@battle_bgm", audio("RPG::BGM", "Battle1")),
-                ("@battle_end_me", audio("RPG::ME", "Victory1")),
-                ("@saved_bgm", None),
-                ("@frames_on_save", 302400),
-                ("@bgm_on_save", audio("RPG::BGM", "Town1")),
-                ("@bgs_on_save", audio("RPG::BGS", "", 80)),
-            ],
-        )),
+        (Sym("system"), system),
         (Sym("screen"), screen),
         (Sym("timer"), Obj("Game_Timer", [("@count", 0), ("@working", False)])),
         (Sym("message"), Obj(
@@ -604,6 +620,49 @@ def script_data():
         (Sym("string_keys"), RHash([(RStr("key"), 1), (RStr("other"), 2)])),
     ]
     return (Sym("script_data"), RHash(pairs))
+
+
+def vxace_save03_contents():
+    """Stat bonuses, experience of two classes (the current class second) and a script that keeps
+    the companion in Game_System: Natalie is written there, so her slot in Game_Actors is a link."""
+    eric = vxace_actor(
+        1, "Eric", "The Brave", RStr("Actor1"), 12, 4200,
+        param_plus=[50, 10, 5, 4, 3, 2, 1, 0],
+        exp_by_class=[(2, 100), (1, 4200)],
+    )
+    natalie = vxace_actor(2, "Natalie", "The Wise", RStr("Actor1"), 11, 3900, param_plus=[0] * 8)
+    return vxace_contents(actors=[None, eric, natalie], system_extra=("@companion", natalie))
+
+
+def vxace_base_item(cls, item_id, name):
+    return Obj(
+        cls,
+        [
+            ("@id", item_id),
+            ("@name", RStr(name)),
+            ("@icon_index", item_id),
+            ("@description", RStr("")),
+            ("@features", []),
+            ("@note", RStr("")),
+            ("@price", 10 * item_id),
+        ],
+    )
+
+
+def vxace_system():
+    return Obj(
+        "RPG::System",
+        [
+            ("@game_title", RStr("Synthetic Ace")),
+            ("@version_id", 87654321),
+            ("@japanese", False),
+            ("@party_members", [1, 2]),
+            ("@currency_unit", RStr("G")),
+            ("@elements", [None, RStr("Fire")]),
+            ("@switches", [None, RStr("Door Open"), RStr("Lights Off"), RStr(""), RStr("Met Natalie")]),
+            ("@variables", [None] + [RStr("") for _ in range(10)] + [RStr("Zero Counter")]),
+        ],
+    )
 
 
 # ----- XP (Ruby 1.8: no encodings) --------------------------------------------------------------
@@ -746,6 +805,219 @@ def xp_dumps():
     ]
 
 
+def xp_base_item(cls, item_id, name):
+    return Obj(
+        cls,
+        [
+            ("@id", item_id),
+            ("@name", RStr(name, None)),
+            ("@icon_name", RStr("", None)),
+            ("@description", RStr("", None)),
+            ("@price", 10 * item_id),
+        ],
+    )
+
+
+def xp_system():
+    return Obj(
+        "RPG::System",
+        [
+            ("@magic_number", 2468135),
+            ("@party_members", [1, 2]),
+            ("@elements", [RStr("", None), RStr("Fire", None)]),
+            ("@switches", [None] + [RStr(name, None) for name in ["Gate Open", "Lamp Lit", "Boss Beaten"]]),
+            ("@variables", [None] + [RStr(name, None) for name in ["Gold Found", "Steps Taken", "", "Big Number"]]),
+            ("@windowskin_name", RStr("001-Blue01", None)),
+        ],
+    )
+
+
+# ----- VX (Ruby 1.8: no encodings) --------------------------------------------------------------
+
+
+def vx_audio(cls, name, volume=100, pitch=100):
+    return Obj(cls, [("@name", RStr(name, None)), ("@volume", volume), ("@pitch", pitch)])
+
+
+def vx_actor(actor_id, name, level, hp, mp, exp, plus):
+    """`plus`: the six stat bonuses (max HP, max MP, attack, defense, spirit, agility)."""
+    actor = Obj("Game_Actor", [])
+    # The battle action points back at its battler: a link inside the same dump.
+    action = Obj(
+        "Game_BattleAction",
+        [("@battler", actor), ("@speed", 0), ("@kind", 0), ("@basic", -1), ("@skill_id", 0), ("@item_id", 0),
+         ("@target_index", -1), ("@forcing", False), ("@value", 0)],
+    )
+    maxhp_plus, maxmp_plus, atk_plus, def_plus, spi_plus, agi_plus = plus
+    actor.ivars = [
+        ("@battler_name", RStr("", None)),
+        ("@battler_hue", 0),
+        ("@hp", hp),
+        ("@mp", mp),
+        ("@action", action),
+        ("@states", []),
+        ("@state_turns", RHash([])),
+        ("@hidden", False),
+        ("@immortal", False),
+        ("@maxhp_plus", maxhp_plus),
+        ("@maxmp_plus", maxmp_plus),
+        ("@atk_plus", atk_plus),
+        ("@def_plus", def_plus),
+        ("@spi_plus", spi_plus),
+        ("@agi_plus", agi_plus),
+        ("@animation_id", 0),
+        ("@white_flash", False),
+        ("@collapse", False),
+        ("@actor_id", actor_id),
+        ("@name", name),
+        ("@character_name", RStr("Actor1", None)),
+        ("@character_index", actor_id - 1),
+        ("@face_name", RStr("Actor1", None)),
+        ("@face_index", actor_id - 1),
+        ("@class_id", actor_id),
+        ("@weapon_id", 1),
+        ("@armor1_id", 0),
+        ("@armor2_id", 0),
+        ("@armor3_id", 0),
+        ("@armor4_id", 0),
+        ("@level", level),
+        ("@exp_list", [0, 0, 25, 65, 127, 215, 335]),
+        ("@exp", exp),
+        ("@skills", [1]),
+    ]
+    return actor
+
+
+def vx_dumps():
+    ralph = vx_actor(1, RStr("Ralph", None), 9, 612, 88, 2500, (50, 0, 5, 3, 0, 2))
+    ulrika = vx_actor(2, RStr("Ulrika", None), 8, 480, 120, 2100, (0, 0, 0, 0, 0, 0))
+    # A name in Latin-1, not UTF-8: it reads as bytes.
+    bennett = vx_actor(3, RStr(b"Benn\xe9tt", None), 6, 390, 60, 900, (0, 20, 0, 0, 4, 0))
+    return [
+        [[RStr("Actor1", None), 0], [RStr("Actor1", None), 2]],
+        654321,
+        vx_audio("RPG::BGM", "Town1"),
+        vx_audio("RPG::BGS", "", 80),
+        Obj(
+            "Game_System",
+            [
+                ("@timer", 0),
+                ("@timer_working", False),
+                ("@save_disabled", False),
+                ("@menu_disabled", False),
+                ("@encounter_disabled", False),
+                ("@save_count", 4),
+                ("@version_id", 13579),
+                ("@battle_bgm", vx_audio("RPG::BGM", "Battle1")),
+                ("@battle_end_me", vx_audio("RPG::ME", "Victory1")),
+            ],
+        ),
+        Obj(
+            "Game_Message",
+            [
+                ("@texts", []),
+                ("@face_name", RStr("", None)),
+                ("@face_index", 0),
+                ("@background", 0),
+                ("@position", 2),
+                ("@visible", False),
+            ],
+        ),
+        Obj("Game_Switches", [("@data", [None, False, True, None, True])]),
+        Obj("Game_Variables", [("@data", [None, 30, 0, -12, RStr("note", None)])]),
+        Obj("Game_SelfSwitches", [("@data", RHash([([1, 1, RStr("A", None)], True)]))]),
+        Obj("Game_Actors", [("@data", [None, ralph, ulrika, bennett])]),
+        Obj(
+            "Game_Party",
+            [
+                ("@gold", 9000),
+                ("@steps", 222),
+                ("@last_item_id", 0),
+                ("@last_actor_index", 0),
+                ("@last_target_index", 0),
+                ("@actors", [1, 3]),
+                ("@items", RHash([(1, 3), (9, 2)])),
+                ("@weapons", RHash([(2, 1)])),
+                ("@armors", RHash([(5, 1)])),
+            ],
+        ),
+        Obj("Game_Troop", [("@enemies", []), ("@turn_count", 0), ("@names_count", RHash([]))]),
+        Obj(
+            "Game_Map",
+            [
+                ("@map_id", 2),
+                ("@display_x", 0),
+                ("@display_y", 512),
+                ("@need_refresh", False),
+                ("@events", RHash([])),
+                ("@common_events", RHash([])),
+                ("@parallax_x", 0.5),
+            ],
+        ),
+        Obj(
+            "Game_Player",
+            [
+                ("@id", 0),
+                ("@x", 4),
+                ("@y", 9),
+                ("@real_x", 1024),
+                ("@real_y", 2304),
+                ("@direction", 8),
+                ("@character_name", RStr("Actor1", None)),
+                ("@character_index", 0),
+            ],
+        ),
+    ]
+
+
+def vx_base_item(cls, item_id, name):
+    return Obj(
+        cls,
+        [
+            ("@id", item_id),
+            ("@name", RStr(name, None)),
+            ("@icon_index", item_id),
+            ("@description", RStr("", None)),
+            ("@note", RStr("", None)),
+            ("@price", 10 * item_id),
+        ],
+    )
+
+
+def vx_system():
+    return Obj(
+        "RPG::System",
+        [
+            ("@game_title", RStr("Synthetic VX", None)),
+            ("@version_id", 13579),
+            ("@party_members", [1, 3]),
+            ("@elements", [None, RStr("Fire", None)]),
+            ("@switches", [None] + [RStr(name, None) for name in ["Bell Rung", "", "", ""]]),
+            ("@variables", [None] + [RStr(name, None) for name in ["Coins", "Day", "", ""]]),
+        ],
+    )
+
+
+# ----- game databases ---------------------------------------------------------------------------
+
+
+def database(make, cls, names, count):
+    """[nil, entry 1, ..., entry count], as in Items/Weapons/Armors; ids without a name get ""."""
+    return [None] + [make(cls, item_id, names.get(item_id, "")) for item_id in range(1, count + 1)]
+
+
+def write_data(folder, extension, float_text, make, items, weapons, armors, system):
+    for name, value in [
+        ("Items", database(make, "RPG::Item", items, max(items))),
+        ("Weapons", database(make, "RPG::Weapon", weapons, max(weapons))),
+        ("Armors", database(make, "RPG::Armor", armors, max(armors))),
+        ("System", system),
+    ]:
+        dumper = Dumper(float_text)
+        dumper.dump(value)
+        write(os.path.join("synthetic", folder, "Data", "%s.%s" % (name, extension)), bytes(dumper.out))
+
+
 def write(relative, data):
     path = os.path.join(FIXTURES, relative)
     os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -765,10 +1037,34 @@ def main():
     ace.dump(vxace_contents(script_data()))
     write(os.path.join("synthetic", "rpgmaker-vxace", "Save02.rvdata2"), bytes(ace.out))
 
+    ace = Dumper(ruby19_float)
+    ace.dump(vxace_header())
+    ace.dump(vxace_save03_contents())
+    write(os.path.join("synthetic", "rpgmaker-vxace", "Save03.rvdata2"), bytes(ace.out))
+
     xp = Dumper(ruby18_float)
     for value in xp_dumps():
         xp.dump(value)
     write(os.path.join("synthetic", "rpgmaker-xp", "Save1.rxdata"), bytes(xp.out))
+
+    vx = Dumper(ruby18_float)
+    for value in vx_dumps():
+        vx.dump(value)
+    write(os.path.join("synthetic", "rpgmaker-vx", "Save1.rvdata"), bytes(vx.out))
+
+    write_data(
+        "rpgmaker-vxace", "rvdata2", ruby19_float, vxace_base_item,
+        {1: "Healing Herb", 2: "Ether Drop"}, {1: "Épée courte"}, {1: "Leather Cap"}, vxace_system(),
+    )
+    write_data(
+        "rpgmaker-xp", "rxdata", ruby18_float, xp_base_item,
+        {1: "Herb Tonic", 2: "Clear Water", 4: "Phoenix Ash"}, {1: "Bronze Sword"}, {1: "Cotton Shirt"},
+        xp_system(),
+    )
+    write_data(
+        "rpgmaker-vx", "rvdata", ruby18_float, vx_base_item,
+        {1: "Herb", 9: "Smelling Salts"}, {1: "Club", 2: "Long Spear"}, {5: "Round Shield"}, vx_system(),
+    )
 
 
 if __name__ == "__main__":

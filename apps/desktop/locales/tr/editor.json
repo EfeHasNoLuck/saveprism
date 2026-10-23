@@ -16,7 +16,7 @@
   },
   "info": {
     "gold": "Takımın altını. Alanın altında gösterilen aralıkta kalmalıdır.",
-    "characters": "Düzenlemek için bir karakter seçin. Özellik bonusları (Maks. HP'den Şans'a) karakterin oyun veritabanındaki değerlerine eklenir; son değerler değildir.",
+    "characters": "Düzenlemek için bir karakter seçin. Özellik bonusları karakterin oyun veritabanındaki değerlerine eklenir; son değerler değildir.",
     "namesFrom": "İsimler şuradan: {{folder}}.",
     "noNames": "Oyun veri klasörü bulunamadı; isimler numara olarak gösteriliyor.",
     "variables": "Oyun değişkenleri. Ne işe yaradıklarını bilmiyorsanız değiştirmeyin.",
@@ -109,7 +109,11 @@
     "magicAttack": "B.Saldırı",
     "magicDefense": "B.Savunma",
     "agility": "Çeviklik",
-    "luck": "Şans"
+    "luck": "Şans",
+    "strength": "Güç",
+    "dexterity": "Beceri",
+    "intelligence": "Zekâ",
+    "spirit": "Ruh"
   },
   "empty": {
     "item": "Bu kayıtta eşya yok.",

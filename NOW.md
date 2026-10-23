@@ -27,8 +27,9 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
 2. Parity with saveeditonline.com: everything the site opens must open and edit here. Full list (site home page checked
    2026-10-24; `docs/research/parity.md` missed the rows marked *new*). A row is done only when a real or synthetic save opens,
    edits and saves with the round-trip guard passing.
-   - Done: RPG Maker MV/MZ, Easy Save 3, Unreal GVAS, Palworld, JSON/text, SugarCube, paste/copy code, Ruby Marshal codec.
-   - In progress: RPG Maker XP/VX/VX Ace sections (gold, items, weapons, armors, actors, variables, switches, Data names).
+   - Done: RPG Maker MV/MZ, Easy Save 3, Unreal GVAS, Palworld, JSON/text, SugarCube, paste/copy code, Ruby Marshal codec,
+     RPG Maker XP/VX/VX Ace sections (gold, items, weapons, armors, actors, variables, switches, names from a plain `Data`
+     folder; 2026-10-24, synthetic saves only; XP shows SP as "MP").
    - Formats left: Ren'Py `.save` (pickle as data only + re-sign), TyranoScript, Godot, Wolf RPG `.sav`, Unity generic
      `.dat`/`.save` and PlayerPrefs (also in the registry, *new*), Flash `.sol` (AMF0/AMF3), QSP, Pokémon Gen 3, SQLite,
      Naninovel view, RPG Maker 2000/2003 `.lsd` (*new*), Rags `.rsv` (*new*), The Witcher 3 `.sav` (*new*), Java-serialized

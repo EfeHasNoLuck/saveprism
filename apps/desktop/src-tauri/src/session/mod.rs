@@ -33,6 +33,7 @@ mod export;
 mod game;
 mod history;
 mod json_apply;
+mod rgss;
 mod sugarcube;
 
 pub use backups::BackupRow;

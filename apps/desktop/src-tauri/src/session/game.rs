@@ -1,9 +1,10 @@
 //! The game view of the open document.
 //!
 //! RPG Maker MV/MZ saves become game sections (gold, characters, items, weapons, armors,
-//! variables, switches) with real names read from the game's `data` folder. SugarCube (Twine) saves
-//! become a story view (see `sugarcube.rs`). Every other format becomes a flat "Values" list. Every
-//! editable value carries its type and limits as a [`Field`], so the UI can say
+//! variables, switches) with real names read from the game's `data` folder; XP, VX and VX Ace saves
+//! become the same sections (see `rgss.rs`). SugarCube (Twine) saves become a story view (see
+//! `sugarcube.rs`). Every other format becomes a flat "Values" list. Every editable value carries
+//! its type and limits as a [`Field`], so the UI can say
 //! "Whole number · 0 to 99,999,999 · was 10,000" and block out-of-range input.
 //!
 //! The view only reads the tree and the game's data files; nothing is executed.
@@ -89,7 +90,8 @@ pub struct Entry {
 /// A stat bonus of a character.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct Bonus {
-    /// Stable key of the stat: "maxHp", "attack", ... (see `BONUS_KEYS`).
+    /// Stable key of the stat: "maxHp", "attack", ... (see `BONUS_KEYS`; XP and VX add "strength",
+    /// "dexterity", "intelligence" and "spirit").
     pub key: String,
     /// The bonus value.
     pub field: Field,
@@ -110,7 +112,7 @@ pub struct Actor {
     pub mp: Field,
     /// Experience of the current class.
     pub exp: Option<Field>,
-    /// Stat bonuses (`_paramPlus`).
+    /// Stat bonuses (`_paramPlus`; XP and VX: `@maxhp_plus`, ...).
     pub bonuses: Vec<Bonus>,
 }
 
@@ -118,7 +120,7 @@ pub struct Actor {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RpgMakerView {
-    /// "mv" or "mz".
+    /// "mv", "mz", "xp", "vx" or "vxace".
     pub engine: String,
     /// The party's gold.
     pub gold: Field,
@@ -210,10 +212,10 @@ pub(super) struct Bounds {
     max: Option<i128>,
 }
 
-const GOLD: Bounds = Bounds::new(Some(0), Some(99_999_999));
-const COUNT: Bounds = Bounds::new(Some(0), Some(99));
-const LEVEL: Bounds = Bounds::new(Some(1), Some(99));
-const NON_NEGATIVE: Bounds = Bounds::new(Some(0), None);
+pub(super) const GOLD: Bounds = Bounds::new(Some(0), Some(99_999_999));
+pub(super) const COUNT: Bounds = Bounds::new(Some(0), Some(99));
+pub(super) const LEVEL: Bounds = Bounds::new(Some(1), Some(99));
+pub(super) const NON_NEGATIVE: Bounds = Bounds::new(Some(0), None);
 pub(super) const UNLIMITED: Bounds = Bounds::new(None, None);
 
 fn pick(a: Option<i128>, b: Option<i128>, choose: fn(i128, i128) -> i128) -> Option<i128> {
@@ -251,7 +253,7 @@ fn group_digits(value: i128) -> String {
 }
 
 impl Bounds {
-    const fn new(min: Option<i128>, max: Option<i128>) -> Self {
+    pub(super) const fn new(min: Option<i128>, max: Option<i128>) -> Self {
         Self { min, max }
     }
 
@@ -415,20 +417,24 @@ pub(super) struct Ctx<'a> {
     seen: RefCell<HashMap<String, Bounds>>,
     /// JsonEx objects by their `@c` id, built when the first `@r` reference is met.
     refs: OnceCell<HashMap<i128, At>>,
+    /// Paths of the nodes Marshal links point at, built when the first link is followed (`rgss.rs`).
+    pub(super) links: OnceCell<HashMap<NodeId, Path>>,
 }
 
 /// Names from the game's data folder.
 #[derive(Default)]
-struct GameNames {
-    folder: Option<PathBuf>,
-    items: HashMap<u32, String>,
-    weapons: HashMap<u32, String>,
-    armors: HashMap<u32, String>,
-    variables: HashMap<u32, String>,
-    switches: HashMap<u32, String>,
+pub(super) struct GameNames {
+    pub(super) folder: Option<PathBuf>,
+    pub(super) items: HashMap<u32, String>,
+    pub(super) weapons: HashMap<u32, String>,
+    pub(super) armors: HashMap<u32, String>,
+    pub(super) variables: HashMap<u32, String>,
+    pub(super) switches: HashMap<u32, String>,
 }
 
-fn read_json(path: &FsPath) -> Option<serde_json::Value> {
+/// The bytes of a game data file; `None` when it is missing, not a file or larger than
+/// [`MAX_DATA_FILE`].
+pub(super) fn read_data_file(path: &FsPath) -> Option<Vec<u8>> {
     let file = fs::File::open(path).ok()?;
     if !file.metadata().ok()?.is_file() {
         return None;
@@ -439,6 +445,11 @@ fn read_json(path: &FsPath) -> Option<serde_json::Value> {
     if u64::try_from(bytes.len()).ok()? > MAX_DATA_FILE {
         return None;
     }
+    Some(bytes)
+}
+
+fn read_json(path: &FsPath) -> Option<serde_json::Value> {
+    let bytes = read_data_file(path)?;
     let bytes = bytes
         .strip_prefix(&[0xEF, 0xBB, 0xBF][..])
         .unwrap_or(&bytes);
@@ -600,7 +611,7 @@ impl Ctx<'_> {
     }
 
     /// The child `key` of the object at `at`.
-    fn entry(&self, at: &At, key: &str) -> Option<At> {
+    pub(super) fn entry(&self, at: &At, key: &str) -> Option<At> {
         match &self.doc.get(at.0)?.value {
             Value::Object(entries) => {
                 entries
@@ -616,7 +627,7 @@ impl Ctx<'_> {
         }
     }
 
-    fn int_at(&self, at: &At) -> Option<i128> {
+    pub(super) fn int_at(&self, at: &At) -> Option<i128> {
         match &self.doc.get(at.0)?.value {
             Value::Int { v, .. } => Some(*v),
             _ => None,
@@ -631,7 +642,7 @@ impl Ctx<'_> {
     }
 
     /// The elements of a JSON array, or of a JsonEx wrapped array (`{"@c": 3, "@a": [...]}`).
-    fn items(&self, at: &At) -> Vec<(usize, At)> {
+    pub(super) fn items(&self, at: &At) -> Vec<(usize, At)> {
         let Some(node) = self.doc.get(at.0) else {
             return Vec::new();
         };
@@ -706,11 +717,12 @@ impl Ctx<'_> {
         out
     }
 
-    /// Variables or switches: `<root>._data[index]`. Index 0 is never used. An entry with no name
-    /// and an empty value (0, "", off) is unused and left out, unless it was changed to that value
-    /// since the file was opened (so an edit to off does not make the entry disappear).
-    fn indexed(&self, root: &At, names: &HashMap<u32, String>) -> Vec<Entry> {
-        let Some(data) = self.entry(root, "_data") else {
+    /// Variables or switches: `<root>.<key>[index]` (`_data` in MV/MZ, `@data` in XP, VX and VX
+    /// Ace). Index 0 is never used. An entry with no name and an empty value (0, "", off) is unused
+    /// and left out, unless it was changed to that value since the file was opened (so an edit to
+    /// off does not make the entry disappear).
+    pub(super) fn indexed(&self, root: &At, key: &str, names: &HashMap<u32, String>) -> Vec<Entry> {
+        let Some(data) = self.entry(root, key) else {
             return Vec::new();
         };
         let mut out = Vec::new();
@@ -773,18 +785,7 @@ impl Ctx<'_> {
 
         let bonuses = self
             .entry(at, "_paramPlus")
-            .map(|list| {
-                self.items(&list)
-                    .into_iter()
-                    .filter_map(|(index, item)| {
-                        let key = BONUS_KEYS.get(index)?;
-                        Some(Bonus {
-                            key: (*key).to_string(),
-                            field: self.field(&item, UNLIMITED)?,
-                        })
-                    })
-                    .collect()
-            })
+            .map(|list| self.bonus_list(&list))
             .unwrap_or_default();
 
         Some(Actor {
@@ -796,6 +797,20 @@ impl Ctx<'_> {
             exp,
             bonuses,
         })
+    }
+
+    /// Stat bonuses kept as a list in `BONUS_KEYS` order (MV/MZ `_paramPlus`, VX Ace `@param_plus`).
+    pub(super) fn bonus_list(&self, list: &At) -> Vec<Bonus> {
+        self.items(list)
+            .into_iter()
+            .filter_map(|(index, item)| {
+                let key = BONUS_KEYS.get(index)?;
+                Some(Bonus {
+                    key: (*key).to_string(),
+                    field: self.field(&item, UNLIMITED)?,
+                })
+            })
+            .collect()
     }
 
     /// The party members: ids from `party._actors`, data from `actors._data[id]`.
@@ -836,7 +851,7 @@ impl Ctx<'_> {
         let gold = self.field(&self.entry(&party, "_gold")?, GOLD)?;
         let section = |key: &str, map: &HashMap<u32, String>| {
             self.entry(&root, key)
-                .map(|at| self.indexed(&at, map))
+                .map(|at| self.indexed(&at, "_data", map))
                 .unwrap_or_default()
         };
         Some(RpgMakerView {
@@ -916,6 +931,7 @@ impl Session {
             pending: &self.pending,
             seen: RefCell::default(),
             refs: OnceCell::new(),
+            links: OnceCell::new(),
         }
     }
 
@@ -931,17 +947,22 @@ impl Session {
         }
     }
 
-    /// The limits of every field of the RPG Maker view, by path (empty for other formats).
+    /// The limits of every field of the RPG Maker view (MV/MZ or XP/VX/VX Ace), by path (empty for
+    /// other formats).
     pub(super) fn rpg_bounds(&self) -> HashMap<String, Bounds> {
-        let Some(engine) = self.rpg_engine() else {
-            return HashMap::new();
-        };
         let ctx = self.game_ctx();
-        let _ = ctx.rpg_view(engine, &GameNames::default());
+        if let Some(engine) = self.rpg_engine() {
+            let _ = ctx.rpg_view(engine, &GameNames::default());
+        } else if let Some(engine) = self.rgss_engine(&ctx) {
+            let _ = ctx.rgss_view(engine, &GameNames::default());
+        } else {
+            return HashMap::new();
+        }
         ctx.seen.into_inner()
     }
 
-    /// The SugarCube story view, the RPG Maker sections for MV/MZ saves, else the flat Values list.
+    /// The SugarCube story view, the RPG Maker sections for MV/MZ and XP/VX/VX Ace saves, else the
+    /// flat Values list.
     pub fn game_view(&self) -> Result<GameView, ApiError> {
         let ctx = self.game_ctx();
         if let Some(view) = ctx.sugarcube_view() {
@@ -961,6 +982,11 @@ impl Session {
                     view: Box::new(view),
                 });
             }
+        }
+        if let Some(view) = self.rgss_view(&ctx) {
+            return Ok(GameView::Rpgmaker {
+                view: Box::new(view),
+            });
         }
         let easy_save = self
             .recipe

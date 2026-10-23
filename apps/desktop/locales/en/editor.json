@@ -16,7 +16,7 @@
   },
   "info": {
     "gold": "The party's gold. It must stay within the range shown below the field.",
-    "characters": "Pick a character to edit. The stat bonuses (Max HP to Luck) are added to the character's stats from the game database; they are not the final values.",
+    "characters": "Pick a character to edit. The stat bonuses are added to the character's stats from the game database; they are not the final values.",
     "namesFrom": "Names from {{folder}}.",
     "noNames": "No game data folder was found, so names are shown as numbers.",
     "variables": "Game variables. Change them only if you know what they do.",
@@ -109,7 +109,11 @@
     "magicAttack": "M.Attack",
     "magicDefense": "M.Defense",
     "agility": "Agility",
-    "luck": "Luck"
+    "luck": "Luck",
+    "strength": "Strength",
+    "dexterity": "Dexterity",
+    "intelligence": "Intelligence",
+    "spirit": "Spirit"
   },
   "empty": {
     "item": "No items in this save.",

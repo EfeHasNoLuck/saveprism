@@ -211,7 +211,10 @@ export interface Entry {
   field: Field;
 }
 
-/** Stable keys of the stat bonuses (`_paramPlus[0..8]`). */
+/**
+ * Stable keys of the stat bonuses: MV/MZ and VX Ace `_paramPlus[0..8]` / `@param_plus`; XP adds
+ * strength, dexterity and intelligence, VX spirit.
+ */
 export type StatKey =
   | "maxHp"
   | "maxMp"
@@ -220,7 +223,11 @@ export type StatKey =
   | "magicAttack"
   | "magicDefense"
   | "agility"
-  | "luck";
+  | "luck"
+  | "strength"
+  | "dexterity"
+  | "intelligence"
+  | "spirit";
 
 export interface Actor {
   id: number;
@@ -234,7 +241,7 @@ export interface Actor {
 }
 
 export interface RpgMakerView {
-  engine: "mv" | "mz";
+  engine: "mv" | "mz" | "xp" | "vx" | "vxace";
   gold: Field;
   actors: Actor[];
   items: Entry[];
@@ -292,8 +299,8 @@ export type GameView =
   | { kind: "values"; rows: ValueRow[] };
 
 /**
- * The game view of the open file: RPG Maker sections for MV/MZ saves, the story view for SugarCube
- * saves, else a flat Values list.
+ * The game view of the open file: RPG Maker sections for MV, MZ, XP, VX and VX Ace saves, the story
+ * view for SugarCube saves, else a flat Values list.
  */
 export function gameView(): Promise<GameView> {
   return invoke<GameView>("game_view");
