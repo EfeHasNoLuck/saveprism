@@ -1,7 +1,7 @@
 # HANDOFF
 
 **State (2026-10-23):** NOW.md todo 1 (polish) is done; todo 2 (parity with saveeditonline.com) is in progress.
-Last code commit `3cee490`. All pushed to the private repo.
+Last code commit `0aaaeed`. All pushed to the private repo.
 
 **Works (with evidence)**
 - `bash .claude/araclar/kontrol.sh rust` 3/3 and `kontrol.sh web` 3/3 after `3cee490`.
@@ -10,6 +10,9 @@ Last code commit `3cee490`. All pushed to the private repo.
 - `115286c` Twine SugarCube 2 story view (variables edited at their last writer in `state.delta`). Synthetic fixtures only.
 - `3cee490` Paste code / Copy code. Codex review finding (link in the pasted folder) fixed. Checked over CDP.
 - Format notes: `docs/research/formats-sugarcube-tyrano-renpy.md` (SugarCube part corrected from the source).
+- `0aaaeed` Ruby Marshal codec (RPG Maker XP/VX/VX Ace): exact round trip on synthetic fixtures, scalar edits, opens in
+  the generic Values list; Codex review 2 mediums fixed. Fuzz target only compile-checked (no cargo-fuzz here); no real
+  XP/VX/VX Ace save tested (none with an open license found).
 
 **Broken / not checked**
 - `CLAUDE.md` is changed but not committed (new goal line + "chores go to external engines first"); the user commits it.
@@ -19,8 +22,9 @@ Last code commit `3cee490`. All pushed to the private repo.
 - Remote Control is disabled by the organization's policy (user tried to turn it on, 2026-10-23).
 
 **Next step**
-NOW.md todo 2, next gap: RPG Maker XP/VX/VX Ace (Ruby Marshal codec, data only; then the RPG Maker sections for VX Ace).
-After it: TyranoScript (URL-escaped JSON), Ren'Py (zip + pickle as data only; signature prompt can be accepted by the
+NOW.md todo 2, next: RPG Maker XP/VX/VX Ace sections on the Marshal tree (gold, items from the `@items` Map keys, actors,
+variables, switches; names from a plain `Data/*.rvdata2` if present; `marshal::ruby_class(node)` gives class names), like
+the MV/MZ view. After it: TyranoScript (URL-escaped JSON), Ren'Py (zip + pickle as data only; signature prompt can be accepted by the
 player), Godot, Wolf RPG, add a value from the card view, pick the data folder by hand.
 How chores went today: Claude subagents built the UI/codec pieces with a visual check over CDP; Codex `gpt-6-luna`
 read-only reviews were useful; agy research needs the brief on stdin (see memory `external-engines`).
