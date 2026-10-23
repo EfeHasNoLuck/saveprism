@@ -21,7 +21,8 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
 
 ## Todo (in order; widened by the user on 2026-10-23)
 1. Polish, rest: backups screen (list the backups of the open save, restore one; writes files → reviewer); bulk edit per list
-   ("set all to …", "all switches true/false"); the odd mouse cursor the user saw in the app (ask which window: dev or installed).
+   ("set all to …", "all switches true/false"). (The odd busy-looking cursor was only in the dev window started from a
+   background shell and is gone now; not an app bug.)
    Done 2026-10-23 (`f6b9fc5`): undo/redo history + buttons, Ctrl+Z/Y/O/S/Shift+S/F, opening overlay, About.
 2. Parity with saveeditonline.com: gap list done in `docs/research/parity.md`. Top gaps: Ren'Py, RPG Maker XP/VX/VX Ace (Ruby
    Marshal, parse as data only), Twine/SugarCube, paste a save code instead of a file, Godot, other Unity saves, Wolf RPG, add a

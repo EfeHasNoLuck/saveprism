@@ -14,12 +14,12 @@ customization and an AI bridge). The user approved the dense card layout with th
 **Broken / not checked**
 - `CLAUDE.md` is changed but not committed (new goal line + "chores go to external engines first"): the auto-mode check blocks me
   from committing it; the user commits it.
-- The user saw an odd mouse cursor in the app window (photo: arrow with a small ring). The app sets no CSS cursor (computed
-  `auto` everywhere). Open question to the user: dev window or installed app?
+- The odd mouse cursor the user saw was only in the dev window started from a background shell, and is gone now (user,
+  2026-10-23). The app sets no CSS cursor. No action unless it shows in the installed app.
 - The JSON Apply review left mediums in NOW.md "Known gaps".
 - Visual checks: `scripts/cdp/README.md` (start `tauri dev` with the WebView2 debug port, drive it over CDP).
 
 **Next step**
-NOW.md todo 1: ask the cursor question, then the backups screen (list + restore, reviewer for the restore write) and bulk edit
+NOW.md todo 1: the backups screen (list + restore, reviewer for the restore write) and bulk edit
 per list. Chores to external engines first (agy for research, EVREN only for repo-local read-mostly work), Claude subagents for
 UI. The user hates being asked step by step and wants plain short Turkish.
