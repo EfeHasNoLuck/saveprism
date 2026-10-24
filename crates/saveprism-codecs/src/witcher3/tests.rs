@@ -77,6 +77,60 @@ fn hinted(decoded: &Decoded, path: &str) -> String {
         .unwrap_or_default()
 }
 
+/// Builds an invented save whose variable table count includes the two footer words as its last
+/// entry, the layout real next-gen saves use (the table then ends 6 bytes before the file end).
+fn footer_overlapping_variable_table() -> Vec<u8> {
+    let header_size = 28_usize;
+    let mut stream = Vec::new();
+    stream.extend_from_slice(STREAM_MAGIC);
+    stream.extend_from_slice(&66_u32.to_le_bytes());
+    stream.extend_from_slice(&29_u32.to_le_bytes());
+    stream.extend_from_slice(&0_u16.to_le_bytes());
+    stream.extend_from_slice(b"NM");
+    stream.extend_from_slice(b"MANU");
+    stream.extend_from_slice(&1_u32.to_le_bytes());
+    stream.extend_from_slice(&0_u32.to_le_bytes());
+    stream.push(1);
+    stream.push(b'P');
+    stream.extend_from_slice(&0_u32.to_le_bytes());
+    stream.extend_from_slice(b"ENOD");
+    let names_absolute = (header_size + 14) as u32;
+    stream.extend_from_slice(&names_absolute.to_le_bytes());
+    stream.extend_from_slice(&0_u32.to_le_bytes());
+    stream.extend_from_slice(b"SC");
+    let variables_offset = stream.len();
+    stream.extend_from_slice(&2_u32.to_le_bytes());
+    stream.extend_from_slice(&0_u32.to_le_bytes());
+    stream.extend_from_slice(&4_u32.to_le_bytes());
+    stream.extend_from_slice(&names_absolute.to_le_bytes());
+    stream.extend_from_slice(&0_u32.to_le_bytes());
+    stream.extend_from_slice(&(header_size as u32 + variables_offset as u32).to_le_bytes());
+    stream.extend_from_slice(FOOTER_MAGIC);
+    assert_eq!(stream.len(), variables_offset + 4 + 2 * 8 + 6);
+
+    let mut bytes = Vec::new();
+    bytes.extend_from_slice(MAGIC);
+    bytes.extend_from_slice(&1_u32.to_le_bytes());
+    bytes.extend_from_slice(&(header_size as u32).to_le_bytes());
+    bytes.extend_from_slice(&(stream.len() as u32).to_le_bytes());
+    bytes.extend_from_slice(&(stream.len() as u32).to_le_bytes());
+    bytes.extend_from_slice(&0_u32.to_le_bytes());
+    assert_eq!(bytes.len(), header_size);
+    bytes.extend_from_slice(&stream);
+    bytes
+}
+
+#[test]
+fn a_variable_table_that_includes_the_footer_words_still_decodes() {
+    let bytes = footer_overlapping_variable_table();
+    assert_eq!(
+        Witcher3Codec.sniff(&bytes, &saveprism_core::SniffCtx::default()),
+        saveprism_core::Confidence::HIGH
+    );
+    let decoded = decode(&bytes);
+    assert_eq!(encode(&decoded), bytes);
+}
+
 #[test]
 fn unchanged_fixture_writes_the_same_bytes() {
     let bytes = fixture();

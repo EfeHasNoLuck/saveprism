@@ -10,9 +10,10 @@
 //! key offsets are selected only for known game variants; uncertain money and inventory stay
 //! read-only.
 //!
-//! Writing patches the original byte stream, updates Pokémon data encryption and checksums, then
-//! refreshes checksums for the current block. Everything outside edited values and those checksum
-//! words remains byte-identical.
+//! Writing patches the original byte stream. A Pokémon record is re-encrypted and re-checksummed
+//! only when one of its editable fields changed, and a section checksum is refreshed only when
+//! that section's data changed. Everything else remains byte-identical, including unknown bytes
+//! and checksums that were already stored.
 
 use std::sync::Arc;
 
@@ -58,6 +59,25 @@ fn checksum(data: &[u8]) -> Option<u16> {
         sum = sum.wrapping_add(word);
     }
     Some((sum as u16).wrapping_add((sum >> 16) as u16))
+}
+
+// Real saves checksum the 48-byte Pokémon substructure data with a 16-bit accumulator that
+// discards the carry, unlike the section checksum above which folds the high word back in.
+// The two agree only while the word sum stays below 0x1_0000, so the split matters as soon as
+// a Pokémon holds large values (for example experience above 65_535).
+fn pokemon_checksum(data: &[u8]) -> Option<u16> {
+    if !data.len().is_multiple_of(2) {
+        return None;
+    }
+    let (words, remainder) = data.as_chunks::<2>();
+    if !remainder.is_empty() {
+        return None;
+    }
+    let mut sum = 0u16;
+    for word in words {
+        sum = sum.wrapping_add(u16::from_le_bytes(*word));
+    }
+    Some(sum)
 }
 
 fn checked_block(input: &[u8], base: usize) -> Option<BlockInfo> {
@@ -468,7 +488,7 @@ impl Codec for Gen3Codec {
             };
             let exp = get32(0, 4)?;
             let ivs = get32(3, 4)?;
-            let pokemon_checksum_valid = u16_at(record, 0x1c) == checksum(&plain);
+            let pokemon_checksum_valid = u16_at(record, 0x1c) == pokemon_checksum(&plain);
             let hintbase = format!("pkmn:{start}");
             let leaf = |doc: &mut SaveDoc,
                         value: u32,
@@ -775,11 +795,23 @@ impl Codec for Gen3Codec {
         };
         let block = checked_block(&original, base)
             .ok_or_else(|| Error::new(WRITE, "the active block is invalid"))?;
+        // FireRed/LeafGreen allow stacks of 999; Ruby/Sapphire/Emerald stop at 99.
+        let bag_limit = if matches!(
+            params.get("variant"),
+            Some(saveprism_core::ParamValue::Str(name)) if name == "FireRed/LeafGreen"
+        ) {
+            999
+        } else {
+            99
+        };
         let mut out = original.clone();
         for id in 0..doc.len() {
             let Some(node) = doc.get_index(id) else {
                 continue;
             };
+            if node.flags.contains(NodeFlags::READ_ONLY) {
+                continue;
+            }
             let hint = node.type_hint.as_ref().map(TypeHint::as_str).unwrap_or("");
             if !hint.starts_with(HINT) {
                 continue;
@@ -804,7 +836,7 @@ impl Codec for Gen3Codec {
                 || (field == "minutes" && val > 59)
                 || (field == "seconds" && val > 59)
                 || (field == "item-quantity-pc" && val > 999)
-                || (field == "item-quantity-bag" && val > 99)
+                || (field == "item-quantity-bag" && val > bag_limit)
             {
                 return Err(Error::new(
                     WRITE,
@@ -868,6 +900,9 @@ impl Codec for Gen3Codec {
             let Some(tail) = hint.strip_prefix("GEN3:pkmn:") else {
                 continue;
             };
+            if node.flags.contains(NodeFlags::READ_ONLY) {
+                continue;
+            }
             let Some((start_text, field)) = tail.split_once(':') else {
                 continue;
             };
@@ -987,7 +1022,11 @@ impl Codec for Gen3Codec {
                     };
                     decrypted[part * 12..part * 12 + 12].copy_from_slice(&subs[index]);
                 }
-                let sum = checksum(&decrypted)
+                if decrypted == plain {
+                    // Nothing in this record changed, so keep its original checksum and bytes.
+                    continue;
+                }
+                let sum = pokemon_checksum(&decrypted)
                     .ok_or_else(|| Error::new(WRITE, "Pokémon checksum length is invalid"))?;
                 let dst = out
                     .get_mut(start + 0x1c..start + 0x1e)
@@ -1037,7 +1076,7 @@ impl Codec for Gen3Codec {
                 }
             }
         }
-        // Every sector checksum is refreshed only in the edited active block.
+        // Refresh a sector checksum only when its data changed in the edited active block.
         for id in 0..14 {
             let at = *block
                 .sections
@@ -1054,9 +1093,13 @@ impl Codec for Gen3Codec {
                     .ok_or_else(|| Error::new(WRITE, "section data is truncated"))?,
             )
             .ok_or_else(|| Error::new(WRITE, "section checksum length is invalid"))?;
-            out.get_mut(at + 0xff6..at + 0xff8)
-                .ok_or_else(|| Error::new(WRITE, "section checksum is outside the save"))?
-                .copy_from_slice(&sum.to_le_bytes());
+            let stored = u16_at(&out, at + 0xff6)
+                .ok_or_else(|| Error::new(WRITE, "section checksum is outside the save"))?;
+            if sum != stored {
+                out.get_mut(at + 0xff6..at + 0xff8)
+                    .ok_or_else(|| Error::new(WRITE, "section checksum is outside the save"))?
+                    .copy_from_slice(&sum.to_le_bytes());
+            }
         }
         Ok(out)
     }

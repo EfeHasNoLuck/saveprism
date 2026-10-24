@@ -242,7 +242,9 @@ fn read_tables(stream: &[u8], header_size: usize) -> Result<Tables> {
         ));
     }
 
-    let names_footer = variables_offset - 10;
+    let names_footer = variables_offset
+        .checked_sub(10)
+        .ok_or_else(|| parse_error("the variable table offset is too small"))?;
     let names_absolute = u32le(stream, names_footer).ok_or_else(|| truncated(names_footer))?;
     let names_offset = usize_of(names_absolute)
         .checked_sub(header_size)
@@ -270,7 +272,12 @@ fn read_tables(stream: &[u8], header_size: usize) -> Result<Tables> {
         .checked_add(4)
         .and_then(|start| start.checked_add(count.saturating_mul(8)))
         .ok_or_else(|| parse_error("the variable table size overflows"))?;
-    if table_end > stream.len() - 14 {
+    // Real saves count the two words of the 14-byte footer (`string table offset`,
+    // `unknown`) as the final variable table entry, so the table can run right up to the
+    // last 6 bytes (the variable table offset word and the `SE` marker). The synthetic
+    // fixtures end 8 bytes earlier. Both layouts are accepted: the final entry points at
+    // the `MANU` table, so record detection drops it.
+    if table_end > stream.len() - 6 {
         return Err(parse_error("the variable table runs past the footer"));
     }
 

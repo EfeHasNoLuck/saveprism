@@ -99,6 +99,61 @@ fn block(index: u32, key: u32, emerald: bool) -> Vec<u8> {
     out
 }
 
+fn substruct_index(tag: u8) -> usize {
+    match tag {
+        b'G' => 0,
+        b'A' => 1,
+        b'E' => 2,
+        _ => 3,
+    }
+}
+
+fn set_experience(save: &mut [u8], start: usize, experience: u32) {
+    let pv = u32::from_le_bytes(save[start..start + 4].try_into().expect("personality"));
+    let ot = u32::from_le_bytes(save[start + 4..start + 8].try_into().expect("ot id"));
+    let key = pv ^ ot;
+    let order = ORDERS[(pv % 24) as usize];
+    let mut plain = [0u8; 48];
+    for i in 0..12 {
+        let word = u32::from_le_bytes(
+            save[start + 0x20 + i * 4..start + 0x24 + i * 4]
+                .try_into()
+                .expect("encrypted word"),
+        ) ^ key;
+        plain[i * 4..i * 4 + 4].copy_from_slice(&word.to_le_bytes());
+    }
+    let mut subs = [[0u8; 12]; 4];
+    for (part, tag) in order.iter().enumerate() {
+        subs[substruct_index(*tag)].copy_from_slice(&plain[part * 12..part * 12 + 12]);
+    }
+    subs[0][4..8].copy_from_slice(&experience.to_le_bytes());
+    for (part, tag) in order.iter().enumerate() {
+        plain[part * 12..part * 12 + 12].copy_from_slice(&subs[substruct_index(*tag)]);
+    }
+    let sum = super::pokemon_checksum(&plain).expect("Pokémon checksum length");
+    save[start + 0x1c..start + 0x1e].copy_from_slice(&sum.to_le_bytes());
+    for i in 0..12 {
+        let word =
+            u32::from_le_bytes(plain[i * 4..i * 4 + 4].try_into().expect("plaintext word")) ^ key;
+        save[start + 0x20 + i * 4..start + 0x24 + i * 4].copy_from_slice(&word.to_le_bytes());
+    }
+}
+
+fn reseal(save: &mut [u8], section: usize) {
+    let size = match u16::from_le_bytes(
+        save[section + 0xff4..section + 0xff6]
+            .try_into()
+            .expect("section id"),
+    ) {
+        0 => 3884,
+        4 => 3848,
+        13 => 2000,
+        _ => 3968,
+    };
+    let sum = checksum(&save[section..section + size]);
+    save[section + 0xff6..section + 0xff8].copy_from_slice(&sum.to_le_bytes());
+}
+
 fn synthetic() -> Vec<u8> {
     let mut bytes = block(2, 0xA123_4321, true);
     bytes.extend(block(3, 0xB123_4321, true));
@@ -280,4 +335,112 @@ fn generated_fixtures_cover_variants_party_orders_and_footer_exactly() {
             bytes
         );
     }
+}
+
+#[test]
+fn high_word_pokemon_checksum_is_preserved_unless_the_record_changes() {
+    let mut bytes = block(2, 0x1122_3344, true);
+    let start = SECTION + 0x234 + 4;
+    set_experience(&mut bytes, start, 100_000);
+    reseal(&mut bytes, SECTION);
+    bytes.resize(0x10000, 0x5a);
+
+    let mut decoded = decode(&bytes);
+    assert_eq!(field(&decoded.doc, "/party/0/experience"), 100_000);
+    let valid = decoded
+        .doc
+        .resolve(&Path::parse("/party/0/checksum_valid").expect("path"))
+        .expect("checksum node");
+    assert_eq!(
+        decoded.doc.get(valid).expect("checksum").value,
+        Value::Bool(true)
+    );
+    assert_eq!(
+        Gen3Codec
+            .encode(&decoded.doc, &decoded.params)
+            .expect("unchanged encode"),
+        bytes,
+        "a large experience value makes the game's 16-bit checksum differ from a folded one"
+    );
+
+    apply_edits(
+        &mut decoded.doc,
+        &[Edit::Set {
+            path: Path::parse("/party/0/experience").expect("path"),
+            value: saveprism_core::OwnedValue::Int(131_072),
+        }],
+        &Limits::default(),
+    )
+    .expect("edit applies");
+    let written = Gen3Codec
+        .encode(&decoded.doc, &decoded.params)
+        .expect("edited encode");
+    let checked = decode(&written);
+    assert_eq!(field(&checked.doc, "/party/0/experience"), 131_072);
+    let valid = checked
+        .doc
+        .resolve(&Path::parse("/party/0/checksum_valid").expect("path"))
+        .expect("checksum node");
+    assert_eq!(
+        checked.doc.get(valid).expect("checksum").value,
+        Value::Bool(true)
+    );
+    assert_eq!(
+        Gen3Codec
+            .encode(&checked.doc, &checked.params)
+            .expect("second encode"),
+        written
+    );
+}
+
+#[test]
+fn frlg_bag_stack_of_999_is_valid_and_round_trips() {
+    let key = 0xA1B2_C3D4u32;
+    let mut bytes = block(2, key, false);
+    let s1 = SECTION;
+    bytes[s1..s1 + SECTION].fill(0);
+    bytes[s1 + 0xff4..s1 + 0xff6].copy_from_slice(&1u16.to_le_bytes());
+    bytes[s1 + 0xff8..s1 + 0xffc].copy_from_slice(&MAGIC.to_le_bytes());
+    bytes[s1 + 0xffc..s1 + 0x1000].copy_from_slice(&2u32.to_le_bytes());
+    bytes[s1 + 0x290..s1 + 0x294].copy_from_slice(&key.to_le_bytes());
+    bytes[s1 + 0x294..s1 + 0x296].copy_from_slice(&(key as u16).to_le_bytes());
+    bytes[s1 + 0x310..s1 + 0x312].copy_from_slice(&4u16.to_le_bytes());
+    bytes[s1 + 0x312..s1 + 0x314].copy_from_slice(&(999u16 ^ key as u16).to_le_bytes());
+    let s0 = 0;
+    bytes[s0 + 0xac..s0 + 0xb0].copy_from_slice(&1u32.to_le_bytes());
+    bytes[s0 + 0xaf8..s0 + 0xafc].copy_from_slice(&key.to_le_bytes());
+    bytes[s0 + 0xf20..s0 + 0xf24].copy_from_slice(&key.to_le_bytes());
+    reseal(&mut bytes, s0);
+    reseal(&mut bytes, s1);
+    bytes.resize(0x10000, 0x5a);
+
+    let mut decoded = decode(&bytes);
+    assert_eq!(field(&decoded.doc, "/inventory/bag/items/0/quantity"), 999);
+    assert_eq!(
+        Gen3Codec
+            .encode(&decoded.doc, &decoded.params)
+            .expect("unchanged encode"),
+        bytes
+    );
+
+    apply_edits(
+        &mut decoded.doc,
+        &[Edit::Set {
+            path: Path::parse("/inventory/bag/items/0/quantity").expect("path"),
+            value: saveprism_core::OwnedValue::Int(998),
+        }],
+        &Limits::default(),
+    )
+    .expect("edit applies");
+    let written = Gen3Codec
+        .encode(&decoded.doc, &decoded.params)
+        .expect("edited encode");
+    let checked = decode(&written);
+    assert_eq!(field(&checked.doc, "/inventory/bag/items/0/quantity"), 998);
+    assert_eq!(
+        Gen3Codec
+            .encode(&checked.doc, &checked.params)
+            .expect("second encode"),
+        written
+    );
 }

@@ -20,6 +20,11 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
 - 2026-10-24: every screen merged overnight checked in the running app over CDP (dark/light, EN/TR); found and fixed: cut-off
   big numbers, missing read-only values, duplicate React keys on Ren'Py aliases, untranslated count message, TR card
   header wrap, dimmed read-only toggles (`422a4bb` and the next commit). Re-checked after the fixes.
+- 2026-10-24 real saves (fetched by EVREN, local only, listed in `fixtures/external/SOURCES.md`): TyranoScript (2),
+  zip-packed JSON (3: Shapez 2, House Flipper 2), Pokémon Gen 3 (3; fixed: 16-bit Pokémon checksum, FRLG bag 999,
+  unchanged data kept), The Witcher 3 (3; fixed: variable table may reach the footer), Ren'Py, RPG Maker XP, Godot
+  JSON: all open with an exact round trip. None found for VX/VX Ace, 2000/2003, Wolf RPG, QSP, Naninovel, `.sol`,
+  SugarCube.
 - 65 real saves for local tests in `fixtures/external/` (git-ignored; sources and licenses in `fixtures/external/SOURCES.md`).
 
 ## Todo (in order; widened by the user on 2026-10-23)
@@ -69,7 +74,8 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
 3. Customization. Done 2026-10-24 (`45d202f`, checked in the running app, dark/light, EN/TR): Text size Small/Normal/Large
    (also the density setting: cards and grids scale with it), color presets for changed/accent/error (full tonal sets,
    contrast-tested), backups to keep 1-50 (only the saved file's folder is trimmed; review fixed), save mode (was there).
-   Left: own names for unnamed variables/switches, kept per game; a doc on adding a theme in code.
+   Own names for unnamed RPG Maker variables/switches, kept per game (`a900b54`, checked in the running app) and
+   `docs/themes.md`. Todo 3 is done.
 4. AI: MCP server (open, read, search, propose and apply edits; saving still makes a backup); "Ask AI" copies the selected
    values with a short context; docs.
 5. Installer: `tauri build` works (test build `0.0.1`, 2026-10-23); `THIRD_PARTY_NOTICES.md` generated and bundled
