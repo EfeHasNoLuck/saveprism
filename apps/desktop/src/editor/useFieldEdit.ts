@@ -111,7 +111,11 @@ export function useFieldEdit(initial: Field): FieldEdit {
   } else if (problem !== null) {
     message = problem === "aboveMax" || problem === "belowMin" ? typeHint : t(`problem.${problem}`);
   }
-  const change = changed ? changeText(field.kind, field.original, field.value, format) : null;
+  // An added value has no value before it: the "new" chip says so instead of "→ new".
+  const change =
+    changed && !field.added
+      ? changeText(field.kind, field.original, field.value, format)
+      : null;
   const isBool = field.kind === "bool";
   const line = hintLine({
     hint: message ?? typeHint,
@@ -136,7 +140,11 @@ export function useFieldEdit(initial: Field): FieldEdit {
     setFocused,
     commit,
     step,
-    undo: () => void apply(field.original),
+    undo: () => {
+      // An added value goes away instead of going back to an empty value.
+      if (field.added) void ctx.removeValue(path);
+      else void apply(field.original);
+    },
     disabled,
     changed,
     invalid,

@@ -25,8 +25,8 @@ use saveprism_core::{Codec, DecodeCtx, Limits, NodeId, Path, SaveDoc, Value};
 
 use super::Session;
 use super::game::{
-    Actor, AddLists, At, Bonus, Bounds, COUNT, Ctx, Entry, GOLD, GameNames, LEVEL,
-    MAX_VALUE_ROWS, NON_NEGATIVE, RpgMakerView, UNLIMITED, read_data_file,
+    Actor, AddLists, At, Bonus, Bounds, COUNT, Ctx, Entry, GOLD, GameNames, LEVEL, MAX_VALUE_ROWS,
+    NON_NEGATIVE, RpgMakerView, UNLIMITED, read_data_file,
 };
 
 /// Gold limit of XP and VX (VX Ace has the MV/MZ limit).

@@ -88,7 +88,13 @@
     "copyCode": "Copy code",
     "copyCodeTip": "Copy the edited save code to paste into your game",
     "saveAsFile": "Save as file…",
-    "copyCodeItem": "Copy as save code"
+    "copyCodeItem": "Copy as save code",
+    "addedTip_one": "{{count}} added entry",
+    "addedTip_other": "{{count}} added entries",
+    "removedTip_one": "{{count}} removed entry",
+    "removedTip_other": "{{count}} removed entries",
+    "addedTag": "added",
+    "removedTag": "removed"
   },
   "confirm": {
     "discardOpen_one": "Discard {{count}} change and open another file?",
@@ -200,7 +206,10 @@
     "restoreFailed": "The backup could not be restored",
     "codeCopied": "Code copied",
     "codeCopiedBody": "Paste it into your game's import or load box.",
-    "copyCodeFailed": "The code could not be copied"
+    "copyCodeFailed": "The code could not be copied",
+    "addFailed": "The entry could not be added",
+    "removeFailed": "The entry could not be removed",
+    "dataFolderFailed": "The data folder could not be read"
   },
   "bell": {
     "title": "This session",

@@ -10,14 +10,21 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 import {
+  addInventory as addInventoryCommand,
+  addValue as addValueCommand,
   gameView,
   historyState,
   pendingChanges,
+  removeValue as removeValueCommand,
+  setDataFolder as setDataFolderCommand,
   type ApiError,
+  type Change,
   type Field,
   type GameView,
   type HistoryState,
 } from "@/api/commands";
+import { useNotify } from "@/shell/context";
+import { describeError } from "@/shell/errors";
 import { EditorContext, toApiError, type EditorContextValue } from "./context";
 import { registerEditorBundles } from "./i18n";
 import { RpgMaker } from "./RpgMaker";
@@ -28,11 +35,13 @@ import { ValuesCard } from "./ValuesCard";
 export interface EditorHandle {
   /** Shows what an undo or redo changed: the values it touched, then the counts again. */
   applyHistory: (changed: Field[]) => void;
+  /** Reads the view again after a step that added or removed entries (scroll and open cards stay). */
+  reload: () => void;
 }
 
 export interface EditorViewProps {
   readOnly: boolean;
-  onChangesChanged: (count: number) => void;
+  onChangesChanged: (changes: Change[]) => void;
   onInvalidChanged: (invalid: boolean) => void;
   /** After every change of the document: whether Undo and Redo are possible. */
   onHistoryChanged: (state: HistoryState) => void;
@@ -51,6 +60,8 @@ export function EditorView({
 }: EditorViewProps) {
   registerEditorBundles();
   const { t } = useTranslation("editor");
+  const { t: tc } = useTranslation();
+  const { notify } = useNotify();
   const [view, setView] = useState<GameView | null>(null);
   const [loadError, setLoadError] = useState<ApiError | null>(null);
   const [fields, setFields] = useState<ReadonlyMap<string, Field>>(new Map());
@@ -71,13 +82,54 @@ export function EditorView({
   const refreshCount = useCallback(async () => {
     try {
       const [changes, history] = await Promise.all([pendingChanges(), historyState()]);
-      changedRef.current(changes.length);
+      changedRef.current(changes);
       historyRef.current(history);
       setPending(new Set(changes.map((c) => c.path)));
     } catch {
       // The count stays as it was; the next edit refreshes it.
     }
   }, []);
+
+  /** Reads the whole view again; the parent keeps the scroll position and open cards. */
+  const reloadView = useCallback(async () => {
+    try {
+      const fresh = await gameView();
+      setView(fresh);
+      setFields(new Map());
+      setLoadError(null);
+      await refreshCount();
+    } catch (error) {
+      setLoadError(toApiError(error, ""));
+    }
+  }, [refreshCount]);
+
+  const reportCommandError = useCallback(
+    (titleKey: string, error: unknown) => {
+      const { reason, fix } = describeError(error);
+      notify({
+        kind: "error",
+        title: tc(titleKey),
+        detail: tc("toast.errorDetail", { reason, fix }).trim(),
+      });
+    },
+    [notify, tc],
+  );
+
+  /** Runs a command that may change the structure, then reads the view and the counts again. */
+  const runStructural = useCallback(
+    async (call: () => Promise<{ structural: boolean }>, titleKey: string) => {
+      try {
+        const result = await call();
+        if (result.structural) await reloadView();
+        else await refreshCount();
+        return true;
+      } catch (error) {
+        reportCommandError(titleKey, error);
+        return false;
+      }
+    },
+    [refreshCount, reloadView, reportCommandError],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -112,8 +164,11 @@ export function EditorView({
         });
         void refreshCount();
       },
+      reload: () => {
+        void reloadView();
+      },
     }),
-    [refreshCount],
+    [refreshCount, reloadView],
   );
 
   const reportInvalid = useCallback((path: string, invalid: boolean) => {
@@ -136,8 +191,36 @@ export function EditorView({
       afterEdit: refreshCount,
       pending,
       editMany: onEditMany,
+      addInventory: (list, id, count) =>
+        runStructural(() => addInventoryCommand(list, id, count), "toast.addFailed"),
+      addValue: (parent, key, kind, text) =>
+        runStructural(() => addValueCommand(parent, key, kind, text), "toast.addFailed"),
+      removeValue: (path) =>
+        runStructural(() => removeValueCommand(path), "toast.removeFailed"),
+      setDataFolder: async (folder) => {
+        try {
+          const fresh = await setDataFolderCommand(folder);
+          setView(fresh);
+          setFields(new Map());
+          await refreshCount();
+          return true;
+        } catch (error) {
+          reportCommandError("toast.dataFolderFailed", error);
+          return false;
+        }
+      },
     }),
-    [readOnly, fields, setField, reportInvalid, refreshCount, pending, onEditMany],
+    [
+      readOnly,
+      fields,
+      setField,
+      reportInvalid,
+      refreshCount,
+      pending,
+      onEditMany,
+      runStructural,
+      reportCommandError,
+    ],
   );
 
   if (loadError !== null) {
@@ -160,7 +243,7 @@ export function EditorView({
           ) : view.kind === "sugarcube" ? (
             <SugarCube view={view.view} />
           ) : (
-            <ValuesCard rows={view.rows} />
+            <ValuesCard rows={view.rows} addParent={view.addParent} />
           )}
         </div>
       </Tooltip.Provider>

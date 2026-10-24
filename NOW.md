@@ -42,7 +42,9 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
      rewritten, the rest kept byte-identical; gzip was already a layer).
    - Formats left: Wolf RPG `.sav`, QSP,
      Naninovel view, The Witcher 3 `.sav` (*new*).
-   - Features left: add/delete a value from the card view, pick the game's data folder by hand.
+   - Implemented 2026-10-24 (uncommitted): add/remove values from the card view (RPG Maker inventory
+     add/remove, JSON/ES3 add/remove, SugarCube variables), pick the game's data folder by hand.
+     Rust and web checks pass; a visual check in the running app is still pending.
    Done 2026-10-23: Twine SugarCube 2 story view (current-moment variables edited at their last writer in `state.delta`;
    partly changed values and revive tuples read-only; synthetic fixtures in `fixtures/synthetic/sugarcube/`). Not yet:
    2.37 saves with `state.history` (no deltas) open as the plain Values list; no real game save tested.

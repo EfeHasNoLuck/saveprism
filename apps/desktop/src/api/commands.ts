@@ -43,6 +43,16 @@ export const ErrorCodes = {
   emptyCode: "SP-APP-016",
   /** The format is not text, so `copyCode` has no code to give: use Save as. */
   notTextCode: "SP-APP-017",
+  /** The picked folder is not a folder, or holds no game data this save can use. */
+  dataFolder: "SP-APP-018",
+  /** The open file has no game sections that take names from a data folder. */
+  noGameSections: "SP-APP-019",
+  /** The entry to add is there already. */
+  entryExists: "SP-APP-020",
+  /** Nothing can be added here. */
+  notAddable: "SP-APP-021",
+  /** This entry cannot be removed. */
+  notRemovable: "SP-APP-022",
 } as const;
 
 export interface RootInfo {
@@ -88,6 +98,10 @@ export interface NodeRow {
   preview: string;
   childCount: number;
   editable: boolean;
+  /** A value can be added to this object (`addValue` with this path as the parent). */
+  addable: boolean;
+  /** This entry can be removed (`removeValue`). */
+  removable: boolean;
 }
 
 export interface Page<T> {
@@ -98,10 +112,14 @@ export interface Page<T> {
   truncated: boolean;
 }
 
+/** What a pending edit did. */
+export type ChangeKind = "set" | "added" | "removed";
+
 export interface Change {
   path: string;
   old: string;
   new: string;
+  kind: ChangeKind;
 }
 
 /** Whether there is something to undo or redo. */
@@ -116,6 +134,8 @@ export interface HistoryResult extends HistoryState {
   fields: Field[];
   /** The step changed too many values to list: read the document again. */
   reload: boolean;
+  /** The step added or removed entries: read the view again (lists, groups and counts). */
+  structural: boolean;
   /** Number of pending changes now. */
   pending: number;
 }
@@ -207,6 +227,8 @@ export interface Field {
   /** English description for logs; the UI builds its own text from `kind`, `min` and `max`. */
   hint: string;
   editable: boolean;
+  /** Added since the file was opened (or last saved); `original` is then empty. */
+  added: boolean;
 }
 
 /** An item, weapon, armor, variable or switch. `name` null: show "Item #5". */
@@ -214,6 +236,28 @@ export interface Entry {
   id: number;
   name: string | null;
   field: Field;
+  /** True when the entry can be removed from the save. */
+  removable: boolean;
+}
+
+/** A database entry of the game's data folder. */
+export interface NamedId {
+  id: number;
+  name: string;
+}
+
+/** The items, weapons and armors of the game's database, for picking one to add. */
+export interface Catalog {
+  items: NamedId[];
+  weapons: NamedId[];
+  armors: NamedId[];
+}
+
+/** Which inventory lists take new entries. */
+export interface AddLists {
+  items: boolean;
+  weapons: boolean;
+  armors: boolean;
 }
 
 /**
@@ -256,6 +300,10 @@ export interface RpgMakerView {
   switches: Entry[];
   /** The game data folder the names came from, or null when none was found. */
   namesFolder: string | null;
+  /** The game's items, weapons and armors (empty without a data folder). */
+  catalog: Catalog;
+  /** The inventory lists that take new entries. */
+  canAdd: AddLists;
 }
 
 /** What a read-only row of the story view holds. */
@@ -281,6 +329,10 @@ export interface ValueRow {
   children: number;
   /** Why the value is read-only (story view only), else null. */
   note: RowNote | null;
+  /** A value can be added to this group (`addValue` with `path` as the parent). */
+  addable: boolean;
+  /** This row can be removed (`removeValue` with `path`). */
+  removable: boolean;
 }
 
 /** A SugarCube (Twine) save: its facts and the story variables at the moment the game resumes at. */
@@ -296,12 +348,14 @@ export interface SugarCubeView {
   /** The moment the game resumes at (0-based). */
   index: number;
   variables: ValueRow[];
+  /** Where a new story variable goes (`addValue`), or null when none can be added. */
+  addParent: string | null;
 }
 
 export type GameView =
   | { kind: "rpgmaker"; view: RpgMakerView }
   | { kind: "sugarcube"; view: SugarCubeView }
-  | { kind: "values"; rows: ValueRow[] };
+  | { kind: "values"; rows: ValueRow[]; addParent: string | null };
 
 /**
  * The game view of the open file: RPG Maker sections for MV, MZ, XP, VX and VX Ace saves, the story
@@ -309,6 +363,35 @@ export type GameView =
  */
 export function gameView(): Promise<GameView> {
   return invoke<GameView>("game_view");
+}
+
+/**
+ * Reads the names from a game data folder the player picked (the game folder or its data folder)
+ * and returns the view with them.
+ */
+export function setDataFolder(folder: string): Promise<GameView> {
+  return invoke<GameView>("set_data_folder", { folder });
+}
+
+/**
+ * Adds `count` (1 to 99) of the database entry `id` to the party's `list` ("items", "weapons" or
+ * "armors") of an RPG Maker save. One undo step.
+ */
+export function addInventory(list: "items" | "weapons" | "armors", id: number, count: string): Promise<HistoryResult> {
+  return invoke<HistoryResult>("add_inventory", { list, id, count });
+}
+
+/**
+ * Adds the value `key` (of `kind`, typed as `text`) to the object at `parent`: any object of a JSON
+ * file, the top of an Easy Save 3 file, or the story variables of a SugarCube save. One undo step.
+ */
+export function addValue(parent: string, key: string, kind: FieldKind, text: string): Promise<HistoryResult> {
+  return invoke<HistoryResult>("add_value", { parent, key, kind, text });
+}
+
+/** Removes the value at `path` where the format allows it. One undo step. */
+export function removeValue(path: string): Promise<HistoryResult> {
+  return invoke<HistoryResult>("remove_value", { path });
 }
 
 /** Type, limits and original value of the scalar at `path`. */

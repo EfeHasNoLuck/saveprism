@@ -326,3 +326,49 @@ export function noteText(
       return { text: t("note.changed"), tip: t("note.changedTip") };
   }
 }
+
+/** A game database entry for the "Add" picker (mirrors `NamedId` of the host). */
+export interface CatalogEntryLike {
+  id: number;
+  name: string;
+}
+
+/**
+ * Keeps the database entries whose name or `#id` contains the query (case-insensitive). A query
+ * that is only a number also matches that id exactly.
+ */
+export function filterCatalog<T extends CatalogEntryLike>(
+  entries: readonly T[],
+  query: string,
+): T[] {
+  const q = query.trim().toLowerCase();
+  if (q === "") return [...entries];
+  const id = catalogId(q);
+  return entries.filter(
+    (entry) =>
+      entry.name.toLowerCase().includes(q) ||
+      `#${entry.id}`.includes(q) ||
+      (id !== null && entry.id === id),
+  );
+}
+
+/** The database id typed as "12", "#12" or " #12 ", or `null`. */
+export function catalogId(text: string): number | null {
+  const match = /^#?(\d{1,5})$/.exec(text.trim());
+  if (match === null) return null;
+  const id = Number(match[1]);
+  return id >= 1 && id <= 99_999 ? id : null;
+}
+
+/** How many pending changes added or removed entries. */
+export function countChangeKinds(
+  changes: readonly { kind?: string }[],
+): { added: number; removed: number } {
+  let added = 0;
+  let removed = 0;
+  for (const change of changes) {
+    if (change.kind === "added") added += 1;
+    else if (change.kind === "removed") removed += 1;
+  }
+  return { added, removed };
+}

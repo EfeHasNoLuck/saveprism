@@ -1,6 +1,7 @@
 import { useMemo, useState, type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
-import type { Entry } from "@/api/commands";
+import type { Entry, NamedId } from "@/api/commands";
+import { AddEntryButton } from "./AddEntry";
 import { BulkEdit } from "./BulkEdit";
 import { countPending, useEditorContext, useFormatNumber } from "./context";
 import { FieldCell } from "./FieldEditor";
@@ -18,6 +19,10 @@ export interface EntryListProps {
   info?: string;
   kind: EntryKind;
   entries: Entry[];
+  /** The list takes new entries ("Add" in the header). */
+  canAdd?: boolean;
+  /** The game's entries for this list (empty without a data folder). */
+  catalog?: NamedId[];
   className?: string;
   style?: CSSProperties;
 }
@@ -27,7 +32,16 @@ export interface EntryListProps {
  * The header has the record count, the number of changed entries, a search box, the pager and
  * "Set all".
  */
-export function EntryList({ title, info, kind, entries, className, style }: EntryListProps) {
+export function EntryList({
+  title,
+  info,
+  kind,
+  entries,
+  canAdd = false,
+  catalog = [],
+  className,
+  style,
+}: EntryListProps) {
   const { t } = useTranslation("editor");
   const format = useFormatNumber();
   const { pending, fields, readOnly } = useEditorContext();
@@ -87,6 +101,12 @@ export function EntryList({ title, info, kind, entries, className, style }: Entr
   const bulk = settable ? (
     <BulkEdit kind={bulkKind} targets={targets} searching={searching} />
   ) : null;
+  const list =
+    kind === "item" ? "items" : kind === "weapon" ? "weapons" : kind === "armor" ? "armors" : null;
+  const add =
+    canAdd && list !== null ? (
+      <AddEntryButton list={list} catalog={catalog} label={t(`addEntry.label.${kind}`)} />
+    ) : null;
 
   return (
     <Section
@@ -96,9 +116,10 @@ export function EntryList({ title, info, kind, entries, className, style }: Entr
       info={info}
       className={className}
       style={style}
-      aside={search === null && bulk === null ? null : (
+      aside={search === null && bulk === null && add === null ? null : (
         <>
           {search}
+          {add}
           {bulk}
         </>
       )}
@@ -110,18 +131,25 @@ export function EntryList({ title, info, kind, entries, className, style }: Entr
           <EmptyText>{t("search.empty")}</EmptyText>
         ) : (
           <DenseGrid columns={columns} count={shown.length}>
-            {shown.map((entry) =>
-              entry.name === null ? (
+            {shown.map((entry) => {
+              const name = entry.name ?? t(`fallback.${kind}`, { id: entry.id });
+              const remove =
+                entry.removable && !entry.field.added
+                  ? { path: entry.field.path, name }
+                  : undefined;
+              return entry.name === null ? (
                 // Without a name the fallback already carries the number ("Variable #12").
+                <FieldCell key={entry.id} field={entry.field} name={name} remove={remove} />
+              ) : (
                 <FieldCell
                   key={entry.id}
                   field={entry.field}
-                  name={t(`fallback.${kind}`, { id: entry.id })}
+                  name={entry.name}
+                  id={entry.id}
+                  remove={remove}
                 />
-              ) : (
-                <FieldCell key={entry.id} field={entry.field} name={entry.name} id={entry.id} />
-              ),
-            )}
+              );
+            })}
           </DenseGrid>
         )}
       </div>

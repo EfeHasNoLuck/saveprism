@@ -88,7 +88,13 @@
     "copyCode": "Kodu kopyala",
     "copyCodeTip": "Düzenlenen kayıt kodunu oyuna yapıştırmak için kopyala",
     "saveAsFile": "Dosya olarak kaydet…",
-    "copyCodeItem": "Kayıt kodu olarak kopyala"
+    "copyCodeItem": "Kayıt kodu olarak kopyala",
+    "addedTip_one": "{{count}} eklenen kayıt",
+    "addedTip_other": "{{count}} eklenen kayıt",
+    "removedTip_one": "{{count}} kaldırılan kayıt",
+    "removedTip_other": "{{count}} kaldırılan kayıt",
+    "addedTag": "eklendi",
+    "removedTag": "kaldırıldı"
   },
   "confirm": {
     "discardOpen_one": "{{count}} değişiklik silinsin ve başka bir dosya açılsın mı?",
@@ -200,7 +206,10 @@
     "restoreFailed": "Yedek geri yüklenemedi",
     "codeCopied": "Kod kopyalandı",
     "codeCopiedBody": "Oyunun içe aktarma ya da yükleme kutusuna yapıştır.",
-    "copyCodeFailed": "Kod kopyalanamadı"
+    "copyCodeFailed": "Kod kopyalanamadı",
+    "addFailed": "Kayıt eklenemedi",
+    "removeFailed": "Değer kaldırılamadı",
+    "dataFolderFailed": "Veri klasörü okunamadı"
   },
   "bell": {
     "title": "Bu oturum",

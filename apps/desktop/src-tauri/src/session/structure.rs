@@ -189,7 +189,14 @@ enum Inventory {
 impl Session {
     /// What may be added and removed in the open document.
     pub(super) fn shaper(&self, ctx: &Ctx<'_>) -> Shaper {
-        let codec = self.recipe.steps.last().map(|step| step.kind.as_str());
+        // The format step may sit before a codec layer (zip, gzip, an encoding), not last.
+        let codec = self
+            .recipe
+            .steps
+            .iter()
+            .rev()
+            .map(|step| step.kind.as_str())
+            .find(|kind| kind.starts_with("format."));
         let story = if codec == Some("format.json") {
             ctx.story_vars()
         } else {
@@ -197,8 +204,8 @@ impl Session {
         };
         let kind = match codec {
             _ if !self.editable => Kind::Fixed,
-            Some("format.json") if story.is_some() => Kind::Story,
-            Some("format.json") => Kind::Json {
+            Some("format.json" | "format.rpgmaker-json") if story.is_some() => Kind::Story,
+            Some("format.json" | "format.rpgmaker-json") => Kind::Json {
                 rpg: self.rpg_engine().is_some(),
             },
             Some("format.es3") => Kind::Es3,
@@ -292,7 +299,10 @@ impl Session {
         let taken = object_entries(&self.doc, parent_id)
             .is_some_and(|entries| entries.iter().any(|(name, _)| name == key));
         let story_taken = shaper.kind == Kind::Story
-            && shaper.story.as_ref().is_some_and(|story| !story.is_free(key));
+            && shaper
+                .story
+                .as_ref()
+                .is_some_and(|story| !story.is_free(key));
         if taken || story_taken {
             return Err(ApiError::new(
                 app_codes::ENTRY_EXISTS,
@@ -384,9 +394,13 @@ impl Session {
                     value: OwnedValue::Int(count),
                 };
                 let hint = json::new_value_hint(&OwnedValue::Int(count));
-                self.add_entry(&map_path, entry_path.clone(), entry_path, hint, |doc, limits| {
-                    apply_edits(doc, std::slice::from_ref(&edit), limits)
-                })
+                self.add_entry(
+                    &map_path,
+                    entry_path.clone(),
+                    entry_path,
+                    hint,
+                    |doc, limits| apply_edits(doc, std::slice::from_ref(&edit), limits),
+                )
             }
             Inventory::Hash((map_id, map_path)) => {
                 let Some(Value::Map(entries)) = self.doc.get(map_id).map(|node| &node.value) else {
@@ -504,10 +518,7 @@ impl Session {
         let parent = entry_path
             .parent()
             .ok_or_else(|| not_removable(REMOVE_HINT))?;
-        let parent_id = self
-            .doc
-            .resolve(&parent)
-            .ok_or_else(|| bad_path(path))?;
+        let parent_id = self.doc.resolve(&parent).ok_or_else(|| bad_path(path))?;
         let child = self
             .doc
             .resolve(&entry_path)
@@ -578,10 +589,9 @@ impl Session {
     /// What a removed entry was: the first value of an edited one, else its value text or size.
     fn removed_text(&self, pending: &[Change], entry: &str, child: NodeId) -> String {
         let inner = format!("{entry}/{ES3_VALUE}");
-        if let Some(change) = pending
-            .iter()
-            .find(|change| change.kind == ChangeKind::Set && (change.path == entry || change.path == inner))
-        {
+        if let Some(change) = pending.iter().find(|change| {
+            change.kind == ChangeKind::Set && (change.path == entry || change.path == inner)
+        }) {
             return change.old.clone();
         }
         // An Easy Save 3 key shows its value.

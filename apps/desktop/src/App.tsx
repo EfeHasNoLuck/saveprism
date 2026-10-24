@@ -25,6 +25,7 @@ import {
 } from "@/api/commands";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { EditorView, type EditorHandle } from "@/editor";
+import { countChangeKinds } from "@/editor/helpers";
 import { AboutDialog } from "./shell/AboutDialog";
 import { BackgroundPattern } from "./shell/BackgroundPattern";
 import { BackupsDialog } from "./shell/BackupsDialog";
@@ -51,6 +52,7 @@ import { Toasts } from "./shell/Toasts";
 const OPEN_COVER_DELAY_MS = 300;
 
 const NO_HISTORY: HistoryState = { canUndo: false, canRedo: false };
+const NO_CHANGE_KINDS = { added: 0, removed: 0 };
 
 interface PasswordRequest {
   path: string;
@@ -64,6 +66,8 @@ function App() {
 
   const [file, setFile] = useState<OpenInfo | null>(null);
   const [changeCount, setChangeCount] = useState(0);
+  /** Added and removed entries among the pending changes. */
+  const [changeKinds, setChangeKinds] = useState(NO_CHANGE_KINDS);
   const [invalid, setInvalid] = useState(false);
   /** Bumped to make the editor read the document from the host again. */
   const [editorKey, setEditorKey] = useState(0);
@@ -92,6 +96,17 @@ function App() {
   const [pasteRequest, setPasteRequest] = useState<{ text: string } | null>(null);
   /** A copied code the clipboard refused, shown to copy by hand. */
   const [codeText, setCodeText] = useState<string | null>(null);
+
+  const resetChanges = useCallback(() => {
+    setChangeCount(0);
+    setChangeKinds(NO_CHANGE_KINDS);
+  }, []);
+
+  /** The editor read the pending changes: show their count and the added/removed counts. */
+  const applyChanges = useCallback((changes: Change[]) => {
+    setChangeCount(changes.length);
+    setChangeKinds(countChangeKinds(changes));
+  }, []);
 
   const notifyError = useCallback(
     (title: string, error: unknown) => {
@@ -128,7 +143,7 @@ function App() {
       try {
         const info = await openFile(path, password);
         setFile(info);
-        setChangeCount(0);
+        resetChanges();
         setHistory(NO_HISTORY);
         setInvalid(false);
         setEditorKey((key) => key + 1);
@@ -156,7 +171,7 @@ function App() {
         setBusy(false);
       }
     },
-    [notify, notifyError, rememberRecent, t],
+    [notify, notifyError, rememberRecent, resetChanges, t],
   );
 
   /**
@@ -185,7 +200,7 @@ function App() {
       try {
         const info = await openCode(text);
         setFile(info);
-        setChangeCount(0);
+        resetChanges();
         setHistory(NO_HISTORY);
         setInvalid(false);
         setEditorKey((key) => key + 1);
@@ -198,7 +213,7 @@ function App() {
         setBusy(false);
       }
     },
-    [notify, t],
+    [notify, resetChanges, t],
   );
 
   /** Opens the paste dialog, unless another action runs or the JSON editor is open. */
@@ -342,7 +357,7 @@ function App() {
               }
             : current,
         );
-        setChangeCount(0);
+        resetChanges();
         setHistory(NO_HISTORY);
         setEditorKey((key) => key + 1);
         const written = result.writtenPath;
@@ -372,7 +387,7 @@ function App() {
         setBusy(false);
       }
     },
-    [notify, notifyError, t],
+    [notify, notifyError, resetChanges, t],
   );
 
   const saveAsNew = useCallback(async () => {
@@ -398,7 +413,7 @@ function App() {
     setBusy(true);
     try {
       await discardChanges();
-      setChangeCount(0);
+      resetChanges();
       setEditorKey((key) => key + 1);
       notify({ kind: "info", title: t("bell.undone"), toast: false });
     } catch (error) {
@@ -406,7 +421,7 @@ function App() {
     } finally {
       setBusy(false);
     }
-  }, [notify, notifyError, t]);
+  }, [notify, notifyError, resetChanges, t]);
 
   /**
    * Shows what an undo, a redo or a "Set all" did. The cards show the values it changed in place
@@ -414,8 +429,14 @@ function App() {
    * everything again.
    */
   const showHistoryResult = useCallback((result: HistoryResult) => {
-    if (result.reload) setEditorKey((key) => key + 1);
-    else editorRef.current?.applyHistory(result.fields);
+    if (result.structural) {
+      // Read the lists, groups and counts again in place; scroll position and open cards stay.
+      editorRef.current?.reload();
+    } else if (result.reload) {
+      setEditorKey((key) => key + 1);
+    } else {
+      editorRef.current?.applyHistory(result.fields);
+    }
     setChangeCount(result.pending);
     setHistory({ canUndo: result.canUndo, canRedo: result.canRedo });
   }, []);
@@ -470,7 +491,7 @@ function App() {
       try {
         const info = await restoreBackup(name);
         setFile(info);
-        setChangeCount(0);
+        resetChanges();
         setHistory(NO_HISTORY);
         setInvalid(false);
         setEditorKey((key) => key + 1);
@@ -486,7 +507,7 @@ function App() {
         setBusy(false);
       }
     },
-    [notify, notifyError, t],
+    [notify, notifyError, resetChanges, t],
   );
 
   const loadChanges = useCallback(async (): Promise<Change[]> => {
@@ -703,7 +724,7 @@ function App() {
                 key={editorKey}
                 ref={editorRef}
                 readOnly={readOnly}
-                onChangesChanged={setChangeCount}
+                onChangesChanged={applyChanges}
                 onInvalidChanged={setInvalid}
                 onHistoryChanged={setHistory}
                 onEditMany={editMany}
@@ -724,6 +745,7 @@ function App() {
         {file ? (
           <BottomBar
             changeCount={changeCount}
+            changeKinds={changeKinds}
             readOnly={readOnly}
             invalid={invalid}
             busy={busy}

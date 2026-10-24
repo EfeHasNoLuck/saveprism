@@ -480,8 +480,7 @@ pub fn detach(doc: &mut SaveDoc, path: &Path) -> Result<Detached> {
     let parent_id = find(doc, &parent)?;
     let target_id = find(doc, path)?;
     let locked = is_read_only(doc, parent_id);
-    if is_read_only(doc, target_id) || (locked && !has_flag(doc, parent_id, NodeFlags::GROWABLE))
-    {
+    if is_read_only(doc, target_id) || (locked && !has_flag(doc, parent_id, NodeFlags::GROWABLE)) {
         return Err(read_only_error(path));
     }
     let entry = locate(doc, parent_id, &segment, path)?;
@@ -1130,7 +1129,10 @@ mod tests {
         let mut doc = map_doc();
         apply_edits(
             &mut doc,
-            &[insert_entry(OwnedValue::Int(9), OwnedValue::Str("v".into()))],
+            &[insert_entry(
+                OwnedValue::Int(9),
+                OwnedValue::Str("v".into()),
+            )],
         )
         .unwrap();
         assert_eq!(dump(&doc), r#"map("k"=1,5=2,9="v")"#);
@@ -1141,7 +1143,10 @@ mod tests {
 
         let before = dump(&doc);
         for (edit, reason) in [
-            (insert_entry(OwnedValue::Int(5), OwnedValue::Null), "already"),
+            (
+                insert_entry(OwnedValue::Int(5), OwnedValue::Null),
+                "already",
+            ),
             (
                 insert_entry(OwnedValue::Str("k".into()), OwnedValue::Null),
                 "already",

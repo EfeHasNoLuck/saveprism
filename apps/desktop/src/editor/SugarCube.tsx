@@ -72,6 +72,7 @@ export function SugarCube({ view }: { view: SugarCubeView }) {
         rows={view.variables}
         title={t("sections.storyVariables")}
         info={t("info.storyVariables")}
+        addParent={view.addParent}
       />
     </div>
   );

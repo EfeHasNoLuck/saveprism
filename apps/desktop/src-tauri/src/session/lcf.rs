@@ -16,8 +16,8 @@ use saveprism_core::{Codec, DecodeCtx, Limits, NodeId, Path, SaveDoc, Value};
 
 use super::Session;
 use super::game::{
-    Actor, At, Bonus, Bounds, COUNT, Ctx, Entry, Field, FieldKind, LEVEL, MAX_VALUE_ROWS,
-    NON_NEGATIVE, RpgMakerView, UNLIMITED, read_data_file,
+    Actor, AddLists, At, Bonus, Bounds, COUNT, Catalog, Ctx, Entry, Field, FieldKind, LEVEL,
+    MAX_VALUE_ROWS, NON_NEGATIVE, RpgMakerView, UNLIMITED, read_data_file,
 };
 
 /// Gold limit of RPG Maker 2000 and 2003.
@@ -215,6 +215,7 @@ fn absent_gold(path: Path) -> Field {
         max: Some(999_999),
         hint: "Not stored in this save (0); the game writes gold once the party has some".into(),
         editable: false,
+        added: false,
     }
 }
 
@@ -341,6 +342,7 @@ impl Ctx<'_> {
                     id,
                     name: names.items.get(&id).cloned(),
                     field,
+                    removable: false,
                 });
                 total += 1;
             }
@@ -377,6 +379,7 @@ impl Ctx<'_> {
                 id,
                 name: names.get(&id).cloned(),
                 field,
+                removable: false,
             });
         }
         out
@@ -412,6 +415,8 @@ impl Ctx<'_> {
                 .folder
                 .as_ref()
                 .map(|folder| folder.to_string_lossy().into_owned()),
+            catalog: Catalog::default(),
+            can_add: AddLists::default(),
         })
     }
 }

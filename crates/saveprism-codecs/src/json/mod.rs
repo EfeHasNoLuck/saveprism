@@ -30,8 +30,8 @@ use std::sync::Arc;
 use saveprism_core::Params;
 use saveprism_core::limits::len_u64;
 use saveprism_core::{
-    Codec, Confidence, DecodeCtx, Decoded, Error, ErrorCode, OwnedValue, Registry, Result,
-    SaveDoc, SniffCtx, TypeHint,
+    Codec, Confidence, DecodeCtx, Decoded, Error, ErrorCode, OwnedValue, Registry, Result, SaveDoc,
+    SniffCtx, TypeHint,
 };
 
 use profile::Profile;

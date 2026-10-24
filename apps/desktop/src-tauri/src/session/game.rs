@@ -840,11 +840,9 @@ impl Ctx<'_> {
     /// True when the party's `{"<id>": count}` object `key` takes new entries (MV/MZ).
     fn takes_counts(&self, party: &At, key: &str) -> bool {
         self.editable
-            && self
-                .entry(party, key)
-                .is_some_and(|map| {
-                    object_entries(self.doc, map.0).is_some() && !is_read_only(self.doc, map.0)
-                })
+            && self.entry(party, key).is_some_and(|map| {
+                object_entries(self.doc, map.0).is_some() && !is_read_only(self.doc, map.0)
+            })
     }
 
     /// Variables or switches: `<root>.<key>[index]` (`_data` in MV/MZ, `@data` in XP, VX and VX
@@ -1148,7 +1146,10 @@ impl Session {
             });
         }
         if let Some(rows) = self.renpy_view(&ctx) {
-            return Ok(GameView::Values { rows });
+            return Ok(GameView::Values {
+                rows,
+                add_parent: None,
+            });
         }
         if let Some(engine) = self.rpg_engine()
             && let Some(view) = ctx.rpg_view(engine, &self.mv_names())
@@ -1227,10 +1228,7 @@ impl Session {
         let Some(names) = found else {
             return Err(ApiError::new(
                 app_codes::DATA_FOLDER,
-                format!(
-                    "no game data files were found in \"{}\"",
-                    picked.display()
-                ),
+                format!("no game data files were found in \"{}\"", picked.display()),
                 hint,
             ));
         };

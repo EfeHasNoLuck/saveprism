@@ -4,12 +4,15 @@ import {
   bulkPaths,
   bulkTargets,
   cardWidth,
+  catalogId,
   changeText,
   changeValue,
   checkRange,
   clampPage,
   columnsIn,
+  countChangeKinds,
   fieldHint,
+  filterCatalog,
   filterEntries,
   formatDateTime,
   formatValue,
@@ -299,5 +302,40 @@ describe("story notes", () => {
     });
     expect(noteText({ kind: "code", count: null, text: null }, t, format, "en").tip).toBe("note.specialTip");
     expect(noteText({ kind: "empty", count: null, text: null }, t, format, "en").tip).toBe("note.emptyTip");
+  });
+});
+
+describe("catalog", () => {
+  const entries = [
+    { id: 1, name: "Potion" },
+    { id: 3, name: "Hi-Potion" },
+    { id: 12, name: "Ether" },
+  ];
+  it("matches names and #ids", () => {
+    expect(filterCatalog(entries, "poti").map((e) => e.id)).toEqual([1, 3]);
+    expect(filterCatalog(entries, "#12").map((e) => e.id)).toEqual([12]);
+    expect(filterCatalog(entries, "12").map((e) => e.id)).toEqual([12]);
+    expect(filterCatalog(entries, " ")).toHaveLength(3);
+  });
+  it("parses typed ids", () => {
+    expect(catalogId("12")).toBe(12);
+    expect(catalogId("#12")).toBe(12);
+    expect(catalogId("0")).toBeNull();
+    expect(catalogId("100000")).toBeNull();
+    expect(catalogId("Potion")).toBeNull();
+  });
+});
+
+describe("change counts", () => {
+  it("counts added and removed entries only", () => {
+    expect(
+      countChangeKinds([
+        { kind: "set" },
+        { kind: "added" },
+        { kind: "removed" },
+        { kind: "added" },
+      ]),
+    ).toEqual({ added: 2, removed: 1 });
+    expect(countChangeKinds([])).toEqual({ added: 0, removed: 0 });
   });
 });

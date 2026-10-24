@@ -1113,7 +1113,12 @@ fn map_len(doc: &SaveDoc, path: &str) -> usize {
     }
 }
 
-fn insert(decoded: &mut Decoded, path: &str, key: i128, value: i128) -> saveprism_core::Result<usize> {
+fn insert(
+    decoded: &mut Decoded,
+    path: &str,
+    key: i128,
+    value: i128,
+) -> saveprism_core::Result<usize> {
     insert_int_entry(
         &mut decoded.doc,
         &Path::parse(path).unwrap(),
@@ -1128,17 +1133,26 @@ fn insert(decoded: &mut Decoded, path: &str, key: i128, value: i128) -> savepris
 fn insert_and_check(relative: &str, path: &str, key: i128, value: i128) -> Vec<u8> {
     let original = fixture(relative);
     let mut decoded = decode(&original);
-    assert!(is_growable_hash(at(&decoded.doc, path)), "{relative} {path}");
+    assert!(
+        is_growable_hash(at(&decoded.doc, path)),
+        "{relative} {path}"
+    );
     let before = map_len(&decoded.doc, path);
     let index = insert(&mut decoded, path, key, value).unwrap();
     assert_eq!(index, before);
     let written = encode(&decoded);
     let again = exact(&written);
-    assert!(again.doc.tree_eq(&decoded.doc), "{relative}: the file reads differently");
+    assert!(
+        again.doc.tree_eq(&decoded.doc),
+        "{relative}: the file reads differently"
+    );
     assert_eq!(map_len(&again.doc, path), before + 1);
     assert_eq!(int_at(&again.doc, &format!("{path}/{index}.key")), key);
     assert_eq!(int_at(&again.doc, &format!("{path}/{index}")), value);
-    assert_eq!(hint_of(&again.doc, &format!("{path}/{index}.key")), "RUBY:int");
+    assert_eq!(
+        hint_of(&again.doc, &format!("{path}/{index}.key")),
+        "RUBY:int"
+    );
     assert_eq!(hint_of(&again.doc, &format!("{path}/{index}")), "RUBY:int");
     // The original still opens and writes exactly as it was.
     exact(&original);
@@ -1148,7 +1162,12 @@ fn insert_and_check(relative: &str, path: &str, key: i128, value: i128) -> Vec<u
 #[test]
 fn integer_keyed_hashes_take_new_integer_entries() {
     let original = fixture("synthetic/rpgmaker-vxace/Save02.rvdata2");
-    let written = insert_and_check("synthetic/rpgmaker-vxace/Save02.rvdata2", "/1/party/@items", 7, 3);
+    let written = insert_and_check(
+        "synthetic/rpgmaker-vxace/Save02.rvdata2",
+        "/1/party/@items",
+        7,
+        3,
+    );
     // `i 7`, `i 3`: four bytes more, the entry count still fits its byte.
     assert_eq!(written.len(), original.len() + 4);
 
@@ -1232,7 +1251,11 @@ fn only_added_entries_come_out_again() {
     // The new key is read-only like every hash key; the count can be edited.
     let key = format!("/1/party/@items/{index}.key");
     assert!(read_only(&decoded.doc, &key));
-    set(&mut decoded, &format!("/1/party/@items/{index}"), OwnedValue::Int(9));
+    set(
+        &mut decoded,
+        &format!("/1/party/@items/{index}"),
+        OwnedValue::Int(9),
+    );
     remove(&mut decoded.doc, &format!("/1/party/@items/{index}")).unwrap();
     assert_eq!(encode(&decoded), original);
 }

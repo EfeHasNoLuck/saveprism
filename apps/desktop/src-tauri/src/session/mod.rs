@@ -46,8 +46,8 @@ pub use backups::BackupRow;
 pub use code::MAX_PASTED;
 use game::check_bounds_in;
 pub use game::{
-    Actor, AddLists, Bonus, Catalog, Entry, Field, FieldKind, GameView, NamedId, NoteKind,
-    RowNote, RpgMakerView, ValueRow,
+    Actor, AddLists, Bonus, Catalog, Entry, Field, FieldKind, GameView, NamedId, NoteKind, RowNote,
+    RpgMakerView, ValueRow,
 };
 use history::{DocStep, History, MAX_VALUES, Mutation, scalar_owned};
 pub use history::{HistoryResult, HistoryState};
@@ -1091,7 +1091,10 @@ impl Session {
         let recipe = with_password(&self.recipe, self.password.as_deref());
         let out = pipeline::decode(&self.original, &recipe, &self.reg, &self.limits)?;
         let structural = self.history.has_structural()
-            || self.pending.iter().any(|change| change.kind != ChangeKind::Set);
+            || self
+                .pending
+                .iter()
+                .any(|change| change.kind != ChangeKind::Set);
         if structural {
             let doc = std::mem::replace(&mut self.doc, out.doc);
             let pending = std::mem::take(&mut self.pending);
