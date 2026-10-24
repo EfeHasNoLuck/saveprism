@@ -3,8 +3,8 @@
 @AGENTS.md
 
 ## The one goal right now
-Windows v0.1 that a normal player can install: open an RPG Maker MV/MZ, Unity ES3 or Unreal GVAS save, change values, save with a
-backup. Everything else waits in `NOW.md` "Later". Do not plan or build it.
+Windows v0.1 that a normal player can install: a local, polished replacement for saveeditonline.com (nothing less than it can do),
+with customization and an AI bridge (user, 2026-10-23). The todo list is in `NOW.md`; anything in its "Later" waits.
 
 ## Files
 - `NOW.md`: goal, what is done, short todo list, Later. The only planning file kept up to date.
@@ -15,8 +15,10 @@ backup. Everything else waits in `NOW.md` "Later". Do not plan or build it.
 ## How we work (user, 2026-10-22: "İş yükünü azalt, rahatlat, hedefe odaklan ve BAŞAR!")
 - The main session writes small changes itself (about 20 lines or one file). Bigger pieces go to one coding subagent with a short brief
   in the prompt (no card files, no task lists).
-- Subagents do the chores: research, drawing or writing inside a given frame, bulk/mechanical edits, and visual checks with screenshots
-  (screenshots stay out of the main context; the subagent reports in text).
+- Chores go to external engines first to save Claude credits (user, 2026-10-23): code chores with a clear brief → opencode
+  `evren/glm-5.3`, research/summaries → agy Gemini flash, second-opinion review → Codex `gpt-6-luna` read-only, backup → Cursor CLI.
+  Briefs and reports in `.motor/` (git-ignored); check every result with `git diff` + `kontrol.sh`.
+- Claude subagents only for what engines do badly: visual checks with screenshots (the subagent reports in text), design-heavy UI.
 - Reviewer subagent only for code that writes files or handles passwords/keys.
 - Evidence before "done": `bash .claude/araclar/kontrol.sh [rust|web]` output or what the user saw. Never claim unverified work.
 - Ask the user only two things: how a screen looks (A/B with screenshots) and publishing a release / making the repo public.
