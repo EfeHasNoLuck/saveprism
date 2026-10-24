@@ -79,7 +79,8 @@ export function ValueInput({
         value={edit.draft}
         // Ctrl+Z undoes the edit (not the typing) while the box shows the committed value.
         data-committed={field.value}
-        title={field.kind === "string" ? edit.draft : undefined}
+        // A locked box leaves the hover text to its row (which says why it is locked).
+        title={field.kind === "string" && !disabled ? edit.draft : undefined}
         onChange={(e) => edit.setDraft(e.target.value)}
         onFocus={() => edit.setFocused(true)}
         onBlur={() => {
@@ -216,12 +217,14 @@ export function FieldCell({
             "relative flex h-7 min-w-0 items-center gap-1 rounded-sm pr-0.5 pl-2 text-xs",
             stateTone(state),
           )}
+          // A locked box has no hover text of its own; the row's (which says why) shows over it.
+          title={edit.disabled ? (title ?? name) : undefined}
         >
           <StateBar state={state} />
           <span
             className={cn(
               "truncate",
-              fixedLabel ? "w-[4.5rem] shrink-0 text-muted-foreground" : "min-w-0",
+              fixedLabel ? "w-[4.5rem] shrink-0 text-muted-foreground" : "min-w-14",
               kind === "string" && !fixedLabel && "max-w-[45%]",
             )}
             title={title ?? name}
@@ -247,7 +250,7 @@ export function FieldCell({
           <ValueInput
             edit={edit}
             label={name}
-            className={cn("shrink-0", (fixedLabel || kind === "string") && "min-w-12 flex-1")}
+            className={fixedLabel || kind === "string" ? "min-w-12 flex-1 shrink-0" : "min-w-16"}
             // Numbers grow with their digits so a long value is never shown cut short.
             inputClassName={
               fixedLabel || kind === "string"

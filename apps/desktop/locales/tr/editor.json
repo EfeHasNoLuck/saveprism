@@ -45,7 +45,7 @@
     "decrease": "Azalt",
     "new": "yeni",
     "removeAdded": "Kaldır (eklendi)",
-    "readOnly": "burada salt okunur (örneğin kayıt bu değeri iki adla saklıyor)"
+    "readOnly": "bu dosyada salt okunur"
   },
   "search": {
     "list": "İsim, #id veya değer ara",

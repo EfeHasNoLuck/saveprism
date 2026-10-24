@@ -17,6 +17,9 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
   Apply/Export .json, true/false choice, close guard. Web 3/3 (76 tests).
 - Visual checks without computer-use: start `tauri dev` with `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS=--remote-debugging-port=9222`
   and drive the WebView over CDP (patch `window.fetch` for `plugin:dialog|open|save`; `__TAURI_INTERNALS__.invoke` is read-only).
+- 2026-10-24: every screen merged overnight checked in the running app over CDP (dark/light, EN/TR); found and fixed: cut-off
+  big numbers, missing read-only values, duplicate React keys on Ren'Py aliases, untranslated count message, TR card
+  header wrap, dimmed read-only toggles (`422a4bb` and the next commit). Re-checked after the fixes.
 - 65 real saves for local tests in `fixtures/external/` (git-ignored; sources and licenses in `fixtures/external/SOURCES.md`).
 
 ## Todo (in order; widened by the user on 2026-10-23)
@@ -34,18 +37,18 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
      `RPG_RT.ldb` (ids checked against liblcf; non-ASCII text edits are refused only at save), Ren'Py `.save`
      and `persistent` (pickle parsed as data only; an edited save gets an empty `signatures` entry so the game asks the
      player to trust it; a signed persistent opens read-only; persistent re-compresses to different bytes), TyranoScript `.sav` (URL-escaped JSON, both
-     `escape()` and `encodeURIComponent` styles; detection confidence only 0.35), .NET BinaryFormatter data (Unity `.dat` saves, RAGS `.rsv`;
+     `escape()` and `encodeURIComponent` styles; real saves from 2 games open with an exact round trip; the low 0.35 score only ranks candidates and nothing else claims the file), .NET BinaryFormatter data (Unity `.dat` saves, RAGS `.rsv`;
      parsed as data only, never deserialized), Unity PlayerPrefs as a registry `.reg` export (ints,
      Unity's 8-byte `hex(4)` floats, UTF-8 strings; regedit line wrapping kept), Godot ConfigFile text and `store_var` binary (Godot 3 and 4 type
      tables checked against the docs; packed number arrays read-only; encrypted GDEC files refused), SQLite saves (`rusqlite` bundled, MIT; edits are parameterized
-     UPDATEs on an in-memory copy; tables with triggers, views and WITHOUT ROWID tables read-only), saves packed in zip archives (one payload entry
+     UPDATEs on an in-memory copy; tables with triggers, views and WITHOUT ROWID tables read-only), saves packed in zip archives (real Shapez 2 and House Flipper 2 saves open exact; one payload entry
      rewritten, the rest kept byte-identical; gzip was already a layer), Wolf RPG Editor `.sav` (unencrypted; switches, variables and the
      Variable DB; layout from the MIT WolfSave project, save part order from one source only; encrypted saves refused),
      QSP `.sav` (UTF-16 and legacy single-byte saves, read as Windows-1251; KOI8-R saves are not told apart),
      Naninovel save slots with a custom-variables view (plain, gzip, deflate; compressed ones re-compress to other bytes).
    - Formats left: none. The Witcher 3 `.sav` done 2026-10-24 (orens and item quantities; LZ4 chunks via `lz4_flex`, MIT;
      layout from public MIT projects; undecoded record shapes read-only).
-   - Done 2026-10-24 (`wt/cards`, not checked in the running app yet): add items/weapons/armors to RPG Maker lists
+   - Done 2026-10-24 (`wt/cards`; checked in the running app 2026-10-24): add items/weapons/armors to RPG Maker lists
      (MV/MZ and XP/VX/VX Ace), add/remove values in JSON, ES3 and SugarCube lists, undo for added/removed entries,
      "Choose data folder…" for names. Its core/session part was written by a Claude subagent through Bash after the
      project hook refused Edit/Write outside the project; finished by EVREN; merge breaks fixed by Claude.
@@ -72,6 +75,10 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
    done), then ask the user to publish.
 
 ## Known gaps
+- Turkish UI: the body of host error toasts stays English (only the title is translated; `shell/errors.ts` shows the
+  host message as is). Needs per-code messages with parameters (visual check, 2026-10-24).
+- A zip save with several JSON entries opens only the largest (Shapez 2: `local-player.json`, not `research.json` or
+  `savegame.json`; House Flipper 2: `parcel.json`, not `header.json`).
 - RPG Maker saves re-compress to different bytes: editable, not byte-exact. ES3 dicts with number keys don't open. Palworld PlZ2 world
   files are slow.
 - JSON view/export on huge saves: the 50 MB cap is checked only after the whole text is built, and `unique_key` in

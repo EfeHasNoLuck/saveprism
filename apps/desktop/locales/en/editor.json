@@ -45,7 +45,7 @@
     "decrease": "Decrease",
     "new": "new",
     "removeAdded": "Remove (added)",
-    "readOnly": "read-only here (for example, the save stores it under two names)"
+    "readOnly": "read-only in this file"
   },
   "search": {
     "list": "Search name, #id or value",
