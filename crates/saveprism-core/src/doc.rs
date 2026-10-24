@@ -110,6 +110,10 @@ impl NodeFlags {
     pub const READ_ONLY: NodeFlags = NodeFlags(1);
     /// The node was created by an edit and has no counterpart in the original bytes.
     pub const SYNTHETIC: NodeFlags = NodeFlags(2);
+    /// A read-only container that still takes new entries: `Insert` and `InsertEntry` may add to
+    /// it, and `Remove` may take out an entry that an edit added (`SYNTHETIC`). Its other entries,
+    /// its keys and the container itself stay read-only.
+    pub const GROWABLE: NodeFlags = NodeFlags(4);
 
     /// A flag set with no flag.
     pub const fn empty() -> Self {
@@ -395,6 +399,14 @@ impl SaveDoc {
     pub fn set_flags(&mut self, id: NodeId, flags: NodeFlags) -> Result<()> {
         let node = self.node_mut(id).ok_or_else(|| missing_node(id))?;
         node.flags = flags;
+        Ok(())
+    }
+
+    /// Replaces the format type name of a node (a codec gives a node that an edit added the hint
+    /// its writer needs).
+    pub fn set_type_hint(&mut self, id: NodeId, hint: Option<TypeHint>) -> Result<()> {
+        let node = self.node_mut(id).ok_or_else(|| missing_node(id))?;
+        node.type_hint = hint;
         Ok(())
     }
 

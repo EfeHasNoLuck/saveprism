@@ -11,17 +11,22 @@
 //! XP keeps whole `Game_Actor` copies in the party, but the game's load code rebuilds the party from
 //! `$game_actors`, so the actor fields always point into `Game_Actors`. An actor slot that is a
 //! Marshal link (`Ref`) is followed to the node it points at, and the fields get that node's path.
+//!
+//! New inventory entries go to the end of the party's `@items`, `@weapons` and `@armors` hashes
+//! (the codec lets integer-keyed hashes grow). A count of 0 is harmless: XP and VX keep such
+//! entries themselves and list only counts above 0; VX Ace deletes an entry when a count drops to 0
+//! in play, and lists an entry it loads with 0 as a greyed "0".
 
 use std::collections::HashMap;
 use std::path::Path as FsPath;
 
-use saveprism_codecs::marshal::{RubyMarshalCodec, ruby_class};
+use saveprism_codecs::marshal::{RubyMarshalCodec, is_growable_hash, ruby_class};
 use saveprism_core::{Codec, DecodeCtx, Limits, NodeId, Path, SaveDoc, Value};
 
 use super::Session;
 use super::game::{
-    Actor, At, Bonus, Bounds, COUNT, Ctx, Entry, GOLD, GameNames, LEVEL, MAX_VALUE_ROWS,
-    NON_NEGATIVE, RpgMakerView, UNLIMITED, read_data_file,
+    Actor, AddLists, At, Bonus, Bounds, COUNT, Ctx, Entry, GOLD, GameNames, LEVEL,
+    MAX_VALUE_ROWS, NON_NEGATIVE, RpgMakerView, UNLIMITED, read_data_file,
 };
 
 /// Gold limit of XP and VX (VX Ace has the MV/MZ limit).
@@ -66,7 +71,7 @@ impl Engine {
     }
 
     /// Extension of the game's data files.
-    fn extension(self) -> &'static str {
+    pub(super) fn extension(self) -> &'static str {
         match self {
             Engine::Xp => "rxdata",
             Engine::Vx => "rvdata",
@@ -249,15 +254,31 @@ impl Ctx<'_> {
                 continue;
             };
             if let Some(field) = self.field(&at, COUNT) {
+                // Entries that were there stay: removing one would renumber the ones after it.
                 out.push(Entry {
                     id,
                     name: names.get(&id).cloned(),
                     field,
+                    removable: false,
                 });
             }
         }
         out.sort_by_key(|entry| entry.id);
         out
+    }
+
+    /// The party (`Game_Party`) of the save.
+    pub(super) fn rgss_party(&self, engine: Engine) -> Option<At> {
+        self.objects(engine).party
+    }
+
+    /// True when the party hash `key` takes new entries.
+    fn takes_entries(&self, party: &At, key: &str) -> bool {
+        self.editable
+            && self
+                .entry(party, key)
+                .and_then(|at| self.doc.get(at.0))
+                .is_some_and(is_growable_hash)
     }
 
     fn rgss_actor(&self, engine: Engine, id: u32, at: &At) -> Option<Actor> {
@@ -378,6 +399,12 @@ impl Ctx<'_> {
                 .folder
                 .as_ref()
                 .map(|folder| folder.to_string_lossy().into_owned()),
+            catalog: names.catalog(),
+            can_add: AddLists {
+                items: self.takes_entries(&party, "@items"),
+                weapons: self.takes_entries(&party, "@weapons"),
+                armors: self.takes_entries(&party, "@armors"),
+            },
         })
     }
 }
@@ -467,6 +494,36 @@ fn index_names(doc: &SaveDoc, key: &str) -> HashMap<u32, String> {
     out
 }
 
+/// The names in the data folder `folder` (`Items.<ext>`, `Weapons.<ext>`, `Armors.<ext>`,
+/// `System.<ext>` of the engine), or `None` when it has none of them readable.
+fn rgss_names_in(folder: &FsPath, engine: Engine) -> Option<GameNames> {
+    let extension = engine.extension();
+    let read = |name: &str| read_data(&folder.join(format!("{name}.{extension}")));
+    let mut names = GameNames::default();
+    let mut found = false;
+    if let Some(doc) = read("Items") {
+        names.items = id_names(&doc);
+        found = true;
+    }
+    if let Some(doc) = read("Weapons") {
+        names.weapons = id_names(&doc);
+        found = true;
+    }
+    if let Some(doc) = read("Armors") {
+        names.armors = id_names(&doc);
+        found = true;
+    }
+    if let Some(doc) = read("System") {
+        names.variables = index_names(&doc, "@variables");
+        names.switches = index_names(&doc, "@switches");
+        found = true;
+    }
+    found.then(|| {
+        names.folder = Some(folder.to_path_buf());
+        names
+    })
+}
+
 /// Looks for the game's `Data` folder next to the save (`<save dir>/Data`: these engines save next
 /// to `Game.exe`), then one folder up (games that save in a subfolder); the first folder with a
 /// readable data file wins. Encrypted archives (`Game.rgssad`, `.rgss2a`, `.rgss3a`) are not read.
@@ -482,34 +539,30 @@ fn load_names(save_path: &FsPath, engine: Engine) -> GameNames {
     if let Some(game_root) = save_dir.parent() {
         folders.push(game_root.join("Data"));
     }
+    folders
+        .iter()
+        .find_map(|folder| rgss_names_in(folder, engine))
+        .unwrap_or_default()
+}
+
+/// The names of a folder the player picked: the `Data` folder itself, or the game folder (its
+/// `Data`).
+pub(super) fn rgss_names_picked(folder: &FsPath, engine: Engine) -> Option<GameNames> {
+    [
+        folder.to_path_buf(),
+        folder.join("Data"),
+        folder.join("data"),
+    ]
+    .iter()
+    .find_map(|candidate| rgss_names_in(candidate, engine))
+}
+
+/// What to pick when a folder has no data files of the engine.
+pub(super) fn data_hint(engine: Engine) -> String {
     let extension = engine.extension();
-    for folder in folders {
-        let read = |name: &str| read_data(&folder.join(format!("{name}.{extension}")));
-        let mut names = GameNames::default();
-        let mut found = false;
-        if let Some(doc) = read("Items") {
-            names.items = id_names(&doc);
-            found = true;
-        }
-        if let Some(doc) = read("Weapons") {
-            names.weapons = id_names(&doc);
-            found = true;
-        }
-        if let Some(doc) = read("Armors") {
-            names.armors = id_names(&doc);
-            found = true;
-        }
-        if let Some(doc) = read("System") {
-            names.variables = index_names(&doc, "@variables");
-            names.switches = index_names(&doc, "@switches");
-            found = true;
-        }
-        if found {
-            names.folder = Some(folder);
-            return names;
-        }
-    }
-    GameNames::default()
+    format!(
+        "Pick the game's folder or its Data folder (the one with Items.{extension} and System.{extension}). Encrypted games (Game.rgssad, .rgss2a, .rgss3a) have no readable Data folder."
+    )
 }
 
 impl Session {
@@ -527,11 +580,11 @@ impl Session {
     /// folder; `None` for other files.
     pub(super) fn rgss_view(&self, ctx: &Ctx<'_>) -> Option<RpgMakerView> {
         let engine = self.rgss_engine(ctx)?;
-        // A pasted code has no game folder next to it.
-        let names = if self.pasted {
-            GameNames::default()
-        } else {
-            load_names(&self.path, engine)
+        // The folder the player picked, else the one next to the save (a pasted code has none).
+        let names = match &self.data_folder {
+            Some(folder) => rgss_names_in(folder, engine).unwrap_or_default(),
+            None if self.pasted => GameNames::default(),
+            None => load_names(&self.path, engine),
         };
         ctx.rgss_view(engine, &names)
     }

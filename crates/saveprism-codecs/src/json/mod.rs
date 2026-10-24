@@ -30,7 +30,8 @@ use std::sync::Arc;
 use saveprism_core::Params;
 use saveprism_core::limits::len_u64;
 use saveprism_core::{
-    Codec, Confidence, DecodeCtx, Decoded, Error, ErrorCode, Registry, Result, SaveDoc, SniffCtx,
+    Codec, Confidence, DecodeCtx, Decoded, Error, ErrorCode, OwnedValue, Registry, Result,
+    SaveDoc, SniffCtx, TypeHint,
 };
 
 use profile::Profile;
@@ -51,6 +52,17 @@ const BOM: [u8; 3] = [0xEF, 0xBB, 0xBF];
 /// Registers the JSON codec as `format.json`.
 pub fn register(reg: &mut Registry) {
     reg.add_codec(Arc::new(JsonCodec));
+}
+
+/// The hint that a value added by an edit needs so it is written as the same JSON type and reads
+/// back as it was: `JSON:int` for whole numbers, `JSON:float` for decimal numbers (so `2.0` stays a
+/// decimal number); `None` for other values.
+pub fn new_value_hint(value: &OwnedValue) -> Option<TypeHint> {
+    match value {
+        OwnedValue::Int(_) => Some(TypeHint::new("JSON:int")),
+        OwnedValue::Float(_) => Some(TypeHint::new("JSON:float")),
+        _ => None,
+    }
 }
 
 /// The `format.json` codec.

@@ -40,6 +40,13 @@
 //! Containers are read-only (no insert, remove or rename), so an edit never changes the shape.
 //! Map keys are read-only. Editable: integers, floats, booleans and UTF-8 strings.
 //!
+//! One exception: a plain hash (no default) whose keys are all integers, or an empty hash, is
+//! growable (`NodeFlags::GROWABLE`). [`insert_int_entry`] adds an `Int => Int` entry to its end,
+//! the way the game's `@items[id] = n` does (RPG Maker party items, weapons and armors). Integers
+//! write no symbol and no float, so the recorded symbol and float numbering stays right, and
+//! object links are numbered from the tree, so a Bignum entry keeps every link right too. Only an
+//! entry added this way can be taken out again.
+//!
 //! # Exact writing
 //!
 //! The writer is canonical (what Ruby writes) and the core round-trip guard compares the bytes.
@@ -66,8 +73,9 @@ use std::sync::Arc;
 
 use saveprism_core::limits::len_u64;
 use saveprism_core::{
-    Codec, Confidence, DecodeCtx, Decoded, Error, ErrorCode, Node, Params, Registry, Result,
-    SaveDoc, SniffCtx,
+    Codec, Confidence, DecodeCtx, Decoded, Edit, Error, ErrorCode, Limits, Node, NodeFlags,
+    OwnedValue, Params, Path, Registry, Result, SaveDoc, SniffCtx, TypeHint, Value, apply_edits,
+    codes,
 };
 
 /// The data is truncated or malformed (bad type byte, bad length, bad float text).
@@ -220,6 +228,77 @@ pub fn ruby_class(node: &Node) -> Option<&str> {
         | Kind::Extended(class) => Some(class),
         _ => None,
     }
+}
+
+/// True when `node` is a growable Ruby hash: a plain hash (no default) with integer keys only, or
+/// an empty one. [`insert_int_entry`] adds to it.
+pub fn is_growable_hash(node: &Node) -> bool {
+    let plain = node
+        .type_hint
+        .as_ref()
+        .and_then(|hint| parse_hint(hint.as_str()))
+        == Some(Kind::Hash);
+    plain && node.flags.contains(NodeFlags::GROWABLE) && matches!(node.value, Value::Map(_))
+}
+
+/// Adds the entry `key => value` (two integers) to the end of the growable hash at `parent` and
+/// returns the entry's index, as Ruby's `hash[key] = value` does for a new key. The new nodes get
+/// the hints the writer needs; the key is read-only like every hash key. Fails on any other node
+/// and on a key the hash already has. Atomic: on an error the document is unchanged.
+pub fn insert_int_entry(
+    doc: &mut SaveDoc,
+    parent: &Path,
+    key: i128,
+    value: i128,
+    limits: &Limits,
+) -> Result<usize> {
+    let growable = doc
+        .resolve(parent)
+        .and_then(|id| doc.get(id))
+        .is_some_and(is_growable_hash);
+    if !growable {
+        return Err(Error::new(
+            codes::CORE_READ_ONLY,
+            format!(
+                "the value at '{parent}' takes no new entries (only a hash with whole-number keys does)"
+            ),
+        ));
+    }
+    let mut work = doc.clone();
+    apply_edits(
+        &mut work,
+        &[Edit::InsertEntry {
+            parent: parent.clone(),
+            key: OwnedValue::Int(key),
+            value: OwnedValue::Int(value),
+        }],
+        limits,
+    )?;
+    let count = match work.resolve(parent).and_then(|id| work.get(id)) {
+        Some(Node {
+            value: Value::Map(entries),
+            ..
+        }) => entries.len(),
+        _ => 0,
+    };
+    let index = count
+        .checked_sub(1)
+        .ok_or_else(|| Error::new(RUBY_WRITE, "the new hash entry is missing"))?;
+    let entry = |suffix: &str| {
+        let mut path = parent.clone();
+        path.push(format!("{index}{suffix}"));
+        work.resolve(&path)
+            .ok_or_else(|| Error::new(RUBY_WRITE, "the new hash entry is missing"))
+    };
+    let (key_id, value_id) = (entry(".key")?, entry("")?);
+    let int = TypeHint::new(format!("{HINT_PREFIX}int"));
+    work.set_type_hint(key_id, Some(int.clone()))?;
+    work.set_type_hint(value_id, Some(int))?;
+    let mut flags = NodeFlags::READ_ONLY;
+    flags.insert(NodeFlags::SYNTHETIC);
+    work.set_flags(key_id, flags)?;
+    *doc = work;
+    Ok(index)
 }
 
 /// True for a byte that can start a Marshal value.

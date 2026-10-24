@@ -17,7 +17,8 @@ pub use aes::Es3AesLayer;
 use std::sync::Arc;
 
 use saveprism_core::{
-    Codec, Confidence, DecodeCtx, Decoded, ErrorCode, Params, Registry, Result, SaveDoc, SniffCtx,
+    Codec, Confidence, DecodeCtx, Decoded, ErrorCode, OwnedValue, Params, Registry, Result,
+    SaveDoc, SniffCtx, TypeHint,
 };
 
 /// The root of the file is not an object, or the file is not Easy Save 3 text.
@@ -40,6 +41,23 @@ const BOM: [u8; 3] = [0xEF, 0xBB, 0xBF];
 pub fn register(reg: &mut Registry) {
     reg.add_layer(Arc::new(Es3AesLayer));
     reg.add_codec(Arc::new(Es3Codec));
+}
+
+/// The Easy Save 3 type name of a new top-level value, as its `__type` entry names it (`int`,
+/// `float`, `bool`, `string`); `None` for other values.
+pub fn primitive_type(value: &OwnedValue) -> Option<&'static str> {
+    match value {
+        OwnedValue::Int(_) => Some("int"),
+        OwnedValue::Float(_) => Some("float"),
+        OwnedValue::Bool(_) => Some("bool"),
+        OwnedValue::Str(_) => Some("string"),
+        _ => None,
+    }
+}
+
+/// The hint this codec gives the `value` node of a `{"__type": "<type>", "value": ...}` entry.
+pub fn value_hint(type_name: &str) -> TypeHint {
+    TypeHint::new(format!("ES3:{type_name}"))
 }
 
 /// The `format.es3` codec.
