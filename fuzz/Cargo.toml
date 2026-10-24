@@ -42,3 +42,66 @@ path = "fuzz_targets/marshal.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "sol"
+path = "fuzz_targets/sol.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "gen3"
+path = "fuzz_targets/gen3.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "javaser"
+path = "fuzz_targets/javaser.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "lcf"
+path = "fuzz_targets/lcf.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "reg"
+path = "fuzz_targets/reg.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "pickle"
+path = "fuzz_targets/pickle.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "nrbf"
+path = "fuzz_targets/nrbf.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "godot"
+path = "fuzz_targets/godot.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "sqlite"
+path = "fuzz_targets/sqlite.rs"
+test = false
+doc = false
+bench = false

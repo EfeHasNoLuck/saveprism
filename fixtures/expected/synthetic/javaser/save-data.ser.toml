@@ -1,0 +1,2 @@
+recipe = "format.java-serialization"
+guard = "exact"

@@ -20,7 +20,7 @@ use super::export::{
 };
 use super::game::{Bounds, check_bounds_in};
 use super::history::{Mutation, scalar_owned};
-use super::{ApiError, Change, Session, app_codes, parse_input, read_only_document, value_text};
+use super::{ApiError, Change, Session, app_codes, parse_input, value_text};
 
 /// The fix for any change of the structure.
 const SHAPE_HINT: &str =
@@ -337,7 +337,7 @@ impl Session {
     /// error names the JSON path. Returns the number of values that changed (0 for no change).
     pub fn apply_json(&mut self, text: &str) -> Result<usize, ApiError> {
         if !self.editable {
-            return Err(read_only_document());
+            return Err(self.read_only_error());
         }
         if text.len() > MAX_EXPORT_BYTES {
             return Err(too_big("the edited text is longer than the limit"));

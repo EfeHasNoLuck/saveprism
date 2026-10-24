@@ -26,6 +26,11 @@ impl NodeId {
     pub fn index(self) -> usize {
         self.0 as usize
     }
+
+    /// Creates an id for an arena index when it fits the document's id space.
+    pub fn from_index(index: usize) -> Option<Self> {
+        u32::try_from(index).ok().map(Self)
+    }
 }
 
 /// Integer width of a node; `Unbounded` is used by text formats that have no fixed width.
@@ -331,6 +336,12 @@ impl SaveDoc {
     /// The node with this id.
     pub fn get(&self, id: NodeId) -> Option<&Node> {
         self.nodes.get(id.index())
+    }
+
+    /// Reads a node by its stable arena position. Intended for format writers that must inspect
+    /// every decoded leaf without exposing a mutable node ID constructor.
+    pub fn get_index(&self, index: usize) -> Option<&Node> {
+        self.nodes.get(index)
     }
 
     /// Mutable access for the crate's own edit code; never exposed to callers.

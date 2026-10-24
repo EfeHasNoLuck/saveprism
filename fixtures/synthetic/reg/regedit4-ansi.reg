@@ -1,0 +1,6 @@
+REGEDIT4
+
+; exported by a player, plain ANSI
+[HKEY_CURRENT_USER\Software\Legacy Tools\AnsiGame]
+"Score"=dword:0000002a
+"Greeting"="Café"

@@ -139,9 +139,9 @@ fn node_paths(doc: &SaveDoc) -> HashMap<NodeId, Path> {
 }
 
 impl Ctx<'_> {
-    /// Follows a Marshal link (`Ref`) to the node it points at, with that node's own path; anything
-    /// else is returned as it is.
-    fn follow(&self, at: At) -> At {
+    /// Follows a link (`Ref`: a Marshal link, a pickle memo reference) to the node it points at,
+    /// with that node's own path; anything else is returned as it is.
+    pub(super) fn follow(&self, at: At) -> At {
         let Some(Value::Ref(target)) = self.doc.get(at.0).map(|node| &node.value) else {
             return at;
         };

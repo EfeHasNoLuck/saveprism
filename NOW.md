@@ -29,11 +29,19 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
    edits and saves with the round-trip guard passing.
    - Done: RPG Maker MV/MZ, Easy Save 3, Unreal GVAS, Palworld, JSON/text, SugarCube, paste/copy code, Ruby Marshal codec,
      RPG Maker XP/VX/VX Ace sections (gold, items, weapons, armors, actors, variables, switches, names from a plain `Data`
-     folder; 2026-10-24, synthetic saves only; XP shows SP as "MP").
-   - Formats left: Ren'Py `.save` (pickle as data only + re-sign), TyranoScript, Godot, Wolf RPG `.sav`, Unity generic
-     `.dat`/`.save` and PlayerPrefs (also in the registry, *new*), Flash `.sol` (AMF0/AMF3), QSP, Pokémon Gen 3, SQLite,
-     Naninovel view, RPG Maker 2000/2003 `.lsd` (*new*), Rags `.rsv` (*new*), The Witcher 3 `.sav` (*new*), Java-serialized
-     data as data only (*new*), packed (zip/gz) saves (*new*).
+     folder; 2026-10-24, synthetic saves only; XP shows SP as "MP"), Flash `.sol` (AMF0/AMF3), Pokémon Gen 3 (money, coins, bag, party EXP/IV/EV/stats; 2026-10-24, synthetic only), Java serialization streams (data only; fixtures
+     from a real JDK writer), RPG Maker 2000/2003 `.lsd` with the sections view and names from
+     `RPG_RT.ldb` (ids checked against liblcf; non-ASCII text edits are refused only at save), Ren'Py `.save`
+     and `persistent` (pickle parsed as data only; an edited save gets an empty `signatures` entry so the game asks the
+     player to trust it; a signed persistent opens read-only; persistent re-compresses to different bytes), TyranoScript `.sav` (URL-escaped JSON, both
+     `escape()` and `encodeURIComponent` styles; detection confidence only 0.35), .NET BinaryFormatter data (Unity `.dat` saves, RAGS `.rsv`;
+     parsed as data only, never deserialized), Unity PlayerPrefs as a registry `.reg` export (ints,
+     Unity's 8-byte `hex(4)` floats, UTF-8 strings; regedit line wrapping kept), Godot ConfigFile text and `store_var` binary (Godot 3 and 4 type
+     tables checked against the docs; packed number arrays read-only; encrypted GDEC files refused), SQLite saves (`rusqlite` bundled, MIT; edits are parameterized
+     UPDATEs on an in-memory copy; tables with triggers, views and WITHOUT ROWID tables read-only), saves packed in zip archives (one payload entry
+     rewritten, the rest kept byte-identical; gzip was already a layer).
+   - Formats left: Wolf RPG `.sav`, QSP,
+     Naninovel view, The Witcher 3 `.sav` (*new*).
    - Features left: add/delete a value from the card view, pick the game's data folder by hand.
    Done 2026-10-23: Twine SugarCube 2 story view (current-moment variables edited at their last writer in `state.delta`;
    partly changed values and revive tuples read-only; synthetic fixtures in `fixtures/synthetic/sugarcube/`). Not yet:

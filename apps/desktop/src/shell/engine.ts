@@ -6,8 +6,16 @@ const EXTENSION_LABELS: Record<string, string> = {
   rvdata2: "RPG Maker VX Ace",
   rvdata: "RPG Maker VX",
   rxdata: "RPG Maker XP",
+  lsd: "RPG Maker 2000/2003",
   es3: "Easy Save 3",
+  rsv: "RAGS",
   sav: "SAV",
+  sol: "Flash",
+  reg: "Registry (.reg)",
+  cfg: "Godot",
+  sqlite: "SQLite",
+  sqlite3: "SQLite",
+  db: "SQLite",
 };
 
 const CODEC_LABELS: Record<string, string> = {
@@ -17,10 +25,22 @@ const CODEC_LABELS: Record<string, string> = {
   "format.es3-json": "Easy Save 3",
   "format.gvas": "Unreal",
   "format.ruby-marshal": "Ruby Marshal",
+  "format.java-serialization": "Java",
+  "format.python-pickle": "Python pickle",
+  "format.flash-sol": "Flash LSO",
+  "format.pokemon-gen3": "Pokémon Gen 3",
+  "format.lcf": "RPG Maker 2000/2003",
+  "format.nrbf": ".NET BinaryFormatter",
+  "format.reg": "Registry (.reg)",
+  "format.godot-config": "Godot",
+  "format.godot-variant": "Godot",
+  "format.sqlite": "SQLite",
 };
 
 const ENGINE_LABELS: Record<string, string> = {
   sugarcube: "SugarCube",
+  renpy: "Ren'Py",
+  tyranoscript: "TyranoScript",
   "rpgmaker-mv": "RPG Maker MV",
   "rpgmaker-mz": "RPG Maker MZ",
 };

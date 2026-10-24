@@ -15,7 +15,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use saveprism_core::io::default_backup_root;
 use saveprism_core::{Error, Limits, codes, pipeline};
 
-use super::{ApiError, Session, app_codes, read_only_document, with_password};
+use super::{ApiError, Session, app_codes, with_password};
 
 /// Folder of the pasted codes, next to the backup folder.
 const PASTED_DIR: &str = "pasted";
@@ -219,7 +219,7 @@ impl Session {
     /// text (binary or encrypted saves) are refused. Nothing is written and the pending edits stay.
     pub fn copy_code(&self) -> Result<String, ApiError> {
         if !self.editable {
-            return Err(read_only_document());
+            return Err(self.read_only_error());
         }
         let recipe = with_password(&self.recipe, self.password.as_deref());
         let bytes = pipeline::encode(&self.doc, &recipe, &self.reg)?;

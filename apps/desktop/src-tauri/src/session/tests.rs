@@ -82,6 +82,28 @@ fn json_rpgmaker_and_es3_open_with_an_exact_guard() {
 }
 
 #[test]
+fn tyrano_saves_report_their_engine() {
+    for relative in [
+        "synthetic/tyrano/sample_tyrano_data.sav",
+        "synthetic/tyrano/sample_tyrano_data_uri.sav",
+        "synthetic/tyrano/sample_tyrano_sf.sav",
+    ] {
+        let env = env();
+        let path = copy_in(&env, relative);
+        let session = open(&env, &path, None).unwrap();
+        let info = session.info();
+        assert_eq!(info.guard, GuardLevel::Exact, "{relative}");
+        assert!(info.editable, "{relative}");
+        assert_eq!(info.engine.as_deref(), Some("tyranoscript"), "{relative}");
+        assert_eq!(
+            info.recipe,
+            ["encoding.url-escape", "format.json"],
+            "{relative}"
+        );
+    }
+}
+
+#[test]
 fn children_are_paged_and_limited() {
     let env = env();
     let session = open_json(&env);
@@ -2385,4 +2407,389 @@ fn rgss_limits_are_enforced() {
     assert_eq!(error.code, app_codes::OUT_OF_RANGE);
     assert!(error.message.contains("9,999,999"), "{}", error.message);
     assert!(session.pending_changes().is_empty());
+}
+
+// RPG Maker 2000 and 2003 saves (LCF).
+
+const SAVE_2K: &str = "synthetic/rpgmaker-2k/Save01.lsd";
+const SAVE_2K3: &str = "synthetic/rpgmaker-2k3/Save01.lsd";
+const DB_2K: &str = "synthetic/rpgmaker-2k/RPG_RT.ldb";
+const DB_2K3: &str = "synthetic/rpgmaker-2k3/RPG_RT.ldb";
+
+/// Opens a copy of `save`, with a copy of `database` next to it as `RPG_RT.ldb`.
+fn open_lcf(env: &Env, save: &str, database: Option<&str>) -> Session {
+    if let Some(database) = database {
+        fs::copy(fixture(database), env.work.join("RPG_RT.ldb")).unwrap();
+    }
+    let path = copy_in(env, save);
+    let session = open(env, &path, None).unwrap();
+    assert_eq!(session.info().guard, GuardLevel::Exact, "{save}");
+    session
+}
+
+#[test]
+fn a_2k_save_becomes_rpg_maker_sections() {
+    let env = env();
+    let view = rpg_view(&open_lcf(&env, SAVE_2K, None)).unwrap();
+
+    assert_eq!(view.engine, "2k");
+    assert_eq!(view.gold.value, "5000");
+    assert_eq!(view.gold.path, "/inventory/gold");
+    assert_eq!(view.gold.max, Some(999_999));
+    assert!(view.gold.editable);
+
+    // Actor 1 uses its database name, which is unknown without RPG_RT.ldb.
+    assert_eq!(actor_names(&view), ["Actor #1", "Mira"]);
+    let actor = &view.actors[0];
+    assert_eq!(actor.level.value, "12");
+    assert_eq!(actor.level.path, "/actors/0/level");
+    assert_eq!(actor.level.max, Some(99));
+    assert_eq!(actor.hp.value, "250");
+    assert_eq!(actor.mp.value, "40");
+    assert_eq!(actor.exp.as_ref().map(|f| f.value.as_str()), Some("3400"));
+    assert_eq!(
+        bonuses(actor),
+        [
+            ("maxHp", "10"),
+            ("maxMp", "5"),
+            ("attack", "3"),
+            ("defense", "2"),
+            ("spirit", "0"),
+            ("agility", "1"),
+        ]
+    );
+    assert_eq!(view.actors[1].hp.path, "/actors/1/current_hp");
+
+    // Without the database every entry is an item.
+    assert_eq!(ids(&view.items), [1, 2, 5, 7]);
+    assert_eq!(values(&view.items), ["3", "1", "2", "99"]);
+    assert_eq!(view.items[3].field.path, "/inventory/item_counts/3");
+    assert_eq!(view.items[0].field.max, Some(99));
+    assert!(view.weapons.is_empty() && view.armors.is_empty());
+    // Variable 3 is 0 and has no name, so it is left out; index 0 is variable 1.
+    assert_eq!(ids(&view.variables), [1, 2, 4, 5, 6]);
+    assert_eq!(
+        values(&view.variables),
+        ["100", "-7", "20000000", "-123456789", "2147483647"]
+    );
+    assert_eq!(view.variables[0].field.path, "/system/variables/0");
+    assert_eq!(ids(&view.switches), [1, 3]);
+    assert_eq!(view.switches[0].field.kind, FieldKind::Bool);
+    assert!(view.names_folder.is_none());
+}
+
+#[test]
+fn lcf_names_and_item_types_come_from_rpg_rt_ldb() {
+    let env = env();
+    let view = rpg_view(&open_lcf(&env, SAVE_2K, Some(DB_2K))).unwrap();
+    assert_eq!(
+        view.names_folder,
+        Some(env.work.to_string_lossy().into_owned())
+    );
+    assert_eq!(view.engine, "2k");
+    assert_eq!(actor_names(&view), ["Alex", "Mira"]);
+    assert_eq!(ids(&view.items), [1, 7]);
+    // A Windows-1252 name.
+    assert_eq!(names(&view.items), [Some("Potion"), Some("\u{c9}lixir")]);
+    assert_eq!(ids(&view.weapons), [2]);
+    assert_eq!(names(&view.weapons), [Some("Bronze Sword")]);
+    assert_eq!(ids(&view.armors), [5]);
+    assert_eq!(view.armors[0].field.path, "/inventory/item_counts/2");
+    // The named variable 3 is shown although it is 0.
+    assert_eq!(ids(&view.variables), [1, 2, 3, 4, 5, 6]);
+    assert_eq!(view.variables[2].name.as_deref(), Some("Zero Counter"));
+    assert_eq!(ids(&view.switches), [1, 2, 3]);
+    assert_eq!(view.switches[1].name.as_deref(), Some("Lamp Lit"));
+
+    // A 2003 database makes the save a 2003 one.
+    let env = self::env();
+    let view = rpg_view(&open_lcf(&env, SAVE_2K, Some(DB_2K3))).unwrap();
+    assert_eq!(view.engine, "2k3");
+}
+
+#[test]
+fn a_2k3_save_without_gold_shows_zero_read_only() {
+    let env = env();
+    let session = open_lcf(&env, SAVE_2K3, Some(DB_2K3));
+    let view = rpg_view(&session).unwrap();
+    assert_eq!(view.engine, "2k3");
+    assert_eq!(view.gold.value, "0");
+    assert!(!view.gold.editable);
+    // The party is actors 3 and 1; actor 1 takes its name from the database.
+    assert_eq!(actor_names(&view), ["Kai", "Alex"]);
+    assert_eq!(view.actors[0].level.value, "20");
+    assert_eq!(ids(&view.weapons), [2]);
+    assert_eq!(names(&view.items), [Some("Ether")]);
+    assert_eq!(values(&view.variables), ["-1", "16777217", "7"]);
+    assert_eq!(ids(&view.variables), [1, 2, 5]);
+    assert_eq!(ids(&view.switches), [2, 3]);
+    assert_eq!(view.switches[0].name.as_deref(), Some("Gate Open"));
+
+    // The 2003 fields alone make it a 2003 save.
+    let env = self::env();
+    let view = rpg_view(&open_lcf(&env, SAVE_2K3, None)).unwrap();
+    assert_eq!(view.engine, "2k3");
+    assert_eq!(actor_names(&view), ["Kai", "Actor #1"]);
+}
+
+#[test]
+fn lcf_edits_through_the_view_survive_a_save() {
+    let env = env();
+    let mut session = open_lcf(&env, SAVE_2K, Some(DB_2K));
+    let view = rpg_view(&session).unwrap();
+    session.edit_value(&view.gold.path, "999999").unwrap();
+    session.edit_value(&view.items[0].field.path, "42").unwrap();
+    session
+        .edit_value(&view.variables[0].field.path, "16777300")
+        .unwrap();
+    session
+        .edit_value(&view.switches[1].field.path, "true")
+        .unwrap();
+    session
+        .edit_value(&view.actors[1].level.path, "99")
+        .unwrap();
+    session.edit_value(&view.actors[0].hp.path, "1000").unwrap();
+    let path = env.work.join("Save01.lsd");
+    session.save(path.to_str().unwrap(), false).unwrap();
+
+    let reopened = open(&env, &path, None).unwrap();
+    let info = reopened.info();
+    assert_eq!(info.guard, GuardLevel::Exact);
+    assert!(info.editable);
+    let again = rpg_view(&reopened).unwrap();
+    assert_eq!(again.gold.value, "999999");
+    assert_eq!(again.items[0].field.value, "42");
+    assert_eq!(again.variables[0].field.value, "16777300");
+    assert_eq!(again.switches[1].field.value, "true");
+    assert_eq!(again.actors[1].level.value, "99");
+    assert_eq!(again.actors[0].hp.value, "1000");
+    assert_eq!(actor_names(&again), ["Alex", "Mira"]);
+}
+
+#[test]
+fn lcf_limits_are_enforced() {
+    let env = env();
+    let mut session = open_lcf(&env, SAVE_2K, None);
+    let view = rpg_view(&session).unwrap();
+    let gold = view.gold.path.clone();
+    let error = session.edit_value(&gold, "1000000").unwrap_err();
+    assert_eq!(error.code, app_codes::OUT_OF_RANGE);
+    assert_eq!(session.field_info(&gold).unwrap().max, Some(999_999));
+    let error = session
+        .edit_value(&view.items[0].field.path, "100")
+        .unwrap_err();
+    assert_eq!(error.code, app_codes::OUT_OF_RANGE);
+    let error = session
+        .edit_value(&view.actors[0].level.path, "0")
+        .unwrap_err();
+    assert_eq!(error.code, app_codes::OUT_OF_RANGE);
+    // A variable is a 32-bit number.
+    let error = session
+        .edit_value(&view.variables[0].field.path, "2147483648")
+        .unwrap_err();
+    assert_eq!(error.code, app_codes::OUT_OF_RANGE);
+
+    // The database itself opens as a plain list of values.
+    let env = self::env();
+    let path = copy_in(&env, DB_2K);
+    let session = open(&env, &path, None).unwrap();
+    assert_eq!(session.info().guard, GuardLevel::Exact);
+    assert!(matches!(
+        session.game_view().unwrap(),
+        GameView::Values { .. }
+    ));
+}
+
+// Ren'Py saves.
+
+const RENPY_SAVE: &str = "synthetic/renpy/renpy8-0/1-1-LT1.save";
+const RENPY_SIGNED: &str = "synthetic/renpy/renpy8-1-signed/1-1-LT1.save";
+const RENPY_7: &str = "synthetic/renpy/renpy7/1-1-LT1.save";
+const RENPY_PERSISTENT: &str = "synthetic/renpy/persistent/persistent";
+const RENPY_PERSISTENT_SIGNED: &str = "synthetic/renpy/persistent-signed/persistent";
+
+fn value_rows(session: &Session) -> Vec<ValueRow> {
+    let GameView::Values { rows } = session.game_view().unwrap() else {
+        panic!("not a Values list");
+    };
+    rows
+}
+
+fn value_row<'a>(rows: &'a [ValueRow], name: &str) -> &'a ValueRow {
+    rows.iter()
+        .find(|row| row.name == name)
+        .unwrap_or_else(|| panic!("no row {name}"))
+}
+
+#[test]
+fn renpy_save_lists_the_game_variables_first() {
+    let env = env();
+    let path = copy_in(&env, RENPY_SAVE);
+    let session = open(&env, &path, None).unwrap();
+    let info = session.info();
+    assert_eq!(info.engine.as_deref(), Some("renpy"));
+    assert_eq!(info.guard, GuardLevel::Exact);
+    assert!(info.editable);
+    assert_eq!(info.notice, None);
+    assert_eq!(
+        info.recipe,
+        vec!["container.renpy-save", "format.python-pickle"]
+    );
+
+    let rows = value_rows(&session);
+    let names: Vec<&str> = rows.iter().map(|row| row.name.as_str()).collect();
+    assert_eq!(
+        names,
+        [
+            "backpack",
+            "bank_balance",
+            "companion_name",
+            "door_open",
+            "flags_seen",
+            "hero_name",
+            "huge_number",
+            "inventory",
+            "karma",
+            "last_choice",
+            "met_eileen",
+            "money",
+            "motto",
+            "mystery.clue_count",
+            "player_name",
+            "position",
+            "stats",
+            "steps",
+            "visited",
+            "_last_say_who",
+            "_window",
+            "mouse_visible",
+            "nvl_list",
+            "save_name",
+        ]
+    );
+    let money = value_row(&rows, "money").field.as_ref().unwrap();
+    assert_eq!(money.value, "120");
+    assert_eq!(money.path, "/0/store.money");
+    assert!(money.editable);
+    let player = value_row(&rows, "player_name").field.as_ref().unwrap();
+    assert!(!player.editable);
+    // The second name of a shared value points at its first place.
+    let companion = value_row(&rows, "companion_name").field.as_ref().unwrap();
+    assert_eq!(companion.path, "/0/store.player_name");
+    assert!(!companion.editable);
+    let backpack = value_row(&rows, "backpack");
+    assert_eq!(backpack.path, "/0/store.inventory");
+    assert_eq!(backpack.children, 3);
+    assert_eq!(value_row(&rows, "stats").children, 2);
+    assert_eq!(
+        value_row(&rows, "last_choice").note.as_ref().unwrap().kind,
+        NoteKind::Empty
+    );
+    assert!(
+        !value_row(&rows, "huge_number")
+            .field
+            .as_ref()
+            .unwrap()
+            .editable
+    );
+}
+
+#[test]
+fn renpy_edits_survive_a_save() {
+    for relative in [RENPY_SAVE, RENPY_7] {
+        let env = env();
+        let path = copy_in(&env, relative);
+        let mut session = open(&env, &path, None).unwrap();
+        session.edit_value("/0/store.money", "5000").unwrap();
+        session
+            .edit_value("/0/store.hero_name", "Ada \u{e7}a\u{11f}")
+            .unwrap();
+        session.edit_value("/0/store.stats/luck", "0.5").unwrap();
+        let flag = if relative == RENPY_7 {
+            "/0/store.met_cat"
+        } else {
+            "/0/store.met_eileen"
+        };
+        session.edit_value(flag, "false").unwrap();
+        session.save(path.to_str().unwrap(), false).unwrap();
+
+        let reopened = open(&env, &path, None).unwrap();
+        assert_eq!(reopened.info().guard, GuardLevel::Exact, "{relative}");
+        let rows = value_rows(&reopened);
+        assert_eq!(
+            value_row(&rows, "money").field.as_ref().unwrap().value,
+            "5000"
+        );
+        assert_eq!(
+            value_row(&rows, "hero_name").field.as_ref().unwrap().value,
+            "Ada \u{e7}a\u{11f}"
+        );
+        let luck = reopened.field_info("/0/store.stats/luck").unwrap();
+        assert_eq!(luck.value, "0.5");
+        assert_eq!(reopened.field_info(flag).unwrap().value, "false");
+    }
+}
+
+#[test]
+fn a_signed_renpy_save_tells_the_player_to_trust_it_and_is_written_unsigned() {
+    let env = env();
+    let path = copy_in(&env, RENPY_SIGNED);
+    let mut session = open(&env, &path, None).unwrap();
+    let info = session.info();
+    assert_eq!(info.notice.as_deref(), Some(NOTICE_SIGNED_SAVE));
+    assert!(info.warning.unwrap().contains("Answer Yes"));
+    assert!(info.editable);
+    session.edit_value("/0/store.money", "777").unwrap();
+    session.save(path.to_str().unwrap(), false).unwrap();
+    let reopened = open(&env, &path, None).unwrap();
+    assert_eq!(reopened.info().notice, None);
+    assert_eq!(reopened.field_info("/0/store.money").unwrap().value, "777");
+}
+
+#[test]
+fn a_signed_renpy_persistent_is_read_only() {
+    let env = env();
+    let path = copy_in(&env, RENPY_PERSISTENT_SIGNED);
+    let mut session = open(&env, &path, None).unwrap();
+    let info = session.info();
+    assert_eq!(info.engine.as_deref(), Some("renpy"));
+    assert_eq!(info.notice.as_deref(), Some(NOTICE_SIGNED_PERSISTENT));
+    assert!(!info.editable);
+    let error = session.edit_value("/play_count", "9").unwrap_err();
+    assert_eq!(error.code, app_codes::READ_ONLY_DOCUMENT);
+    assert!(error.message.contains("persistent"));
+    let error = session.save(path.to_str().unwrap(), false).unwrap_err();
+    assert_eq!(error.code, app_codes::READ_ONLY_DOCUMENT);
+    assert!(!value_rows(&session)[0].field.as_ref().unwrap().editable);
+}
+
+#[test]
+fn an_unsigned_renpy_persistent_lists_and_saves_its_fields() {
+    let env = env();
+    let path = copy_in(&env, RENPY_PERSISTENT);
+    let mut session = open(&env, &path, None).unwrap();
+    let info = session.info();
+    assert_eq!(info.engine.as_deref(), Some("renpy"));
+    assert_eq!(info.notice, None);
+    assert!(info.editable);
+    let names: Vec<String> = value_rows(&session)
+        .into_iter()
+        .map(|row| row.name)
+        .collect();
+    assert_eq!(
+        names,
+        [
+            "best_time",
+            "ending_good",
+            "play_count",
+            "player_title",
+            "_changed",
+            "_preferences",
+            "_seen_ever",
+        ]
+    );
+    session.edit_value("/play_count", "9").unwrap();
+    session.save(path.to_str().unwrap(), false).unwrap();
+    let reopened = open(&env, &path, None).unwrap();
+    assert_eq!(reopened.field_info("/play_count").unwrap().value, "9");
 }

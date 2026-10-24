@@ -3,7 +3,7 @@ import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialo
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { TriangleAlert } from "lucide-react";
+import { Info, TriangleAlert } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import {
   copyCode,
@@ -675,7 +675,21 @@ function App() {
             className="relative z-10 flex h-8 shrink-0 items-center gap-2 border-b border-warning/40 bg-chrome px-3 text-xs font-medium text-warning"
           >
             <TriangleAlert className="size-3.5 shrink-0" />
-            {t("banner.readOnly")}
+            {t(
+              file?.notice === "renpy-persistent-signed"
+                ? "banner.renpyPersistentSigned"
+                : "banner.readOnly",
+            )}
+          </div>
+        ) : null}
+
+        {file?.notice === "renpy-signed" ? (
+          <div
+            role="status"
+            className="relative z-10 flex h-8 shrink-0 items-center gap-2 border-b border-border bg-chrome px-3 text-xs font-medium text-muted-foreground"
+          >
+            <Info className="size-3.5 shrink-0" />
+            {t("banner.renpySigned")}
           </div>
         ) : null}
 

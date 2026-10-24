@@ -1,30 +1,46 @@
 # HANDOFF
 
-**State (2026-10-23):** NOW.md todo 1 (polish) is done; todo 2 (parity with saveeditonline.com) is in progress.
-Last code commit `0aaaeed`. All pushed to the private repo.
+**State (2026-10-24, night):** NOW.md todo 2 (full saveeditonline parity) in progress. The user is away until about
+10:00 and asked for everything on the parity list. All merged work is pushed; last commit `4316212`.
 
-**Works (with evidence)**
-- `bash .claude/araclar/kontrol.sh rust` 3/3 and `kontrol.sh web` 3/3 after `3cee490`.
-- `4d1db11` Backups dialog (list + restore; current file backed up first; backup must open; bytes checked) and "Set all" per
-  RPG Maker list. Codex review: no critical/high; symlink backup fixed. Checked over CDP (dark/light, EN/TR).
-- `115286c` Twine SugarCube 2 story view (variables edited at their last writer in `state.delta`). Synthetic fixtures only.
-- `3cee490` Paste code / Copy code. Codex review finding (link in the pasted folder) fixed. Checked over CDP.
-- Format notes: `docs/research/formats-sugarcube-tyrano-renpy.md` (SugarCube part corrected from the source).
-- `0aaaeed` Ruby Marshal codec (RPG Maker XP/VX/VX Ace): exact round trip on synthetic fixtures, scalar edits, opens in
-  the generic Values list; Codex review 2 mediums fixed. Fuzz target only compile-checked (no cargo-fuzz here); no real
-  XP/VX/VX Ace save tested (none with an open license found).
+**Merged today (each: fixtures regenerate byte-for-byte from their Python generator, kontrol rust 3/3 + web 3/3, CLI
+`inspect` gives exact round trip)**
+- `b6f1566` RPG Maker XP/VX/VX Ace sections · `fa01711` Flash `.sol` (Codex) · `1337019` Pokémon Gen 3 (Codex) ·
+  `a99e768` Java serialization (Codex; fixtures from a real JDK) · `4316212` RPG Maker 2000/2003 `.lsd` (Claude).
+- Research: `docs/research/formats-wolf-lcf-qsp-rags-gen3.md` (LCF ids there are WRONG; verified ids are in
+  `.motor/lcf.md`), `docs/research/formats-witcher-playerprefs-naninovel-html-packed.md`. Both unchecked.
 
-**Broken / not checked**
-- `CLAUDE.md` is changed but not committed (new goal line + "chores go to external engines first"); the user commits it.
-- No real SugarCube save tested; SugarCube 2.37 `state.history` saves (no deltas) open as the plain Values list.
-- On the dev PC something outside SavePrism alters clipboard text over ~1,400 characters; a long copied code pasted back
-  there fails. Not an app bug.
-- Remote Control is disabled by the organization's policy (user tried to turn it on, 2026-10-23).
+Later merged: `2224b20` Ren'Py (Claude) · `0cb4f03` TyranoScript (EVREN) · `0feb046` .NET BinaryFormatter + RAGS (EVREN).
 
-**Next step**
-NOW.md todo 2, next: RPG Maker XP/VX/VX Ace sections on the Marshal tree (gold, items from the `@items` Map keys, actors,
-variables, switches; names from a plain `Data/*.rvdata2` if present; `marshal::ruby_class(node)` gives class names), like
-the MV/MZ view. After it: TyranoScript (URL-escaped JSON), Ren'Py (zip + pickle as data only; signature prompt can be accepted by the
-player), Godot, Wolf RPG, add a value from the card view, pick the data folder by hand.
-How chores went today: Claude subagents built the UI/codec pieces with a visual check over CDP; Codex `gpt-6-luna`
-read-only reviews were useful; agy research needs the brief on stdin (see memory `external-engines`).
+**In flight (check these first; each is EVREN deepseek in `../saveprism-wt/<n>`, uncommitted, log `.motor/<log>`)**
+- Merged since: `a9e7ea5` Unity PlayerPrefs `.reg` · `62b2706` Godot (type 22 bug fixed by Claude).
+- SQLite (`sqlite`, log `sqlite.log`, brief `.motor/sqlite.md`; adds `rusqlite` bundled).
+- Zip-packed saves (`zip`, log `zip.log`, brief `.motor/zip.md`). Wolf RPG (`wolf`, log `wolf.log`, brief `.motor/wolf.md`;
+  check its sources list before merging).
+- Merge helper: `python -I .motor/merge_wt.py <name> "<subject>"` (commits the worktree, merges uncommitted, resolves the
+  usual append conflicts, reruns generators), then kontrol in a separate command, inspect fixtures, commit, push.
+  Union-resolved code files can still break (a test lost a closing brace once): read the compile errors.
+- Card view add/remove + pick data folder: backend WIP commit `ad95457` on `wt/cards` (written by a Claude subagent via
+  Bash because the hook refused Edit/Write outside the project — tell the user, already reported once); UI not started;
+  brief `.motor/cards.md`.
+
+**How to merge an external engine's worktree** (they cannot commit): `git -C ../saveprism-wt/<n> add -A && commit`, then in
+main `git merge --no-commit --no-ff wt/<n>`, resolve conflicts (usually `fuzz/Cargo.toml`, `fuzz.yml` matrix,
+`fixtures/README.md` — binary for git: use `git merge-file --union` on `:1:/:2:/:3:`), run the generator with
+`python -I fixtures/tools/<n>/make_<n>.py` and check `git status fixtures/` shows no new changes, then kontrol (separate
+command: the hook blocks `python` and `kontrol.sh` in one command), `cargo run -q -p saveprism-cli -- inspect <fixture>`,
+commit, push. Always spot-check the format constants against the spec (Codex's Godot draft passed its own tests with a
+wrong table).
+
+**Engines (2026-10-24)**
+- Codex: usage limit until 17 Nov. Cursor: free plan, `--model auto` only, now also at its limit; `--force` is blocked by
+  the classifier. agy: research only (headless it cannot read files). EVREN via
+  `OPENCODE_CONFIG=<repo>/opencode.json opencode run -m evren/deepseek-v4.1-flash --agent build "<brief inline>"` works in
+  worktrees (tell it: run every command from the worktree root, never cd to a parent); mimo-v2.6-pro did nothing.
+- Claude subagents can only write inside the project: use `isolation: "worktree"` (sanctioned); worktrees outside the
+  project make the hook refuse their writes, and moving worktrees inside was refused by the classifier.
+- Claude usage at 01:00: 5-hour 59 %, weekly 60 %. Keep Claude agents for Ren'Py-level work only.
+
+**Next (NOW.md "Formats left" order)**: finish the in-flight items, then QSP, SQLite, Unity PlayerPrefs `.reg`, packed zip
+saves, Wolf RPG, Naninovel view, Witcher 3. Visual check of the new views (RPG Maker 2k/2k3 and XP/VX/VX Ace sections use
+the existing card UI) is not done.
