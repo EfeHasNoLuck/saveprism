@@ -123,6 +123,20 @@ describe("buildAskAiText", () => {
     expect(text).toContain("- Motto = Hello (Text) [/motto]");
   });
 
+  it("leaves out the limits of a plain JSON number", () => {
+    const edge = Number.MAX_SAFE_INTEGER;
+    const text = buildAskAiText({
+      t: tEn,
+      fileName: "save.json",
+      format: null,
+      list: "Values",
+      query: "",
+      rows: [{ name: "level", path: "/level", value: "3", kind: "int", min: -edge, max: edge }],
+      total: 1,
+    });
+    expect(text).toContain("- level = 3 [/level]");
+  });
+
   it("copies only the first 300 values and says how many there are", () => {
     const many: AskAiRow[] = Array.from({ length: 305 }, (_, i) => ({
       name: null,

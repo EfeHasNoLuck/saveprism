@@ -37,10 +37,15 @@ function groupDigits(value: number): string {
   return String(value).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
+/** A limit worth telling: not missing and not the edge of what any number can hold (plain JSON). */
+function telling(limit: number | null): string | null {
+  return limit === null || Math.abs(limit) >= Number.MAX_SAFE_INTEGER ? null : groupDigits(limit);
+}
+
 /** The limits of a value, or "" when it has none worth telling. */
 function limitText(row: AskAiRow, t: Translate): string {
-  const min = row.min === null ? null : groupDigits(row.min);
-  const max = row.max === null ? null : groupDigits(row.max);
+  const min = telling(row.min);
+  const max = telling(row.max);
   if (min !== null && max !== null) return t("range.between", { min, max });
   if (min !== null) return t("range.atLeast", { min });
   if (max !== null) return t("range.atMost", { max });
