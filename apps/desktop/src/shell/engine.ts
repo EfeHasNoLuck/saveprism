@@ -36,6 +36,7 @@ const CODEC_LABELS: Record<string, string> = {
   "format.godot-variant": "Godot",
   "format.sqlite": "SQLite",
   "format.wolf-rpg": "Wolf RPG",
+  "format.qsp": "QSP",
 };
 
 const ENGINE_LABELS: Record<string, string> = {
