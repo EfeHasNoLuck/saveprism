@@ -100,7 +100,12 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
      XML/INI/properties/TOML/YAML/CSV/plist kept byte-exact; pickle files, MessagePack, CBOR, BSON, NBT;
      "Where is my save?" help and "Compare with another save".
    - Wave 2, first: a generic fallback for unknown files (read-only "find a value", patch only after a re-read check),
-     so no player hits a dead end; it covers the long tail of the list at once. Then Unity Easy Save 2, Odin, Adventure
+     so no player hits a dead end; it covers the long tail of the list at once. Next, auto-unlock (user idea,
+     2026-10-24): every layer tried by content whatever the extension; simple XOR obfuscation broken automatically from
+     the expected start of the inner format (`{`, `<?xml`, `PK`...); a key finder that reads candidate passwords from the
+     game's own files (Unity `Assembly-CSharp.dll` strings, IL2CPP `global-metadata.dat`, engine config files) and tries
+     them on the save, with the evidence kept (AGENTS.md rule 7). One short line tells the player it was unlocked.
+     Keys that are not on the PC (online, DRM) stay out of scope. Then Unity Easy Save 2, Odin, Adventure
      Creator, Pixel Crushers; Terraria `.plr`/`.wld`; text encodings (Shift-JIS, GB18030, CP949, UTF-16/32); Witcher 3
      Gwent view.
    - Wave 3: VN/indie engines (AGS, Artemis, Pixel Game Maker MV, Smile Game Builder, KiriKiri, NScripter, AliceSoft,
