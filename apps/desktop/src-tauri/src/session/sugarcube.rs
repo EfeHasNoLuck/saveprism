@@ -17,6 +17,10 @@
 //! edit never changes the structure of the file. Values that were partly changed during play, and
 //! values kept as revive tuples (`["(revive:map)", [...]]`), are read-only here; the JSON view can
 //! still change them. Nothing in the save is executed.
+//!
+//! A new variable goes into the first moment's `variables` (so every moment has it), and only when
+//! no moment mentions that name. A variable can be removed only when it lives in the first moment
+//! alone (no later moment mentions it), so no difference is left pointing at it.
 
 use std::collections::{HashMap, HashSet};
 
@@ -51,6 +55,8 @@ pub struct SugarCubeView {
     pub index: usize,
     /// The story variables with their values at that moment.
     pub variables: Vec<ValueRow>,
+    /// Where a new story variable goes (`add_value`), or `None` when none can be added.
+    pub add_parent: Option<String>,
 }
 
 /// The node that holds the current value of a variable.
@@ -62,6 +68,28 @@ enum Writer {
     /// Only part of the value is here (a nested difference), or the shape is not one SugarCube
     /// writes (an unknown operation, a repeated key).
     Changed(At),
+}
+
+/// The variable names of a story, for adding and removing variables.
+pub(super) struct StoryVars {
+    /// Path of the first moment's `variables` object.
+    pub(super) first: String,
+    /// How often each name appears in the first moment.
+    pub(super) first_names: HashMap<String, usize>,
+    /// Every name a later moment mentions (any of them, also after the current one).
+    pub(super) later: HashSet<String>,
+}
+
+impl StoryVars {
+    /// True when no moment mentions `name`, so a new variable can have it.
+    pub(super) fn is_free(&self, name: &str) -> bool {
+        !self.first_names.contains_key(name) && !self.later.contains(name)
+    }
+
+    /// True when the variable `name` lives in the first moment alone.
+    pub(super) fn first_only(&self, name: &str) -> bool {
+        self.first_names.get(name) == Some(&1) && !self.later.contains(name)
+    }
 }
 
 /// The parts of a SugarCube save the view reads.
@@ -207,6 +235,28 @@ impl Ctx<'_> {
         }
     }
 
+    /// The variable names of the story, or `None` when the document is not a SugarCube save.
+    pub(super) fn story_vars(&self) -> Option<StoryVars> {
+        let story = self.story()?;
+        let first_moment = story.moments.first().and_then(Option::as_ref)?;
+        let first = self.unique(first_moment, "variables")?.1.to_string();
+        let mut first_names: HashMap<String, usize> = HashMap::new();
+        for (name, _) in self.variables(Some(first_moment)) {
+            *first_names.entry(name).or_default() += 1;
+        }
+        let mut later = HashSet::new();
+        for moment in story.moments.iter().skip(1) {
+            for (name, _) in self.variables(moment.as_ref()) {
+                later.insert(name);
+            }
+        }
+        Some(StoryVars {
+            first,
+            first_names,
+            later,
+        })
+    }
+
     /// What a later moment's difference says about a variable.
     fn later_writer(&self, at: At) -> Writer {
         match self.value(&at) {
@@ -275,6 +325,8 @@ impl Ctx<'_> {
                 count: None,
                 text: None,
             }),
+            addable: false,
+            removable: false,
         };
         if let Some(note) = self.revive_note(at) {
             return ValueRow {
@@ -295,6 +347,8 @@ impl Ctx<'_> {
                     field: None,
                     children,
                     note: None,
+                    addable: false,
+                    removable: false,
                 }
             }
             _ => match self.field(at, UNLIMITED) {
@@ -304,6 +358,8 @@ impl Ctx<'_> {
                     field: Some(field),
                     children: 0,
                     note: None,
+                    addable: false,
+                    removable: false,
                 },
                 None => read_only(NoteKind::Changed),
             },
@@ -382,6 +438,8 @@ impl Ctx<'_> {
                         count: None,
                         text: None,
                     }),
+                    addable: false,
+                    removable: false,
                 }),
             }
         }
@@ -403,6 +461,7 @@ impl Ctx<'_> {
             moments: story.moments.len(),
             index,
             variables,
+            add_parent: None,
         })
     }
 }

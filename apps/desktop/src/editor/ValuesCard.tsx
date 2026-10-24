@@ -11,7 +11,9 @@ import {
 } from "@/api/commands";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { AddValueButton } from "./AddValue";
 import { countPendingUnder, useEditorContext, useFormatNumber } from "./context";
+import { RemoveValueButton } from "./RemoveValue";
 import { FieldCell } from "./FieldEditor";
 import { useGridColumns } from "./grid";
 import { noteText, pageCount, pageItems, ROWS_PER_PAGE } from "./helpers";
@@ -30,6 +32,10 @@ interface ValueNode {
   preview: string;
   /** Why a story value is read-only (shown instead of `preview`), else null. */
   note: RowNote | null;
+  /** A value can be added to this group. */
+  addable: boolean;
+  /** The row can be removed from the file. */
+  removable: boolean;
   isGroup: boolean;
 }
 
@@ -41,7 +47,9 @@ function fromRow(row: ValueRow): ValueNode {
     children: row.children,
     preview: "",
     note: row.note,
-    isGroup: row.field === null && row.children > 0,
+    addable: row.addable,
+    removable: row.removable,
+    isGroup: row.field === null && (row.children > 0 || row.addable),
   };
 }
 
@@ -62,6 +70,8 @@ async function describeChild(row: NodeRow): Promise<ValueNode> {
     children: row.childCount,
     preview: row.preview,
     note: null,
+    addable: row.addable,
+    removable: row.removable,
     isGroup,
   };
 }
@@ -113,6 +123,11 @@ function LeafCell({ node }: { node: ValueNode }) {
         field={node.field}
         name={node.name}
         title={typeName ? `${node.name} · ${t("type.source", { name: typeName })}` : undefined}
+        remove={
+          node.removable && !node.field.added
+            ? { path: node.path, name: node.name }
+            : undefined
+        }
       />
     );
   }
@@ -228,31 +243,35 @@ function GroupBlock({
 
   return (
     <div className="flex min-w-0 flex-col gap-0.5">
-      <button
-        type="button"
-        aria-expanded={open}
-        onClick={() => setOpen((o) => !o)}
-        className="flex h-7 min-w-0 items-center gap-1.5 rounded-sm px-1 text-left text-xs outline-none hover:bg-surface-container focus-visible:ring-2 focus-visible:ring-ring/60"
-      >
-        <ChevronRight
-          aria-hidden="true"
-          className={cn(
-            "size-3.5 shrink-0 text-muted-foreground transition-transform",
-            open && "rotate-90",
-          )}
-        />
-        <span className="min-w-0 truncate font-semibold" title={node.name}>
-          {node.name}
-        </span>
-        <span className="shrink-0 text-[11px] text-muted-foreground tabular-nums">
-          {t("values.items", { count: node.children })}
-        </span>
-        {changed > 0 ? (
-          <span className="shrink-0 text-[11px] font-medium text-changed-foreground tabular-nums">
-            {t("count.changed", { count: changed, changed: format(changed) })}
+      <div className="flex h-7 min-w-0 items-center gap-0.5 rounded-sm pr-0.5 hover:bg-surface-container">
+        <button
+          type="button"
+          aria-expanded={open}
+          onClick={() => setOpen((o) => !o)}
+          className="flex h-7 min-w-0 flex-1 items-center gap-1.5 rounded-sm px-1 text-left text-xs outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+        >
+          <ChevronRight
+            aria-hidden="true"
+            className={cn(
+              "size-3.5 shrink-0 text-muted-foreground transition-transform",
+              open && "rotate-90",
+            )}
+          />
+          <span className="min-w-0 truncate font-semibold" title={node.name}>
+            {node.name}
           </span>
-        ) : null}
-      </button>
+          <span className="shrink-0 text-[11px] text-muted-foreground tabular-nums">
+            {t("values.items", { count: node.children })}
+          </span>
+          {changed > 0 ? (
+            <span className="shrink-0 text-[11px] font-medium text-changed-foreground tabular-nums">
+              {t("count.changed", { count: changed, changed: format(changed) })}
+            </span>
+          ) : null}
+        </button>
+        {node.addable ? <AddValueButton parent={node.path} compact /> : null}
+        {node.removable ? <RemoveValueButton path={node.path} name={node.name} /> : null}
+      </div>
       {open ? (
         <div className="ml-2.5 border-l border-border pl-2">
           <GroupChildren path={node.path} query={query} />
@@ -272,11 +291,14 @@ export function ValuesCard({
   title,
   info,
   className,
+  addParent,
 }: {
   rows: ValueRow[];
   title?: string;
   info?: string;
   className?: string;
+  /** Path a new top-level value goes into, or null/undefined when none can be added. */
+  addParent?: string | null;
 }) {
   const { t } = useTranslation("editor");
   const format = useFormatNumber();
@@ -307,19 +329,22 @@ export function ValuesCard({
       info={info ?? t("info.values")}
       className={className}
       aside={
-        rows.length === 0 ? null : (
+        rows.length === 0 && addParent == null ? null : (
           <>
-            <SearchBox
-              value={query}
-              onChange={(v) => {
-                setQuery(v);
-                setPage(0);
-              }}
-              placeholder={t("search.values")}
-            />
+            {rows.length > 0 ? (
+              <SearchBox
+                value={query}
+                onChange={(v) => {
+                  setQuery(v);
+                  setPage(0);
+                }}
+                placeholder={t("search.values")}
+              />
+            ) : null}
             {pageCount(filtered.length, size) > 1 ? (
               <Pager page={page} total={filtered.length} size={size} onPage={setPage} />
             ) : null}
+            {addParent != null ? <AddValueButton parent={addParent} /> : null}
           </>
         )
       }

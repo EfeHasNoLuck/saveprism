@@ -13,6 +13,7 @@ use saveprism_codecs::naninovel::is_custom_variables;
 use saveprism_core::Path;
 
 use super::game::{At, Ctx, MAX_VALUE_ROWS, UNLIMITED, ValueRow};
+use super::structure::Shaper;
 use super::{Session, child_count};
 
 /// The codec id of a Naninovel slot.
@@ -32,11 +33,13 @@ impl Ctx<'_> {
             field: self.field(at, UNLIMITED),
             children: child_count(&node.value),
             note: None,
+            addable: false,
+            removable: false,
         })
     }
 
     /// The custom variables, then the rest of the top-level save fields.
-    pub(super) fn naninovel_rows(&self) -> Vec<ValueRow> {
+    pub(super) fn naninovel_rows(&self, shaper: &Shaper) -> Vec<ValueRow> {
         let root: At = (self.doc.root(), Path::root());
         let mut variables = Vec::new();
         if let Some(map) = self.entry(&root, "objectJsonMap")
@@ -99,7 +102,7 @@ impl Ctx<'_> {
 
         let mut rows = variables;
         let room = MAX_VALUE_ROWS.saturating_sub(rows.len());
-        rows.extend(self.value_rows(false).into_iter().take(room));
+        rows.extend(self.value_rows(false, shaper).into_iter().take(room));
         rows
     }
 }
@@ -115,7 +118,8 @@ impl Session {
 
     /// The Naninovel Values list; `None` for other files.
     pub(super) fn naninovel_view(&self, ctx: &Ctx<'_>) -> Option<Vec<ValueRow>> {
-        self.is_naninovel().then(|| ctx.naninovel_rows())
+        self.is_naninovel()
+            .then(|| ctx.naninovel_rows(&self.shaper(ctx)))
     }
 }
 

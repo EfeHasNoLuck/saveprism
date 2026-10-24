@@ -1,6 +1,12 @@
 import { createContext, useContext, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { isApiError, type Actor, type ApiError, type Field } from "@/api/commands";
+import {
+  isApiError,
+  type Actor,
+  type ApiError,
+  type Field,
+  type FieldKind,
+} from "@/api/commands";
 import type { FormatNumber } from "./helpers";
 
 export interface EditorContextValue {
@@ -18,6 +24,14 @@ export interface EditorContextValue {
    * when nothing changed; the app has shown why.
    */
   editMany: (paths: string[], text: string) => Promise<boolean>;
+  /** Adds `count` of the database entry `id` to an RPG Maker inventory list. */
+  addInventory: (list: "items" | "weapons" | "armors", id: number, count: string) => Promise<boolean>;
+  /** Adds a value to the object or story variables at `parent`. */
+  addValue: (parent: string, key: string, kind: FieldKind, text: string) => Promise<boolean>;
+  /** Removes the value at `path` where the format allows it. */
+  removeValue: (path: string) => Promise<boolean>;
+  /** Reads the names from a game data folder the player picked. */
+  setDataFolder: (folder: string) => Promise<boolean>;
 }
 
 export const EditorContext = createContext<EditorContextValue | null>(null);

@@ -4,7 +4,10 @@
 //! independent of the session-specific arena numbering.
 //!
 //! On a `Map`, `"<i>"` addresses the value of entry `i` and `"<i>.key"` its key node; changing a
-//! key means `Set` on `"<i>.key"`.
+//! key means `Set` on `"<i>.key"`, adding an entry means `InsertEntry`.
+//!
+//! [`detach`] and [`reattach`] take an entry out and put the very same nodes back, so an undo of a
+//! remove (or a redo of an insert) restores every detail of the entry (type hints, widths, text).
 
 use crate::doc::{FloatWidth, IntWidth, Node, NodeFlags, NodeId, SaveDoc, Value};
 use crate::error::{Error, Result, codes};
@@ -67,6 +70,16 @@ pub enum Edit {
         /// The new child.
         value: OwnedValue,
     },
+    /// Adds an entry after the last entry of the map at `parent`. The key must be a single value
+    /// (no list or object) that no entry of the map has.
+    InsertEntry {
+        /// Map node.
+        parent: Path,
+        /// The key of the new entry.
+        key: OwnedValue,
+        /// The value of the new entry.
+        value: OwnedValue,
+    },
     /// Removes the node at `path` from its container.
     Remove {
         /// Node to remove.
@@ -121,7 +134,10 @@ fn apply_one(doc: &mut SaveDoc, edit: &Edit, max_depth: usize) -> Result<()> {
     match edit {
         Edit::Set { path, value } => set(doc, path, value, max_depth),
         Edit::Insert { parent, at, value } => insert(doc, parent, at, value, max_depth),
-        Edit::Remove { path } => remove(doc, path),
+        Edit::InsertEntry { parent, key, value } => {
+            insert_entry(doc, parent, key, value, max_depth)
+        }
+        Edit::Remove { path } => detach(doc, path).map(|_| ()),
         Edit::RenameKey { path, new_key } => rename_key(doc, path, new_key),
     }
 }
@@ -146,9 +162,49 @@ fn find(doc: &SaveDoc, path: &Path) -> Result<NodeId> {
     })
 }
 
+fn has_flag(doc: &SaveDoc, id: NodeId, flag: NodeFlags) -> bool {
+    doc.get(id).is_some_and(|node| node.flags.contains(flag))
+}
+
 fn is_read_only(doc: &SaveDoc, id: NodeId) -> bool {
-    doc.get(id)
-        .is_some_and(|node| node.flags.contains(NodeFlags::READ_ONLY))
+    has_flag(doc, id, NodeFlags::READ_ONLY)
+}
+
+/// True when new entries may be added to the container `id`: it is not read-only, or it is
+/// growable.
+fn takes_entries(doc: &SaveDoc, id: NodeId) -> bool {
+    !is_read_only(doc, id) || has_flag(doc, id, NodeFlags::GROWABLE)
+}
+
+/// True when an edit added the entry (its value node and, in a map, its key node).
+fn entry_was_added(doc: &SaveDoc, entry: &Detached) -> bool {
+    let key_added = match &entry.key {
+        DetachedKey::Node(key) => has_flag(doc, *key, NodeFlags::SYNTHETIC),
+        DetachedKey::Index | DetachedKey::Name(_) => true,
+    };
+    key_added && has_flag(doc, entry.child, NodeFlags::SYNTHETIC)
+}
+
+/// What [`detach`] took out of a container, so that [`reattach`] can put it back.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Detached {
+    /// Position of the entry in its container.
+    pub index: usize,
+    /// The key of the entry.
+    pub key: DetachedKey,
+    /// The value node of the entry (with everything below it).
+    pub child: NodeId,
+}
+
+/// The key of a detached entry.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum DetachedKey {
+    /// An array element (no key).
+    Index,
+    /// The key of an object entry.
+    Name(String),
+    /// The key node of a map entry.
+    Node(NodeId),
 }
 
 /// What the existing node tells `Set` about the width of a scalar.
@@ -227,14 +283,14 @@ fn insert(
     max_depth: usize,
 ) -> Result<()> {
     let parent_id = find(doc, parent)?;
-    if is_read_only(doc, parent_id) {
+    if !takes_entries(doc, parent_id) {
         return Err(read_only_error(parent));
     }
     match doc.get(parent_id).map(|node| &node.value) {
         Some(Value::Array(_) | Value::Object(_)) => {}
         Some(Value::Map(_)) => {
             return Err(edit_error(format!(
-                "inserting into the map at '{parent}' is not supported yet"
+                "a map needs a key: add to the map at '{parent}' with InsertEntry"
             )));
         }
         _ => {
@@ -281,6 +337,73 @@ fn insert(
     Ok(())
 }
 
+/// True when the scalar key node value `existing` equals the new key `key`.
+fn same_key(existing: &Value, key: &OwnedValue) -> bool {
+    match (existing, key) {
+        (Value::Null, OwnedValue::Null) => true,
+        (Value::Bool(a), OwnedValue::Bool(b)) => a == b,
+        (Value::Int { v, .. }, OwnedValue::Int(b)) => v == b,
+        (Value::Float { v, .. }, OwnedValue::Float(b)) => v.to_bits() == b.to_bits(),
+        (Value::Str(a), OwnedValue::Str(b)) => a == b,
+        (Value::Bytes(a), OwnedValue::Bytes(b)) => a == b,
+        _ => false,
+    }
+}
+
+/// A key for messages: `5`, `"name"`.
+fn key_text(key: &OwnedValue) -> String {
+    match key {
+        OwnedValue::Null => "null".to_string(),
+        OwnedValue::Bool(v) => v.to_string(),
+        OwnedValue::Int(v) => v.to_string(),
+        OwnedValue::Float(v) => format!("{v:?}"),
+        OwnedValue::Str(v) => format!("{v:?}"),
+        OwnedValue::Bytes(v) => format!("<{} bytes>", v.len()),
+        OwnedValue::Array(_) | OwnedValue::Object(_) => "<container>".to_string(),
+    }
+}
+
+fn insert_entry(
+    doc: &mut SaveDoc,
+    parent: &Path,
+    key: &OwnedValue,
+    value: &OwnedValue,
+    max_depth: usize,
+) -> Result<()> {
+    let parent_id = find(doc, parent)?;
+    if !takes_entries(doc, parent_id) {
+        return Err(read_only_error(parent));
+    }
+    let Some(Value::Map(entries)) = doc.get(parent_id).map(|node| &node.value) else {
+        return Err(edit_error(format!("the node at '{parent}' is not a map")));
+    };
+    if matches!(key, OwnedValue::Array(_) | OwnedValue::Object(_)) {
+        return Err(edit_error(
+            "a new map key must be a single value, not a list or an object",
+        ));
+    }
+    let clash = entries.iter().any(|(existing, _)| {
+        doc.get(*existing)
+            .is_some_and(|node| same_key(&node.value, key))
+    });
+    if clash {
+        return Err(edit_error(format!(
+            "the map at '{parent}' already has the key {}",
+            key_text(key)
+        )));
+    }
+    let key_id = build_node(doc, key, 0, max_depth, true)?;
+    let value_id = build_node(doc, value, 0, max_depth, true)?;
+    let node = doc
+        .node_mut(parent_id)
+        .ok_or_else(|| edit_error("parent node disappeared"))?;
+    match &mut node.value {
+        Value::Map(entries) => entries.push((key_id, value_id)),
+        _ => return Err(edit_error("the parent is not a map")),
+    }
+    Ok(())
+}
+
 /// Splits a non-root path into its parent path and last segment.
 fn split_parent(path: &Path) -> Result<(Path, String)> {
     match (path.parent(), path.last()) {
@@ -289,29 +412,34 @@ fn split_parent(path: &Path) -> Result<(Path, String)> {
     }
 }
 
-fn remove(doc: &mut SaveDoc, path: &Path) -> Result<()> {
-    let (parent, segment) = split_parent(path)?;
-    let parent_id = find(doc, &parent)?;
-    let target_id = find(doc, path)?;
-    if is_read_only(doc, parent_id) || is_read_only(doc, target_id) {
-        return Err(read_only_error(path));
-    }
+/// The entry `segment` of the container `parent_id`, without changing anything.
+fn locate(doc: &SaveDoc, parent_id: NodeId, segment: &str, path: &Path) -> Result<Detached> {
     let node = doc
-        .node_mut(parent_id)
+        .get(parent_id)
         .ok_or_else(|| edit_error("parent node disappeared"))?;
-    match &mut node.value {
+    match &node.value {
         Value::Array(items) => {
-            let index = parse_index(&segment)
-                .filter(|index| *index < items.len())
+            let (index, child) = parse_index(segment)
+                .and_then(|index| items.get(index).map(|child| (index, *child)))
                 .ok_or_else(|| edit_error(format!("no array element at '{path}'")))?;
-            items.remove(index);
+            Ok(Detached {
+                index,
+                key: DetachedKey::Index,
+                child,
+            })
         }
         Value::Object(entries) => {
-            let index = entries
+            let (index, child) = entries
                 .iter()
-                .position(|(key, _)| *key == segment)
+                .enumerate()
+                .find(|(_, (key, _))| key == segment)
+                .map(|(index, (_, child))| (index, *child))
                 .ok_or_else(|| edit_error(format!("no object entry at '{path}'")))?;
-            entries.remove(index);
+            Ok(Detached {
+                index,
+                key: DetachedKey::Name(segment.to_string()),
+                child,
+            })
         }
         Value::Map(entries) => {
             if segment.ends_with(".key") {
@@ -319,14 +447,106 @@ fn remove(doc: &mut SaveDoc, path: &Path) -> Result<()> {
                     "a map key cannot be removed on its own; remove the entry instead (path without '.key' for '{path}')"
                 )));
             }
-            let index = parse_index(&segment)
-                .filter(|index| *index < entries.len())
+            let (index, (key, child)) = parse_index(segment)
+                .and_then(|index| entries.get(index).map(|entry| (index, *entry)))
                 .ok_or_else(|| edit_error(format!("no map entry at '{path}'")))?;
-            entries.remove(index);
+            Ok(Detached {
+                index,
+                key: DetachedKey::Node(key),
+                child,
+            })
+        }
+        _ => Err(edit_error(format!(
+            "the parent of '{path}' is not a container"
+        ))),
+    }
+}
+
+/// The entry at `path` as [`detach`] would take it, without changing anything.
+pub fn entry_at(doc: &SaveDoc, path: &Path) -> Result<Detached> {
+    let (parent, segment) = split_parent(path)?;
+    let parent_id = find(doc, &parent)?;
+    find(doc, path)?;
+    locate(doc, parent_id, &segment, path)
+}
+
+/// Takes the entry at `path` out of its container, like [`Edit::Remove`], and returns what was
+/// taken so that [`reattach`] can put it back (undo). The entry's nodes stay in the arena.
+///
+/// A read-only container gives nothing back, except a growable one (`GROWABLE`), which gives back
+/// the entries that an edit added (`SYNTHETIC`). On an error the document is unchanged.
+pub fn detach(doc: &mut SaveDoc, path: &Path) -> Result<Detached> {
+    let (parent, segment) = split_parent(path)?;
+    let parent_id = find(doc, &parent)?;
+    let target_id = find(doc, path)?;
+    let locked = is_read_only(doc, parent_id);
+    if is_read_only(doc, target_id) || (locked && !has_flag(doc, parent_id, NodeFlags::GROWABLE)) {
+        return Err(read_only_error(path));
+    }
+    let entry = locate(doc, parent_id, &segment, path)?;
+    if locked && !entry_was_added(doc, &entry) {
+        return Err(read_only_error(path));
+    }
+    let node = doc
+        .node_mut(parent_id)
+        .ok_or_else(|| edit_error("parent node disappeared"))?;
+    match &mut node.value {
+        Value::Array(items) if entry.index < items.len() => {
+            items.remove(entry.index);
+        }
+        Value::Object(entries) if entry.index < entries.len() => {
+            entries.remove(entry.index);
+        }
+        Value::Map(entries) if entry.index < entries.len() => {
+            entries.remove(entry.index);
+        }
+        _ => return Err(edit_error("parent node changed")),
+    }
+    Ok(entry)
+}
+
+/// Puts an entry that [`detach`] took out of the container at `parent` back at its position (undo
+/// of a remove, redo of an insert). The entry must come from this document and must not be in the
+/// tree any more; nothing checks the second part, so only the edit history may call this. A
+/// read-only container takes back only an entry that an edit added, and only when it is
+/// growable. On an error the document is unchanged.
+pub fn reattach(doc: &mut SaveDoc, parent: &Path, entry: &Detached) -> Result<()> {
+    let parent_id = find(doc, parent)?;
+    let key_known = match &entry.key {
+        DetachedKey::Node(key) => doc.get(*key).is_some(),
+        DetachedKey::Index | DetachedKey::Name(_) => true,
+    };
+    if doc.get(entry.child).is_none() || !key_known {
+        return Err(edit_error(
+            "the entry to put back is not part of this document",
+        ));
+    }
+    if is_read_only(doc, parent_id)
+        && !(has_flag(doc, parent_id, NodeFlags::GROWABLE) && entry_was_added(doc, entry))
+    {
+        return Err(read_only_error(parent));
+    }
+    let node = doc
+        .node_mut(parent_id)
+        .ok_or_else(|| edit_error("parent node disappeared"))?;
+    match (&mut node.value, &entry.key) {
+        (Value::Array(items), DetachedKey::Index) if entry.index <= items.len() => {
+            items.insert(entry.index, entry.child);
+        }
+        (Value::Object(entries), DetachedKey::Name(name)) if entry.index <= entries.len() => {
+            if entries.iter().any(|(key, _)| key == name) {
+                return Err(edit_error(format!(
+                    "key '{name}' already exists in the object at '{parent}'"
+                )));
+            }
+            entries.insert(entry.index, (name.clone(), entry.child));
+        }
+        (Value::Map(entries), DetachedKey::Node(key)) if entry.index <= entries.len() => {
+            entries.insert(entry.index, (*key, entry.child));
         }
         _ => {
             return Err(edit_error(format!(
-                "the parent of '{path}' is not a container"
+                "the entry does not fit the container at '{parent}' any more"
             )));
         }
     }
@@ -889,11 +1109,189 @@ mod tests {
         )
         .unwrap_err();
         assert_eq!(error.code(), codes::CORE_EDIT_FAILED);
-        assert!(error.message().contains("not supported yet"));
+        assert!(error.message().contains("InsertEntry"));
         assert_eq!(dump(&doc), before);
 
         apply_edits(&mut doc, &[Edit::Remove { path: p("/0") }]).unwrap();
         assert_eq!(dump(&doc), "map(5=2)");
+    }
+
+    fn insert_entry(key: OwnedValue, value: OwnedValue) -> Edit {
+        Edit::InsertEntry {
+            parent: p(""),
+            key,
+            value,
+        }
+    }
+
+    #[test]
+    fn insert_entry_adds_a_map_entry_with_a_new_scalar_key() {
+        let mut doc = map_doc();
+        apply_edits(
+            &mut doc,
+            &[insert_entry(
+                OwnedValue::Int(9),
+                OwnedValue::Str("v".into()),
+            )],
+        )
+        .unwrap();
+        assert_eq!(dump(&doc), r#"map("k"=1,5=2,9="v")"#);
+        for path in ["/2", "/2.key"] {
+            let id = doc.resolve(&p(path)).unwrap();
+            assert!(doc.get(id).unwrap().flags.contains(NodeFlags::SYNTHETIC));
+        }
+
+        let before = dump(&doc);
+        for (edit, reason) in [
+            (
+                insert_entry(OwnedValue::Int(5), OwnedValue::Null),
+                "already",
+            ),
+            (
+                insert_entry(OwnedValue::Str("k".into()), OwnedValue::Null),
+                "already",
+            ),
+            (
+                insert_entry(OwnedValue::Array(Vec::new()), OwnedValue::Null),
+                "single value",
+            ),
+        ] {
+            let error = apply_edits(&mut doc, std::slice::from_ref(&edit)).unwrap_err();
+            assert_eq!(error.code(), codes::CORE_EDIT_FAILED, "{edit:?}");
+            assert!(error.message().contains(reason), "{}", error.message());
+            assert_eq!(dump(&doc), before);
+        }
+
+        // Only maps take entries.
+        let mut object = sample();
+        let error = apply_edits(
+            &mut object,
+            &[insert_entry(OwnedValue::Int(1), OwnedValue::Null)],
+        )
+        .unwrap_err();
+        assert_eq!(error.code(), codes::CORE_EDIT_FAILED);
+        assert_eq!(dump(&object), SAMPLE_DUMP);
+    }
+
+    #[test]
+    fn a_growable_container_takes_new_entries_and_gives_back_only_those() {
+        let mut doc = map_doc();
+        let root = doc.root();
+        let mut flags = NodeFlags::READ_ONLY;
+        flags.insert(NodeFlags::GROWABLE);
+        doc.set_flags(root, flags).unwrap();
+
+        apply_edits(
+            &mut doc,
+            &[insert_entry(OwnedValue::Int(9), OwnedValue::Int(3))],
+        )
+        .unwrap();
+        assert_eq!(dump(&doc), r#"map("k"=1,5=2,9=3)"#);
+        // The added value can be edited like any other.
+        apply_edits(
+            &mut doc,
+            &[Edit::Set {
+                path: p("/2"),
+                value: OwnedValue::Int(4),
+            }],
+        )
+        .unwrap();
+
+        // The entries that were there stay, and the container itself cannot change.
+        for edit in [
+            Edit::Remove { path: p("/0") },
+            Edit::Set {
+                path: p(""),
+                value: OwnedValue::Null,
+            },
+        ] {
+            let error = apply_edits(&mut doc, std::slice::from_ref(&edit)).unwrap_err();
+            assert_eq!(error.code(), codes::CORE_READ_ONLY, "{edit:?}");
+        }
+        apply_edits(&mut doc, &[Edit::Remove { path: p("/2") }]).unwrap();
+        assert_eq!(dump(&doc), r#"map("k"=1,5=2)"#);
+
+        // A read-only container that is not growable takes nothing.
+        doc.set_flags(root, NodeFlags::READ_ONLY).unwrap();
+        let error = apply_edits(
+            &mut doc,
+            &[insert_entry(OwnedValue::Int(9), OwnedValue::Int(3))],
+        )
+        .unwrap_err();
+        assert_eq!(error.code(), codes::CORE_READ_ONLY);
+    }
+
+    #[test]
+    fn detach_and_reattach_put_back_the_same_nodes() {
+        // Object entry, array element, map entry.
+        let mut doc = sample();
+        let gold = doc.resolve(&p("/gold")).unwrap();
+        let seen = entry_at(&doc, &p("/gold")).unwrap();
+        let entry = detach(&mut doc, &p("/gold")).unwrap();
+        assert_eq!(seen, entry);
+        assert_eq!(
+            entry,
+            Detached {
+                index: 0,
+                key: DetachedKey::Name("gold".into()),
+                child: gold,
+            }
+        );
+        assert_eq!(dump(&doc), r#"{"items":["a","b"],"name":"x"}"#);
+        reattach(&mut doc, &p(""), &entry).unwrap();
+        assert_eq!(dump(&doc), SAMPLE_DUMP);
+        // The width of the node is kept (it is the same node).
+        assert_eq!(doc.resolve(&p("/gold")), Some(gold));
+
+        let entry = detach(&mut doc, &p("/items/0")).unwrap();
+        assert_eq!(dump(&doc), r#"{"gold":5,"items":["b"],"name":"x"}"#);
+        reattach(&mut doc, &p("/items"), &entry).unwrap();
+        assert_eq!(dump(&doc), SAMPLE_DUMP);
+
+        let mut map = map_doc();
+        let entry = detach(&mut map, &p("/1")).unwrap();
+        assert!(matches!(entry.key, DetachedKey::Node(_)));
+        assert_eq!(dump(&map), r#"map("k"=1)"#);
+        reattach(&mut map, &p(""), &entry).unwrap();
+        assert_eq!(dump(&map), r#"map("k"=1,5=2)"#);
+    }
+
+    #[test]
+    fn reattach_refuses_entries_that_do_not_fit() {
+        let mut doc = sample();
+        let entry = detach(&mut doc, &p("/name")).unwrap();
+        // The key came back in the meantime.
+        apply_edits(
+            &mut doc,
+            &[Edit::Insert {
+                parent: p(""),
+                at: Position::Key("name".into()),
+                value: OwnedValue::Null,
+            }],
+        )
+        .unwrap();
+        let error = reattach(&mut doc, &p(""), &entry).unwrap_err();
+        assert_eq!(error.code(), codes::CORE_EDIT_FAILED);
+
+        // An object entry does not go into an array, nor past the end.
+        let error = reattach(&mut doc, &p("/items"), &entry).unwrap_err();
+        assert_eq!(error.code(), codes::CORE_EDIT_FAILED);
+        let far = Detached {
+            index: 9,
+            key: DetachedKey::Index,
+            child: entry.child,
+        };
+        let error = reattach(&mut doc, &p("/items"), &far).unwrap_err();
+        assert_eq!(error.code(), codes::CORE_EDIT_FAILED);
+
+        // A read-only container takes back nothing that was there before.
+        let mut doc = sample();
+        let entry = detach(&mut doc, &p("/items/1")).unwrap();
+        let items = doc.resolve(&p("/items")).unwrap();
+        doc.set_flags(items, NodeFlags::READ_ONLY).unwrap();
+        let error = reattach(&mut doc, &p("/items"), &entry).unwrap_err();
+        assert_eq!(error.code(), codes::CORE_READ_ONLY);
+        assert_eq!(dump(&doc), r#"{"gold":5,"items":["a"],"name":"x"}"#);
     }
 
     #[test]

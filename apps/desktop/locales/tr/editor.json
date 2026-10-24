@@ -42,7 +42,9 @@
   "field": {
     "undo": "Geri al (önceki: {{value}})",
     "increase": "Artır",
-    "decrease": "Azalt"
+    "decrease": "Azalt",
+    "new": "yeni",
+    "removeAdded": "Kaldır (eklendi)"
   },
   "search": {
     "list": "İsim, #id veya değer ara",
@@ -148,5 +150,52 @@
     "specialTip": "Oyun bu değeri kendi koduyla yeniden kurar. JSON düzenleyicide değiştir.",
     "empty": "boş",
     "emptyTip": "Bu değer boş (null ya da boş liste)."
+  },
+  "addEntry": {
+    "trigger": "Ekle",
+    "triggerTip": "Bu listeye bir {{label}} ekle",
+    "title": "{{label}} ekle",
+    "label": {
+      "item": "eşya",
+      "weapon": "silah",
+      "armor": "zırh"
+    },
+    "search": "İsim veya #id ara",
+    "noMatch": "Oyunun veritabanında eşleşme yok.",
+    "typedId": "#{{id}} eklenecek",
+    "clear": "Temizle",
+    "id": "Veritabanı numarası",
+    "idPlaceholder": "Örneğin 12",
+    "noCatalog": "Oyun veri klasörü bulunamadı; numarayı elle yaz.",
+    "count": "Adet",
+    "submit": "Ekle"
+  },
+  "addValue": {
+    "action": "Değer ekle",
+    "title": "Bir değer ekle",
+    "hint": "Kaydettiğinde dosyaya yazılır.",
+    "key": "Ad",
+    "keyPlaceholder": "Örneğin puan",
+    "type": "Tür",
+    "kind": {
+      "int": "Sayı",
+      "string": "Metin",
+      "bool": "Açık/kapalı"
+    },
+    "value": "Değer",
+    "submit": "Değer ekle"
+  },
+  "remove": {
+    "action": "{{name}} kaldır",
+    "title": "{{name}} kaldırılsın mı?",
+    "body": "Kaydettiğinde dosyadan çıkarılır. Geri al ile geri gelir.",
+    "confirm": "Kaldır"
+  },
+  "dataFolder": {
+    "title": "Oyunun veri klasörünü seç",
+    "none": "Oyun veri klasörü bulunamadı",
+    "choose": "Veri klasörü seç…",
+    "change": "Değiştir…",
+    "picking": "Açılıyor…"
   }
 }

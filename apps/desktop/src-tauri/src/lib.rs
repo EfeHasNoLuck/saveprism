@@ -9,8 +9,8 @@ use std::path::PathBuf;
 use std::sync::{Mutex, MutexGuard, PoisonError};
 
 use session::{
-    ApiError, BackupRow, Change, Field, GameView, HistoryResult, HistoryState, NodeRow, OpenInfo,
-    Page, SaveResult, Session, app_codes,
+    ApiError, BackupRow, Change, Field, FieldKind, GameView, HistoryResult, HistoryState, NodeRow,
+    OpenInfo, Page, SaveResult, Session, app_codes,
 };
 use tauri::{AppHandle, Manager, State};
 use tauri_plugin_opener::OpenerExt;
@@ -130,6 +130,46 @@ async fn game_view(state: State<'_, AppState>) -> Result<GameView, ApiError> {
 #[tauri::command]
 async fn field_info(state: State<'_, AppState>, path: String) -> Result<Field, ApiError> {
     state.with_session(|session| session.field_info(&path))
+}
+
+/// Reads the names from a game data folder the player picked and returns the view with them.
+/// MV/MZ take the `data` folder or the game folder; XP, VX and VX Ace the `Data` folder or the
+/// game folder.
+#[tauri::command]
+async fn set_data_folder(state: State<'_, AppState>, folder: String) -> Result<GameView, ApiError> {
+    state.with_session(|session| session.set_data_folder(&folder))
+}
+
+/// Adds `count` (1 to 99) of the database entry `id` to the party's `list` ("items", "weapons" or
+/// "armors") of an RPG Maker save. One undo step.
+#[tauri::command]
+async fn add_inventory(
+    state: State<'_, AppState>,
+    list: String,
+    id: i64,
+    count: String,
+) -> Result<HistoryResult, ApiError> {
+    state.with_session(|session| session.add_inventory(&list, id, &count))
+}
+
+/// Adds the value `key` (of kind `kind`, typed as `text`) to the object at `parent`: any object of
+/// a JSON file, the top of an Easy Save 3 file, or the story variables of a SugarCube save.
+#[tauri::command]
+async fn add_value(
+    state: State<'_, AppState>,
+    parent: String,
+    key: String,
+    kind: FieldKind,
+    text: String,
+) -> Result<HistoryResult, ApiError> {
+    state.with_session(|session| session.add_value(&parent, &key, kind, &text))
+}
+
+/// Removes the value at `path` where the format allows it (JSON and Easy Save 3 entries, SugarCube
+/// story variables, MV/MZ inventory entries, entries added in this session). One undo step.
+#[tauri::command]
+async fn remove_value(state: State<'_, AppState>, path: String) -> Result<HistoryResult, ApiError> {
+    state.with_session(|session| session.remove_value(&path))
 }
 
 /// The edits made since opening or the last save.
@@ -271,6 +311,10 @@ pub fn run() {
             edit_value,
             edit_values,
             game_view,
+            set_data_folder,
+            add_inventory,
+            add_value,
+            remove_value,
             field_info,
             pending_changes,
             discard_changes,

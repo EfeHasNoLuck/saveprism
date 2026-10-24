@@ -1091,3 +1091,191 @@ fn everything_inside_a_composite_hash_key_is_read_only() {
     assert!(matches!(inner.value, Value::Str(_)));
     assert!(inner.flags.contains(NodeFlags::READ_ONLY));
 }
+
+// ----- growable hashes --------------------------------------------------------------------------
+
+/// The path of the first dump of the Ruby class `class`.
+fn dump_of(doc: &SaveDoc, class: &str) -> String {
+    let Value::Array(dumps) = &doc.get(doc.root()).unwrap().value else {
+        panic!("the root is not a list of dumps")
+    };
+    let index = dumps
+        .iter()
+        .position(|id| ruby_class(doc.get(*id).unwrap()) == Some(class))
+        .unwrap_or_else(|| panic!("no {class} dump"));
+    format!("/{index}")
+}
+
+fn map_len(doc: &SaveDoc, path: &str) -> usize {
+    match &at(doc, path).value {
+        Value::Map(entries) => entries.len(),
+        other => panic!("{path} is {other:?}"),
+    }
+}
+
+fn insert(
+    decoded: &mut Decoded,
+    path: &str,
+    key: i128,
+    value: i128,
+) -> saveprism_core::Result<usize> {
+    insert_int_entry(
+        &mut decoded.doc,
+        &Path::parse(path).unwrap(),
+        key,
+        value,
+        &Limits::default(),
+    )
+}
+
+/// Inserts `key => value` at `path`, writes, reads back: the new file round-trips exactly and reads
+/// as the edited document (every other value, hint and link as before). Returns the new bytes.
+fn insert_and_check(relative: &str, path: &str, key: i128, value: i128) -> Vec<u8> {
+    let original = fixture(relative);
+    let mut decoded = decode(&original);
+    assert!(
+        is_growable_hash(at(&decoded.doc, path)),
+        "{relative} {path}"
+    );
+    let before = map_len(&decoded.doc, path);
+    let index = insert(&mut decoded, path, key, value).unwrap();
+    assert_eq!(index, before);
+    let written = encode(&decoded);
+    let again = exact(&written);
+    assert!(
+        again.doc.tree_eq(&decoded.doc),
+        "{relative}: the file reads differently"
+    );
+    assert_eq!(map_len(&again.doc, path), before + 1);
+    assert_eq!(int_at(&again.doc, &format!("{path}/{index}.key")), key);
+    assert_eq!(int_at(&again.doc, &format!("{path}/{index}")), value);
+    assert_eq!(
+        hint_of(&again.doc, &format!("{path}/{index}.key")),
+        "RUBY:int"
+    );
+    assert_eq!(hint_of(&again.doc, &format!("{path}/{index}")), "RUBY:int");
+    // The original still opens and writes exactly as it was.
+    exact(&original);
+    written
+}
+
+#[test]
+fn integer_keyed_hashes_take_new_integer_entries() {
+    let original = fixture("synthetic/rpgmaker-vxace/Save02.rvdata2");
+    let written = insert_and_check(
+        "synthetic/rpgmaker-vxace/Save02.rvdata2",
+        "/1/party/@items",
+        7,
+        3,
+    );
+    // `i 7`, `i 3`: four bytes more, the entry count still fits its byte.
+    assert_eq!(written.len(), original.len() + 4);
+
+    // An empty hash (XP party armors) takes entries too.
+    let xp = decode(&fixture("synthetic/rpgmaker-xp/Save1.rxdata"));
+    let armors = format!("{}/@armors", dump_of(&xp.doc, "Game_Party"));
+    assert_eq!(map_len(&xp.doc, &armors), 0);
+    insert_and_check("synthetic/rpgmaker-xp/Save1.rxdata", &armors, 2, 1);
+}
+
+#[test]
+fn a_bignum_entry_keeps_every_link_right() {
+    // The party comes before the player, whose sprite name is a link: the Bignum adds an object in
+    // between, so the link index moves by one.
+    let written = insert_and_check(
+        "synthetic/rpgmaker-vxace/Save01.rvdata2",
+        "/1/party/@items",
+        99,
+        1 << 40,
+    );
+    let again = decode(&written);
+    let target = id_at(&again.doc, "/1/actors/@data/1/@character_name");
+    assert_eq!(
+        at(&again.doc, "/1/player/@character_name").value,
+        Value::Ref(target)
+    );
+}
+
+#[test]
+fn only_integer_keyed_plain_hashes_grow() {
+    let mut decoded = decode(&fixture("synthetic/rpgmaker-vxace/Save02.rvdata2"));
+    let before = encode(&decoded);
+    // The contents hash (symbol keys) and an array take no entries.
+    for path in ["/1", "/1/party/@actors", "/1/party/@gold"] {
+        let error = insert(&mut decoded, path, 1, 1).unwrap_err();
+        assert_eq!(error.code(), codes::CORE_READ_ONLY, "{path}");
+    }
+    // A key the hash has is refused.
+    let key = int_at(&decoded.doc, "/1/party/@items/0.key");
+    let error = insert(&mut decoded, "/1/party/@items", key, 1).unwrap_err();
+    assert_eq!(error.code(), codes::CORE_EDIT_FAILED);
+    assert_eq!(encode(&decoded), before);
+
+    // A hash with a default, and one with a text key.
+    let mut with_default = vec![b'}'];
+    with_default.extend(long(0));
+    with_default.push(b'i');
+    with_default.extend(long(5));
+    let mut text_key = vec![b'{'];
+    text_key.extend(long(1));
+    text_key.extend(plain_str(b"a"));
+    text_key.push(b'i');
+    text_key.extend(long(1));
+    for body in [with_default, text_key] {
+        let mut decoded = exact(&dump(&body));
+        assert!(!is_growable_hash(at(&decoded.doc, "/0")));
+        let error = insert(&mut decoded, "/0", 1, 1).unwrap_err();
+        assert_eq!(error.code(), codes::CORE_READ_ONLY);
+        assert_eq!(encode(&decoded), dump(&body));
+    }
+}
+
+#[test]
+fn only_added_entries_come_out_again() {
+    let original = fixture("synthetic/rpgmaker-vxace/Save02.rvdata2");
+    let mut decoded = decode(&original);
+    let limits = Limits::default();
+    let remove = |doc: &mut SaveDoc, path: &str| {
+        apply_edits(
+            doc,
+            &[Edit::Remove {
+                path: Path::parse(path).unwrap(),
+            }],
+            &limits,
+        )
+    };
+    let error = remove(&mut decoded.doc, "/1/party/@items/0").unwrap_err();
+    assert_eq!(error.code(), codes::CORE_READ_ONLY);
+
+    let index = insert(&mut decoded, "/1/party/@items", 7, 3).unwrap();
+    // The new key is read-only like every hash key; the count can be edited.
+    let key = format!("/1/party/@items/{index}.key");
+    assert!(read_only(&decoded.doc, &key));
+    set(
+        &mut decoded,
+        &format!("/1/party/@items/{index}"),
+        OwnedValue::Int(9),
+    );
+    remove(&mut decoded.doc, &format!("/1/party/@items/{index}")).unwrap();
+    assert_eq!(encode(&decoded), original);
+}
+
+#[test]
+fn an_entry_without_ruby_types_is_not_written() {
+    // Inserted with the core alone, the entry has no hints: the writer refuses it.
+    let mut decoded = decode(&fixture("synthetic/rpgmaker-vxace/Save02.rvdata2"));
+    apply_edits(
+        &mut decoded.doc,
+        &[Edit::InsertEntry {
+            parent: Path::parse("/1/party/@items").unwrap(),
+            key: OwnedValue::Str("x".into()),
+            value: OwnedValue::Int(1),
+        }],
+        &Limits::default(),
+    )
+    .unwrap();
+    let error = RubyMarshalCodec
+        .encode(&decoded.doc, &decoded.params)
+        .unwrap_err();
+    assert_eq!(error.code(), RUBY_WRITE);
+}

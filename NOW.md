@@ -44,7 +44,10 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
      QSP `.sav` (UTF-16 and legacy single-byte saves, read as Windows-1251; KOI8-R saves are not told apart),
      Naninovel save slots with a custom-variables view (plain, gzip, deflate; compressed ones re-compress to other bytes).
    - Formats left: The Witcher 3 `.sav` (*new*).
-   - Features left: add/delete a value from the card view, pick the game's data folder by hand.
+   - Done 2026-10-24 (`wt/cards`, not checked in the running app yet): add items/weapons/armors to RPG Maker lists
+     (MV/MZ and XP/VX/VX Ace), add/remove values in JSON, ES3 and SugarCube lists, undo for added/removed entries,
+     "Choose data folder…" for names. Its core/session part was written by a Claude subagent through Bash after the
+     project hook refused Edit/Write outside the project; finished by EVREN; merge breaks fixed by Claude.
    Done 2026-10-23: Twine SugarCube 2 story view (current-moment variables edited at their last writer in `state.delta`;
    partly changed values and revive tuples read-only; synthetic fixtures in `fixtures/synthetic/sugarcube/`). Not yet:
    2.37 saves with `state.history` (no deltas) open as the plain Values list; no real game save tested.

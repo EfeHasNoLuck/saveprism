@@ -2,6 +2,7 @@ import { Minus, Plus, Undo2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { Field } from "@/api/commands";
 import { cn } from "@/lib/utils";
+import { RemoveValueButton } from "./RemoveValue";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useFormatNumber } from "./context";
 import { changeValue } from "./helpers";
@@ -133,7 +134,9 @@ export function ValueInput({
 export function UndoButton({ edit }: { edit: FieldEdit }) {
   const { t } = useTranslation("editor");
   if (!edit.changed) return <span className="size-6 shrink-0" aria-hidden="true" />;
-  const text = t("field.undo", { value: edit.originalText });
+  const text = edit.field.added
+    ? t("field.removeAdded")
+    : t("field.undo", { value: edit.originalText });
   return (
     <button
       type="button"
@@ -184,6 +187,7 @@ export function FieldCell({
   id,
   fixedLabel = false,
   title,
+  remove,
 }: {
   field: Field;
   /** Shown name; also the accessible name of the control. */
@@ -194,7 +198,10 @@ export function FieldCell({
   fixedLabel?: boolean;
   /** Tooltip of the name (defaults to the name). */
   title?: string;
+  /** The entry can be removed: show the action (not for a value added in this session). */
+  remove?: { path: string; name: string };
 }) {
+  const { t } = useTranslation("editor");
   const edit = useFieldEdit(field);
   const state = fieldState(edit);
   const kind = edit.field.kind;
@@ -226,10 +233,15 @@ export function FieldCell({
               #{id}
             </span>
           ) : null}
+          {edit.field.added ? (
+            <span className="shrink-0 rounded-sm bg-changed-chip px-1 text-[10px] font-semibold tracking-wide text-changed-foreground uppercase">
+              {t("field.new")}
+            </span>
+          ) : null}
           {fixedLabel || kind === "string" ? null : (
             <span aria-hidden="true" className="min-w-1 flex-1" />
           )}
-          {kind === "bool" ? null : (
+          {kind === "bool" || edit.field.added ? null : (
             <ChangeFrom edit={edit} className={fixedLabel ? "max-w-[45%]" : "max-w-[4.5rem]"} />
           )}
           <ValueInput
@@ -241,6 +253,9 @@ export function FieldCell({
             )}
           />
           <UndoButton edit={edit} />
+          {remove !== undefined ? (
+            <RemoveValueButton path={remove.path} name={remove.name} />
+          ) : null}
         </div>
       </TooltipTrigger>
       {floating !== null ? (

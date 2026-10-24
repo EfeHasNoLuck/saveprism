@@ -384,13 +384,13 @@ impl Session {
             let new = node.and_then(value_text).unwrap_or_default();
             let after = node.and_then(|node| scalar_owned(&node.value));
             if let (Some(before), Some(after)) = (before, after) {
-                step.push(Mutation {
+                step.push(Mutation::Set {
                     path: path.clone(),
                     before,
                     after,
                 });
             }
-            changes.push(Change { path, old, new });
+            changes.push(Change::set(path, old, new));
         }
         let count = changes.len();
         self.record_changes(changes);

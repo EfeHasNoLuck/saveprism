@@ -739,8 +739,25 @@ impl<'i> Reader<'i, '_, '_> {
             Value::Map(entries)
         };
         let kind = if with_default { "hash+default" } else { "hash" };
-        let node = Self::node(value, kind, None, true);
+        let mut node = Self::node(value, kind, None, true);
+        if !with_default && self.int_keyed(&node.value) {
+            node.flags.insert(NodeFlags::GROWABLE);
+        }
         self.finish(id, node)
+    }
+
+    /// True for a `Map` whose keys are all integers written inline (an empty hash too): such a
+    /// hash may take new `Int => Int` entries (see `insert_int_entry`).
+    fn int_keyed(&self, value: &Value) -> bool {
+        let Value::Map(entries) = value else {
+            return false;
+        };
+        entries.iter().all(|(key, _)| {
+            self.doc.get(*key).is_some_and(|node| {
+                matches!(node.value, Value::Int { .. })
+                    && node.type_hint.as_ref().map(TypeHint::as_str) == Some("RUBY:int")
+            })
+        })
     }
 
     fn object(&mut self, depth: usize, plain: bool) -> Result<NodeId> {

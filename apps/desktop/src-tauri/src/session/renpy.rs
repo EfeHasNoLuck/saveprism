@@ -116,6 +116,8 @@ impl Ctx<'_> {
                 count: None,
                 text: None,
             }),
+            addable: false,
+            removable: false,
         };
         let Some(node) = self.doc.get(at.0) else {
             return note(NoteKind::Code);
@@ -133,6 +135,8 @@ impl Ctx<'_> {
                     field: None,
                     children,
                     note: None,
+                    addable: false,
+                    removable: false,
                 }
             }
             _ => match self.field(at, UNLIMITED) {
@@ -142,6 +146,8 @@ impl Ctx<'_> {
                     field: Some(field),
                     children: 0,
                     note: None,
+                    addable: false,
+                    removable: false,
                 },
                 None => note(NoteKind::Code),
             },

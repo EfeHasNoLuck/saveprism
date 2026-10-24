@@ -8,19 +8,24 @@
 //! editable value carries its type and limits as a [`Field`], so the UI can say
 //! "Whole number · 0 to 99,999,999 · was 10,000" and block out-of-range input.
 //!
-//! The view only reads the tree and the game's data files; nothing is executed.
+//! The view only reads the tree and the game's data files; nothing is executed. The names come
+//! from the game's data folder next to the save, or from a folder the player picked
+//! ([`Session::set_data_folder`]).
 
 use std::cell::{OnceCell, RefCell};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::io::Read as _;
 use std::path::{Path as FsPath, PathBuf};
 
 use saveprism_core::{Node, NodeFlags, NodeId, OwnedValue, Path, SaveDoc, Value};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
+use super::structure::{Shaper, repeated_keys};
 use super::sugarcube::SugarCubeView;
-use super::{ApiError, Change, Session, app_codes, bad_path, child_count, value_text};
+use super::{
+    ApiError, Change, ChangeKind, Session, app_codes, bad_path, child_count, quote, value_text,
+};
 
 /// Largest game data file that is read for names.
 const MAX_DATA_FILE: u64 = 32 * 1024 * 1024;
@@ -39,7 +44,7 @@ const BONUS_KEYS: [&str; 8] = [
 ];
 
 /// The kind of an editable value.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum FieldKind {
     /// Whole number.
@@ -75,6 +80,9 @@ pub struct Field {
     pub hint: String,
     /// True when the value can be changed.
     pub editable: bool,
+    /// True when the value was added since the file was opened (or last saved); `original` is
+    /// then empty. Taking it back means removing it (`remove_value`).
+    pub added: bool,
 }
 
 /// An item, weapon, armor, variable or switch.
@@ -86,6 +94,39 @@ pub struct Entry {
     pub name: Option<String>,
     /// The value (count, number, text or on/off).
     pub field: Field,
+    /// True when the entry can be removed from the save (`remove_value` on the field's path).
+    pub removable: bool,
+}
+
+/// A database entry of the game's data folder.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+pub struct NamedId {
+    /// Database id.
+    pub id: u32,
+    /// Its name.
+    pub name: String,
+}
+
+/// The items, weapons and armors of the game's database, for picking one to add.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize)]
+pub struct Catalog {
+    /// Items by id.
+    pub items: Vec<NamedId>,
+    /// Weapons by id.
+    pub weapons: Vec<NamedId>,
+    /// Armors by id.
+    pub armors: Vec<NamedId>,
+}
+
+/// Which inventory lists take new entries (`add_inventory`).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize)]
+pub struct AddLists {
+    /// Items.
+    pub items: bool,
+    /// Weapons.
+    pub weapons: bool,
+    /// Armors.
+    pub armors: bool,
 }
 
 /// A stat bonus of a character.
@@ -139,6 +180,10 @@ pub struct RpgMakerView {
     pub switches: Vec<Entry>,
     /// The data folder the names came from.
     pub names_folder: Option<String>,
+    /// The game's items, weapons and armors (empty without a data folder).
+    pub catalog: Catalog,
+    /// The inventory lists that take new entries.
+    pub can_add: AddLists,
 }
 
 /// One row of the generic Values list.
@@ -154,6 +199,10 @@ pub struct ValueRow {
     pub children: usize,
     /// Why the value is shown read-only (story view); `None` elsewhere.
     pub note: Option<RowNote>,
+    /// True when a value can be added to this group (`add_value` with `path` as the parent).
+    pub addable: bool,
+    /// True when the row can be removed (`remove_value` with `path`).
+    pub removable: bool,
 }
 
 /// What a read-only row of the story view holds; the UI translates `kind`.
@@ -203,6 +252,9 @@ pub enum GameView {
     Values {
         /// The rows.
         rows: Vec<ValueRow>,
+        /// Where a new top-level value goes (`add_value`), or `None` when none can be added.
+        #[serde(rename = "addParent")]
+        add_parent: Option<String>,
     },
 }
 
@@ -410,7 +462,7 @@ pub(super) type At = (NodeId, Path);
 /// Read access to the tree with everything a [`Field`] needs.
 pub(super) struct Ctx<'a> {
     pub(super) doc: &'a SaveDoc,
-    editable: bool,
+    pub(super) editable: bool,
     /// True for formats other than RPG Maker: whole numbers with no width get the `i64` range.
     wide: bool,
     pending: &'a [Change],
@@ -420,6 +472,44 @@ pub(super) struct Ctx<'a> {
     refs: OnceCell<HashMap<i128, At>>,
     /// Paths of the nodes Marshal links point at, built when the first link is followed (`rgss.rs`).
     pub(super) links: OnceCell<HashMap<NodeId, Path>>,
+}
+
+/// The entries of an object, or `None` for anything else.
+pub(super) fn object_entries(doc: &SaveDoc, id: NodeId) -> Option<&[(String, NodeId)]> {
+    match &doc.get(id)?.value {
+        Value::Object(entries) => Some(entries),
+        _ => None,
+    }
+}
+
+fn is_read_only(doc: &SaveDoc, id: NodeId) -> bool {
+    doc.get(id)
+        .is_some_and(|node| node.flags.contains(NodeFlags::READ_ONLY))
+}
+
+/// A sorted list of the names of one database file (at most [`MAX_VALUE_ROWS`]).
+fn catalog_of(names: &HashMap<u32, String>) -> Vec<NamedId> {
+    let mut list: Vec<NamedId> = names
+        .iter()
+        .map(|(id, name)| NamedId {
+            id: *id,
+            name: name.clone(),
+        })
+        .collect();
+    list.sort_by_key(|entry| entry.id);
+    list.truncate(MAX_VALUE_ROWS);
+    list
+}
+
+impl GameNames {
+    /// The items, weapons and armors for the "Add" picker.
+    pub(super) fn catalog(&self) -> Catalog {
+        Catalog {
+            items: catalog_of(&self.items),
+            weapons: catalog_of(&self.weapons),
+            armors: catalog_of(&self.armors),
+        }
+    }
 }
 
 /// Names from the game's data folder.
@@ -492,6 +582,34 @@ fn index_names(list: Option<&serde_json::Value>) -> HashMap<u32, String> {
     out
 }
 
+/// The MV/MZ names in `folder` (`Items.json`, `Weapons.json`, `Armors.json`, `System.json`), or
+/// `None` when it has none of them readable.
+pub(super) fn mv_names_in(folder: &FsPath) -> Option<GameNames> {
+    let mut names = GameNames::default();
+    let mut found = false;
+    if let Some(file) = read_json(&folder.join("Items.json")) {
+        names.items = id_names(&file);
+        found = true;
+    }
+    if let Some(file) = read_json(&folder.join("Weapons.json")) {
+        names.weapons = id_names(&file);
+        found = true;
+    }
+    if let Some(file) = read_json(&folder.join("Armors.json")) {
+        names.armors = id_names(&file);
+        found = true;
+    }
+    if let Some(file) = read_json(&folder.join("System.json")) {
+        names.variables = index_names(file.get("variables"));
+        names.switches = index_names(file.get("switches"));
+        found = true;
+    }
+    found.then(|| {
+        names.folder = Some(folder.to_path_buf());
+        names
+    })
+}
+
 /// Looks for the game's `data` folder next to the save's folder (`<save dir>/../data`, then
 /// `<save dir>/../www/data`, then a copied `<save dir>/data`); the first folder with a readable
 /// data file wins.
@@ -506,36 +624,26 @@ fn load_names(save_path: &FsPath) -> GameNames {
     let Some(game_root) = save_dir.parent() else {
         return GameNames::default();
     };
-    for folder in [
+    [
         game_root.join("data"),
         game_root.join("www").join("data"),
         save_dir.join("data"),
-    ] {
-        let mut names = GameNames::default();
-        let mut found = false;
-        if let Some(file) = read_json(&folder.join("Items.json")) {
-            names.items = id_names(&file);
-            found = true;
-        }
-        if let Some(file) = read_json(&folder.join("Weapons.json")) {
-            names.weapons = id_names(&file);
-            found = true;
-        }
-        if let Some(file) = read_json(&folder.join("Armors.json")) {
-            names.armors = id_names(&file);
-            found = true;
-        }
-        if let Some(file) = read_json(&folder.join("System.json")) {
-            names.variables = index_names(file.get("variables"));
-            names.switches = index_names(file.get("switches"));
-            found = true;
-        }
-        if found {
-            names.folder = Some(folder);
-            return names;
-        }
-    }
-    GameNames::default()
+    ]
+    .iter()
+    .find_map(|folder| mv_names_in(folder))
+    .unwrap_or_default()
+}
+
+/// The MV/MZ names of a folder the player picked: the data folder itself, or the game folder
+/// (its `data` or `www/data`).
+fn mv_names_picked(folder: &FsPath) -> Option<GameNames> {
+    [
+        folder.to_path_buf(),
+        folder.join("data"),
+        folder.join("www").join("data"),
+    ]
+    .iter()
+    .find_map(|candidate| mv_names_in(candidate))
 }
 
 /// Every object that has an `@c` id, by that id (depth-first, one visit per node at most).
@@ -598,6 +706,10 @@ impl Ctx<'_> {
         let editable = self.editable
             && !node.flags.contains(NodeFlags::READ_ONLY)
             && self.doc.resolve(path) == Some(*id);
+        let added = self
+            .pending
+            .iter()
+            .any(|change| change.path == path_text && change.kind == ChangeKind::Added);
         Some(Field {
             path: path_text,
             value,
@@ -608,6 +720,7 @@ impl Ctx<'_> {
             max: bounds.max.filter(|_| numeric).map(clamp_i64),
             hint: hint_text(kind, bounds),
             editable,
+            added,
         })
     }
 
@@ -689,16 +802,19 @@ impl Ctx<'_> {
         }
     }
 
-    /// `{"<id>": count}` maps of the party (items, weapons, armors).
+    /// `{"<id>": count}` maps of the party (items, weapons, armors). An entry can be removed when
+    /// its key is not repeated (the game itself deletes an entry whose count drops to 0).
     fn counts(&self, party: &At, key: &str, names: &HashMap<u32, String>) -> Vec<Entry> {
         let Some(map) = self.entry(party, key) else {
             return Vec::new();
         };
-        let Some(Value::Object(entries)) = self.doc.get(map.0).map(|node| &node.value) else {
+        let Some(entries) = object_entries(self.doc, map.0) else {
             return Vec::new();
         };
+        let repeated = repeated_keys(entries);
+        let open = self.editable && !is_read_only(self.doc, map.0);
         let mut out = Vec::new();
-        for (name, _) in entries {
+        for (name, child) in entries {
             if out.len() >= MAX_VALUE_ROWS {
                 break;
             }
@@ -711,11 +827,22 @@ impl Ctx<'_> {
                     id,
                     name: names.get(&id).cloned(),
                     field,
+                    removable: open
+                        && !repeated.contains(name.as_str())
+                        && !is_read_only(self.doc, *child),
                 });
             }
         }
         out.sort_by_key(|entry| entry.id);
         out
+    }
+
+    /// True when the party's `{"<id>": count}` object `key` takes new entries (MV/MZ).
+    fn takes_counts(&self, party: &At, key: &str) -> bool {
+        self.editable
+            && self.entry(party, key).is_some_and(|map| {
+                object_entries(self.doc, map.0).is_some() && !is_read_only(self.doc, map.0)
+            })
     }
 
     /// Variables or switches: `<root>.<key>[index]` (`_data` in MV/MZ, `@data` in XP, VX and VX
@@ -749,6 +876,7 @@ impl Ctx<'_> {
                 id,
                 name: names.get(&id).cloned(),
                 field,
+                removable: false,
             });
         }
         out
@@ -868,6 +996,12 @@ impl Ctx<'_> {
                 .folder
                 .as_ref()
                 .map(|folder| folder.to_string_lossy().into_owned()),
+            catalog: names.catalog(),
+            can_add: AddLists {
+                items: self.takes_counts(&party, "_items"),
+                weapons: self.takes_counts(&party, "_weapons"),
+                armors: self.takes_counts(&party, "_armors"),
+            },
         })
     }
 
@@ -891,10 +1025,13 @@ impl Ctx<'_> {
             field: self.field(&at, UNLIMITED),
             children,
             note: None,
+            addable: false,
+            removable: false,
         }
     }
 
-    pub(super) fn value_rows(&self, easy_save: bool) -> Vec<ValueRow> {
+    /// The top-level rows, with what can be added and removed by `shaper`.
+    pub(super) fn value_rows(&self, easy_save: bool, shaper: &Shaper) -> Vec<ValueRow> {
         let root = self.doc.root();
         let Some(node) = self.doc.get(root) else {
             return Vec::new();
@@ -909,6 +1046,14 @@ impl Ctx<'_> {
             _ => vec![(String::new(), root)],
         };
         let is_root_scalar = !matches!(node.value, Value::Object(_) | Value::Array(_));
+        let repeated: HashSet<String> = object_entries(self.doc, root)
+            .map(|entries| {
+                repeated_keys(entries)
+                    .into_iter()
+                    .map(str::to_string)
+                    .collect()
+            })
+            .unwrap_or_default();
         entries
             .into_iter()
             .take(MAX_VALUE_ROWS)
@@ -917,7 +1062,23 @@ impl Ctx<'_> {
                 if !is_root_scalar {
                     path.push(name.as_str());
                 }
-                self.value_row(name, id, path, easy_save)
+                let removable = !is_root_scalar
+                    && shaper.removable(
+                        self.doc,
+                        &Path::root(),
+                        root,
+                        &name,
+                        id,
+                        repeated.contains(&name),
+                    );
+                let mut row = self.value_row(name, id, path, easy_save);
+                row.removable = removable;
+                if let Ok(row_path) = Path::parse(&row.path)
+                    && let Some(row_id) = self.doc.resolve(&row_path)
+                {
+                    row.addable = shaper.addable(self.doc, &row_path, row_id);
+                }
+                row
             })
             .collect()
     }
@@ -964,33 +1125,44 @@ impl Session {
         ctx.seen.into_inner()
     }
 
+    /// The MV/MZ names: from the folder the player picked, else from the game's `data` folder next
+    /// to the save (a pasted code has none).
+    fn mv_names(&self) -> GameNames {
+        match &self.data_folder {
+            Some(folder) => mv_names_in(folder).unwrap_or_default(),
+            None if self.pasted => GameNames::default(),
+            None => load_names(&self.path),
+        }
+    }
+
     /// The SugarCube story view, the RPG Maker sections for MV/MZ, XP/VX/VX Ace and 2000/2003
     /// saves, else the flat Values list.
     pub fn game_view(&self) -> Result<GameView, ApiError> {
         let ctx = self.game_ctx();
-        if let Some(view) = ctx.sugarcube_view() {
+        if let Some(mut view) = ctx.sugarcube_view() {
+            self.mark_story_rows(&ctx, &mut view);
             return Ok(GameView::Sugarcube {
                 view: Box::new(view),
             });
         }
         if let Some(rows) = self.naninovel_view(&ctx) {
-            return Ok(GameView::Values { rows });
+            return Ok(GameView::Values {
+                rows,
+                add_parent: None,
+            });
         }
         if let Some(rows) = self.renpy_view(&ctx) {
-            return Ok(GameView::Values { rows });
+            return Ok(GameView::Values {
+                rows,
+                add_parent: None,
+            });
         }
-        if let Some(engine) = self.rpg_engine() {
-            // A pasted code has no game folder next to it.
-            let names = if self.pasted {
-                GameNames::default()
-            } else {
-                load_names(&self.path)
-            };
-            if let Some(view) = ctx.rpg_view(engine, &names) {
-                return Ok(GameView::Rpgmaker {
-                    view: Box::new(view),
-                });
-            }
+        if let Some(engine) = self.rpg_engine()
+            && let Some(view) = ctx.rpg_view(engine, &self.mv_names())
+        {
+            return Ok(GameView::Rpgmaker {
+                view: Box::new(view),
+            });
         }
         if let Some(view) = self.rgss_view(&ctx) {
             return Ok(GameView::Rpgmaker {
@@ -1007,9 +1179,68 @@ impl Session {
             .steps
             .iter()
             .any(|step| step.kind == "format.es3");
+        let shaper = self.shaper(&ctx);
+        let root = self.doc.root();
+        let add_parent = shaper
+            .addable(&self.doc, &Path::root(), root)
+            .then(String::new);
         Ok(GameView::Values {
-            rows: ctx.value_rows(easy_save),
+            rows: ctx.value_rows(easy_save, &shaper),
+            add_parent,
         })
+    }
+
+    /// Reads the names from a game data folder the player picked, for the rest of the session, and
+    /// returns the view with them. MV/MZ take the `data` folder or the game folder (its `data` or
+    /// `www/data`); XP, VX and VX Ace the `Data` folder or the game folder (its `Data`). The files
+    /// are only read (size-limited, as data); a folder with none of them is refused.
+    pub fn set_data_folder(&mut self, folder: &str) -> Result<GameView, ApiError> {
+        let picked = PathBuf::from(folder);
+        let ctx = self.game_ctx();
+        let none = GameNames::default();
+        let rpg = !self.is_sugarcube()
+            && self
+                .rpg_engine()
+                .is_some_and(|engine| ctx.rpg_view(engine, &none).is_some());
+        let rgss = self
+            .rgss_engine(&ctx)
+            .filter(|engine| ctx.rgss_view(*engine, &none).is_some());
+        if !rpg && rgss.is_none() {
+            return Err(ApiError::new(
+                app_codes::NO_GAME_SECTIONS,
+                "this file has no game sections that take names from a data folder",
+                "Names come from RPG Maker games. Open an RPG Maker save to use a data folder.",
+            ));
+        }
+        let is_folder = picked.is_absolute() && fs::metadata(&picked).is_ok_and(|m| m.is_dir());
+        if !is_folder {
+            return Err(ApiError::new(
+                app_codes::DATA_FOLDER,
+                format!("\"{}\" is not a folder", quote(folder)),
+                "Pick the game's folder or its data folder.",
+            ));
+        }
+        let (found, hint) = match rgss {
+            Some(engine) => (
+                super::rgss::rgss_names_picked(&picked, engine),
+                super::rgss::data_hint(engine),
+            ),
+            None => (
+                mv_names_picked(&picked),
+                "Pick the game's folder or its data folder (the one with Items.json and System.json)."
+                    .to_string(),
+            ),
+        };
+        let Some(names) = found else {
+            return Err(ApiError::new(
+                app_codes::DATA_FOLDER,
+                format!("no game data files were found in \"{}\"", picked.display()),
+                hint,
+            ));
+        };
+        drop(ctx);
+        self.data_folder = names.folder;
+        self.game_view()
     }
 
     /// Type, limits and original value of the scalar at `path`.

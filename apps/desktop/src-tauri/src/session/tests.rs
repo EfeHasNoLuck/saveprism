@@ -195,7 +195,8 @@ fn edits_by_type_and_bad_input() {
         Change {
             path: "/level".into(),
             old: "42".into(),
-            new: "43".into()
+            new: "43".into(),
+            kind: ChangeKind::Set
         }
     );
 
@@ -885,7 +886,7 @@ fn easy_save_file_becomes_a_values_list() {
     let env = env();
     let path = copy_in(&env, "synthetic/es3/progress.es3");
     let session = open(&env, &path, None).unwrap();
-    let GameView::Values { rows } = session.game_view().unwrap() else {
+    let GameView::Values { rows, .. } = session.game_view().unwrap() else {
         unreachable!("an Easy Save 3 file has no RPG Maker view");
     };
     let coins = rows.iter().find(|r| r.name == "coins").unwrap();
@@ -965,7 +966,7 @@ fn a_decimal_gold_value_is_checked_against_the_limit_too() {
 fn a_plain_json_file_has_a_values_list_with_i64_limits() {
     let env = env();
     let session = open_json(&env);
-    let GameView::Values { rows } = session.game_view().unwrap() else {
+    let GameView::Values { rows, .. } = session.game_view().unwrap() else {
         unreachable!("plain JSON has no RPG Maker view");
     };
     let level = rows.iter().find(|r| r.name == "level").unwrap();
@@ -2609,7 +2610,7 @@ const RENPY_PERSISTENT: &str = "synthetic/renpy/persistent/persistent";
 const RENPY_PERSISTENT_SIGNED: &str = "synthetic/renpy/persistent-signed/persistent";
 
 fn value_rows(session: &Session) -> Vec<ValueRow> {
-    let GameView::Values { rows } = session.game_view().unwrap() else {
+    let GameView::Values { rows, .. } = session.game_view().unwrap() else {
         panic!("not a Values list");
     };
     rows
@@ -2866,6 +2867,39 @@ fn naninovel_gzip_and_deflate_slots_open() {
     }
 }
 
+// Adding and removing values, and picking the game's data folder by hand.
+
+/// Copies every file of a fixture folder into `target`.
+fn copy_folder(source: &str, target: &Path) {
+    fs::create_dir_all(target).unwrap();
+    for entry in fs::read_dir(fixture(source)).unwrap() {
+        let entry = entry.unwrap();
+        fs::copy(entry.path(), target.join(entry.file_name())).unwrap();
+    }
+}
+
+/// Writes the smallest MV/MZ database (only what the names and the catalog need).
+fn write_mv_data(folder: &Path) {
+    fs::create_dir_all(folder).unwrap();
+    fs::write(
+        folder.join("Items.json"),
+        r#"[null,{"id":1,"name":"Potion"},{"id":3,"name":"Hi-Potion"},{"id":7,"name":"Elixir"}]"#,
+    )
+    .unwrap();
+    fs::write(
+        folder.join("System.json"),
+        r#"{"variables":["","Steps"],"switches":["","Door"]}"#,
+    )
+    .unwrap();
+}
+
+fn rpgmaker_view(view: GameView) -> RpgMakerView {
+    match view {
+        GameView::Rpgmaker { view } => *view,
+        _ => panic!("not an RPG Maker view"),
+    }
+}
+
 #[test]
 fn naninovel_edits_survive_a_save() {
     let env = env();
@@ -2914,4 +2948,408 @@ fn naninovel_edits_survive_a_save() {
             .value,
         "20"
     );
+}
+
+#[test]
+fn a_data_folder_can_be_picked_for_mv_by_the_game_or_data_folder() {
+    let env = env();
+    let path = copy_in(&env, "synthetic/rpgmaker-mv/file1.rpgsave");
+    let game = env.work.join("picked-game");
+    let data = game.join("data");
+    write_mv_data(&data);
+    let mut session = open(&env, &path, None).unwrap();
+    assert!(rpg_view(&session).unwrap().names_folder.is_none());
+
+    // The game folder: its `data` folder is found.
+    let view = rpgmaker_view(session.set_data_folder(game.to_str().unwrap()).unwrap());
+    assert_eq!(view.names_folder, Some(data.to_string_lossy().into_owned()));
+    assert_eq!(view.items[0].name.as_deref(), Some("Potion"));
+    assert!(view.can_add.items);
+    assert_eq!(view.catalog.items.len(), 3);
+
+    // The data folder itself is accepted too.
+    let view = rpgmaker_view(session.set_data_folder(data.to_str().unwrap()).unwrap());
+    assert_eq!(view.names_folder, Some(data.to_string_lossy().into_owned()));
+    assert_eq!(view.items[0].name.as_deref(), Some("Potion"));
+    assert_eq!(
+        rpg_view(&session).unwrap().items[0].name.as_deref(),
+        Some("Potion")
+    );
+}
+
+#[test]
+fn a_data_folder_can_be_picked_for_vx_ace_by_the_game_or_data_folder() {
+    let env = env();
+    let mut session = open_rgss(&env, VXACE_SAVE);
+    assert!(rpg_view(&session).unwrap().names_folder.is_none());
+    let game = env.work.join("picked-vxace");
+    let data = game.join("Data");
+    copy_folder("synthetic/rpgmaker-vxace/Data", &data);
+
+    let view = rpgmaker_view(session.set_data_folder(game.to_str().unwrap()).unwrap());
+    assert_eq!(view.names_folder, Some(data.to_string_lossy().into_owned()));
+    assert_eq!(view.items[0].name.as_deref(), Some("Healing Herb"));
+    assert!(view.can_add.items);
+    assert!(!view.catalog.items.is_empty());
+
+    let view = rpgmaker_view(session.set_data_folder(data.to_str().unwrap()).unwrap());
+    assert_eq!(view.names_folder, Some(data.to_string_lossy().into_owned()));
+}
+
+#[test]
+fn a_wrong_data_folder_says_what_to_pick() {
+    let env = env();
+    let path = copy_in(&env, "synthetic/rpgmaker-mv/file1.rpgsave");
+    let mut session = open(&env, &path, None).unwrap();
+    let empty = env.work.join("empty");
+    fs::create_dir_all(&empty).unwrap();
+
+    let error = session
+        .set_data_folder(empty.to_str().unwrap())
+        .unwrap_err();
+    assert_eq!(error.code, app_codes::DATA_FOLDER);
+    assert!(error.message.contains("no game data files"));
+    assert!(error.hint.contains("Items.json"));
+
+    let file = env.work.join("not-a-folder");
+    fs::write(&file, b"x").unwrap();
+    let error = session.set_data_folder(file.to_str().unwrap()).unwrap_err();
+    assert_eq!(error.code, app_codes::DATA_FOLDER);
+    assert!(error.message.contains("is not a folder"));
+
+    // A file without RPG Maker sections has nothing to name.
+    let mut json = open_json(&env);
+    let error = json.set_data_folder(empty.to_str().unwrap()).unwrap_err();
+    assert_eq!(error.code, app_codes::NO_GAME_SECTIONS);
+}
+
+#[test]
+fn an_mv_item_can_be_added_undone_and_saved() {
+    let env = env();
+    let path = copy_in(&env, "synthetic/rpgmaker-mv/file1.rpgsave");
+    let mut session = open(&env, &path, None).unwrap();
+    let view = rpg_view(&session).unwrap();
+    assert!(view.can_add.items);
+    assert_eq!(ids(&view.items), [1, 2, 5]);
+
+    let result = session.add_inventory("items", 3, "2").unwrap();
+    assert!(result.structural);
+    assert_eq!(result.pending, 1);
+    let view = rpg_view(&session).unwrap();
+    assert_eq!(ids(&view.items), [1, 2, 3, 5]);
+    let added = view.items.iter().find(|entry| entry.id == 3).unwrap();
+    assert_eq!(added.field.value, "2");
+    assert!(added.field.added);
+    assert!(added.removable);
+    let change = session
+        .pending_changes()
+        .into_iter()
+        .find(|change| change.path == added.field.path)
+        .unwrap();
+    assert_eq!(change.kind, ChangeKind::Added);
+
+    // An id that is there already is refused.
+    let error = session.add_inventory("items", 3, "1").unwrap_err();
+    assert_eq!(error.code, app_codes::ENTRY_EXISTS);
+
+    let result = session.undo().unwrap();
+    assert!(result.structural);
+    assert_eq!(result.pending, 0);
+    assert_eq!(ids(&rpg_view(&session).unwrap().items), [1, 2, 5]);
+
+    assert!(session.redo().unwrap().structural);
+    assert_eq!(ids(&rpg_view(&session).unwrap().items), [1, 2, 3, 5]);
+
+    session.save(path.to_str().unwrap(), false).unwrap();
+    let reopened = open(&env, &path, None).unwrap();
+    assert_eq!(reopened.info().guard, GuardLevel::Exact);
+    let view = rpg_view(&reopened).unwrap();
+    assert_eq!(ids(&view.items), [1, 2, 3, 5]);
+    assert_eq!(
+        view.items
+            .iter()
+            .find(|entry| entry.id == 3)
+            .unwrap()
+            .field
+            .value,
+        "2"
+    );
+}
+
+#[test]
+fn an_xp_item_can_be_added_undone_and_saved() {
+    let env = env();
+    let path = copy_in(&env, XP_SAVE);
+    let mut session = open_rgss(&env, XP_SAVE);
+    let view = rpg_view(&session).unwrap();
+    assert!(view.can_add.items);
+    assert_eq!(ids(&view.items), [1, 4]);
+
+    let result = session.add_inventory("items", 2, "5").unwrap();
+    assert!(result.structural);
+    let view = rpg_view(&session).unwrap();
+    assert_eq!(ids(&view.items), [1, 2, 4]);
+    let added = view.items.iter().find(|entry| entry.id == 2).unwrap();
+    assert_eq!(added.field.value, "5");
+    assert!(added.field.added);
+    // An XP hash gives back only the last entry; existing ones stay set to 0 instead.
+    assert!(!added.removable);
+
+    assert!(session.undo().unwrap().structural);
+    assert_eq!(ids(&rpg_view(&session).unwrap().items), [1, 4]);
+    assert!(session.redo().unwrap().structural);
+
+    session.save(path.to_str().unwrap(), false).unwrap();
+    let reopened = open(&env, &path, None).unwrap();
+    assert_eq!(reopened.info().guard, GuardLevel::Exact);
+    let view = rpg_view(&reopened).unwrap();
+    assert_eq!(ids(&view.items), [1, 2, 4]);
+    assert_eq!(
+        view.items
+            .iter()
+            .find(|entry| entry.id == 2)
+            .unwrap()
+            .field
+            .value,
+        "5"
+    );
+}
+
+#[test]
+fn a_vx_ace_item_can_be_added_undone_and_saved() {
+    let env = env();
+    let path = copy_in(&env, VXACE_SAVE);
+    let mut session = open_rgss(&env, VXACE_SAVE);
+    let view = rpg_view(&session).unwrap();
+    assert!(view.can_add.items);
+    assert_eq!(ids(&view.items), [1, 2]);
+
+    assert!(session.add_inventory("items", 3, "4").unwrap().structural);
+    let view = rpg_view(&session).unwrap();
+    assert_eq!(ids(&view.items), [1, 2, 3]);
+    assert_eq!(
+        view.items
+            .iter()
+            .find(|entry| entry.id == 3)
+            .unwrap()
+            .field
+            .value,
+        "4"
+    );
+
+    assert!(session.undo().unwrap().structural);
+    assert_eq!(ids(&rpg_view(&session).unwrap().items), [1, 2]);
+    assert!(session.redo().unwrap().structural);
+
+    session.save(path.to_str().unwrap(), false).unwrap();
+    let reopened = open(&env, &path, None).unwrap();
+    assert_eq!(reopened.info().guard, GuardLevel::Exact);
+    assert_eq!(ids(&rpg_view(&reopened).unwrap().items), [1, 2, 3]);
+}
+
+fn values_view(session: &Session) -> (Vec<ValueRow>, Option<String>) {
+    match session.game_view().unwrap() {
+        GameView::Values { rows, add_parent } => (rows, add_parent),
+        _ => panic!("not a Values list"),
+    }
+}
+
+#[test]
+fn a_json_value_can_be_added_removed_and_undone() {
+    let env = env();
+    let path = copy_in(&env, "synthetic/json/compact.json");
+    let mut session = open(&env, &path, None).unwrap();
+    let (_, parent) = values_view(&session);
+    assert_eq!(parent.as_deref(), Some(""));
+    let alive = |session: &Session| {
+        session
+            .get_children("/stats", 0, 500)
+            .unwrap()
+            .items
+            .iter()
+            .any(|row| row.path == "/stats/alive")
+    };
+    assert!(alive(&session));
+
+    assert!(
+        session
+            .add_value("", "nickname", FieldKind::String, "Kai")
+            .unwrap()
+            .structural
+    );
+    let (rows, _) = values_view(&session);
+    let nickname = rows.iter().find(|row| row.name == "nickname").unwrap();
+    let field = nickname.field.as_ref().unwrap();
+    assert_eq!((field.value.as_str(), field.added), ("Kai", true));
+    assert_eq!(session.pending_changes()[0].kind, ChangeKind::Added);
+
+    // Undo of an added value takes it out; redo puts it back.
+    assert!(session.undo().unwrap().structural);
+    assert!(
+        !values_view(&session)
+            .0
+            .iter()
+            .any(|row| row.name == "nickname")
+    );
+    assert!(session.redo().unwrap().structural);
+
+    // An added value can be removed; nothing stays pending then.
+    let result = session.remove_value("/nickname").unwrap();
+    assert!(result.structural);
+    assert_eq!(result.pending, 0);
+    assert!(
+        !values_view(&session)
+            .0
+            .iter()
+            .any(|row| row.name == "nickname")
+    );
+
+    // A value of the file is removed and comes back with undo.
+    session
+        .add_value("", "nickname", FieldKind::String, "Kai")
+        .unwrap();
+    let result = session.remove_value("/stats/alive").unwrap();
+    assert!(result.structural);
+    assert_eq!(result.pending, 2); // the new nickname and the removed value
+    assert!(!alive(&session));
+    let removed = session
+        .pending_changes()
+        .into_iter()
+        .find(|change| change.path == "/stats/alive")
+        .unwrap();
+    assert_eq!(removed.kind, ChangeKind::Removed);
+
+    assert!(session.undo().unwrap().structural);
+    assert!(alive(&session));
+
+    session.remove_value("/stats/alive").unwrap();
+    session.save(path.to_str().unwrap(), false).unwrap();
+    let reopened = open(&env, &path, None).unwrap();
+    assert_eq!(reopened.info().guard, GuardLevel::Exact);
+    let (rows, _) = values_view(&reopened);
+    assert!(rows.iter().any(|row| row.name == "nickname"));
+    assert!(!alive(&reopened));
+}
+
+#[test]
+fn a_value_can_be_added_to_a_json_object() {
+    let env = env();
+    let mut session = open_json(&env);
+    values_view(&session);
+    session
+        .add_value("/stats", "score", FieldKind::Int, "5")
+        .unwrap();
+    let page = session.get_children("/stats", 0, 500).unwrap();
+    let score = page
+        .items
+        .iter()
+        .find(|row| row.path == "/stats/score")
+        .unwrap();
+    assert!(!score.addable);
+    let field = session.field_info("/stats/score").unwrap();
+    assert_eq!((field.value.as_str(), field.added), ("5", true));
+
+    // A name that is there already is refused.
+    let error = session
+        .add_value("/stats", "hp", FieldKind::Int, "1")
+        .unwrap_err();
+    assert_eq!(error.code, app_codes::ENTRY_EXISTS);
+}
+
+#[test]
+fn an_es3_value_can_be_added_and_saved() {
+    let env = env();
+    let path = copy_in(&env, "synthetic/es3/progress.es3");
+    let mut session = open(&env, &path, None).unwrap();
+    let (_, parent) = values_view(&session);
+    assert_eq!(parent.as_deref(), Some(""));
+
+    assert!(
+        session
+            .add_value("", "newScore", FieldKind::Int, "7")
+            .unwrap()
+            .structural
+    );
+    let (rows, _) = values_view(&session);
+    let row = value_row(&rows, "newScore");
+    let field = row.field.as_ref().unwrap();
+    assert_eq!(field.value, "7");
+    assert_eq!(field.type_name.as_deref(), Some("Int32"));
+    assert!(field.added);
+    assert!(row.removable);
+
+    session.save(path.to_str().unwrap(), false).unwrap();
+    let reopened = open(&env, &path, None).unwrap();
+    assert_eq!(reopened.info().guard, GuardLevel::Exact);
+    let (rows, _) = values_view(&reopened);
+    assert_eq!(
+        value_row(&rows, "newScore").field.as_ref().unwrap().value,
+        "7"
+    );
+}
+
+#[test]
+fn a_sugarcube_variable_can_be_added_and_saved() {
+    let env = env();
+    let path = copy_in(&env, "synthetic/sugarcube/one-moment.save");
+    let mut session = open(&env, &path, None).unwrap();
+    let view = story_view(&session).unwrap();
+    let parent = view.add_parent.clone().unwrap();
+
+    assert!(
+        session
+            .add_value(&parent, "newFlag", FieldKind::Bool, "true")
+            .unwrap()
+            .structural
+    );
+    let view = story_view(&session).unwrap();
+    assert_eq!(story_value(&view, "newFlag"), "true");
+    let row = story_row(&view, "newFlag");
+    assert!(row.removable);
+    assert!(row.field.as_ref().unwrap().added);
+
+    assert!(session.undo().unwrap().structural);
+    assert!(
+        !story_view(&session)
+            .unwrap()
+            .variables
+            .iter()
+            .any(|row| row.name == "newFlag")
+    );
+    assert!(session.redo().unwrap().structural);
+
+    session.save(path.to_str().unwrap(), false).unwrap();
+    let reopened = open(&env, &path, None).unwrap();
+    assert_eq!(reopened.info().guard, GuardLevel::Exact);
+    assert_eq!(
+        story_value(&story_view(&reopened).unwrap(), "newFlag"),
+        "true"
+    );
+}
+
+#[test]
+fn an_mv_item_can_be_removed_undone_and_saved() {
+    let env = env();
+    let path = copy_in(&env, "synthetic/rpgmaker-mv/file1.rpgsave");
+    let mut session = open(&env, &path, None).unwrap();
+    let view = rpg_view(&session).unwrap();
+    let potion = view.items.iter().find(|entry| entry.id == 1).unwrap();
+    assert!(potion.removable);
+    let item_path = potion.field.path.clone();
+
+    let result = session.remove_value(&item_path).unwrap();
+    assert!(result.structural);
+    assert_eq!(result.pending, 1);
+    assert_eq!(ids(&rpg_view(&session).unwrap().items), [2, 5]);
+    let change = session.pending_changes().into_iter().next().unwrap();
+    assert_eq!(change.kind, ChangeKind::Removed);
+
+    assert!(session.undo().unwrap().structural);
+    assert_eq!(ids(&rpg_view(&session).unwrap().items), [1, 2, 5]);
+    assert!(session.redo().unwrap().structural);
+
+    session.save(path.to_str().unwrap(), false).unwrap();
+    let reopened = open(&env, &path, None).unwrap();
+    assert_eq!(reopened.info().guard, GuardLevel::Exact);
+    assert_eq!(ids(&rpg_view(&reopened).unwrap().items), [2, 5]);
 }

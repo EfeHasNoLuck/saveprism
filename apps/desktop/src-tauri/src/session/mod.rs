@@ -8,7 +8,10 @@
 //! write (backup, temp file, atomic replace) and checks every edited value in the written file;
 //! [`Session::backups`] lists the backups of the open file and [`Session::restore_backup`] puts one
 //! back the same safe way. [`Session::open_code`] opens a pasted save code and
-//! [`Session::copy_code`] gives the edited document back as a code.
+//! [`Session::copy_code`] gives the edited document back as a code. [`Session::add_value`],
+//! [`Session::add_inventory`] and [`Session::remove_value`] add and remove entries where the format
+//! allows it (see `structure.rs`); [`Session::set_data_folder`] reads names from a folder the player
+//! picked.
 //!
 //! Errors cross the IPC boundary as [`ApiError`] (`code`, `message`, `hint`). The password of an
 //! encrypted file lives in memory only; it is never logged, put into a message or written to disk.
@@ -37,15 +40,17 @@ mod lcf;
 mod naninovel;
 mod renpy;
 mod rgss;
+mod structure;
 mod sugarcube;
 
 pub use backups::BackupRow;
 pub use code::MAX_PASTED;
 use game::check_bounds_in;
 pub use game::{
-    Actor, Bonus, Entry, Field, FieldKind, GameView, NoteKind, RowNote, RpgMakerView, ValueRow,
+    Actor, AddLists, Bonus, Catalog, Entry, Field, FieldKind, GameView, NamedId, NoteKind, RowNote,
+    RpgMakerView, ValueRow,
 };
-use history::{History, MAX_VALUES, Mutation, scalar_owned};
+use history::{DocStep, History, MAX_VALUES, Mutation, scalar_owned};
 pub use history::{HistoryResult, HistoryState};
 pub use renpy::{NOTICE_SIGNED_PERSISTENT, NOTICE_SIGNED_SAVE};
 pub use sugarcube::SugarCubeView;
@@ -98,6 +103,16 @@ pub mod app_codes {
     pub const EMPTY_CODE: &str = "SP-APP-016";
     /// The save format is not text, so it has no code to copy.
     pub const NOT_TEXT_CODE: &str = "SP-APP-017";
+    /// The picked folder is not a folder, or holds no game data this save can use.
+    pub const DATA_FOLDER: &str = "SP-APP-018";
+    /// The open file has no game sections that take names from a data folder.
+    pub const NO_GAME_SECTIONS: &str = "SP-APP-019";
+    /// The entry to add is there already.
+    pub const ENTRY_EXISTS: &str = "SP-APP-020";
+    /// Nothing can be added here (the format or the container does not allow it).
+    pub const NOT_ADDABLE: &str = "SP-APP-021";
+    /// This entry cannot be removed (the format or the container does not allow it).
+    pub const NOT_REMOVABLE: &str = "SP-APP-022";
 }
 
 /// An error as the UI receives it.
@@ -228,6 +243,10 @@ pub struct NodeRow {
     pub child_count: usize,
     /// True when the value can be changed.
     pub editable: bool,
+    /// True when a value can be added to this object (`add_value` with this path as the parent).
+    pub addable: bool,
+    /// True when this entry can be removed (`remove_value`).
+    pub removable: bool,
 }
 
 /// One page of rows.
@@ -290,6 +309,18 @@ pub struct OpenInfo {
     pub notice: Option<String>,
 }
 
+/// What a pending edit did.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ChangeKind {
+    /// A value changed.
+    Set,
+    /// An entry was added (`old` is empty).
+    Added,
+    /// An entry was removed (`new` is empty; `old` is its value text or size).
+    Removed,
+}
+
 /// One pending edit.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -300,6 +331,26 @@ pub struct Change {
     pub old: String,
     /// Value text now.
     pub new: String,
+    /// What the edit did.
+    pub kind: ChangeKind,
+}
+
+impl Change {
+    /// A changed value.
+    pub(super) fn set(path: String, old: String, new: String) -> Self {
+        Self {
+            path,
+            old,
+            new,
+            kind: ChangeKind::Set,
+        }
+    }
+
+    /// False for a value edited back to its first text (it is no change any more); added and
+    /// removed entries always count.
+    fn counts(&self) -> bool {
+        self.kind != ChangeKind::Set || self.old != self.new
+    }
 }
 
 /// What `save` returns.
@@ -333,6 +384,8 @@ pub struct Session {
     history: History,
     /// Opened from a pasted save code; `path` is SavePrism's own copy until a "save as".
     pasted: bool,
+    /// The game data folder the player picked (the folder the names are read from), if any.
+    data_folder: Option<PathBuf>,
 }
 
 fn io_error(path: &FsPath, source: std::io::Error) -> Error {
@@ -538,6 +591,8 @@ fn make_row(doc: &SaveDoc, doc_editable: bool, id: NodeId, path: &Path) -> Optio
         preview: preview(node),
         child_count: child_count(&node.value),
         editable,
+        addable: false,
+        removable: false,
     })
 }
 
@@ -662,6 +717,7 @@ impl Session {
             pending: Vec::new(),
             history: History::default(),
             pasted: false,
+            data_folder: None,
         };
         // A signed Ren'Py persistent file is thrown away by the game after any change.
         if session.renpy_locked() {
@@ -742,6 +798,7 @@ impl Session {
         let id = self.doc.resolve(&parent).ok_or_else(|| bad_path(path))?;
         let total = self.doc.get(id).map_or(0, |node| child_count(&node.value));
         let end = offset.saturating_add(limit).min(total);
+        let shape = self.shape_rules(&parent, id);
         let mut items = Vec::new();
         for index in offset..end {
             let Some((segment, child)) = child_at(&self.doc, id, index) else {
@@ -749,7 +806,9 @@ impl Session {
             };
             let mut child_path = parent.clone();
             child_path.push(segment);
-            if let Some(row) = make_row(&self.doc, self.editable, child, &child_path) {
+            if let Some(mut row) = make_row(&self.doc, self.editable, child, &child_path) {
+                row.removable = shape.removable(&self.doc, &row.key, child);
+                row.addable = shape.addable(&self.doc, &child_path, child);
                 items.push(row);
             }
         }
@@ -885,7 +944,7 @@ impl Session {
         if let (Some(before), Some(after)) = (before, scalar_owned(&node.value))
             && before != after
         {
-            self.history.record(vec![Mutation {
+            self.history.record(vec![Mutation::Set {
                 path: parsed.to_string(),
                 before,
                 after,
@@ -951,28 +1010,32 @@ impl Session {
             if let (Some(before), Some(after)) = (before, after)
                 && before != after
             {
-                step.push(Mutation {
+                step.push(Mutation::Set {
                     path: path.clone(),
                     before,
                     after,
                 });
             }
-            changes.push(Change { path, old, new });
+            changes.push(Change::set(path, old, new));
         }
-        let changed: Vec<String> = step.iter().map(|mutation| mutation.path.clone()).collect();
+        let changed: Vec<String> = step
+            .iter()
+            .map(|mutation| mutation.path().to_string())
+            .collect();
         self.record_changes(changes);
         self.history.record(step);
         Ok(self.history_result(changed))
     }
 
-    /// Keeps the oldest `old` per path; an edit back to the first value cancels the entry.
+    /// Keeps the oldest `old` per path; an edit back to the first value cancels the entry (an
+    /// added entry stays added).
     fn record_change(&mut self, path: String, old: String, new: String) {
         match self.pending.iter().position(|c| c.path == path) {
             Some(index) => {
                 let unchanged = match self.pending.get_mut(index) {
                     Some(change) => {
                         change.new = new;
-                        change.old == change.new
+                        !change.counts()
                     }
                     None => false,
                 };
@@ -982,7 +1045,7 @@ impl Session {
             }
             None => {
                 if old != new {
-                    self.pending.push(Change { path, old, new });
+                    self.pending.push(Change::set(path, old, new));
                 }
             }
         }
@@ -1012,7 +1075,7 @@ impl Session {
             }
         }
         // An edit back to the first value cancels its entry.
-        self.pending.retain(|change| change.old != change.new);
+        self.pending.retain(Change::counts);
     }
 
     /// The edits made since opening or the last save.
@@ -1021,13 +1084,27 @@ impl Session {
     }
 
     /// Throws the edits away by reading the document from its bytes again. This is one history step,
-    /// so "Undo all" can itself be undone.
+    /// so "Undo all" can itself be undone. When entries were added or removed (now or in a step that
+    /// can still be undone), the step keeps the whole document, so undo puts back the very nodes the
+    /// other steps refer to.
     pub fn discard_changes(&mut self) -> Result<(), ApiError> {
         if self.pending.is_empty() {
             return Ok(());
         }
         let recipe = with_password(&self.recipe, self.password.as_deref());
         let out = pipeline::decode(&self.original, &recipe, &self.reg, &self.limits)?;
+        let structural = self.history.has_structural()
+            || self
+                .pending
+                .iter()
+                .any(|change| change.kind != ChangeKind::Set);
+        if structural {
+            let doc = std::mem::replace(&mut self.doc, out.doc);
+            let pending = std::mem::take(&mut self.pending);
+            self.history
+                .record(vec![Mutation::Document(Box::new(DocStep { doc, pending }))]);
+            return Ok(());
+        }
         let scalar_at = |doc: &SaveDoc, path: &Path| {
             doc.resolve(path)
                 .and_then(|id| doc.get(id))
@@ -1040,7 +1117,7 @@ impl Session {
                 let path = Path::parse(&change.path).ok()?;
                 let before = scalar_at(&self.doc, &path)?;
                 let after = scalar_at(&out.doc, &path)?;
-                (before != after).then(|| Mutation {
+                (before != after).then(|| Mutation::Set {
                     path: change.path.clone(),
                     before,
                     after,
@@ -1095,7 +1172,8 @@ impl Session {
         })
     }
 
-    /// Decodes `written` with `recipe` and checks that it holds every edited value of the document.
+    /// Decodes `written` with `recipe` and checks that it holds every edited and added value of the
+    /// document and none of the removed entries.
     fn verify_edits(&self, recipe: &Recipe, written: &[u8]) -> saveprism_core::Result<()> {
         let again = pipeline::decode(written, recipe, &self.reg, &self.limits)?;
         let doc = &self.doc;
@@ -1103,8 +1181,17 @@ impl Session {
             let Ok(path) = Path::parse(&change.path) else {
                 continue;
             };
-            let expected = doc.resolve(&path).and_then(|id| doc.get(id));
             let found = again.doc.resolve(&path).and_then(|id| again.doc.get(id));
+            if change.kind == ChangeKind::Removed {
+                if found.is_some() {
+                    return Err(Error::new(
+                        codes::CORE_EDIT_FAILED,
+                        format!("the written file still holds the removed entry at '{path}'"),
+                    ));
+                }
+                continue;
+            }
+            let expected = doc.resolve(&path).and_then(|id| doc.get(id));
             match (expected, found) {
                 (Some(want), Some(got)) if want.value == got.value => {}
                 _ => {

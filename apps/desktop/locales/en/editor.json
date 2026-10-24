@@ -42,7 +42,9 @@
   "field": {
     "undo": "Undo (was {{value}})",
     "increase": "Increase",
-    "decrease": "Decrease"
+    "decrease": "Decrease",
+    "new": "new",
+    "removeAdded": "Remove (added)"
   },
   "search": {
     "list": "Search name, #id or value",
@@ -148,5 +150,52 @@
     "specialTip": "The game rebuilds this value with its own code. Change it in the JSON editor.",
     "empty": "empty",
     "emptyTip": "This value is empty (null or an empty list)."
+  },
+  "addEntry": {
+    "trigger": "Add",
+    "triggerTip": "Add a {{label}} to this list",
+    "title": "Add a {{label}}",
+    "label": {
+      "item": "item",
+      "weapon": "weapon",
+      "armor": "armor"
+    },
+    "search": "Search name or #id",
+    "noMatch": "No match in the game's database.",
+    "typedId": "Add #{{id}}",
+    "clear": "Clear",
+    "id": "Database id",
+    "idPlaceholder": "For example 12",
+    "noCatalog": "No game data folder was found, so type the id.",
+    "count": "Count",
+    "submit": "Add"
+  },
+  "addValue": {
+    "action": "Add value",
+    "title": "Add a value",
+    "hint": "It is written into the file when you save.",
+    "key": "Name",
+    "keyPlaceholder": "For example score",
+    "type": "Type",
+    "kind": {
+      "int": "Number",
+      "string": "Text",
+      "bool": "On/off"
+    },
+    "value": "Value",
+    "submit": "Add value"
+  },
+  "remove": {
+    "action": "Remove {{name}}",
+    "title": "Remove {{name}}?",
+    "body": "It is taken out of the file when you save. Undo brings it back.",
+    "confirm": "Remove"
+  },
+  "dataFolder": {
+    "title": "Choose the game's data folder",
+    "none": "No game data folder found",
+    "choose": "Choose data folder…",
+    "change": "Change…",
+    "picking": "Opening…"
   }
 }

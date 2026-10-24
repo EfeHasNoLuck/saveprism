@@ -1,8 +1,12 @@
-import type { CSSProperties } from "react";
+import { open as openDialog } from "@tauri-apps/plugin-dialog";
+import { FolderSearch } from "lucide-react";
+import { useState, type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 import type { Field, RpgMakerView } from "@/api/commands";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Characters } from "./Characters";
+import { useEditorContext } from "./context";
 import { EntryList, type EntryListProps } from "./EntryList";
 import { useElementWidth } from "./grid";
 import { allocateColumns, cardWidth } from "./helpers";
@@ -84,6 +88,58 @@ function ListRow({ lists }: { lists: Omit<EntryListProps, "style" | "className">
 }
 
 /**
+ * Where the names come from: the folder found next to the save, or one the player picks by hand.
+ * A long path is cut short; its tooltip holds the whole path.
+ */
+function DataFolderLine({ view }: { view: RpgMakerView }) {
+  const { t } = useTranslation("editor");
+  const { setDataFolder } = useEditorContext();
+  const [picking, setPicking] = useState(false);
+
+  async function choose() {
+    if (picking) return;
+    setPicking(true);
+    try {
+      const picked = await openDialog({
+        directory: true,
+        multiple: false,
+        title: t("dataFolder.title"),
+      });
+      if (typeof picked === "string") await setDataFolder(picked);
+    } finally {
+      setPicking(false);
+    }
+  }
+
+  return (
+    <div className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+      <FolderSearch aria-hidden="true" className="size-3.5 shrink-0" />
+      {view.namesFolder === null ? (
+        <span className="truncate">{t("dataFolder.none")}</span>
+      ) : (
+        <span className="min-w-0 truncate font-mono text-[11px]" title={view.namesFolder}>
+          {view.namesFolder}
+        </span>
+      )}
+      <span aria-hidden="true">·</span>
+      <Button
+        variant="ghost"
+        size="xs"
+        className="shrink-0 text-xs"
+        disabled={picking}
+        onClick={() => void choose()}
+      >
+        {picking
+          ? t("dataFolder.picking")
+          : view.namesFolder === null
+            ? t("dataFolder.choose")
+            : t("dataFolder.change")}
+      </Button>
+    </div>
+  );
+}
+
+/**
  * RPG Maker saves as cards in three rows: Gold and Characters; Items, Weapons and Armors;
  * Variables and Switches.
  */
@@ -92,15 +148,35 @@ export function RpgMaker({ view }: { view: RpgMakerView }) {
   const namesInfo = view.namesFolder === null ? t("info.noNames") : undefined;
   return (
     <div className="flex flex-col gap-2.5">
+      <DataFolderLine view={view} />
       <div className="grid gap-2.5 md:grid-cols-[14rem_minmax(0,1fr)]">
         <Gold field={view.gold} />
         <Characters actors={view.actors} namesFolder={view.namesFolder} />
       </div>
       <ListRow
         lists={[
-          { title: t("sections.items"), kind: "item", entries: view.items, info: namesInfo },
-          { title: t("sections.weapons"), kind: "weapon", entries: view.weapons },
-          { title: t("sections.armors"), kind: "armor", entries: view.armors },
+          {
+            title: t("sections.items"),
+            kind: "item",
+            entries: view.items,
+            info: namesInfo,
+            canAdd: view.canAdd.items,
+            catalog: view.catalog.items,
+          },
+          {
+            title: t("sections.weapons"),
+            kind: "weapon",
+            entries: view.weapons,
+            canAdd: view.canAdd.weapons,
+            catalog: view.catalog.weapons,
+          },
+          {
+            title: t("sections.armors"),
+            kind: "armor",
+            entries: view.armors,
+            canAdd: view.canAdd.armors,
+            catalog: view.catalog.armors,
+          },
         ]}
       />
       <ListRow

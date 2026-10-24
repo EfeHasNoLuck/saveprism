@@ -28,7 +28,9 @@ pub mod registry;
 
 pub use codec::{Codec, Confidence, DecodeCtx, Decoded, Layer, SniffCtx};
 pub use doc::{ByteSpan, FloatWidth, IntWidth, Node, NodeFlags, NodeId, SaveDoc, TypeHint, Value};
-pub use edit::{Edit, OwnedValue, Position, apply_edits};
+pub use edit::{
+    Detached, DetachedKey, Edit, OwnedValue, Position, apply_edits, detach, entry_at, reattach,
+};
 pub use error::{Error, ErrorCode, Result, ResultExt, codes};
 pub use limits::Limits;
 pub use params::{ParamValue, Params};

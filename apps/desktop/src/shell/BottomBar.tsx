@@ -27,6 +27,8 @@ import type { SaveDefault } from "./settings";
 
 interface BottomBarProps {
   changeCount: number;
+  /** Added and removed entries among the pending changes. */
+  changeKinds: { added: number; removed: number };
   /** The file cannot be saved (guard failed). */
   readOnly: boolean;
   /** The editor reports a value that cannot be saved as typed. */
@@ -56,6 +58,7 @@ interface BottomBarProps {
 
 export function BottomBar({
   changeCount,
+  changeKinds,
   readOnly,
   invalid,
   busy,
@@ -115,6 +118,22 @@ export function BottomBar({
               {changeCount === 0
                 ? t("bottom.noChanges")
                 : t("bottom.changes", { count: changeCount })}
+              {changeKinds.added > 0 ? (
+                <span
+                  title={t("bottom.addedTip", { count: changeKinds.added })}
+                  className="rounded-sm bg-changed-chip px-1 text-[11px] font-semibold text-changed-foreground"
+                >
+                  +{changeKinds.added}
+                </span>
+              ) : null}
+              {changeKinds.removed > 0 ? (
+                <span
+                  title={t("bottom.removedTip", { count: changeKinds.removed })}
+                  className="rounded-sm bg-error-container px-1 text-[11px] font-semibold text-destructive"
+                >
+                  −{changeKinds.removed}
+                </span>
+              ) : null}
             </Button>
           </PopoverTrigger>
           <PopoverContent align="start" className="w-[28rem]">
@@ -128,6 +147,11 @@ export function BottomBar({
                     <span className="block truncate font-mono text-[11px] text-muted-foreground" title={change.path}>
                       {change.path}
                     </span>
+                    {change.kind !== "set" ? (
+                      <span className="text-[11px] font-medium text-muted-foreground">
+                        {t(change.kind === "added" ? "bottom.addedTag" : "bottom.removedTag")}
+                      </span>
+                    ) : null}
                     <span className="mt-0.5 flex items-center gap-1.5 font-mono text-changed-foreground">
                       <span className="truncate">{change.old}</span>
                       <ArrowRight className="size-3 shrink-0 text-muted-foreground" />
