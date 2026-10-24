@@ -72,6 +72,13 @@ doc = false
 bench = false
 
 [[bin]]
+name = "reg"
+path = "fuzz_targets/reg.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "pickle"
 path = "fuzz_targets/pickle.rs"
 test = false
