@@ -91,3 +91,10 @@ path = "fuzz_targets/nrbf.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "godot"
+path = "fuzz_targets/godot.rs"
+test = false
+doc = false
+bench = false

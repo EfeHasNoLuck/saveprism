@@ -7,6 +7,7 @@ use saveprism_core::Registry;
 
 pub mod es3;
 pub mod gen3;
+pub mod godot;
 pub mod gvas;
 pub mod javaser;
 pub mod json;
@@ -38,6 +39,7 @@ pub fn register_all(reg: &mut Registry) {
     renpy::register(reg);
     sol::register(reg);
     nrbf::register(reg);
+    godot::register(reg);
 }
 
 #[cfg(test)]

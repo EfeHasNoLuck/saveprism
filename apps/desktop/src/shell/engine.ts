@@ -12,6 +12,7 @@ const EXTENSION_LABELS: Record<string, string> = {
   sav: "SAV",
   sol: "Flash",
   reg: "Registry (.reg)",
+  cfg: "Godot",
 };
 
 const CODEC_LABELS: Record<string, string> = {
@@ -28,6 +29,8 @@ const CODEC_LABELS: Record<string, string> = {
   "format.lcf": "RPG Maker 2000/2003",
   "format.nrbf": ".NET BinaryFormatter",
   "format.reg": "Registry (.reg)",
+  "format.godot-config": "Godot",
+  "format.godot-variant": "Godot",
 };
 
 const ENGINE_LABELS: Record<string, string> = {
