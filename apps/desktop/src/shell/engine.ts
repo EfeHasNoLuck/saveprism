@@ -19,6 +19,7 @@ const CODEC_LABELS: Record<string, string> = {
   "format.gvas": "Unreal",
   "format.ruby-marshal": "Ruby Marshal",
   "format.flash-sol": "Flash LSO",
+  "format.pokemon-gen3": "Pokémon Gen 3",
 };
 
 const ENGINE_LABELS: Record<string, string> = {

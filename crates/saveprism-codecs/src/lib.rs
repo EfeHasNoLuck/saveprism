@@ -6,6 +6,7 @@
 use saveprism_core::Registry;
 
 pub mod es3;
+pub mod gen3;
 pub mod gvas;
 pub mod json;
 pub mod layers;
@@ -20,6 +21,7 @@ pub fn register_all(reg: &mut Registry) {
     json::register(reg);
     rpgmaker::register(reg);
     es3::register(reg);
+    gen3::register(reg);
     gvas::register(reg);
     palworld::register(reg);
     marshal::register(reg);
