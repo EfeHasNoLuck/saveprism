@@ -49,3 +49,10 @@ path = "fuzz_targets/sol.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "javaser"
+path = "fuzz_targets/javaser.rs"
+test = false
+doc = false
+bench = false
