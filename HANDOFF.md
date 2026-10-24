@@ -13,10 +13,13 @@
 Later merged: `2224b20` Ren'Py (Claude) · `0cb4f03` TyranoScript (EVREN) · `0feb046` .NET BinaryFormatter + RAGS (EVREN).
 
 **In flight (check these first; each is EVREN deepseek in `../saveprism-wt/<n>`, uncommitted, log `.motor/<log>`)**
-- Godot fix (`godot`, log `godot-deepseek.log`): the draft was WRONG for Godot 4 (Godot 3 type ids); fix list in
-  `.motor/godot-fix.md` — re-check the type table before merging.
-- Unity PlayerPrefs `.reg` (`reg`, log `reg.log`, brief `.motor/reg.md`).
+- Merged since: `a9e7ea5` Unity PlayerPrefs `.reg` · `62b2706` Godot (type 22 bug fixed by Claude).
 - SQLite (`sqlite`, log `sqlite.log`, brief `.motor/sqlite.md`; adds `rusqlite` bundled).
+- Zip-packed saves (`zip`, log `zip.log`, brief `.motor/zip.md`). Wolf RPG (`wolf`, log `wolf.log`, brief `.motor/wolf.md`;
+  check its sources list before merging).
+- Merge helper: `python -I .motor/merge_wt.py <name> "<subject>"` (commits the worktree, merges uncommitted, resolves the
+  usual append conflicts, reruns generators), then kontrol in a separate command, inspect fixtures, commit, push.
+  Union-resolved code files can still break (a test lost a closing brace once): read the compile errors.
 - Card view add/remove + pick data folder: backend WIP commit `ad95457` on `wt/cards` (written by a Claude subagent via
   Bash because the hook refused Edit/Write outside the project — tell the user, already reported once); UI not started;
   brief `.motor/cards.md`.
