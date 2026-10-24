@@ -54,6 +54,8 @@ describe("engine helpers", () => {
     expect(engineLabel("game.sqlite3", "format.sqlite")).toBe("SQLite");
     expect(engineLabel("save.db", "format.sqlite")).toBe("SQLite");
     expect(engineLabel("data.bin", "format.sqlite")).toBe("SQLite");
+    expect(engineLabel("slot.sav", "format.qsp")).toBe("QSP");
+    expect(engineLabel("chapter-one.sav", "format.qsp")).toBe("QSP");
     expect(engineLabel("data.bin", "format.unknown")).toBeNull();
     expect(engineLabel("slot1.save", "format.json", "sugarcube")).toBe("SugarCube");
     expect(engineLabel("1-1-LT1.save", "format.python-pickle", "renpy")).toBe("Ren'Py");
