@@ -16,6 +16,7 @@ pub mod marshal;
 pub mod nrbf;
 pub mod palworld;
 pub mod pickle;
+pub mod reg;
 pub mod renpy;
 pub mod rpgmaker;
 pub mod sol;
@@ -33,6 +34,7 @@ pub fn register_all(reg: &mut Registry) {
     javaser::register(reg);
     lcf::register(reg);
     pickle::register(reg);
+    reg::register(reg);
     renpy::register(reg);
     sol::register(reg);
     nrbf::register(reg);

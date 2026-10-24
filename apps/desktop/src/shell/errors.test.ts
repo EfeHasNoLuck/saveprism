@@ -44,6 +44,8 @@ describe("engine helpers", () => {
     expect(engineLabel("save.srm", "format.pokemon-gen3")).toBe("Pokémon Gen 3");
     expect(engineLabel("Save01.lsd", "format.lcf")).toBe("RPG Maker 2000/2003");
     expect(engineLabel("RPG_RT.ldb", "format.lcf")).toBe("RPG Maker 2000/2003");
+    expect(engineLabel("prefs.reg", "format.reg")).toBe("Registry (.reg)");
+    expect(engineLabel("data.bin", "format.reg")).toBe("Registry (.reg)");
     expect(engineLabel("data.bin", "format.unknown")).toBeNull();
     expect(engineLabel("slot1.save", "format.json", "sugarcube")).toBe("SugarCube");
     expect(engineLabel("1-1-LT1.save", "format.python-pickle", "renpy")).toBe("Ren'Py");

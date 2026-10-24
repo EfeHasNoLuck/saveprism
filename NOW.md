@@ -35,8 +35,9 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
      and `persistent` (pickle parsed as data only; an edited save gets an empty `signatures` entry so the game asks the
      player to trust it; a signed persistent opens read-only; persistent re-compresses to different bytes), TyranoScript `.sav` (URL-escaped JSON, both
      `escape()` and `encodeURIComponent` styles; detection confidence only 0.35), .NET BinaryFormatter data (Unity `.dat` saves, RAGS `.rsv`;
-     parsed as data only, never deserialized).
-   - Formats left: Godot, Wolf RPG `.sav`, Unity PlayerPrefs (registry `.reg` export, *new*), QSP, SQLite,
+     parsed as data only, never deserialized), Unity PlayerPrefs as a registry `.reg` export (ints,
+     Unity's 8-byte `hex(4)` floats, UTF-8 strings; regedit line wrapping kept).
+   - Formats left: Godot, Wolf RPG `.sav`, QSP, SQLite,
      Naninovel view, The Witcher 3 `.sav` (*new*), packed (zip/gz) saves
      (*new*).
    - Features left: add/delete a value from the card view, pick the game's data folder by hand.
