@@ -76,8 +76,13 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
    contrast-tested), backups to keep 1-50 (only the saved file's folder is trimmed; review fixed), save mode (was there).
    Own names for unnamed RPG Maker variables/switches, kept per game (`a900b54`, checked in the running app) and
    `docs/themes.md`. Todo 3 is done.
-4. AI: MCP server (open, read, search, propose and apply edits; saving still makes a backup); "Ask AI" copies the selected
-   values with a short context; docs.
+4. AI. Done 2026-10-24: `SavePrism.exe mcp` is an MCP server over stdio (`e553b88`; 16 tools over the same Session:
+   open, game view by section/filter/page, list, search, propose edits in memory, add/remove, undo, pending changes,
+   save with backup + verify only to the open file or a new file next to it, backups; 80,000-character result cap;
+   a panic closes the save unwritten). Saving over a file that changed on disk is refused (SP-APP-023) in the app too.
+   Checked end to end on a real RPG Maker MV save copy (edit, save, backup, reopen, changed-file refusal); reviewed by a
+   Claude subagent, findings fixed. The release exe (window subsystem) answers over stdio too. "Ask AI" on every list card and Settings → AI tools → Copy setup (`f4fe817`,
+   checked in the running app, dark/light, EN/TR). Docs: `docs/ai.md`.
 5. Installer: `tauri build` works (test build `0.0.1`, 2026-10-23); `THIRD_PARTY_NOTICES.md` generated and bundled
    (`scripts/third-party-notices/generate.sh`). Left: version 0.1.0, README install section (user: not before the work is
    done), then ask the user to publish.
@@ -96,6 +101,11 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
 - A save opened through a symbolic link: saving or restoring replaces the link with a plain file (the core atomic replace
   does not keep links), and its backups list is then empty (Codex review, 2026-10-23). Rare for game saves.
 - Real saves were pushed once in `bed2ed9` (private repo); ask the user before any history cleanup.
+- Layout (visual check, 2026-10-24): at 1000 px a list header with search, Add, Ask AI and Set all wraps to a second row
+  (fits from 1100 px); at 900 px with pending edits in Turkish the bottom bar overflows sideways (945 px).
+- Ask AI on the Values card copies only the top-level values (as its search does), not values inside groups.
+- An MCP edit does not reach a SavePrism window with the same file open; that window refuses to save over it
+  (SP-APP-023) until the file is opened again.
 
 ## Later (not now)
 Linux/macOS, game showcase, plugins, web version, code signing, hex editing, recent-files list (user: not wanted).
