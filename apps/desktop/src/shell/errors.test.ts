@@ -63,6 +63,8 @@ describe("engine helpers", () => {
     expect(engineLabel("1-1-LT1.save", "format.python-pickle", "renpy")).toBe("Ren'Py");
     expect(engineLabel("persistent", "format.python-pickle", "renpy")).toBe("Ren'Py");
     expect(engineLabel("data.bin", "format.python-pickle")).toBe("Python pickle");
+    expect(engineLabel("GameSave001.nson", "format.json", "naninovel")).toBe("Naninovel");
+    expect(engineLabel("save.bin", "format.naninovel")).toBe("Naninovel");
     expect(engineLabel("slot.sav", "format.json", "tyranoscript")).toBe("TyranoScript");
     expect(engineLabel("file1.rpgsave", "format.json", null)).toBe("RPG Maker MV");
   });

@@ -635,7 +635,7 @@ impl Ctx<'_> {
         }
     }
 
-    fn str_at(&self, at: &At) -> Option<&str> {
+    pub(super) fn str_at(&self, at: &At) -> Option<&str> {
         match &self.doc.get(at.0)?.value {
             Value::Str(text) => Some(text.as_str()),
             _ => None,
@@ -894,7 +894,7 @@ impl Ctx<'_> {
         }
     }
 
-    fn value_rows(&self, easy_save: bool) -> Vec<ValueRow> {
+    pub(super) fn value_rows(&self, easy_save: bool) -> Vec<ValueRow> {
         let root = self.doc.root();
         let Some(node) = self.doc.get(root) else {
             return Vec::new();
@@ -972,6 +972,9 @@ impl Session {
             return Ok(GameView::Sugarcube {
                 view: Box::new(view),
             });
+        }
+        if let Some(rows) = self.naninovel_view(&ctx) {
+            return Ok(GameView::Values { rows });
         }
         if let Some(rows) = self.renpy_view(&ctx) {
             return Ok(GameView::Values { rows });

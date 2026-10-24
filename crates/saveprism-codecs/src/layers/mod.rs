@@ -18,6 +18,7 @@ mod zip;
 mod zlib;
 
 pub use base64::Base64Layer;
+pub use deflate::DeflateLayer;
 pub use gzip::GzipLayer;
 pub use lzstring::LzStringLayer;
 pub use url_escape::UrlEscapeLayer;
@@ -40,11 +41,14 @@ pub const LAY_ENCODE_FAILED: ErrorCode = ErrorCode::new("SP-LAY-006");
 pub const LAY_URL_ESCAPE_INVALID: ErrorCode = ErrorCode::new("SP-URL-001");
 /// The percent escapes do not spell UTF-8 text (used by `encoding.url-escape`).
 pub const LAY_URL_ESCAPE_UTF8: ErrorCode = ErrorCode::new("SP-URL-002");
+/// The input is not a valid raw deflate stream.
+pub const LAY_DEFLATE_INVALID: ErrorCode = ErrorCode::new("SP-LAY-007");
 
 /// Registers the six byte layers.
 pub fn register(reg: &mut Registry) {
     reg.add_layer(Arc::new(Base64Layer));
     reg.add_layer(Arc::new(GzipLayer));
+    reg.add_layer(Arc::new(DeflateLayer));
     reg.add_layer(Arc::new(ZlibLayer));
     reg.add_layer(Arc::new(LzStringLayer));
     reg.add_layer(Arc::new(UrlEscapeLayer));
@@ -89,6 +93,7 @@ mod tests {
         for id in [
             "encoding.base64",
             "compression.gzip",
+            "compression.deflate",
             "compression.zlib",
             "compression.lz-string",
             "encoding.url-escape",
@@ -96,7 +101,7 @@ mod tests {
         ] {
             assert!(reg.is_layer(id), "{id} is not registered");
         }
-        assert_eq!(reg.layers().count(), 6);
+        assert_eq!(reg.layers().count(), 7);
     }
 
     #[test]
@@ -107,6 +112,7 @@ mod tests {
         assert_eq!(LAY_LZSTRING_INVALID.as_str(), "SP-LAY-004");
         assert_eq!(LAY_INVALID_UTF16.as_str(), "SP-LAY-005");
         assert_eq!(LAY_ENCODE_FAILED.as_str(), "SP-LAY-006");
+        assert_eq!(LAY_DEFLATE_INVALID.as_str(), "SP-LAY-007");
         assert_eq!(LAY_URL_ESCAPE_INVALID.as_str(), "SP-URL-001");
         assert_eq!(LAY_URL_ESCAPE_UTF8.as_str(), "SP-URL-002");
         assert_eq!(ZIP_DAMAGED.as_str(), "SP-ZIP-001");

@@ -37,11 +37,13 @@ const CODEC_LABELS: Record<string, string> = {
   "format.sqlite": "SQLite",
   "format.wolf-rpg": "Wolf RPG",
   "format.qsp": "QSP",
+  "format.naninovel": "Naninovel",
 };
 
 const ENGINE_LABELS: Record<string, string> = {
   sugarcube: "SugarCube",
   renpy: "Ren'Py",
+  naninovel: "Naninovel",
   tyranoscript: "TyranoScript",
   "rpgmaker-mv": "RPG Maker MV",
   "rpgmaker-mz": "RPG Maker MZ",

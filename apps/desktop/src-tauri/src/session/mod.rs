@@ -34,6 +34,7 @@ mod game;
 mod history;
 mod json_apply;
 mod lcf;
+mod naninovel;
 mod renpy;
 mod rgss;
 mod sugarcube;
@@ -275,7 +276,7 @@ pub struct OpenInfo {
     pub warning: Option<String>,
     /// The root node.
     pub root: RootInfo,
-    /// The game engine known from the document's shape (`sugarcube`, `renpy`), when the file name
+    /// The game engine known from the document's shape (`sugarcube`, `renpy`, `naninovel`), when the file name
     /// and the codec do not tell it. A pasted code has no telling file name, so its RPG Maker layer names
     /// the engine too (`rpgmaker-mv`, `rpgmaker-mz`).
     pub engine: Option<String>,
@@ -707,6 +708,8 @@ impl Session {
             },
             engine: if self.is_sugarcube() {
                 Some("sugarcube".to_string())
+            } else if self.is_naninovel() {
+                Some("naninovel".to_string())
             } else if self.renpy_file().is_some() {
                 Some("renpy".to_string())
             } else if self

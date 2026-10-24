@@ -41,8 +41,9 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
      UPDATEs on an in-memory copy; tables with triggers, views and WITHOUT ROWID tables read-only), saves packed in zip archives (one payload entry
      rewritten, the rest kept byte-identical; gzip was already a layer), Wolf RPG Editor `.sav` (unencrypted; switches, variables and the
      Variable DB; layout from the MIT WolfSave project, save part order from one source only; encrypted saves refused),
-     QSP `.sav` (UTF-16 and legacy single-byte saves, read as Windows-1251; KOI8-R saves are not told apart).
-   - Formats left: Naninovel view, The Witcher 3 `.sav` (*new*).
+     QSP `.sav` (UTF-16 and legacy single-byte saves, read as Windows-1251; KOI8-R saves are not told apart),
+     Naninovel save slots with a custom-variables view (plain, gzip, deflate; compressed ones re-compress to other bytes).
+   - Formats left: The Witcher 3 `.sav` (*new*).
    - Features left: add/delete a value from the card view, pick the game's data folder by hand.
    Done 2026-10-23: Twine SugarCube 2 story view (current-moment variables edited at their last writer in `state.delta`;
    partly changed values and revive tuples read-only; synthetic fixtures in `fixtures/synthetic/sugarcube/`). Not yet:

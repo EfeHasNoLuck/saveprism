@@ -18,11 +18,21 @@ pub(crate) fn write_document(doc: &SaveDoc, profile: &Profile) -> Result<Vec<u8>
     if profile.bom {
         out.extend_from_slice(&[0xEF, 0xBB, 0xBF]);
     }
-    write_tree(doc, profile, &mut out)?;
+    write_value(doc, doc.root(), profile, &mut out)?;
     if profile.trailing_newline {
         newline(profile, &mut out);
     }
     Ok(out)
+}
+
+/// Writes the value at `id` (and its children) with `profile`, appending to `out`.
+pub(crate) fn write_value(
+    doc: &SaveDoc,
+    id: NodeId,
+    profile: &Profile,
+    out: &mut Vec<u8>,
+) -> Result<()> {
+    write_tree(doc, id, profile, out)
 }
 
 fn unwritable(message: impl Into<String>) -> Error {
@@ -42,11 +52,11 @@ enum Frame<'a> {
     },
 }
 
-fn write_tree(doc: &SaveDoc, profile: &Profile, out: &mut Vec<u8>) -> Result<()> {
+fn write_tree(doc: &SaveDoc, root: NodeId, profile: &Profile, out: &mut Vec<u8>) -> Result<()> {
     let mut stack: Vec<Frame<'_>> = Vec::new();
     // Containers on the current path; a containment cycle cannot be written.
     let mut open: HashSet<NodeId> = HashSet::new();
-    let mut pending = Some(doc.root());
+    let mut pending = Some(root);
     loop {
         if out.len() > MAX_OUTPUT {
             return Err(Error::new(

@@ -2793,3 +2793,125 @@ fn an_unsigned_renpy_persistent_lists_and_saves_its_fields() {
     let reopened = open(&env, &path, None).unwrap();
     assert_eq!(reopened.field_info("/play_count").unwrap().value, "9");
 }
+
+// Naninovel save slots.
+
+const NANINOVEL_SAVE: &str = "synthetic/naninovel/GameSave001.json";
+const NANINOVEL_GZIP: &str = "synthetic/naninovel/GameSave001-gzip.nson";
+const NANINOVEL_DEFLATE: &str = "synthetic/naninovel/GameSave001-deflate.nson";
+
+#[test]
+fn naninovel_lists_custom_variables_first() {
+    let env = env();
+    let path = copy_in(&env, NANINOVEL_SAVE);
+    let session = open(&env, &path, None).unwrap();
+    let info = session.info();
+    assert_eq!(info.engine.as_deref(), Some("naninovel"));
+    assert_eq!(info.guard, GuardLevel::Exact);
+    assert!(info.editable);
+    assert_eq!(info.recipe, vec!["format.naninovel"]);
+
+    let rows = value_rows(&session);
+    let names: Vec<&str> = rows.iter().map(|row| row.name.as_str()).collect();
+    assert_eq!(
+        names,
+        [
+            "coins",
+            "g_cleared (global)",
+            "has_key",
+            "hero_name",
+            "objectJsonMap",
+            "playbackSpot",
+            "rollbackStackJson",
+            "thumbnailBase64",
+        ]
+    );
+    let coins = value_row(&rows, "coins").field.as_ref().unwrap();
+    assert_eq!(coins.value, "50");
+    assert_eq!(
+        coins.path,
+        "/objectJsonMap/values/0/LocalVariables/0/value/numericValue"
+    );
+    assert!(coins.editable);
+    let name = value_row(&rows, "hero_name").field.as_ref().unwrap();
+    assert_eq!(name.value, "Aster");
+    assert_eq!(name.kind, FieldKind::String);
+    let cleared = value_row(&rows, "g_cleared (global)")
+        .field
+        .as_ref()
+        .unwrap();
+    assert_eq!(cleared.kind, FieldKind::Bool);
+    assert_eq!(value_row(&rows, "objectJsonMap").children, 2);
+}
+
+#[test]
+fn naninovel_gzip_and_deflate_slots_open() {
+    for (relative, recipe) in [
+        (NANINOVEL_GZIP, vec!["compression.gzip", "format.naninovel"]),
+        (
+            NANINOVEL_DEFLATE,
+            vec!["compression.deflate", "format.naninovel"],
+        ),
+    ] {
+        let env = env();
+        let path = copy_in(&env, relative);
+        let session = open(&env, &path, None).unwrap();
+        let info = session.info();
+        assert_eq!(info.engine.as_deref(), Some("naninovel"), "{relative}");
+        assert_eq!(info.recipe, recipe, "{relative}");
+        assert!(info.editable, "{relative}");
+        let rows = value_rows(&session);
+        let coins = value_row(&rows, "coins").field.as_ref().unwrap();
+        assert_eq!(coins.value, "50", "{relative}");
+    }
+}
+
+#[test]
+fn naninovel_edits_survive_a_save() {
+    let env = env();
+    let path = copy_in(&env, NANINOVEL_SAVE);
+    let mut session = open(&env, &path, None).unwrap();
+    session
+        .edit_value(
+            "/objectJsonMap/values/0/LocalVariables/0/value/numericValue",
+            "900",
+        )
+        .unwrap();
+    session
+        .edit_value(
+            "/objectJsonMap/values/0/LocalVariables/1/value/stringValue",
+            "Nova",
+        )
+        .unwrap();
+    session
+        .edit_value(
+            "/objectJsonMap/values/0/LocalVariables/2/value/booleanValue",
+            "false",
+        )
+        .unwrap();
+    session.save(path.to_str().unwrap(), false).unwrap();
+
+    let reopened = open(&env, &path, None).unwrap();
+    assert_eq!(reopened.info().guard, GuardLevel::Exact);
+    let rows = value_rows(&reopened);
+    assert_eq!(
+        value_row(&rows, "coins").field.as_ref().unwrap().value,
+        "900"
+    );
+    assert_eq!(
+        value_row(&rows, "hero_name").field.as_ref().unwrap().value,
+        "Nova"
+    );
+    assert_eq!(
+        value_row(&rows, "has_key").field.as_ref().unwrap().value,
+        "false"
+    );
+    // The untouched service state keeps its original text.
+    assert_eq!(
+        reopened
+            .field_info("/objectJsonMap/values/1/capacity")
+            .unwrap()
+            .value,
+        "20"
+    );
+}

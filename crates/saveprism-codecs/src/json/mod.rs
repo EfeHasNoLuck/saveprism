@@ -18,9 +18,9 @@
 //! normalised when written (the document is marked irregular); a key with an unpaired surrogate
 //! escape is refused (`SP-JSON-005`).
 
-mod parse;
-mod profile;
-mod write;
+pub(crate) mod parse;
+pub(crate) mod profile;
+pub(crate) mod write;
 
 #[cfg(test)]
 mod tests;
@@ -47,6 +47,19 @@ pub const JSON_UNWRITABLE: ErrorCode = ErrorCode::new("SP-JSON-004");
 pub const JSON_LONE_SURROGATE: ErrorCode = ErrorCode::new("SP-JSON-005");
 
 const BOM: [u8; 3] = [0xEF, 0xBB, 0xBF];
+
+/// Parses a JSON text into a document (used by codecs whose values hold JSON text, such as
+/// Naninovel state slots). The caller charges the nodes of the returned document.
+pub(crate) fn parse_text(text: &str, ctx: &DecodeCtx<'_>) -> Result<SaveDoc> {
+    Ok(parse::parse(text, 0, ctx)?.doc)
+}
+
+/// Writes the value at `id` as compact JSON (no indentation, no trailing newline).
+pub(crate) fn compact_text(doc: &SaveDoc, id: saveprism_core::NodeId) -> Result<Vec<u8>> {
+    let mut out = Vec::new();
+    write::write_value(doc, id, &profile::Profile::default(), &mut out)?;
+    Ok(out)
+}
 
 /// Registers the JSON codec as `format.json`.
 pub fn register(reg: &mut Registry) {
