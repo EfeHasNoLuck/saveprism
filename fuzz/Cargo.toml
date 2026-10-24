@@ -42,3 +42,10 @@ path = "fuzz_targets/marshal.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "nrbf"
+path = "fuzz_targets/nrbf.rs"
+test = false
+doc = false
+bench = false

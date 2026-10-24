@@ -10,6 +10,7 @@ pub mod gvas;
 pub mod json;
 pub mod layers;
 pub mod marshal;
+pub mod nrbf;
 pub mod palworld;
 pub mod rpgmaker;
 
@@ -22,6 +23,7 @@ pub fn register_all(reg: &mut Registry) {
     gvas::register(reg);
     palworld::register(reg);
     marshal::register(reg);
+    nrbf::register(reg);
 }
 
 #[cfg(test)]
