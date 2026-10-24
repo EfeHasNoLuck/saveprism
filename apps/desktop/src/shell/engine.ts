@@ -38,6 +38,7 @@ const CODEC_LABELS: Record<string, string> = {
   "format.wolf-rpg": "Wolf RPG",
   "format.qsp": "QSP",
   "format.naninovel": "Naninovel",
+  "format.witcher3": "The Witcher 3",
 };
 
 const ENGINE_LABELS: Record<string, string> = {

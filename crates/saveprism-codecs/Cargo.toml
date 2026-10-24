@@ -13,6 +13,7 @@ saveprism-core.workspace = true
 flate2.workspace = true
 base64.workspace = true
 lz-str.workspace = true
+lz4_flex.workspace = true
 uesave.workspace = true
 aes.workspace = true
 cbc.workspace = true

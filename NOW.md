@@ -43,7 +43,8 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
      Variable DB; layout from the MIT WolfSave project, save part order from one source only; encrypted saves refused),
      QSP `.sav` (UTF-16 and legacy single-byte saves, read as Windows-1251; KOI8-R saves are not told apart),
      Naninovel save slots with a custom-variables view (plain, gzip, deflate; compressed ones re-compress to other bytes).
-   - Formats left: The Witcher 3 `.sav` (*new*).
+   - Formats left: none. The Witcher 3 `.sav` done 2026-10-24 (orens and item quantities; LZ4 chunks via `lz4_flex`, MIT;
+     layout from public MIT projects; undecoded record shapes read-only).
    - Done 2026-10-24 (`wt/cards`, not checked in the running app yet): add items/weapons/armors to RPG Maker lists
      (MV/MZ and XP/VX/VX Ace), add/remove values in JSON, ES3 and SugarCube lists, undo for added/removed entries,
      "Choose data folder…" for names. Its core/session part was written by a Claude subagent through Bash after the
