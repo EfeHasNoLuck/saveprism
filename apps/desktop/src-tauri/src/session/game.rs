@@ -3,9 +3,9 @@
 //! RPG Maker MV/MZ saves become game sections (gold, characters, items, weapons, armors,
 //! variables, switches) with real names read from the game's `data` folder; XP, VX and VX Ace saves
 //! become the same sections (see `rgss.rs`), and so do RPG Maker 2000 and 2003 saves (see
-//! `lcf.rs`). SugarCube (Twine) saves become a story view (see `sugarcube.rs`). Every other format
-//! becomes a flat "Values" list. Every editable value carries its type and limits as a [`Field`],
-//! so the UI can say
+//! `lcf.rs`). SugarCube (Twine) saves become a story view (see `sugarcube.rs`). Ren'Py saves list
+//! their store variables (see `renpy.rs`). Every other format becomes a flat "Values" list. Every
+//! editable value carries its type and limits as a [`Field`], so the UI can say
 //! "Whole number · 0 to 99,999,999 · was 10,000" and block out-of-range input.
 //!
 //! The view only reads the tree and the game's data files; nothing is executed.
@@ -972,6 +972,9 @@ impl Session {
             return Ok(GameView::Sugarcube {
                 view: Box::new(view),
             });
+        }
+        if let Some(rows) = self.renpy_view(&ctx) {
+            return Ok(GameView::Values { rows });
         }
         if let Some(engine) = self.rpg_engine() {
             // A pasted code has no game folder next to it.

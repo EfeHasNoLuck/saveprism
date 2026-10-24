@@ -2577,3 +2577,197 @@ fn lcf_limits_are_enforced() {
         GameView::Values { .. }
     ));
 }
+
+// Ren'Py saves.
+
+const RENPY_SAVE: &str = "synthetic/renpy/renpy8-0/1-1-LT1.save";
+const RENPY_SIGNED: &str = "synthetic/renpy/renpy8-1-signed/1-1-LT1.save";
+const RENPY_7: &str = "synthetic/renpy/renpy7/1-1-LT1.save";
+const RENPY_PERSISTENT: &str = "synthetic/renpy/persistent/persistent";
+const RENPY_PERSISTENT_SIGNED: &str = "synthetic/renpy/persistent-signed/persistent";
+
+fn value_rows(session: &Session) -> Vec<ValueRow> {
+    let GameView::Values { rows } = session.game_view().unwrap() else {
+        panic!("not a Values list");
+    };
+    rows
+}
+
+fn value_row<'a>(rows: &'a [ValueRow], name: &str) -> &'a ValueRow {
+    rows.iter()
+        .find(|row| row.name == name)
+        .unwrap_or_else(|| panic!("no row {name}"))
+}
+
+#[test]
+fn renpy_save_lists_the_game_variables_first() {
+    let env = env();
+    let path = copy_in(&env, RENPY_SAVE);
+    let session = open(&env, &path, None).unwrap();
+    let info = session.info();
+    assert_eq!(info.engine.as_deref(), Some("renpy"));
+    assert_eq!(info.guard, GuardLevel::Exact);
+    assert!(info.editable);
+    assert_eq!(info.notice, None);
+    assert_eq!(
+        info.recipe,
+        vec!["container.renpy-save", "format.python-pickle"]
+    );
+
+    let rows = value_rows(&session);
+    let names: Vec<&str> = rows.iter().map(|row| row.name.as_str()).collect();
+    assert_eq!(
+        names,
+        [
+            "backpack",
+            "bank_balance",
+            "companion_name",
+            "door_open",
+            "flags_seen",
+            "hero_name",
+            "huge_number",
+            "inventory",
+            "karma",
+            "last_choice",
+            "met_eileen",
+            "money",
+            "motto",
+            "mystery.clue_count",
+            "player_name",
+            "position",
+            "stats",
+            "steps",
+            "visited",
+            "_last_say_who",
+            "_window",
+            "mouse_visible",
+            "nvl_list",
+            "save_name",
+        ]
+    );
+    let money = value_row(&rows, "money").field.as_ref().unwrap();
+    assert_eq!(money.value, "120");
+    assert_eq!(money.path, "/0/store.money");
+    assert!(money.editable);
+    let player = value_row(&rows, "player_name").field.as_ref().unwrap();
+    assert!(!player.editable);
+    // The second name of a shared value points at its first place.
+    let companion = value_row(&rows, "companion_name").field.as_ref().unwrap();
+    assert_eq!(companion.path, "/0/store.player_name");
+    assert!(!companion.editable);
+    let backpack = value_row(&rows, "backpack");
+    assert_eq!(backpack.path, "/0/store.inventory");
+    assert_eq!(backpack.children, 3);
+    assert_eq!(value_row(&rows, "stats").children, 2);
+    assert_eq!(
+        value_row(&rows, "last_choice").note.as_ref().unwrap().kind,
+        NoteKind::Empty
+    );
+    assert!(
+        !value_row(&rows, "huge_number")
+            .field
+            .as_ref()
+            .unwrap()
+            .editable
+    );
+}
+
+#[test]
+fn renpy_edits_survive_a_save() {
+    for relative in [RENPY_SAVE, RENPY_7] {
+        let env = env();
+        let path = copy_in(&env, relative);
+        let mut session = open(&env, &path, None).unwrap();
+        session.edit_value("/0/store.money", "5000").unwrap();
+        session
+            .edit_value("/0/store.hero_name", "Ada \u{e7}a\u{11f}")
+            .unwrap();
+        session.edit_value("/0/store.stats/luck", "0.5").unwrap();
+        let flag = if relative == RENPY_7 {
+            "/0/store.met_cat"
+        } else {
+            "/0/store.met_eileen"
+        };
+        session.edit_value(flag, "false").unwrap();
+        session.save(path.to_str().unwrap(), false).unwrap();
+
+        let reopened = open(&env, &path, None).unwrap();
+        assert_eq!(reopened.info().guard, GuardLevel::Exact, "{relative}");
+        let rows = value_rows(&reopened);
+        assert_eq!(
+            value_row(&rows, "money").field.as_ref().unwrap().value,
+            "5000"
+        );
+        assert_eq!(
+            value_row(&rows, "hero_name").field.as_ref().unwrap().value,
+            "Ada \u{e7}a\u{11f}"
+        );
+        let luck = reopened.field_info("/0/store.stats/luck").unwrap();
+        assert_eq!(luck.value, "0.5");
+        assert_eq!(reopened.field_info(flag).unwrap().value, "false");
+    }
+}
+
+#[test]
+fn a_signed_renpy_save_tells_the_player_to_trust_it_and_is_written_unsigned() {
+    let env = env();
+    let path = copy_in(&env, RENPY_SIGNED);
+    let mut session = open(&env, &path, None).unwrap();
+    let info = session.info();
+    assert_eq!(info.notice.as_deref(), Some(NOTICE_SIGNED_SAVE));
+    assert!(info.warning.unwrap().contains("Answer Yes"));
+    assert!(info.editable);
+    session.edit_value("/0/store.money", "777").unwrap();
+    session.save(path.to_str().unwrap(), false).unwrap();
+    let reopened = open(&env, &path, None).unwrap();
+    assert_eq!(reopened.info().notice, None);
+    assert_eq!(reopened.field_info("/0/store.money").unwrap().value, "777");
+}
+
+#[test]
+fn a_signed_renpy_persistent_is_read_only() {
+    let env = env();
+    let path = copy_in(&env, RENPY_PERSISTENT_SIGNED);
+    let mut session = open(&env, &path, None).unwrap();
+    let info = session.info();
+    assert_eq!(info.engine.as_deref(), Some("renpy"));
+    assert_eq!(info.notice.as_deref(), Some(NOTICE_SIGNED_PERSISTENT));
+    assert!(!info.editable);
+    let error = session.edit_value("/play_count", "9").unwrap_err();
+    assert_eq!(error.code, app_codes::READ_ONLY_DOCUMENT);
+    assert!(error.message.contains("persistent"));
+    let error = session.save(path.to_str().unwrap(), false).unwrap_err();
+    assert_eq!(error.code, app_codes::READ_ONLY_DOCUMENT);
+    assert!(!value_rows(&session)[0].field.as_ref().unwrap().editable);
+}
+
+#[test]
+fn an_unsigned_renpy_persistent_lists_and_saves_its_fields() {
+    let env = env();
+    let path = copy_in(&env, RENPY_PERSISTENT);
+    let mut session = open(&env, &path, None).unwrap();
+    let info = session.info();
+    assert_eq!(info.engine.as_deref(), Some("renpy"));
+    assert_eq!(info.notice, None);
+    assert!(info.editable);
+    let names: Vec<String> = value_rows(&session)
+        .into_iter()
+        .map(|row| row.name)
+        .collect();
+    assert_eq!(
+        names,
+        [
+            "best_time",
+            "ending_good",
+            "play_count",
+            "player_title",
+            "_changed",
+            "_preferences",
+            "_seen_ever",
+        ]
+    );
+    session.edit_value("/play_count", "9").unwrap();
+    session.save(path.to_str().unwrap(), false).unwrap();
+    let reopened = open(&env, &path, None).unwrap();
+    assert_eq!(reopened.field_info("/play_count").unwrap().value, "9");
+}

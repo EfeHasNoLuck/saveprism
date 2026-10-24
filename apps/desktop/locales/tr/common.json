@@ -59,7 +59,9 @@
   },
   "banner": {
     "readOnly": "Bu dosya henüz güvenle yazılamıyor. Bakabilirsin ama kaydedemezsin.",
-    "semantic": "Dosya biraz farklı bir düzenle yazılacak. İçerik aynı kalır."
+    "semantic": "Dosya biraz farklı bir düzenle yazılacak. İçerik aynı kalır.",
+    "renpySigned": "Ren'Py kaydı: değişiklikleri kaydettikten sonra oyun bu kayda güvenip güvenmeyeceğini sorar. Evet de.",
+    "renpyPersistentSigned": "Bu Ren'Py persistent dosyası imzalı. Oyun düzenlenmiş kopyayı yok sayıp sıfırdan başlar, bu yüzden salt okunur açıldı."
   },
   "bottom": {
     "changes_one": "{{count}} değişiklik bekliyor",

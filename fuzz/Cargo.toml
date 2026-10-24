@@ -70,3 +70,10 @@ path = "fuzz_targets/lcf.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "pickle"
+path = "fuzz_targets/pickle.rs"
+test = false
+doc = false
+bench = false

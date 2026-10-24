@@ -44,6 +44,9 @@ describe("engine helpers", () => {
     expect(engineLabel("RPG_RT.ldb", "format.lcf")).toBe("RPG Maker 2000/2003");
     expect(engineLabel("data.bin", "format.unknown")).toBeNull();
     expect(engineLabel("slot1.save", "format.json", "sugarcube")).toBe("SugarCube");
+    expect(engineLabel("1-1-LT1.save", "format.python-pickle", "renpy")).toBe("Ren'Py");
+    expect(engineLabel("persistent", "format.python-pickle", "renpy")).toBe("Ren'Py");
+    expect(engineLabel("data.bin", "format.python-pickle")).toBe("Python pickle");
     expect(engineLabel("file1.rpgsave", "format.json", null)).toBe("RPG Maker MV");
   });
 

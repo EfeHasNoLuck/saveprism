@@ -20,6 +20,7 @@ const CODEC_LABELS: Record<string, string> = {
   "format.gvas": "Unreal",
   "format.ruby-marshal": "Ruby Marshal",
   "format.java-serialization": "Java",
+  "format.python-pickle": "Python pickle",
   "format.flash-sol": "Flash LSO",
   "format.pokemon-gen3": "Pokémon Gen 3",
   "format.lcf": "RPG Maker 2000/2003",
@@ -27,6 +28,7 @@ const CODEC_LABELS: Record<string, string> = {
 
 const ENGINE_LABELS: Record<string, string> = {
   sugarcube: "SugarCube",
+  renpy: "Ren'Py",
   "rpgmaker-mv": "RPG Maker MV",
   "rpgmaker-mz": "RPG Maker MZ",
 };
