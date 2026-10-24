@@ -10,13 +10,13 @@
 - Research: `docs/research/formats-wolf-lcf-qsp-rags-gen3.md` (LCF ids there are WRONG; verified ids are in
   `.motor/lcf.md`), `docs/research/formats-witcher-playerprefs-naninovel-html-packed.md`. Both unchecked.
 
-**In flight (check these first)**
-- Ren'Py: Claude agent in `.claude/worktrees/agent-ab8c864f1e5cf6a37` (branch `worktree-agent-ab8c864f1e5cf6a37`). When
-  it has a commit: merge into main with `--no-commit --no-ff`, run its generator, kontrol, commit, push.
-- TyranoScript: EVREN deepseek in `../saveprism-wt/tyrano` (log `.motor/tyrano2.log`), uncommitted.
-- .NET BinaryFormatter + RAGS `.rsv`: EVREN deepseek in `../saveprism-wt/nrbf` (log `.motor/nrbf2.log`), uncommitted.
-- Godot: draft in `../saveprism-wt/godot` is WRONG for Godot 4 (uses Godot 3 type ids); fix list in `.motor/godot-fix.md`.
-  Cursor and EVREN mimo did nothing. Give it to EVREN deepseek next.
+Later merged: `2224b20` Ren'Py (Claude) · `0cb4f03` TyranoScript (EVREN) · `0feb046` .NET BinaryFormatter + RAGS (EVREN).
+
+**In flight (check these first; each is EVREN deepseek in `../saveprism-wt/<n>`, uncommitted, log `.motor/<log>`)**
+- Godot fix (`godot`, log `godot-deepseek.log`): the draft was WRONG for Godot 4 (Godot 3 type ids); fix list in
+  `.motor/godot-fix.md` — re-check the type table before merging.
+- Unity PlayerPrefs `.reg` (`reg`, log `reg.log`, brief `.motor/reg.md`).
+- SQLite (`sqlite`, log `sqlite.log`, brief `.motor/sqlite.md`; adds `rusqlite` bundled).
 - Card view add/remove + pick data folder: backend WIP commit `ad95457` on `wt/cards` (written by a Claude subagent via
   Bash because the hook refused Edit/Write outside the project — tell the user, already reported once); UI not started;
   brief `.motor/cards.md`.
