@@ -709,6 +709,13 @@ impl Session {
                 Some("sugarcube".to_string())
             } else if self.renpy_file().is_some() {
                 Some("renpy".to_string())
+            } else if self
+                .recipe
+                .steps
+                .iter()
+                .any(|step| step.kind == "encoding.url-escape")
+            {
+                Some("tyranoscript".to_string())
             } else if self.pasted {
                 self.rpg_engine().map(|engine| format!("rpgmaker-{engine}"))
             } else {

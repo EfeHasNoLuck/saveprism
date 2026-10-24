@@ -33,8 +33,9 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
      from a real JDK writer), RPG Maker 2000/2003 `.lsd` with the sections view and names from
      `RPG_RT.ldb` (ids checked against liblcf; non-ASCII text edits are refused only at save), Ren'Py `.save`
      and `persistent` (pickle parsed as data only; an edited save gets an empty `signatures` entry so the game asks the
-     player to trust it; a signed persistent opens read-only; persistent re-compresses to different bytes).
-   - Formats left: TyranoScript, Godot, Wolf RPG `.sav`, Unity generic
+     player to trust it; a signed persistent opens read-only; persistent re-compresses to different bytes), TyranoScript `.sav` (URL-escaped JSON, both
+     `escape()` and `encodeURIComponent` styles; detection confidence only 0.35).
+   - Formats left: Godot, Wolf RPG `.sav`, Unity generic
      `.dat`/`.save` and PlayerPrefs (also in the registry, *new*), QSP, SQLite,
      Naninovel view, Rags `.rsv` (*new*), The Witcher 3 `.sav` (*new*), packed (zip/gz) saves
      (*new*).

@@ -67,7 +67,7 @@ export interface OpenInfo {
    * The engine known from the document's shape ("sugarcube", "renpy"), or null. A pasted code has
    * no file name to tell the engine, so its RPG Maker layer names it ("rpgmaker-mv", "rpgmaker-mz").
    */
-  engine: "sugarcube" | "renpy" | "rpgmaker-mv" | "rpgmaker-mz" | null;
+  engine: "sugarcube" | "renpy" | "tyranoscript" | "rpgmaker-mv" | "rpgmaker-mz" | null;
   /** Opened from a pasted save code; `path` is SavePrism's own copy until a "save as". */
   pasted: boolean;
   /** The file is text a player can copy and paste, so `copyCode` can give it back as a code. */

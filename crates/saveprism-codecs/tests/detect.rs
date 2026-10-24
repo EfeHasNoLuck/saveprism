@@ -77,6 +77,13 @@ fn lz_string_json_is_not_taken_for_base64() {
 }
 
 #[test]
+fn url_escaped_json_is_a_tyrano_save() {
+    let reg = registry();
+    let input = make_input(&reg, &["encoding.url-escape"]);
+    check(&reg, &input, &["encoding.url-escape", "format.json"]);
+}
+
+#[test]
 fn base64_of_gzip_json() {
     let reg = registry();
     let input = make_input(&reg, &["encoding.base64", "compression.gzip"]);
