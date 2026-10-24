@@ -8,6 +8,8 @@ const EXTENSION_LABELS: Record<string, string> = {
   rxdata: "RPG Maker XP",
   es3: "Easy Save 3",
   sav: "SAV",
+  cfg: "Godot",
+  ini: "Godot",
 };
 
 const CODEC_LABELS: Record<string, string> = {
@@ -17,6 +19,8 @@ const CODEC_LABELS: Record<string, string> = {
   "format.es3-json": "Easy Save 3",
   "format.gvas": "Unreal",
   "format.ruby-marshal": "Ruby Marshal",
+  "format.godot-config": "Godot",
+  "format.godot-variant": "Godot",
 };
 
 const ENGINE_LABELS: Record<string, string> = {

@@ -24,7 +24,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [detect, json, layers, marshal]
+        target: [detect, json, layers, marshal, godot]
     steps:
       - uses: actions/checkout@v4
 

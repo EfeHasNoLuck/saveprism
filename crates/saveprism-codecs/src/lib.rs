@@ -6,6 +6,7 @@
 use saveprism_core::Registry;
 
 pub mod es3;
+pub mod godot;
 pub mod gvas;
 pub mod json;
 pub mod layers;
@@ -22,6 +23,7 @@ pub fn register_all(reg: &mut Registry) {
     gvas::register(reg);
     palworld::register(reg);
     marshal::register(reg);
+    godot::register(reg);
 }
 
 #[cfg(test)]
