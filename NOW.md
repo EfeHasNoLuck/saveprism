@@ -101,7 +101,7 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
      "Where is my save?" help and "Compare with another save".
      Merged: Ren'Py signing with the player's key (`13505dc`; reviewed, Ren'Py's own `ecsign.py` verified our
      signatures; follow-ups in `wt/renpyfix`), MessagePack/CBOR/BSON/NBT (`095ce2e`). Stopped at EVREN's daily token
-     limit on 2026-10-24 23:4x with partial work in their worktrees: layers, text, ui, renpyfix; resume with
+     limit on 2026-10-24 23:4x (still limited 00:16) with partial work in their worktrees: layers, text, ui, renpyfix; resume (HANDOFF.md) with
      `opencode run --continue` in each worktree.
    - No value finder / memory-scanner for unknown binaries (user, 2026-10-25: Cheat Engine already does that; it would
      widen the scope).

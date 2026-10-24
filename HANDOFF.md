@@ -1,30 +1,39 @@
 # HANDOFF
 
-**State (2026-10-24, evening):** NOW.md todos 1-4 are done; todo 5 waits only for the user's OK to publish.
-Last code commit `910e293` (version 0.1.0). Working tree clean except git-ignored `fixtures/external/` and `.motor/`.
+**State (2026-10-25, 00:20):** NOW.md todos 1-5 done (no release: see below); working on todo 6, wave 1 of full parity
+with saveeditonline.com. Last commit `e2745ba`. Main is clean except git-ignored `fixtures/external/` and `.motor/`.
 
 **Works (with evidence)**
-- MCP server (`e553b88`): `SavePrism.exe mcp` (dev: `target/debug/saveprism-desktop.exe mcp`) speaks MCP over stdio,
-  16 tools over the same `Session` the UI uses (`apps/desktop/src-tauri/src/mcp/`). Checked end to end on a copy of a
-  real RPG Maker MV save: open, game view, propose edits, save (backup made, verified), reopen shows the values, a file
-  changed on disk is refused (SP-APP-023). The release exe (window subsystem) answers over stdio too. A Claude subagent
-  reviewed it; fixed: save_changes writes only the open file or a new file next to it, empty filter, 80,000-character
-  result cap, `pendingCount`, panic closes the save, non-UTF-8 lines, annotations, `args_os`.
-- Ask AI on every list card + Settings → AI tools → Copy setup (`f4fe817`), checked in the running app by a subagent
-  (dark/light, EN/TR, clipboard text and toasts). Plain-JSON number limits left out of the note (`1c5fb17`).
-- Docs: `docs/ai.md` (setup for Claude Desktop, Claude Code, Cursor, VS Code; tool table; safety). README rewritten.
-- Installers: `target/release/bundle/nsis/SavePrism_0.1.0_x64-setup.exe`, `.../msi/SavePrism_0.1.0_x64_en-US.msi`;
-  the release exe opens its window titled SavePrism.
-- `bash .claude/araclar/kontrol.sh rust` 3/3 and `web` 3/3 after the MCP merge.
+- MCP server `saveprism-desktop.exe mcp` (`e553b88`, `d2a7cbe`): a real client works. `claude -p --mcp-config
+  <json> --strict-mcp-config --allowedTools "mcp__saveprism__*" --model sonnet` opened a copy of a real MV save, set
+  gold 200 → 4321 and an item 1 → 9, saved with a backup; values re-checked. Reviewed; findings fixed.
+- Ask AI + Settings → AI tools (`f4fe817`, `304baf0`): checked in the running app (dark/light, EN/TR).
+- Installer 0.1.0 (`910e293`): setup.exe + .msi built; the MSI unpacked with `msiexec /a` holds
+  `saveprism-desktop.exe` (that is the installed exe name), which opens its window and answers `mcp`.
+- REA analysis of saveeditonline.com: `docs/research/saveeditonline-behavior.md` (section 9 = ranked gaps; the site
+  claims ~70 formats on `/formats`).
+- Wave 1 merged: Ren'Py saves signed with the player's own key (`13505dc`; a reviewer verified our signatures with
+  Ren'Py's own `ecsign.py`; the real Ren'Py save still round-trips exact); MessagePack/CBOR/BSON/NBT (`095ce2e`).
+  `bash .claude/araclar/kontrol.sh rust` 3/3 and `web` 3/3 after both merges.
 
 **Broken / not checked**
-- Not tried with a real MCP client (Claude Desktop/Code); only hand-written JSON-RPC over pipes.
-- The installers were built but not installed and run.
-- Layout gaps found by the visual check are in NOW.md Known gaps (list header wraps at 1000 px; TR bottom bar at 900 px).
+- EVREN hit its DAILY token limit (2026-10-24 ~23:45; still limited at 00:16, error "Günlük token limitiniz aşıldı").
+  It probably resets at 00:00 UTC (03:00 here). While limited, `opencode run` hangs and retries: test with
+  `timeout 90 opencode run -m evren/deepseek-v4.1-flash "say ok"`.
+- Four wave 1 jobs stopped half done, uncommitted, in their worktrees: `../saveprism-wt/layers` (21 files),
+  `text` (43), `ui` (22), `renpyfix` (11). Briefs: `.motor/w1-common.md` + `.motor/w1-<name>.md` (copies inside each
+  worktree's `.motor/`).
+- Ren'Py signing not tried in a real game. Installer not installed for real (no Windows Sandbox here).
 
-**Next step:** ask the user whether to publish v0.1.0 (draft GitHub release on the private repo with both installers,
-or make the repo public first, which needs a history cleanup of the real saves in `bed2ed9` and their OK).
+**Next step:** when EVREN works again, in each of the four worktrees run in the background, a minute apart (five at
+once locked opencode's database): `OPENCODE_CONFIG=<main>/opencode.json opencode run --continue -m
+evren/deepseek-v4.1-flash --agent build "You stopped because of a token limit. Continue the task in .motor/w1-common.md
+and .motor/w1-<name>.md from where you stopped: check git status, finish what is missing, run cargo fmt and kontrol.sh,
+write the report. Same rules: repo root only, no /tmp, do not commit."`. Then per branch: `python -I .motor/merge_wt.py
+<name> "<subject>"`, kontrol.sh rust + web (separate command: the hook refuses a Bash line that writes files and names
+`.claude/araclar`), review renpyfix with a Claude subagent (keys), visual check of ui (Where is my save?, Compare),
+commit, push. Then wave 2 (NOW.md).
 
-**Engines:** EVREN deepseek-v4.1-flash wrote the MCP server and Ask AI well; its fix run stopped midway (a leftover
-`opencode.exe` from a stopped task kept editing; see memory `external-engines`). Stale branch `wt/mcp` is left (the hook
-refuses `git branch -D`); it is superseded by `e553b88`. Weekly Claude quota was ~80% used on 2026-10-24.
+**User decisions this session:** do not ask about publishing until the app is proven (memory
+`no-premature-release-ask`); no value finder / memory scanner (Cheat Engine's job); automatic work stays invisible in
+the UI (memory `ux-quiet-backend`); for game keys, look for the game folder ourselves and ask for it only if not found.
