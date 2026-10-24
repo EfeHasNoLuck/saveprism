@@ -14,9 +14,12 @@ Later merged: `2224b20` Ren'Py (Claude) · `0cb4f03` TyranoScript (EVREN) · `0f
 
 **In flight (check these first; each is EVREN deepseek in `../saveprism-wt/<n>`, uncommitted, log `.motor/<log>`)**
 - Merged since: `a9e7ea5` Unity PlayerPrefs `.reg` · `62b2706` Godot (type 22 bug fixed by Claude).
-- SQLite (`sqlite`, log `sqlite.log`, brief `.motor/sqlite.md`; adds `rusqlite` bundled).
-- Zip-packed saves (`zip`, log `zip.log`, brief `.motor/zip.md`). Wolf RPG (`wolf`, log `wolf.log`, brief `.motor/wolf.md`;
-  check its sources list before merging).
+- Merged after that: `6bbafdf` SQLite (Claude added: tables with triggers read-only) · `f0e34bf` zip · `526c635` Wolf RPG ·
+  `88201c7` QSP · `95e12af` Naninovel. Only The Witcher 3 and the card-view features are left.
+- The Witcher 3 (`witcher`, log `witcher.log`, brief `.motor/witcher.md`). Card view add/remove + data folder (`cards`,
+  log `cards3.log`, brief `.motor/cards.md`; main already merged into that branch as `2b7faef`).
+- After both: a visual check of the new views in the running app (none done yet), then clean up `../saveprism-wt/*`
+  worktrees (`git worktree remove` without force; the folder itself the user deletes).
 - Merge helper: `python -I .motor/merge_wt.py <name> "<subject>"` (commits the worktree, merges uncommitted, resolves the
   usual append conflicts, reruns generators), then kontrol in a separate command, inspect fixtures, commit, push.
   Union-resolved code files can still break (a test lost a closing brace once): read the compile errors.
