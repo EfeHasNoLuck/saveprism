@@ -56,3 +56,10 @@ path = "fuzz_targets/gen3.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "javaser"
+path = "fuzz_targets/javaser.rs"
+test = false
+doc = false
+bench = false

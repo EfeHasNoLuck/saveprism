@@ -18,6 +18,7 @@ const CODEC_LABELS: Record<string, string> = {
   "format.es3-json": "Easy Save 3",
   "format.gvas": "Unreal",
   "format.ruby-marshal": "Ruby Marshal",
+  "format.java-serialization": "Java",
   "format.flash-sol": "Flash LSO",
   "format.pokemon-gen3": "Pokémon Gen 3",
 };

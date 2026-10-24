@@ -35,6 +35,7 @@ describe("engine helpers", () => {
     expect(engineLabel("Save1.rvdata", "format.ruby-marshal")).toBe("RPG Maker VX");
     expect(engineLabel("Save01.rvdata2", "format.ruby-marshal")).toBe("RPG Maker VX Ace");
     expect(engineLabel("data.bin", "format.ruby-marshal")).toBe("Ruby Marshal");
+    expect(engineLabel("data.bin", "format.java-serialization")).toBe("Java");
     expect(engineLabel("data.bin", "format.json")).toBe("JSON");
     expect(engineLabel("shared.sol", "format.flash-sol")).toBe("Flash");
     expect(engineLabel("shared.bin", "format.flash-sol")).toBe("Flash LSO");

@@ -8,6 +8,7 @@ use saveprism_core::Registry;
 pub mod es3;
 pub mod gen3;
 pub mod gvas;
+pub mod javaser;
 pub mod json;
 pub mod layers;
 pub mod marshal;
@@ -25,6 +26,7 @@ pub fn register_all(reg: &mut Registry) {
     gvas::register(reg);
     palworld::register(reg);
     marshal::register(reg);
+    javaser::register(reg);
     sol::register(reg);
 }
 
