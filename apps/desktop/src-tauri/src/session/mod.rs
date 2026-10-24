@@ -694,6 +694,13 @@ impl Session {
             },
             engine: if self.is_sugarcube() {
                 Some("sugarcube".to_string())
+            } else if self
+                .recipe
+                .steps
+                .iter()
+                .any(|step| step.kind == "encoding.url-escape")
+            {
+                Some("tyranoscript".to_string())
             } else if self.pasted {
                 self.rpg_engine().map(|engine| format!("rpgmaker-{engine}"))
             } else {

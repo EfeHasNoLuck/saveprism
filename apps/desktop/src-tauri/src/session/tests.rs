@@ -82,6 +82,28 @@ fn json_rpgmaker_and_es3_open_with_an_exact_guard() {
 }
 
 #[test]
+fn tyrano_saves_report_their_engine() {
+    for relative in [
+        "synthetic/tyrano/sample_tyrano_data.sav",
+        "synthetic/tyrano/sample_tyrano_data_uri.sav",
+        "synthetic/tyrano/sample_tyrano_sf.sav",
+    ] {
+        let env = env();
+        let path = copy_in(&env, relative);
+        let session = open(&env, &path, None).unwrap();
+        let info = session.info();
+        assert_eq!(info.guard, GuardLevel::Exact, "{relative}");
+        assert!(info.editable, "{relative}");
+        assert_eq!(info.engine.as_deref(), Some("tyranoscript"), "{relative}");
+        assert_eq!(
+            info.recipe,
+            ["encoding.url-escape", "format.json"],
+            "{relative}"
+        );
+    }
+}
+
+#[test]
 fn children_are_paged_and_limited() {
     let env = env();
     let session = open_json(&env);

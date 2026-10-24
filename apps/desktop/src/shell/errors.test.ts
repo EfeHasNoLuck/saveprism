@@ -38,6 +38,7 @@ describe("engine helpers", () => {
     expect(engineLabel("data.bin", "format.json")).toBe("JSON");
     expect(engineLabel("data.bin", "format.unknown")).toBeNull();
     expect(engineLabel("slot1.save", "format.json", "sugarcube")).toBe("SugarCube");
+    expect(engineLabel("slot.sav", "format.json", "tyranoscript")).toBe("TyranoScript");
     expect(engineLabel("file1.rpgsave", "format.json", null)).toBe("RPG Maker MV");
   });
 
