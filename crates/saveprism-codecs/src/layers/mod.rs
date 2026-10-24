@@ -1,4 +1,4 @@
-//! Byte layers: base64, gzip, zlib, LZ-String and the TyranoScript URL escape.
+//! Byte layers: base64, gzip, zlib, LZ-String, the TyranoScript URL escape and the zip container.
 //!
 //! Every layer records the parameters it needs to wrap the inner bytes again exactly as they were.
 //! Layers that produce output read it through `DecodeCtx::read_bounded` (or an equivalent budget),
@@ -14,12 +14,14 @@ mod deflate;
 mod gzip;
 mod lzstring;
 mod url_escape;
+mod zip;
 mod zlib;
 
 pub use base64::Base64Layer;
 pub use gzip::GzipLayer;
 pub use lzstring::LzStringLayer;
 pub use url_escape::UrlEscapeLayer;
+pub use zip::{ZIP_DAMAGED, ZIP_NO_PAYLOAD, ZIP_UNSUPPORTED, ZIP_WRITE, ZipLayer};
 pub use zlib::ZlibLayer;
 
 /// The input is not valid base64.
@@ -39,13 +41,14 @@ pub const LAY_URL_ESCAPE_INVALID: ErrorCode = ErrorCode::new("SP-URL-001");
 /// The percent escapes do not spell UTF-8 text (used by `encoding.url-escape`).
 pub const LAY_URL_ESCAPE_UTF8: ErrorCode = ErrorCode::new("SP-URL-002");
 
-/// Registers the five byte layers.
+/// Registers the six byte layers.
 pub fn register(reg: &mut Registry) {
     reg.add_layer(Arc::new(Base64Layer));
     reg.add_layer(Arc::new(GzipLayer));
     reg.add_layer(Arc::new(ZlibLayer));
     reg.add_layer(Arc::new(LzStringLayer));
     reg.add_layer(Arc::new(UrlEscapeLayer));
+    zip::register(reg);
 }
 
 /// A `CORE_INVALID_PARAM` error with a message.
@@ -80,7 +83,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn register_adds_the_five_layers() {
+    fn register_adds_the_six_layers() {
         let mut reg = Registry::default();
         register(&mut reg);
         for id in [
@@ -89,10 +92,11 @@ mod tests {
             "compression.zlib",
             "compression.lz-string",
             "encoding.url-escape",
+            "container.zip",
         ] {
             assert!(reg.is_layer(id), "{id} is not registered");
         }
-        assert_eq!(reg.layers().count(), 5);
+        assert_eq!(reg.layers().count(), 6);
     }
 
     #[test]
@@ -105,6 +109,10 @@ mod tests {
         assert_eq!(LAY_ENCODE_FAILED.as_str(), "SP-LAY-006");
         assert_eq!(LAY_URL_ESCAPE_INVALID.as_str(), "SP-URL-001");
         assert_eq!(LAY_URL_ESCAPE_UTF8.as_str(), "SP-URL-002");
+        assert_eq!(ZIP_DAMAGED.as_str(), "SP-ZIP-001");
+        assert_eq!(ZIP_UNSUPPORTED.as_str(), "SP-ZIP-002");
+        assert_eq!(ZIP_WRITE.as_str(), "SP-ZIP-003");
+        assert_eq!(ZIP_NO_PAYLOAD.as_str(), "SP-ZIP-004");
     }
 
     #[test]

@@ -22,6 +22,7 @@ pub mod renpy;
 pub mod rpgmaker;
 pub mod sol;
 pub mod sqlite;
+mod zip_common;
 
 /// Registers every layer and codec of this crate into `reg`.
 pub fn register_all(reg: &mut Registry) {

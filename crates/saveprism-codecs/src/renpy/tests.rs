@@ -27,7 +27,7 @@ fn decode(input: &[u8]) -> (Vec<u8>, Params) {
 /// Name and raw stored bytes (local header to the next entry) of every entry, plus the
 /// uncompressed contents, read with this module's own parser.
 fn entries(input: &[u8]) -> Vec<(String, Vec<u8>, Vec<u8>)> {
-    let archive = parse(input).unwrap();
+    let archive = parse(input, &CODES).unwrap();
     let limits = Limits::default();
     let ctx = DecodeCtx::new(&limits);
     archive
@@ -37,7 +37,7 @@ fn entries(input: &[u8]) -> Vec<(String, Vec<u8>, Vec<u8>)> {
             (
                 String::from_utf8(entry.name.clone()).unwrap(),
                 input.get(entry.data..entry.span_end).unwrap().to_vec(),
-                read_entry(input, entry, &ctx).unwrap(),
+                read_entry(input, entry, &ctx, &CODES).unwrap(),
             )
         })
         .collect()
@@ -160,8 +160,8 @@ fn damaged_archives_give_errors() {
         assert!(decode_with(save.get(..cut).unwrap(), &Limits::default()).is_err());
     }
     // A wrong CRC.
-    let archive = parse(&save).unwrap();
-    let log = archive.find(LOG_ENTRY).unwrap();
+    let archive = parse(&save, &CODES).unwrap();
+    let log = archive.find(LOG_ENTRY.as_bytes()).unwrap();
     let mut bad = save.clone();
     *bad.get_mut(log.central.0 + 16).unwrap() ^= 0xFF;
     assert_eq!(

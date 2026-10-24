@@ -41,6 +41,8 @@ describe("engine helpers", () => {
     expect(engineLabel("player.save", "format.godot-variant")).toBe("Godot");
     expect(engineLabel("settings.cfg", "format.godot-config")).toBe("Godot");
     expect(engineLabel("data.bin", "format.json")).toBe("JSON");
+    expect(engineLabel("save.zip", "format.json")).toBe("JSON");
+    expect(engineLabel("save.zip", "format.ruby-marshal")).toBe("Ruby Marshal");
     expect(engineLabel("shared.sol", "format.flash-sol")).toBe("Flash");
     expect(engineLabel("shared.bin", "format.flash-sol")).toBe("Flash LSO");
     expect(engineLabel("save.srm", "format.pokemon-gen3")).toBe("Pokémon Gen 3");
