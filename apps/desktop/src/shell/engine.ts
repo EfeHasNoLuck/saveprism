@@ -15,6 +15,11 @@ const EXTENSION_LABELS: Record<string, string> = {
   cfg: "Godot",
   sqlite: "SQLite",
   sqlite3: "SQLite",
+  msgpack: "MessagePack",
+  msgp: "MessagePack",
+  cbor: "CBOR",
+  bson: "BSON",
+  nbt: "Minecraft NBT",
   db: "SQLite",
 };
 
@@ -27,6 +32,10 @@ const CODEC_LABELS: Record<string, string> = {
   "format.ruby-marshal": "Ruby Marshal",
   "format.java-serialization": "Java",
   "format.python-pickle": "Python pickle",
+  "format.msgpack": "MessagePack",
+  "format.cbor": "CBOR",
+  "format.bson": "BSON",
+  "format.nbt": "Minecraft NBT",
   "format.flash-sol": "Flash LSO",
   "format.pokemon-gen3": "Pokémon Gen 3",
   "format.lcf": "RPG Maker 2000/2003",

@@ -133,3 +133,31 @@ path = "fuzz_targets/sqlite.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "msgpack"
+path = "fuzz_targets/msgpack.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "cbor"
+path = "fuzz_targets/cbor.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "bson"
+path = "fuzz_targets/bson.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "nbt"
+path = "fuzz_targets/nbt.rs"
+test = false
+doc = false
+bench = false

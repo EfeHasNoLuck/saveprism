@@ -5,6 +5,8 @@
 
 use saveprism_core::Registry;
 
+pub mod bson;
+pub mod cbor;
 pub mod es3;
 pub mod gen3;
 pub mod godot;
@@ -14,7 +16,9 @@ pub mod json;
 pub mod layers;
 pub mod lcf;
 pub mod marshal;
+pub mod msgpack;
 pub mod naninovel;
+pub mod nbt;
 pub mod nrbf;
 pub mod palworld;
 pub mod pickle;
@@ -31,6 +35,10 @@ mod zip_common;
 /// Registers every layer and codec of this crate into `reg`.
 pub fn register_all(reg: &mut Registry) {
     layers::register(reg);
+    msgpack::register(reg);
+    cbor::register(reg);
+    bson::register(reg);
+    nbt::register(reg);
     json::register(reg);
     rpgmaker::register(reg);
     es3::register(reg);
