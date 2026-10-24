@@ -33,6 +33,7 @@ mod export;
 mod game;
 mod history;
 mod json_apply;
+mod renpy;
 mod rgss;
 mod sugarcube;
 
@@ -44,6 +45,7 @@ pub use game::{
 };
 use history::{History, MAX_VALUES, Mutation, scalar_owned};
 pub use history::{HistoryResult, HistoryState};
+pub use renpy::{NOTICE_SIGNED_PERSISTENT, NOTICE_SIGNED_SAVE};
 pub use sugarcube::SugarCubeView;
 
 #[cfg(test)]
@@ -272,8 +274,8 @@ pub struct OpenInfo {
     pub warning: Option<String>,
     /// The root node.
     pub root: RootInfo,
-    /// The game engine known from the document's shape (`sugarcube`), when the file name and the
-    /// codec do not tell it. A pasted code has no telling file name, so its RPG Maker layer names
+    /// The game engine known from the document's shape (`sugarcube`, `renpy`), when the file name
+    /// and the codec do not tell it. A pasted code has no telling file name, so its RPG Maker layer names
     /// the engine too (`rpgmaker-mv`, `rpgmaker-mz`).
     pub engine: Option<String>,
     /// True when the document was opened from a pasted save code (the file is SavePrism's own copy).
@@ -281,6 +283,9 @@ pub struct OpenInfo {
     /// True when the file is text a player can copy and paste (UTF-8 without control characters),
     /// so `copy_code` can give it back as a code.
     pub text_code: bool,
+    /// A notice the UI shows in its own words: `renpy-signed` (the game will ask whether to trust
+    /// the edited save: answer Yes) or `renpy-persistent-signed` (open read-only).
+    pub notice: Option<String>,
 }
 
 /// One pending edit.
@@ -641,7 +646,7 @@ impl Session {
             Verdict::Semantic => GuardLevel::Semantic,
             Verdict::Different => GuardLevel::Failed,
         };
-        Ok(Session {
+        let mut session = Session {
             reg,
             limits,
             backup_root,
@@ -655,12 +660,18 @@ impl Session {
             pending: Vec::new(),
             history: History::default(),
             pasted: false,
-        })
+        };
+        // A signed Ren'Py persistent file is thrown away by the game after any change.
+        if session.renpy_locked() {
+            session.editable = false;
+        }
+        Ok(session)
     }
 
     /// The facts the UI shows after opening.
     pub fn info(&self) -> OpenInfo {
-        let warning = match self.guard {
+        let notice = self.renpy_notice();
+        let guard_warning = match self.guard {
             GuardLevel::Exact => None,
             GuardLevel::Semantic => Some(
                 "The file will be written with a slightly different layout (for example spacing or compression). The content stays the same."
@@ -671,6 +682,7 @@ impl Session {
                     .to_string(),
             ),
         };
+        let warning = notice.map(|(_, text)| text.to_string()).or(guard_warning);
         let recipe: Vec<String> = self.recipe.steps.iter().map(|s| s.kind.clone()).collect();
         OpenInfo {
             file_name: self
@@ -694,6 +706,8 @@ impl Session {
             },
             engine: if self.is_sugarcube() {
                 Some("sugarcube".to_string())
+            } else if self.renpy_file().is_some() {
+                Some("renpy".to_string())
             } else if self.pasted {
                 self.rpg_engine().map(|engine| format!("rpgmaker-{engine}"))
             } else {
@@ -701,6 +715,7 @@ impl Session {
             },
             pasted: self.pasted,
             text_code: code::is_text_code(&self.original),
+            notice: notice.map(|(key, _)| key.to_string()),
         }
     }
 
@@ -830,7 +845,7 @@ impl Session {
     /// Changes the scalar at `path` to `text`, parsed by the node's current type.
     pub fn edit_value(&mut self, path: &str, text: &str) -> Result<NodeRow, ApiError> {
         if !self.editable {
-            return Err(read_only_document());
+            return Err(self.read_only_error());
         }
         let parsed = Path::parse(path)?;
         let id = self.doc.resolve(&parsed).ok_or_else(|| bad_path(path))?;
@@ -874,7 +889,7 @@ impl Session {
     /// one undo step. Returns the values that changed, like an undo does.
     pub fn edit_values(&mut self, paths: &[String], text: &str) -> Result<HistoryResult, ApiError> {
         if !self.editable {
-            return Err(read_only_document());
+            return Err(self.read_only_error());
         }
         if paths.len() > MAX_VALUES {
             return Err(ApiError::new(
@@ -1033,7 +1048,7 @@ impl Session {
     /// unless `overwrite` is true.
     pub fn save(&mut self, target: &str, overwrite: bool) -> Result<SaveResult, ApiError> {
         if !self.editable {
-            return Err(read_only_document());
+            return Err(self.read_only_error());
         }
         let target_path = PathBuf::from(target);
         let same = same_file(&target_path, &self.path);

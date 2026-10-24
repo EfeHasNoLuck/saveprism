@@ -24,7 +24,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [detect, json, layers, marshal, sol]
+        target: [detect, json, layers, marshal, pickle, sol]
     steps:
       - uses: actions/checkout@v4
 

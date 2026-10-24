@@ -18,11 +18,13 @@ const CODEC_LABELS: Record<string, string> = {
   "format.es3-json": "Easy Save 3",
   "format.gvas": "Unreal",
   "format.ruby-marshal": "Ruby Marshal",
+  "format.python-pickle": "Python pickle",
   "format.flash-sol": "Flash LSO",
 };
 
 const ENGINE_LABELS: Record<string, string> = {
   sugarcube: "SugarCube",
+  renpy: "Ren'Py",
   "rpgmaker-mv": "RPG Maker MV",
   "rpgmaker-mz": "RPG Maker MZ",
 };

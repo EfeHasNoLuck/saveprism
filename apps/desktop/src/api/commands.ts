@@ -64,14 +64,19 @@ export interface OpenInfo {
   warning: string | null;
   root: RootInfo;
   /**
-   * The engine known from the document's shape ("sugarcube"), or null. A pasted code has no file
-   * name to tell the engine, so its RPG Maker layer names it ("rpgmaker-mv", "rpgmaker-mz").
+   * The engine known from the document's shape ("sugarcube", "renpy"), or null. A pasted code has
+   * no file name to tell the engine, so its RPG Maker layer names it ("rpgmaker-mv", "rpgmaker-mz").
    */
-  engine: "sugarcube" | "rpgmaker-mv" | "rpgmaker-mz" | null;
+  engine: "sugarcube" | "renpy" | "rpgmaker-mv" | "rpgmaker-mz" | null;
   /** Opened from a pasted save code; `path` is SavePrism's own copy until a "save as". */
   pasted: boolean;
   /** The file is text a player can copy and paste, so `copyCode` can give it back as a code. */
   textCode: boolean;
+  /**
+   * A notice to show: "renpy-signed" (the game will ask whether to trust the edited save; the
+   * player answers Yes) or "renpy-persistent-signed" (the file is open read-only), else null.
+   */
+  notice: "renpy-signed" | "renpy-persistent-signed" | null;
 }
 
 export interface NodeRow {

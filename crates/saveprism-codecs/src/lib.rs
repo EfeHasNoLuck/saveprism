@@ -11,6 +11,8 @@ pub mod json;
 pub mod layers;
 pub mod marshal;
 pub mod palworld;
+pub mod pickle;
+pub mod renpy;
 pub mod rpgmaker;
 pub mod sol;
 
@@ -23,6 +25,8 @@ pub fn register_all(reg: &mut Registry) {
     gvas::register(reg);
     palworld::register(reg);
     marshal::register(reg);
+    pickle::register(reg);
+    renpy::register(reg);
     sol::register(reg);
 }
 
