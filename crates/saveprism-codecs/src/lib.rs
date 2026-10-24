@@ -1,6 +1,6 @@
 //! SavePrism codecs.
 //!
-//! Layers (`layers`) and formats (`json`, `es3`, `gvas`, `marshal`, ...) implement the `Layer` and `Codec` traits of
+//! Layers (`layers`) and formats (`json`, `es3`, `gvas`, `marshal`, `lcf`, ...) implement the `Layer` and `Codec` traits of
 //! `saveprism-core`. [`register_all`] adds all of them to a [`Registry`].
 
 use saveprism_core::Registry;
@@ -11,6 +11,7 @@ pub mod gvas;
 pub mod javaser;
 pub mod json;
 pub mod layers;
+pub mod lcf;
 pub mod marshal;
 pub mod palworld;
 pub mod rpgmaker;
@@ -27,6 +28,7 @@ pub fn register_all(reg: &mut Registry) {
     palworld::register(reg);
     marshal::register(reg);
     javaser::register(reg);
+    lcf::register(reg);
     sol::register(reg);
 }
 

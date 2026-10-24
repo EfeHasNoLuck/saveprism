@@ -213,7 +213,7 @@ export interface Entry {
 
 /**
  * Stable keys of the stat bonuses: MV/MZ and VX Ace `_paramPlus[0..8]` / `@param_plus`; XP adds
- * strength, dexterity and intelligence, VX spirit.
+ * strength, dexterity and intelligence, VX and 2000/2003 spirit.
  */
 export type StatKey =
   | "maxHp"
@@ -241,7 +241,7 @@ export interface Actor {
 }
 
 export interface RpgMakerView {
-  engine: "mv" | "mz" | "xp" | "vx" | "vxace";
+  engine: "mv" | "mz" | "xp" | "vx" | "vxace" | "2k" | "2k3";
   gold: Field;
   actors: Actor[];
   items: Entry[];

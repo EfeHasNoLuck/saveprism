@@ -2386,3 +2386,194 @@ fn rgss_limits_are_enforced() {
     assert!(error.message.contains("9,999,999"), "{}", error.message);
     assert!(session.pending_changes().is_empty());
 }
+
+// RPG Maker 2000 and 2003 saves (LCF).
+
+const SAVE_2K: &str = "synthetic/rpgmaker-2k/Save01.lsd";
+const SAVE_2K3: &str = "synthetic/rpgmaker-2k3/Save01.lsd";
+const DB_2K: &str = "synthetic/rpgmaker-2k/RPG_RT.ldb";
+const DB_2K3: &str = "synthetic/rpgmaker-2k3/RPG_RT.ldb";
+
+/// Opens a copy of `save`, with a copy of `database` next to it as `RPG_RT.ldb`.
+fn open_lcf(env: &Env, save: &str, database: Option<&str>) -> Session {
+    if let Some(database) = database {
+        fs::copy(fixture(database), env.work.join("RPG_RT.ldb")).unwrap();
+    }
+    let path = copy_in(env, save);
+    let session = open(env, &path, None).unwrap();
+    assert_eq!(session.info().guard, GuardLevel::Exact, "{save}");
+    session
+}
+
+#[test]
+fn a_2k_save_becomes_rpg_maker_sections() {
+    let env = env();
+    let view = rpg_view(&open_lcf(&env, SAVE_2K, None)).unwrap();
+
+    assert_eq!(view.engine, "2k");
+    assert_eq!(view.gold.value, "5000");
+    assert_eq!(view.gold.path, "/inventory/gold");
+    assert_eq!(view.gold.max, Some(999_999));
+    assert!(view.gold.editable);
+
+    // Actor 1 uses its database name, which is unknown without RPG_RT.ldb.
+    assert_eq!(actor_names(&view), ["Actor #1", "Mira"]);
+    let actor = &view.actors[0];
+    assert_eq!(actor.level.value, "12");
+    assert_eq!(actor.level.path, "/actors/0/level");
+    assert_eq!(actor.level.max, Some(99));
+    assert_eq!(actor.hp.value, "250");
+    assert_eq!(actor.mp.value, "40");
+    assert_eq!(actor.exp.as_ref().map(|f| f.value.as_str()), Some("3400"));
+    assert_eq!(
+        bonuses(actor),
+        [
+            ("maxHp", "10"),
+            ("maxMp", "5"),
+            ("attack", "3"),
+            ("defense", "2"),
+            ("spirit", "0"),
+            ("agility", "1"),
+        ]
+    );
+    assert_eq!(view.actors[1].hp.path, "/actors/1/current_hp");
+
+    // Without the database every entry is an item.
+    assert_eq!(ids(&view.items), [1, 2, 5, 7]);
+    assert_eq!(values(&view.items), ["3", "1", "2", "99"]);
+    assert_eq!(view.items[3].field.path, "/inventory/item_counts/3");
+    assert_eq!(view.items[0].field.max, Some(99));
+    assert!(view.weapons.is_empty() && view.armors.is_empty());
+    // Variable 3 is 0 and has no name, so it is left out; index 0 is variable 1.
+    assert_eq!(ids(&view.variables), [1, 2, 4, 5, 6]);
+    assert_eq!(
+        values(&view.variables),
+        ["100", "-7", "20000000", "-123456789", "2147483647"]
+    );
+    assert_eq!(view.variables[0].field.path, "/system/variables/0");
+    assert_eq!(ids(&view.switches), [1, 3]);
+    assert_eq!(view.switches[0].field.kind, FieldKind::Bool);
+    assert!(view.names_folder.is_none());
+}
+
+#[test]
+fn lcf_names_and_item_types_come_from_rpg_rt_ldb() {
+    let env = env();
+    let view = rpg_view(&open_lcf(&env, SAVE_2K, Some(DB_2K))).unwrap();
+    assert_eq!(
+        view.names_folder,
+        Some(env.work.to_string_lossy().into_owned())
+    );
+    assert_eq!(view.engine, "2k");
+    assert_eq!(actor_names(&view), ["Alex", "Mira"]);
+    assert_eq!(ids(&view.items), [1, 7]);
+    // A Windows-1252 name.
+    assert_eq!(names(&view.items), [Some("Potion"), Some("\u{c9}lixir")]);
+    assert_eq!(ids(&view.weapons), [2]);
+    assert_eq!(names(&view.weapons), [Some("Bronze Sword")]);
+    assert_eq!(ids(&view.armors), [5]);
+    assert_eq!(view.armors[0].field.path, "/inventory/item_counts/2");
+    // The named variable 3 is shown although it is 0.
+    assert_eq!(ids(&view.variables), [1, 2, 3, 4, 5, 6]);
+    assert_eq!(view.variables[2].name.as_deref(), Some("Zero Counter"));
+    assert_eq!(ids(&view.switches), [1, 2, 3]);
+    assert_eq!(view.switches[1].name.as_deref(), Some("Lamp Lit"));
+
+    // A 2003 database makes the save a 2003 one.
+    let env = self::env();
+    let view = rpg_view(&open_lcf(&env, SAVE_2K, Some(DB_2K3))).unwrap();
+    assert_eq!(view.engine, "2k3");
+}
+
+#[test]
+fn a_2k3_save_without_gold_shows_zero_read_only() {
+    let env = env();
+    let session = open_lcf(&env, SAVE_2K3, Some(DB_2K3));
+    let view = rpg_view(&session).unwrap();
+    assert_eq!(view.engine, "2k3");
+    assert_eq!(view.gold.value, "0");
+    assert!(!view.gold.editable);
+    // The party is actors 3 and 1; actor 1 takes its name from the database.
+    assert_eq!(actor_names(&view), ["Kai", "Alex"]);
+    assert_eq!(view.actors[0].level.value, "20");
+    assert_eq!(ids(&view.weapons), [2]);
+    assert_eq!(names(&view.items), [Some("Ether")]);
+    assert_eq!(values(&view.variables), ["-1", "16777217", "7"]);
+    assert_eq!(ids(&view.variables), [1, 2, 5]);
+    assert_eq!(ids(&view.switches), [2, 3]);
+    assert_eq!(view.switches[0].name.as_deref(), Some("Gate Open"));
+
+    // The 2003 fields alone make it a 2003 save.
+    let env = self::env();
+    let view = rpg_view(&open_lcf(&env, SAVE_2K3, None)).unwrap();
+    assert_eq!(view.engine, "2k3");
+    assert_eq!(actor_names(&view), ["Kai", "Actor #1"]);
+}
+
+#[test]
+fn lcf_edits_through_the_view_survive_a_save() {
+    let env = env();
+    let mut session = open_lcf(&env, SAVE_2K, Some(DB_2K));
+    let view = rpg_view(&session).unwrap();
+    session.edit_value(&view.gold.path, "999999").unwrap();
+    session.edit_value(&view.items[0].field.path, "42").unwrap();
+    session
+        .edit_value(&view.variables[0].field.path, "16777300")
+        .unwrap();
+    session
+        .edit_value(&view.switches[1].field.path, "true")
+        .unwrap();
+    session
+        .edit_value(&view.actors[1].level.path, "99")
+        .unwrap();
+    session.edit_value(&view.actors[0].hp.path, "1000").unwrap();
+    let path = env.work.join("Save01.lsd");
+    session.save(path.to_str().unwrap(), false).unwrap();
+
+    let reopened = open(&env, &path, None).unwrap();
+    let info = reopened.info();
+    assert_eq!(info.guard, GuardLevel::Exact);
+    assert!(info.editable);
+    let again = rpg_view(&reopened).unwrap();
+    assert_eq!(again.gold.value, "999999");
+    assert_eq!(again.items[0].field.value, "42");
+    assert_eq!(again.variables[0].field.value, "16777300");
+    assert_eq!(again.switches[1].field.value, "true");
+    assert_eq!(again.actors[1].level.value, "99");
+    assert_eq!(again.actors[0].hp.value, "1000");
+    assert_eq!(actor_names(&again), ["Alex", "Mira"]);
+}
+
+#[test]
+fn lcf_limits_are_enforced() {
+    let env = env();
+    let mut session = open_lcf(&env, SAVE_2K, None);
+    let view = rpg_view(&session).unwrap();
+    let gold = view.gold.path.clone();
+    let error = session.edit_value(&gold, "1000000").unwrap_err();
+    assert_eq!(error.code, app_codes::OUT_OF_RANGE);
+    assert_eq!(session.field_info(&gold).unwrap().max, Some(999_999));
+    let error = session
+        .edit_value(&view.items[0].field.path, "100")
+        .unwrap_err();
+    assert_eq!(error.code, app_codes::OUT_OF_RANGE);
+    let error = session
+        .edit_value(&view.actors[0].level.path, "0")
+        .unwrap_err();
+    assert_eq!(error.code, app_codes::OUT_OF_RANGE);
+    // A variable is a 32-bit number.
+    let error = session
+        .edit_value(&view.variables[0].field.path, "2147483648")
+        .unwrap_err();
+    assert_eq!(error.code, app_codes::OUT_OF_RANGE);
+
+    // The database itself opens as a plain list of values.
+    let env = self::env();
+    let path = copy_in(&env, DB_2K);
+    let session = open(&env, &path, None).unwrap();
+    assert_eq!(session.info().guard, GuardLevel::Exact);
+    assert!(matches!(
+        session.game_view().unwrap(),
+        GameView::Values { .. }
+    ));
+}

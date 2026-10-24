@@ -2,9 +2,10 @@
 //!
 //! RPG Maker MV/MZ saves become game sections (gold, characters, items, weapons, armors,
 //! variables, switches) with real names read from the game's `data` folder; XP, VX and VX Ace saves
-//! become the same sections (see `rgss.rs`). SugarCube (Twine) saves become a story view (see
-//! `sugarcube.rs`). Every other format becomes a flat "Values" list. Every editable value carries
-//! its type and limits as a [`Field`], so the UI can say
+//! become the same sections (see `rgss.rs`), and so do RPG Maker 2000 and 2003 saves (see
+//! `lcf.rs`). SugarCube (Twine) saves become a story view (see `sugarcube.rs`). Every other format
+//! becomes a flat "Values" list. Every editable value carries its type and limits as a [`Field`],
+//! so the UI can say
 //! "Whole number · 0 to 99,999,999 · was 10,000" and block out-of-range input.
 //!
 //! The view only reads the tree and the game's data files; nothing is executed.
@@ -120,7 +121,7 @@ pub struct Actor {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RpgMakerView {
-    /// "mv", "mz", "xp", "vx" or "vxace".
+    /// "mv", "mz", "xp", "vx", "vxace", "2k" or "2k3".
     pub engine: String,
     /// The party's gold.
     pub gold: Field,
@@ -947,22 +948,24 @@ impl Session {
         }
     }
 
-    /// The limits of every field of the RPG Maker view (MV/MZ or XP/VX/VX Ace), by path (empty for
-    /// other formats).
+    /// The limits of every field of the RPG Maker view (MV/MZ, XP/VX/VX Ace or 2000/2003), by path
+    /// (empty for other formats).
     pub(super) fn rpg_bounds(&self) -> HashMap<String, Bounds> {
         let ctx = self.game_ctx();
         if let Some(engine) = self.rpg_engine() {
             let _ = ctx.rpg_view(engine, &GameNames::default());
         } else if let Some(engine) = self.rgss_engine(&ctx) {
             let _ = ctx.rgss_view(engine, &GameNames::default());
+        } else if self.is_lcf_save() {
+            self.lcf_bounds(&ctx);
         } else {
             return HashMap::new();
         }
         ctx.seen.into_inner()
     }
 
-    /// The SugarCube story view, the RPG Maker sections for MV/MZ and XP/VX/VX Ace saves, else the
-    /// flat Values list.
+    /// The SugarCube story view, the RPG Maker sections for MV/MZ, XP/VX/VX Ace and 2000/2003
+    /// saves, else the flat Values list.
     pub fn game_view(&self) -> Result<GameView, ApiError> {
         let ctx = self.game_ctx();
         if let Some(view) = ctx.sugarcube_view() {
@@ -984,6 +987,11 @@ impl Session {
             }
         }
         if let Some(view) = self.rgss_view(&ctx) {
+            return Ok(GameView::Rpgmaker {
+                view: Box::new(view),
+            });
+        }
+        if let Some(view) = self.lcf_view(&ctx) {
             return Ok(GameView::Rpgmaker {
                 view: Box::new(view),
             });
