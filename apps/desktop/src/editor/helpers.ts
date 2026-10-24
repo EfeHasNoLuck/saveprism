@@ -160,13 +160,21 @@ export interface Searchable {
   field: { value: string };
 }
 
-/** Keeps entries whose name, `#id` or value contains the query (case-insensitive). */
-export function filterEntries<T extends Searchable>(entries: readonly T[], query: string): T[] {
+/**
+ * Keeps entries whose name, `#id`, value or own name (from `ownName`) contains the query
+ * (case-insensitive).
+ */
+export function filterEntries<T extends Searchable>(
+  entries: readonly T[],
+  query: string,
+  ownName?: (entry: T) => string | null,
+): T[] {
   const q = query.trim().toLowerCase();
   if (q === "") return [...entries];
   return entries.filter(
     (e) =>
       (e.name !== null && e.name.toLowerCase().includes(q)) ||
+      (ownName?.(e) ?? "").toLowerCase().includes(q) ||
       `#${e.id}`.includes(q) ||
       e.field.value.toLowerCase().includes(q),
   );

@@ -41,6 +41,8 @@ export interface EditorHandle {
 
 export interface EditorViewProps {
   readOnly: boolean;
+  /** Folder of the open save; null for a pasted code (own names need a real game folder). */
+  saveFolder: string | null;
   onChangesChanged: (changes: Change[]) => void;
   onInvalidChanged: (invalid: boolean) => void;
   /** After every change of the document: whether Undo and Redo are possible. */
@@ -52,6 +54,7 @@ export interface EditorViewProps {
 
 export function EditorView({
   readOnly,
+  saveFolder,
   onChangesChanged,
   onInvalidChanged,
   onHistoryChanged,
@@ -239,7 +242,7 @@ export function EditorView({
       <Tooltip.Provider delayDuration={200}>
         <div className="mx-auto w-full max-w-[1600px] p-3">
           {view.kind === "rpgmaker" ? (
-            <RpgMaker view={view.view} />
+            <RpgMaker view={view.view} saveFolder={saveFolder} />
           ) : view.kind === "sugarcube" ? (
             <SugarCube view={view.view} />
           ) : (

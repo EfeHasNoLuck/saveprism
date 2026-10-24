@@ -40,6 +40,7 @@ import { applyJson, exportJson, exportJsonFile } from "./shell/exportApi";
 import { Header } from "./shell/Header";
 import { JsonDialog, type ApplyResult, type JsonState } from "./shell/JsonDialog";
 import { OpeningOverlay } from "./shell/OpeningOverlay";
+import { gameFolder } from "./shell/names";
 import { PasswordDialog } from "./shell/PasswordDialog";
 import { addRecent, loadRecent, saveRecent, type RecentFile } from "./shell/recent";
 import { SettingsDialog } from "./shell/SettingsDialog";
@@ -598,6 +599,8 @@ function App() {
   }, [file, notify, notifyError, t]);
 
   const readOnly = file !== null && !file.editable;
+  // Own names of a pasted code have no game to belong to.
+  const saveFolder = file !== null && !file.pasted ? gameFolder(file.path) : null;
 
   // Keyboard shortcuts. The listener is registered once and reads the latest state from a ref.
   const shortcutHandler = useRef<(event: KeyboardEvent) => void>(() => undefined);
@@ -724,6 +727,7 @@ function App() {
                 key={editorKey}
                 ref={editorRef}
                 readOnly={readOnly}
+                saveFolder={saveFolder}
                 onChangesChanged={applyChanges}
                 onInvalidChanged={setInvalid}
                 onHistoryChanged={setHistory}

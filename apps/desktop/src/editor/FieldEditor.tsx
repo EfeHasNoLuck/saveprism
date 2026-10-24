@@ -1,4 +1,5 @@
 import { Minus, Plus, Undo2 } from "lucide-react";
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { Field } from "@/api/commands";
 import { cn } from "@/lib/utils";
@@ -186,6 +187,7 @@ export function FieldCell({
   field,
   name,
   id,
+  nameNode,
   fixedLabel = false,
   title,
   remove,
@@ -195,6 +197,8 @@ export function FieldCell({
   name: string;
   /** Shown as "#12" after the name. */
   id?: number;
+  /** Replaces the name text (an own name with its rename button, or its text box). */
+  nameNode?: ReactNode;
   /** A short label of fixed width (character stats), so the boxes line up. */
   fixedLabel?: boolean;
   /** Tooltip of the name (defaults to the name). */
@@ -214,23 +218,25 @@ export function FieldCell({
       <TooltipTrigger asChild>
         <div
           className={cn(
-            "relative flex h-7 min-w-0 items-center gap-1 rounded-sm pr-0.5 pl-2 text-xs",
+            "group relative flex h-7 min-w-0 items-center gap-1 rounded-sm pr-0.5 pl-2 text-xs",
             stateTone(state),
           )}
           // A locked box has no hover text of its own; the row's (which says why) shows over it.
           title={edit.disabled ? (title ?? name) : undefined}
         >
           <StateBar state={state} />
-          <span
-            className={cn(
-              "truncate",
-              fixedLabel ? "w-[4.5rem] shrink-0 text-muted-foreground" : "min-w-14",
-              kind === "string" && !fixedLabel && "max-w-[45%]",
-            )}
-            title={title ?? name}
-          >
-            {name}
-          </span>
+          {nameNode ?? (
+            <span
+              className={cn(
+                "truncate",
+                fixedLabel ? "w-[4.5rem] shrink-0 text-muted-foreground" : "min-w-14",
+                kind === "string" && !fixedLabel && "max-w-[45%]",
+              )}
+              title={title ?? name}
+            >
+              {name}
+            </span>
+          )}
           {id !== undefined ? (
             <span className="shrink-0 font-mono text-[0.6875rem] text-muted-foreground tabular-nums">
               #{id}

@@ -32,6 +32,12 @@
     "variable": "Variable #{{id}}",
     "switch": "Switch #{{id}}"
   },
+  "ownName": {
+    "action": "Name {{name}}",
+    "rename": "Rename {{name}}",
+    "actionTip": "Give this entry your own name. It is kept for this game only.",
+    "label": "Name for {{name}}"
+  },
   "actor": {
     "level": "Level",
     "hp": "HP",

@@ -144,9 +144,17 @@ function DataFolderLine({ view }: { view: RpgMakerView }) {
  * RPG Maker saves as cards in three rows: Gold and Characters; Items, Weapons and Armors;
  * Variables and Switches.
  */
-export function RpgMaker({ view }: { view: RpgMakerView }) {
+export function RpgMaker({
+  view,
+  saveFolder,
+}: {
+  view: RpgMakerView;
+  /** Folder of the open save; null for a pasted code, which has no game to keep names under. */
+  saveFolder: string | null;
+}) {
   const { t } = useTranslation("editor");
   const namesInfo = view.namesFolder === null ? t("info.noNames") : undefined;
+  const namesGame = saveFolder === null ? null : (view.namesFolder ?? saveFolder);
   return (
     <div className="flex flex-col gap-2.5">
       <DataFolderLine view={view} />
@@ -187,12 +195,14 @@ export function RpgMaker({ view }: { view: RpgMakerView }) {
             info: t("info.variables"),
             kind: "variable",
             entries: view.variables,
+            namesGame,
           },
           {
             title: t("sections.switches"),
             info: t("info.switches"),
             kind: "switch",
             entries: view.switches,
+            namesGame,
           },
         ]}
       />

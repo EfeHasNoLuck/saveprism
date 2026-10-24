@@ -183,6 +183,11 @@ describe("filterEntries", () => {
   it("matches by value", () => {
     expect(filterEntries(entries, "99").map((e) => e.id)).toEqual([12]);
   });
+  it("matches an own name", () => {
+    const own = (entry: (typeof entries)[number]) => (entry.id === 12 ? "Gold left" : null);
+    expect(filterEntries(entries, "gold")).toHaveLength(0);
+    expect(filterEntries(entries, "gold", own).map((e) => e.id)).toEqual([12]);
+  });
 });
 
 describe("set all", () => {

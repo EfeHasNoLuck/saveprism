@@ -32,6 +32,12 @@
     "variable": "Değişken #{{id}}",
     "switch": "Anahtar #{{id}}"
   },
+  "ownName": {
+    "action": "{{name}} için isim ver",
+    "rename": "{{name}} adını değiştir",
+    "actionTip": "Bu girdiye kendi isminizi verin. Yalnızca bu oyun için saklanır.",
+    "label": "{{name}} için isim"
+  },
   "actor": {
     "level": "Seviye",
     "hp": "HP",
