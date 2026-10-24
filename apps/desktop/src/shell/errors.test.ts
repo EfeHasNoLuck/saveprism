@@ -48,6 +48,10 @@ describe("engine helpers", () => {
     expect(engineLabel("RPG_RT.ldb", "format.lcf")).toBe("RPG Maker 2000/2003");
     expect(engineLabel("prefs.reg", "format.reg")).toBe("Registry (.reg)");
     expect(engineLabel("data.bin", "format.reg")).toBe("Registry (.reg)");
+    expect(engineLabel("game.sqlite", "format.sqlite")).toBe("SQLite");
+    expect(engineLabel("game.sqlite3", "format.sqlite")).toBe("SQLite");
+    expect(engineLabel("save.db", "format.sqlite")).toBe("SQLite");
+    expect(engineLabel("data.bin", "format.sqlite")).toBe("SQLite");
     expect(engineLabel("data.bin", "format.unknown")).toBeNull();
     expect(engineLabel("slot1.save", "format.json", "sugarcube")).toBe("SugarCube");
     expect(engineLabel("1-1-LT1.save", "format.python-pickle", "renpy")).toBe("Ren'Py");

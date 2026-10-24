@@ -13,6 +13,9 @@ const EXTENSION_LABELS: Record<string, string> = {
   sol: "Flash",
   reg: "Registry (.reg)",
   cfg: "Godot",
+  sqlite: "SQLite",
+  sqlite3: "SQLite",
+  db: "SQLite",
 };
 
 const CODEC_LABELS: Record<string, string> = {
@@ -31,6 +34,7 @@ const CODEC_LABELS: Record<string, string> = {
   "format.reg": "Registry (.reg)",
   "format.godot-config": "Godot",
   "format.godot-variant": "Godot",
+  "format.sqlite": "SQLite",
 };
 
 const ENGINE_LABELS: Record<string, string> = {

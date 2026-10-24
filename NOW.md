@@ -37,8 +37,9 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
      `escape()` and `encodeURIComponent` styles; detection confidence only 0.35), .NET BinaryFormatter data (Unity `.dat` saves, RAGS `.rsv`;
      parsed as data only, never deserialized), Unity PlayerPrefs as a registry `.reg` export (ints,
      Unity's 8-byte `hex(4)` floats, UTF-8 strings; regedit line wrapping kept), Godot ConfigFile text and `store_var` binary (Godot 3 and 4 type
-     tables checked against the docs; packed number arrays read-only; encrypted GDEC files refused).
-   - Formats left: Wolf RPG `.sav`, QSP, SQLite,
+     tables checked against the docs; packed number arrays read-only; encrypted GDEC files refused), SQLite saves (`rusqlite` bundled, MIT; edits are parameterized
+     UPDATEs on an in-memory copy; tables with triggers, views and WITHOUT ROWID tables read-only).
+   - Formats left: Wolf RPG `.sav`, QSP,
      Naninovel view, The Witcher 3 `.sav` (*new*), packed (zip/gz) saves
      (*new*).
    - Features left: add/delete a value from the card view, pick the game's data folder by hand.
