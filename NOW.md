@@ -66,8 +66,10 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
    this tree; Map keys show as indices in the generic Values list.
    On the dev PC something outside SavePrism alters clipboard text longer than ~1,400 characters (PowerShell
    `Set-Clipboard` too), so a long copied code pasted back there fails; not an app bug.
-3. Customization: settings for density, font size, save mode (overwrite / save as), number of backups; color settings
-   (changed, accent, error); own names for unnamed variables/switches, kept per game; a doc on adding a theme in code.
+3. Customization. Done 2026-10-24 (`45d202f`, checked in the running app, dark/light, EN/TR): Text size Small/Normal/Large
+   (also the density setting: cards and grids scale with it), color presets for changed/accent/error (full tonal sets,
+   contrast-tested), backups to keep 1-50 (only the saved file's folder is trimmed; review fixed), save mode (was there).
+   Left: own names for unnamed variables/switches, kept per game; a doc on adding a theme in code.
 4. AI: MCP server (open, read, search, propose and apply edits; saving still makes a backup); "Ask AI" copies the selected
    values with a short context; docs.
 5. Installer: `tauri build` works (test build `0.0.1`, 2026-10-23); `THIRD_PARTY_NOTICES.md` generated and bundled
