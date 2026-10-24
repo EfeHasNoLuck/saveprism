@@ -263,7 +263,7 @@ fn save_as_writes_a_new_file_and_keeps_the_original() {
     session.edit_value("/level", "43").unwrap();
 
     let target = env.work.join("copy.json");
-    let result = session.save(target.to_str().unwrap(), false).unwrap();
+    let result = session.save(target.to_str().unwrap(), false, None).unwrap();
     assert!(result.verified);
     assert!(result.backup_path.is_none());
     assert_eq!(result.written_path, target.to_string_lossy());
@@ -282,7 +282,7 @@ fn overwrite_makes_a_backup_and_writes_the_new_value() {
     let mut session = open(&env, &path, None).unwrap();
     session.edit_value("/level", "99").unwrap();
 
-    let result = session.save(path.to_str().unwrap(), false).unwrap();
+    let result = session.save(path.to_str().unwrap(), false, None).unwrap();
     let backup = PathBuf::from(result.backup_path.unwrap());
     assert!(backup.starts_with(&env.backups));
     assert_eq!(fs::read(&backup).unwrap(), before);
@@ -299,12 +299,14 @@ fn save_as_onto_an_existing_file_needs_overwrite() {
     fs::write(&other, b"{\"keep\":true}").unwrap();
     session.edit_value("/level", "5").unwrap();
 
-    let error = session.save(other.to_str().unwrap(), false).unwrap_err();
+    let error = session
+        .save(other.to_str().unwrap(), false, None)
+        .unwrap_err();
     assert_eq!(error.code, app_codes::TARGET_EXISTS);
     assert_eq!(fs::read(&other).unwrap(), b"{\"keep\":true}");
     assert_eq!(session.pending_changes().len(), 1);
 
-    let result = session.save(other.to_str().unwrap(), true).unwrap();
+    let result = session.save(other.to_str().unwrap(), true, None).unwrap();
     assert!(result.backup_path.is_some());
     let reopened = open(&env, &other, None).unwrap();
     assert_eq!(row(&reopened, "/level").preview, "5");
@@ -1192,7 +1194,7 @@ fn saving_clears_the_history() {
     session.undo().unwrap();
     assert!(session.history_state().can_undo && session.history_state().can_redo);
 
-    session.save(path.to_str().unwrap(), false).unwrap();
+    session.save(path.to_str().unwrap(), false, None).unwrap();
     assert_eq!(
         session.history_state(),
         HistoryState {
@@ -1327,9 +1329,9 @@ fn backups_are_listed_and_restored_with_a_backup_of_the_current_file() {
     assert!(session.backups().unwrap().is_empty());
 
     session.edit_value("/level", "50").unwrap();
-    session.save(path.to_str().unwrap(), false).unwrap();
+    session.save(path.to_str().unwrap(), false, None).unwrap();
     session.edit_value("/level", "60").unwrap();
-    session.save(path.to_str().unwrap(), false).unwrap();
+    session.save(path.to_str().unwrap(), false, None).unwrap();
     let saved = fs::read(&path).unwrap();
 
     let list = session.backups().unwrap();
@@ -1340,7 +1342,7 @@ fn backups_are_listed_and_restored_with_a_backup_of_the_current_file() {
 
     // Unsaved edits are dropped by a restore.
     session.edit_value("/level", "70").unwrap();
-    let restored = session.restore_backup(&oldest.name).unwrap();
+    let restored = session.restore_backup(&oldest.name, None).unwrap();
     assert_eq!(fs::read(&path).unwrap(), first);
     assert_eq!(row(&restored, "/level").preview, "42");
     assert!(restored.pending_changes().is_empty());
@@ -1349,9 +1351,33 @@ fn backups_are_listed_and_restored_with_a_backup_of_the_current_file() {
     // The file that was replaced is the newest backup now, so the restore can be taken back.
     let list = restored.backups().unwrap();
     assert_eq!(list.len(), 3);
-    let back = restored.restore_backup(&list[0].name).unwrap();
+    let back = restored.restore_backup(&list[0].name, None).unwrap();
     assert_eq!(fs::read(&path).unwrap(), saved);
     assert_eq!(row(&back, "/level").preview, "60");
+}
+
+#[test]
+fn save_keeps_at_most_the_requested_backups_and_never_drops_the_newest() {
+    let env = env();
+    let path = copy_in(&env, "synthetic/json/compact.json");
+    let mut session = open(&env, &path, None).unwrap();
+
+    let mut last_backup = String::new();
+    for level in 0..5 {
+        session.edit_value("/level", &level.to_string()).unwrap();
+        let result = session
+            .save(path.to_str().unwrap(), false, Some(2))
+            .unwrap();
+        last_backup = PathBuf::from(result.backup_path.unwrap())
+            .file_name()
+            .unwrap()
+            .to_string_lossy()
+            .into_owned();
+    }
+
+    let list = session.backups().unwrap();
+    assert_eq!(list.len(), 2);
+    assert_eq!(list[0].name, last_backup);
 }
 
 #[test]
@@ -1360,11 +1386,11 @@ fn restore_refuses_unknown_names_and_unreadable_backups() {
     let path = copy_in(&env, "synthetic/json/compact.json");
     let mut session = open(&env, &path, None).unwrap();
     session.edit_value("/level", "50").unwrap();
-    let result = session.save(path.to_str().unwrap(), false).unwrap();
+    let result = session.save(path.to_str().unwrap(), false, None).unwrap();
     let saved = fs::read(&path).unwrap();
 
     for name in ["../compact.json", "source.txt", "1.bak", ""] {
-        let error = session.restore_backup(name).err().unwrap();
+        let error = session.restore_backup(name, None).err().unwrap();
         assert_eq!(error.code, app_codes::BACKUP_NOT_FOUND, "{name}");
     }
 
@@ -1372,7 +1398,7 @@ fn restore_refuses_unknown_names_and_unreadable_backups() {
     let backup = PathBuf::from(result.backup_path.unwrap());
     fs::write(&backup, b"\x00\x01 not a save").unwrap();
     let name = backup.file_name().unwrap().to_str().unwrap();
-    let error = session.restore_backup(name).err().unwrap();
+    let error = session.restore_backup(name, None).err().unwrap();
     assert_eq!(error.code, app_codes::BACKUP_UNREADABLE);
     assert_eq!(fs::read(&path).unwrap(), saved);
 }
@@ -1398,7 +1424,7 @@ fn unnamed_entries_set_to_empty_stay_in_the_list_until_saved() {
     assert_eq!(ids(&view.variables), [1, 3, 4]);
 
     // Once saved, the empty unnamed entries are unused again and left out.
-    session.save(path.to_str().unwrap(), false).unwrap();
+    session.save(path.to_str().unwrap(), false, None).unwrap();
     let view = rpg_view(&session).unwrap();
     assert!(view.switches.is_empty());
     assert_eq!(ids(&view.variables), [3, 4]);
@@ -1657,7 +1683,7 @@ fn sugarcube_edit_changes_the_current_value_and_nothing_else() {
         "140"
     );
 
-    session.save(path.to_str().unwrap(), false).unwrap();
+    session.save(path.to_str().unwrap(), false, None).unwrap();
     let reopened = open(&env, &path, None).unwrap();
     assert_eq!(reopened.info().guard, GuardLevel::Exact);
     let view = story_view(&reopened).unwrap();
@@ -2060,7 +2086,7 @@ fn the_pasted_folder_is_never_the_backup_folder() {
         .edit_value(&story_row(&view, "gold").path, "1")
         .unwrap();
     let target = env.work.join("story.save");
-    let result = session.save(target.to_str().unwrap(), false).unwrap();
+    let result = session.save(target.to_str().unwrap(), false, None).unwrap();
     assert!(result.backup_path.is_none());
     let info = session.info();
     assert!(!info.pasted);
@@ -2358,7 +2384,7 @@ fn rgss_edits_through_the_view_survive_a_save() {
         session
             .edit_value(&view.actors[last].hp.path, "999")
             .unwrap();
-        session.save(path.to_str().unwrap(), false).unwrap();
+        session.save(path.to_str().unwrap(), false, None).unwrap();
 
         let reopened = open(&env, &path, None).unwrap();
         let info = reopened.info();
@@ -2551,7 +2577,7 @@ fn lcf_edits_through_the_view_survive_a_save() {
         .unwrap();
     session.edit_value(&view.actors[0].hp.path, "1000").unwrap();
     let path = env.work.join("Save01.lsd");
-    session.save(path.to_str().unwrap(), false).unwrap();
+    session.save(path.to_str().unwrap(), false, None).unwrap();
 
     let reopened = open(&env, &path, None).unwrap();
     let info = reopened.info();
@@ -2712,7 +2738,7 @@ fn renpy_edits_survive_a_save() {
             "/0/store.met_eileen"
         };
         session.edit_value(flag, "false").unwrap();
-        session.save(path.to_str().unwrap(), false).unwrap();
+        session.save(path.to_str().unwrap(), false, None).unwrap();
 
         let reopened = open(&env, &path, None).unwrap();
         assert_eq!(reopened.info().guard, GuardLevel::Exact, "{relative}");
@@ -2741,7 +2767,7 @@ fn a_signed_renpy_save_tells_the_player_to_trust_it_and_is_written_unsigned() {
     assert!(info.warning.unwrap().contains("Answer Yes"));
     assert!(info.editable);
     session.edit_value("/0/store.money", "777").unwrap();
-    session.save(path.to_str().unwrap(), false).unwrap();
+    session.save(path.to_str().unwrap(), false, None).unwrap();
     let reopened = open(&env, &path, None).unwrap();
     assert_eq!(reopened.info().notice, None);
     assert_eq!(reopened.field_info("/0/store.money").unwrap().value, "777");
@@ -2759,7 +2785,9 @@ fn a_signed_renpy_persistent_is_read_only() {
     let error = session.edit_value("/play_count", "9").unwrap_err();
     assert_eq!(error.code, app_codes::READ_ONLY_DOCUMENT);
     assert!(error.message.contains("persistent"));
-    let error = session.save(path.to_str().unwrap(), false).unwrap_err();
+    let error = session
+        .save(path.to_str().unwrap(), false, None)
+        .unwrap_err();
     assert_eq!(error.code, app_codes::READ_ONLY_DOCUMENT);
     assert!(!value_rows(&session)[0].field.as_ref().unwrap().editable);
 }
@@ -2790,7 +2818,7 @@ fn an_unsigned_renpy_persistent_lists_and_saves_its_fields() {
         ]
     );
     session.edit_value("/play_count", "9").unwrap();
-    session.save(path.to_str().unwrap(), false).unwrap();
+    session.save(path.to_str().unwrap(), false, None).unwrap();
     let reopened = open(&env, &path, None).unwrap();
     assert_eq!(reopened.field_info("/play_count").unwrap().value, "9");
 }
@@ -2934,7 +2962,7 @@ fn naninovel_edits_survive_a_save() {
             "false",
         )
         .unwrap();
-    session.save(path.to_str().unwrap(), false).unwrap();
+    session.save(path.to_str().unwrap(), false, None).unwrap();
 
     let reopened = open(&env, &path, None).unwrap();
     assert_eq!(reopened.info().guard, GuardLevel::Exact);
@@ -3071,7 +3099,7 @@ fn an_mv_item_can_be_added_undone_and_saved() {
     assert!(session.redo().unwrap().structural);
     assert_eq!(ids(&rpg_view(&session).unwrap().items), [1, 2, 3, 5]);
 
-    session.save(path.to_str().unwrap(), false).unwrap();
+    session.save(path.to_str().unwrap(), false, None).unwrap();
     let reopened = open(&env, &path, None).unwrap();
     assert_eq!(reopened.info().guard, GuardLevel::Exact);
     let view = rpg_view(&reopened).unwrap();
@@ -3110,7 +3138,7 @@ fn an_xp_item_can_be_added_undone_and_saved() {
     assert_eq!(ids(&rpg_view(&session).unwrap().items), [1, 4]);
     assert!(session.redo().unwrap().structural);
 
-    session.save(path.to_str().unwrap(), false).unwrap();
+    session.save(path.to_str().unwrap(), false, None).unwrap();
     let reopened = open(&env, &path, None).unwrap();
     assert_eq!(reopened.info().guard, GuardLevel::Exact);
     let view = rpg_view(&reopened).unwrap();
@@ -3152,7 +3180,7 @@ fn a_vx_ace_item_can_be_added_undone_and_saved() {
     assert_eq!(ids(&rpg_view(&session).unwrap().items), [1, 2]);
     assert!(session.redo().unwrap().structural);
 
-    session.save(path.to_str().unwrap(), false).unwrap();
+    session.save(path.to_str().unwrap(), false, None).unwrap();
     let reopened = open(&env, &path, None).unwrap();
     assert_eq!(reopened.info().guard, GuardLevel::Exact);
     assert_eq!(ids(&rpg_view(&reopened).unwrap().items), [1, 2, 3]);
@@ -3234,7 +3262,7 @@ fn a_json_value_can_be_added_removed_and_undone() {
     assert!(alive(&session));
 
     session.remove_value("/stats/alive").unwrap();
-    session.save(path.to_str().unwrap(), false).unwrap();
+    session.save(path.to_str().unwrap(), false, None).unwrap();
     let reopened = open(&env, &path, None).unwrap();
     assert_eq!(reopened.info().guard, GuardLevel::Exact);
     let (rows, _) = values_view(&reopened);
@@ -3289,7 +3317,7 @@ fn an_es3_value_can_be_added_and_saved() {
     assert!(field.added);
     assert!(row.removable);
 
-    session.save(path.to_str().unwrap(), false).unwrap();
+    session.save(path.to_str().unwrap(), false, None).unwrap();
     let reopened = open(&env, &path, None).unwrap();
     assert_eq!(reopened.info().guard, GuardLevel::Exact);
     let (rows, _) = values_view(&reopened);
@@ -3329,7 +3357,7 @@ fn a_sugarcube_variable_can_be_added_and_saved() {
     );
     assert!(session.redo().unwrap().structural);
 
-    session.save(path.to_str().unwrap(), false).unwrap();
+    session.save(path.to_str().unwrap(), false, None).unwrap();
     let reopened = open(&env, &path, None).unwrap();
     assert_eq!(reopened.info().guard, GuardLevel::Exact);
     assert_eq!(
@@ -3359,7 +3387,7 @@ fn an_mv_item_can_be_removed_undone_and_saved() {
     assert_eq!(ids(&rpg_view(&session).unwrap().items), [1, 2, 5]);
     assert!(session.redo().unwrap().structural);
 
-    session.save(path.to_str().unwrap(), false).unwrap();
+    session.save(path.to_str().unwrap(), false, None).unwrap();
     let reopened = open(&env, &path, None).unwrap();
     assert_eq!(reopened.info().guard, GuardLevel::Exact);
     assert_eq!(ids(&rpg_view(&reopened).unwrap().items), [2, 5]);

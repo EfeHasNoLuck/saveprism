@@ -44,7 +44,7 @@ export function Header({ file, onOpenFile, onPasteCode, onOpenSettings }: Header
                 </span>
               </>
             )}
-            <span className="shrink-0 rounded-sm bg-surface-high px-1 font-mono text-[11px] leading-4 font-medium text-tertiary uppercase">
+            <span className="shrink-0 rounded-sm bg-surface-high px-1 font-mono text-[0.6875rem] leading-4 font-medium text-tertiary uppercase">
               {engine}
             </span>
           </div>

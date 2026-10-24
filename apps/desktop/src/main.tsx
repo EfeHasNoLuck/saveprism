@@ -4,10 +4,12 @@ import { createRoot } from "react-dom/client";
 import App from "./App";
 import { applyStoredTheme, ThemeProvider } from "@/theme";
 import { initI18n } from "@/i18n";
+import { applyStoredAppearance } from "./shell/appearance";
 import { NotifyProvider } from "./shell/NotifyProvider";
 import { SettingsProvider } from "./shell/SettingsProvider";
 
 applyStoredTheme();
+applyStoredAppearance();
 initI18n();
 
 const container = document.getElementById("root");

@@ -19,7 +19,7 @@ const UNKNOWN = "—";
 
 function Fact({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="flex items-baseline justify-between gap-4 text-[13px]">
+    <div className="flex items-baseline justify-between gap-4 text-[0.8125rem]">
       <dt className="text-muted-foreground">{label}</dt>
       <dd className="font-mono text-xs">{children}</dd>
     </div>
@@ -84,19 +84,19 @@ export function AboutDialog({ open, onOpenChange }: AboutDialogProps) {
           <Fact label={t("about.license")}>{t("about.licenseValue")}</Fact>
         </dl>
 
-        <p className="text-[13px] text-muted-foreground">{t("about.privacy")}</p>
+        <p className="text-[0.8125rem] text-muted-foreground">{t("about.privacy")}</p>
 
         {notices ? (
           <button
             type="button"
             onClick={showNotices}
-            className="inline-flex w-fit items-center gap-1 rounded-sm text-[13px] text-primary underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring/60"
+            className="inline-flex w-fit items-center gap-1 rounded-sm text-[0.8125rem] text-primary underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring/60"
           >
             {t("about.notices")}
             <ExternalLink className="size-3.5" aria-hidden="true" />
           </button>
         ) : (
-          <p className="text-[13px] text-muted-foreground">{t("about.notices")}</p>
+          <p className="text-[0.8125rem] text-muted-foreground">{t("about.notices")}</p>
         )}
       </DialogContent>
     </Dialog>

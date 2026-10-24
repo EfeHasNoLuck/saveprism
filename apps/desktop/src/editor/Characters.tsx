@@ -57,7 +57,7 @@ function ActorSelect({
                     #{a.id} {a.name} · {t("actor.lv", { level })}
                   </Select.ItemText>
                   {changed > 0 ? (
-                    <span className="ml-auto text-[11px] font-medium text-changed-foreground">
+                    <span className="ml-auto text-[0.6875rem] font-medium text-changed-foreground">
                       {t("count.changed", { count: changed, changed: format(changed) })}
                     </span>
                   ) : null}

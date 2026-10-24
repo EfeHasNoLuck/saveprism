@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { Characters } from "./Characters";
 import { useEditorContext } from "./context";
 import { EntryList, type EntryListProps } from "./EntryList";
-import { useElementWidth } from "./grid";
+import { rootScale, useElementWidth } from "./grid";
 import { allocateColumns, cardWidth } from "./helpers";
 import { StateBar, UndoButton, ValueInput } from "./FieldEditor";
 import { Section } from "./parts";
@@ -64,8 +64,9 @@ function Gold({ field }: { field: Field }) {
  * need and shares the rest of the row by its column count. An empty card stays narrow.
  */
 function cardFlex(columns: number, onlyEmpty: boolean): CSSProperties {
-  if (columns === 0) return { flex: `${onlyEmpty ? 1 : 0} 1 ${cardWidth(0)}px` };
-  return { flex: `${columns} 1 ${cardWidth(columns)}px` };
+  // In rem, so the cards grow with the Text size setting (the widths are pixels at 16px).
+  if (columns === 0) return { flex: `${onlyEmpty ? 1 : 0} 1 ${cardWidth(0) / 16}rem` };
+  return { flex: `${columns} 1 ${cardWidth(columns) / 16}rem` };
 }
 
 /**
@@ -76,7 +77,7 @@ function cardFlex(columns: number, onlyEmpty: boolean): CSSProperties {
 function ListRow({ lists }: { lists: Omit<EntryListProps, "style" | "className">[] }) {
   const { ref, width } = useElementWidth();
   const counts = lists.map((l) => l.entries.length);
-  const columns = allocateColumns(width, counts);
+  const columns = allocateColumns(width / rootScale(), counts);
   const onlyEmpty = counts.every((n) => n === 0);
   return (
     <div ref={ref} className="flex flex-wrap items-start gap-2.5">
@@ -117,7 +118,7 @@ function DataFolderLine({ view }: { view: RpgMakerView }) {
       {view.namesFolder === null ? (
         <span className="truncate">{t("dataFolder.none")}</span>
       ) : (
-        <span className="min-w-0 truncate font-mono text-[11px]" title={view.namesFolder}>
+        <span className="min-w-0 truncate font-mono text-[0.6875rem]" title={view.namesFolder}>
           {view.namesFolder}
         </span>
       )}

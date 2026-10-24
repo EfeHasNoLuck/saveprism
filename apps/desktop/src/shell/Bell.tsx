@@ -33,7 +33,7 @@ export function Bell() {
         >
           <BellIcon />
           {unseen > 0 ? (
-            <span className="absolute -top-1 -right-1 flex min-w-4 items-center justify-center rounded-full bg-primary px-1 font-mono text-[10px] leading-4 font-semibold text-primary-foreground">
+            <span className="absolute -top-1 -right-1 flex min-w-4 items-center justify-center rounded-full bg-primary px-1 font-mono text-[0.625rem] leading-4 font-semibold text-primary-foreground">
               {unseen > 9 ? "9+" : unseen}
             </span>
           ) : null}
@@ -41,7 +41,7 @@ export function Bell() {
       </PopoverTrigger>
       <PopoverContent align="end" className="w-96">
         <div className="mb-2 flex items-center justify-between">
-          <p className="text-[13px] font-semibold">{t("bell.title")}</p>
+          <p className="text-[0.8125rem] font-semibold">{t("bell.title")}</p>
           {count > 0 ? (
             <Button variant="ghost" size="xs" onClick={clearEvents}>
               {t("bell.clear")}
@@ -49,7 +49,7 @@ export function Bell() {
           ) : null}
         </div>
         {count === 0 ? (
-          <p className="py-4 text-center text-[13px] text-muted-foreground">{t("bell.empty")}</p>
+          <p className="py-4 text-center text-[0.8125rem] text-muted-foreground">{t("bell.empty")}</p>
         ) : (
           <ul className="dense-scroll flex max-h-72 flex-col gap-1 overflow-y-auto">
             {events.map((event) => (
@@ -58,13 +58,13 @@ export function Bell() {
                   <span
                     className={
                       event.kind === "error"
-                        ? "min-w-0 text-[13px] font-medium break-words text-destructive"
-                        : "min-w-0 text-[13px] font-medium break-words"
+                        ? "min-w-0 text-[0.8125rem] font-medium break-words text-destructive"
+                        : "min-w-0 text-[0.8125rem] font-medium break-words"
                     }
                   >
                     <PathText text={event.title} />
                   </span>
-                  <span className="shrink-0 font-mono text-[11px] text-muted-foreground">
+                  <span className="shrink-0 font-mono text-[0.6875rem] text-muted-foreground">
                     {timeText(event.at, i18n.language)}
                   </span>
                 </div>

@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
 import {
+  clampKeepBackups,
   DEFAULT_SETTINGS,
   loadSettings,
   parseSettings,
@@ -38,7 +39,41 @@ describe("parseSettings", () => {
       saveDefault: "overwrite",
       showRecent: DEFAULT_SETTINGS.showRecent,
       showNotifications: false,
+      keepBackups: DEFAULT_SETTINGS.keepBackups,
+      textSize: DEFAULT_SETTINGS.textSize,
+      colors: DEFAULT_SETTINGS.colors,
     });
+  });
+
+  it("keeps 10 backups by default and clamps the number to 1..50", () => {
+    expect(DEFAULT_SETTINGS.keepBackups).toBe(10);
+    expect(parseSettings(JSON.stringify({ keepBackups: 0 })).keepBackups).toBe(1);
+    expect(parseSettings(JSON.stringify({ keepBackups: 51 })).keepBackups).toBe(50);
+    expect(parseSettings(JSON.stringify({ keepBackups: 12.6 })).keepBackups).toBe(13);
+    expect(parseSettings(JSON.stringify({ keepBackups: "many" })).keepBackups).toBe(10);
+    expect(clampKeepBackups(Number.NaN)).toBe(10);
+  });
+
+  it("accepts the three text sizes and replaces anything else", () => {
+    for (const textSize of ["small", "normal", "large"] as const) {
+      expect(parseSettings(JSON.stringify({ textSize })).textSize).toBe(textSize);
+    }
+    expect(parseSettings(JSON.stringify({ textSize: "huge" })).textSize).toBe("normal");
+  });
+
+  it("keeps valid colour presets and replaces unknown ones one by one", () => {
+    const parsed = parseSettings(
+      JSON.stringify({
+        colors: { changed: "rose", accent: "green", error: "nope" },
+      }),
+    );
+    expect(parsed.colors).toEqual({ changed: "rose", accent: "green", error: "red" });
+    expect(
+      parseSettings(JSON.stringify({ colors: { changed: "nope" } })).colors,
+    ).toEqual({ changed: "violet", accent: "cyan", error: "red" });
+    expect(parseSettings(JSON.stringify({ colors: "blue" })).colors).toEqual(
+      DEFAULT_SETTINGS.colors,
+    );
   });
 
   it("clamps the pattern strength to 0..100", () => {

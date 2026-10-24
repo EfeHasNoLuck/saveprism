@@ -56,13 +56,13 @@ export function StartScreen({
               {t("start.pasteCode")}
             </Button>
           </div>
-          <p className="text-[13px] text-muted-foreground">{t("start.pasteHint")}</p>
-          <p className="text-[13px] text-muted-foreground">{t("start.privacy")}</p>
+          <p className="text-[0.8125rem] text-muted-foreground">{t("start.pasteHint")}</p>
+          <p className="text-[0.8125rem] text-muted-foreground">{t("start.privacy")}</p>
         </div>
 
         {showRecent ? (
           <section aria-label={t("start.recent")} className="flex flex-col gap-2">
-            <h2 className="px-1 text-[11px] font-medium tracking-wider text-muted-foreground uppercase">
+            <h2 className="px-1 text-[0.6875rem] font-medium tracking-wider text-muted-foreground uppercase">
               {t("start.recent")}
             </h2>
             <ul className="flex flex-col overflow-hidden rounded-md border border-border bg-card">
@@ -76,7 +76,7 @@ export function StartScreen({
                     <FileText className="size-4 shrink-0 text-muted-foreground" />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate font-mono text-xs">{item.fileName}</span>
-                      <span className="block truncate text-[11px] text-muted-foreground">
+                      <span className="block truncate text-[0.6875rem] text-muted-foreground">
                         {item.path}
                       </span>
                     </span>
@@ -88,7 +88,7 @@ export function StartScreen({
         ) : null}
       </div>
 
-      <div className="mt-6 w-full max-w-xl text-[13px]">
+      <div className="mt-6 w-full max-w-xl text-[0.8125rem]">
         <button
           type="button"
           aria-expanded={faqOpen}

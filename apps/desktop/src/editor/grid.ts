@@ -17,10 +17,19 @@ export function useElementWidth<T extends HTMLElement = HTMLDivElement>() {
 }
 
 /**
+ * The root font size as a share of the default 16px (the Text size setting); 1 when unknown. The
+ * column helpers count in pixels at 16px, so a measured width is divided by this first.
+ */
+export function rootScale(): number {
+  const size = Number.parseFloat(getComputedStyle(document.documentElement).fontSize);
+  return Number.isFinite(size) && size > 0 ? size / 16 : 1;
+}
+
+/**
  * How many entry columns fit in the element behind `ref`. The count follows the element's width,
  * so a wide card shows more columns and a page holds more entries.
  */
 export function useGridColumns<T extends HTMLElement = HTMLDivElement>() {
   const { ref, width } = useElementWidth<T>();
-  return { ref, columns: columnsIn(width) };
+  return { ref, columns: columnsIn(width / rootScale()) };
 }

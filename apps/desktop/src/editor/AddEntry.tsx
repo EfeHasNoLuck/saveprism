@@ -73,7 +73,7 @@ export function AddEntryButton({
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80">
-        <p className="text-[13px] font-semibold">{t("addEntry.title", { label })}</p>
+        <p className="text-[0.8125rem] font-semibold">{t("addEntry.title", { label })}</p>
         <form
           className="mt-2 flex flex-col gap-2"
           onSubmit={(event) => {
@@ -102,7 +102,7 @@ export function AddEntryButton({
                 <div className="flex items-center gap-1.5 rounded-sm bg-surface-high px-2 py-1 text-xs">
                   <span className="min-w-0 flex-1 truncate">
                     {selected.name}
-                    <span className="ml-1 font-mono text-[11px] text-muted-foreground">
+                    <span className="ml-1 font-mono text-[0.6875rem] text-muted-foreground">
                       #{selected.id}
                     </span>
                   </span>
@@ -120,7 +120,7 @@ export function AddEntryButton({
                         className="flex w-full items-center gap-2 rounded-sm px-2 py-1 text-left text-xs outline-none hover:bg-surface-container focus-visible:ring-2 focus-visible:ring-ring/60"
                       >
                         <span className="min-w-0 flex-1 truncate">{entry.name}</span>
-                        <span className="shrink-0 font-mono text-[11px] text-muted-foreground">
+                        <span className="shrink-0 font-mono text-[0.6875rem] text-muted-foreground">
                           #{entry.id}
                         </span>
                       </button>
@@ -131,7 +131,7 @@ export function AddEntryButton({
                 <p className="text-xs text-muted-foreground">{t("addEntry.noMatch")}</p>
               )}
               {typedId !== null && selected === null ? (
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-[0.6875rem] text-muted-foreground">
                   {t("addEntry.typedId", { id: typedId })}
                 </p>
               ) : null}
@@ -151,7 +151,7 @@ export function AddEntryButton({
                   className="h-7 w-full rounded-sm border border-input/70 bg-field px-2 text-right font-mono text-xs tabular-nums outline-none focus-visible:border-ring dark:border-transparent dark:focus-visible:border-ring"
                 />
               </label>
-              <p className="text-[11px] text-muted-foreground">{t("addEntry.noCatalog")}</p>
+              <p className="text-[0.6875rem] text-muted-foreground">{t("addEntry.noCatalog")}</p>
             </>
           )}
           <label className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -165,7 +165,7 @@ export function AddEntryButton({
               onChange={(event) => setCount(event.target.value)}
               className="h-7 w-16 rounded-sm border border-input/70 bg-field px-2 text-right font-mono text-xs tabular-nums outline-none focus-visible:border-ring aria-invalid:border-destructive dark:border-transparent dark:focus-visible:border-ring"
             />
-            <span className="ml-auto font-mono text-[11px]">1–99</span>
+            <span className="ml-auto font-mono text-[0.6875rem]">1–99</span>
           </label>
           {countProblem !== null && countProblem !== "empty" ? (
             <p role="alert" className="text-xs font-medium text-destructive">

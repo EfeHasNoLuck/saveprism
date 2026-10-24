@@ -37,7 +37,7 @@ function DialogContent({
         data-slot="dialog-content"
         className={cn(
           className?.includes("max-w-") ? "" : "max-w-lg",
-          "fixed top-1/2 left-1/2 z-50 flex max-h-[85vh] w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col gap-4 rounded-md border border-primary/30 bg-popover p-5 text-[13px] text-popover-foreground shadow-xl shadow-black/30 outline-none duration-150 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+          "fixed top-1/2 left-1/2 z-50 flex max-h-[85vh] w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col gap-4 rounded-md border border-primary/30 bg-popover p-5 text-[0.8125rem] text-popover-foreground shadow-xl shadow-black/30 outline-none duration-150 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
           className,
         )}
         {...props}
@@ -97,7 +97,7 @@ function DialogDescription({
   return (
     <DialogPrimitive.Description
       data-slot="dialog-description"
-      className={cn("text-[13px] text-muted-foreground", className)}
+      className={cn("text-[0.8125rem] text-muted-foreground", className)}
       {...props}
     />
   )

@@ -12,7 +12,7 @@ use saveprism_core::io::{WriteOptions, find_backup, list_backups, safe_write};
 use saveprism_core::{Error, codes};
 use serde::Serialize;
 
-use super::{ApiError, Session, app_codes, decode_file, io_error, quote};
+use super::{ApiError, Session, app_codes, clamp_keep_backups, decode_file, io_error, quote};
 
 /// One backup of the open file, newest first in the list.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
@@ -42,14 +42,19 @@ impl Session {
 
     /// Puts the backup `name` of the open file back in place of the file and returns the file opened
     /// again. Pending edits are lost. The backup must open as a save with the same password;
-    /// otherwise nothing is written.
-    pub fn restore_backup(&self, name: &str) -> Result<Session, ApiError> {
+    /// otherwise nothing is written. `keep_backups` is the number of backups kept for the file,
+    /// clamped to 1..=50 (10 when missing).
+    pub fn restore_backup(
+        &self,
+        name: &str,
+        keep_backups: Option<usize>,
+    ) -> Result<Session, ApiError> {
         let root = self.backup_root()?;
         let backup = find_backup(&root, &self.path, name).ok_or_else(|| {
             ApiError::new(
                 app_codes::BACKUP_NOT_FOUND,
                 format!("there is no backup \"{}\" of this file", quote(name)),
-                "Open the backups list again. Old backups are removed after 30 days or when a file has more than 10.",
+                "Open the backups list again. Old backups are removed after 30 days or when a file has more backups than the setting keeps.",
             )
         })?;
         let meta = fs::metadata(&backup).map_err(|error| io_error(&backup, error))?;
@@ -76,7 +81,8 @@ impl Session {
             )
         })?;
 
-        let opts = WriteOptions::new(root);
+        let mut opts = WriteOptions::new(root);
+        opts.keep_last = clamp_keep_backups(keep_backups);
         let verify = |written: &[u8]| -> saveprism_core::Result<()> {
             if written == bytes.as_slice() {
                 Ok(())

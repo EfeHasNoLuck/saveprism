@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ageText, dateTimeText, sizeText } from "./backups";
+import { useSettings } from "./context";
 import { describeError } from "./errors";
 
 type ListState =
@@ -42,6 +43,7 @@ export function BackupsDialog({
   onRestore,
 }: BackupsDialogProps) {
   const { t, i18n } = useTranslation();
+  const { settings } = useSettings();
   const language = i18n.resolvedLanguage ?? "en";
   const [list, setList] = useState<ListState>({ status: "loading" });
   /** The backup the confirmation asks about, else null. */
@@ -72,18 +74,18 @@ export function BackupsDialog({
         <DialogHeader>
           <DialogTitle>{t("backups.title")}</DialogTitle>
           <DialogDescription>
-            {t("backups.description", { name: fileName })} {t("backups.retention")}
+            {t("backups.description", { name: fileName })} {t("backups.retention", { count: settings.keepBackups })}
           </DialogDescription>
         </DialogHeader>
 
         {list.status === "loading" ? (
-          <p className="py-4 text-center text-[13px] text-muted-foreground">{t("common.loading")}</p>
+          <p className="py-4 text-center text-[0.8125rem] text-muted-foreground">{t("common.loading")}</p>
         ) : list.status === "error" ? (
-          <p role="alert" className="py-2 text-[13px] text-destructive">
+          <p role="alert" className="py-2 text-[0.8125rem] text-destructive">
             {list.message}
           </p>
         ) : list.rows.length === 0 ? (
-          <p className="rounded-sm bg-surface-high px-3 py-4 text-center text-[13px] text-muted-foreground">
+          <p className="rounded-sm bg-surface-high px-3 py-4 text-center text-[0.8125rem] text-muted-foreground">
             {t("backups.empty")}
           </p>
         ) : (
@@ -97,7 +99,7 @@ export function BackupsDialog({
                   <p className="truncate font-mono text-xs tabular-nums">
                     {dateTimeText(row.createdMs, language)}
                   </p>
-                  <p className="truncate text-[11px] text-muted-foreground">
+                  <p className="truncate text-[0.6875rem] text-muted-foreground">
                     {ageText(row.createdMs, list.now, language)} · {sizeText(row.byteSize, language)}
                   </p>
                 </div>
@@ -126,7 +128,7 @@ export function BackupsDialog({
                 </DialogDescription>
               </DialogHeader>
               {changeCount > 0 ? (
-                <p className="text-[13px] font-medium text-destructive">
+                <p className="text-[0.8125rem] font-medium text-destructive">
                   {t("backups.confirmLoss", { count: changeCount })}
                 </p>
               ) : null}

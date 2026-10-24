@@ -337,7 +337,7 @@ function App() {
     async (target: string, overwrite: boolean) => {
       setBusy(true);
       try {
-        const result = await save(target, overwrite);
+        const result = await save(target, overwrite, settings.keepBackups);
         if (!result.verified) {
           notify({
             kind: "error",
@@ -387,7 +387,7 @@ function App() {
         setBusy(false);
       }
     },
-    [notify, notifyError, resetChanges, t],
+    [notify, notifyError, resetChanges, settings.keepBackups, t],
   );
 
   const saveAsNew = useCallback(async () => {
@@ -489,7 +489,7 @@ function App() {
     async (name: string, when: string) => {
       setBusy(true);
       try {
-        const info = await restoreBackup(name);
+        const info = await restoreBackup(name, settings.keepBackups);
         setFile(info);
         resetChanges();
         setHistory(NO_HISTORY);
@@ -507,7 +507,7 @@ function App() {
         setBusy(false);
       }
     },
-    [notify, notifyError, resetChanges, t],
+    [notify, notifyError, resetChanges, settings.keepBackups, t],
   );
 
   const loadChanges = useCallback(async (): Promise<Change[]> => {

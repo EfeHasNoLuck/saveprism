@@ -185,13 +185,15 @@ async fn discard_changes(state: State<'_, AppState>) -> Result<(), ApiError> {
 }
 
 /// Saves to `target` (the open file = overwrite with backup; another path = save as).
+/// `keep_backups` is the number of backups to keep for the file (1 to 50, 10 when missing).
 #[tauri::command]
 async fn save(
     state: State<'_, AppState>,
     target: String,
     overwrite: Option<bool>,
+    keep_backups: Option<usize>,
 ) -> Result<SaveResult, ApiError> {
-    state.with_session(|session| session.save(&target, overwrite.unwrap_or(false)))
+    state.with_session(|session| session.save(&target, overwrite.unwrap_or(false), keep_backups))
 }
 
 /// Pretty JSON text of the open document (the view the JSON editor edits; at most 50 MB).
@@ -239,12 +241,17 @@ async fn list_backups(state: State<'_, AppState>) -> Result<Vec<BackupRow>, ApiE
 }
 
 /// Puts the backup `name` back in place of the open file (the current file is backed up first) and
-/// opens the file again. Pending edits are lost.
+/// opens the file again. Pending edits are lost. `keep_backups` is the number of backups to keep
+/// for the file (1 to 50, 10 when missing).
 #[tauri::command]
-async fn restore_backup(state: State<'_, AppState>, name: String) -> Result<OpenInfo, ApiError> {
+async fn restore_backup(
+    state: State<'_, AppState>,
+    name: String,
+    keep_backups: Option<usize>,
+) -> Result<OpenInfo, ApiError> {
     let mut guard = state.lock();
     let session = guard.as_ref().ok_or_else(ApiError::no_document)?;
-    let restored = session.restore_backup(&name)?;
+    let restored = session.restore_backup(&name, keep_backups)?;
     let info = restored.info();
     *guard = Some(restored);
     Ok(info)

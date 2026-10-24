@@ -46,12 +46,12 @@ export function Section({
         <div className="flex min-w-0 items-center gap-1.5">
           <h2 className="truncate text-sm leading-5 font-semibold">{title}</h2>
           {count !== undefined ? (
-            <span className="shrink-0 font-mono text-[11px] text-muted-foreground tabular-nums">
+            <span className="shrink-0 font-mono text-[0.6875rem] text-muted-foreground tabular-nums">
               {count}
             </span>
           ) : null}
           {changed > 0 ? (
-            <span className="shrink-0 text-[11px] font-medium text-changed-foreground tabular-nums">
+            <span className="shrink-0 text-[0.6875rem] font-medium text-changed-foreground tabular-nums">
               {t("count.changed", { count: changed, changed: format(changed) })}
             </span>
           ) : null}
@@ -124,7 +124,7 @@ export function Pager({
       >
         <ChevronLeft className="size-3.5" />
       </button>
-      <span className="min-w-11 text-center font-mono text-[11px] text-muted-foreground tabular-nums">
+      <span className="min-w-11 text-center font-mono text-[0.6875rem] text-muted-foreground tabular-nums">
         {pagerLabel(current, total, size)}
       </span>
       <button

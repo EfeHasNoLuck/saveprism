@@ -59,7 +59,7 @@ export function BulkEdit({
         >
           <ToggleRight />
           {t("bulk.allOn")}
-          <span className="font-mono text-[11px] text-muted-foreground tabular-nums">{format(on)}</span>
+          <span className="font-mono text-[0.6875rem] text-muted-foreground tabular-nums">{format(on)}</span>
         </Button>
         <Button
           size="sm"
@@ -71,7 +71,7 @@ export function BulkEdit({
         >
           <ToggleLeft />
           {t("bulk.allOff")}
-          <span className="font-mono text-[11px] text-muted-foreground tabular-nums">{format(off)}</span>
+          <span className="font-mono text-[0.6875rem] text-muted-foreground tabular-nums">{format(off)}</span>
         </Button>
       </div>
     );
@@ -131,7 +131,7 @@ export function BulkEdit({
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-72">
-        <p className="text-[13px] font-semibold">
+        <p className="text-[0.8125rem] font-semibold">
           {t(kind === "bool" ? "bulk.titleSwitch" : "bulk.titleNumber")}
         </p>
         <p className="mt-0.5 mb-2.5 text-xs text-muted-foreground">{scope}</p>

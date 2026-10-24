@@ -163,7 +163,7 @@ export function ChangeFrom({ edit, className }: { edit: FieldEdit; className?: s
   return (
     <span
       className={cn(
-        "flex min-w-0 shrink items-center gap-1 font-mono text-[11px] text-changed-foreground tabular-nums",
+        "flex min-w-0 shrink items-center gap-1 font-mono text-[0.6875rem] text-changed-foreground tabular-nums",
         className,
       )}
       title={edit.change ?? undefined}
@@ -232,12 +232,12 @@ export function FieldCell({
             {name}
           </span>
           {id !== undefined ? (
-            <span className="shrink-0 font-mono text-[11px] text-muted-foreground tabular-nums">
+            <span className="shrink-0 font-mono text-[0.6875rem] text-muted-foreground tabular-nums">
               #{id}
             </span>
           ) : null}
           {edit.field.added ? (
-            <span className="shrink-0 rounded-sm bg-changed-chip px-1 text-[10px] font-semibold tracking-wide text-changed-foreground uppercase">
+            <span className="shrink-0 rounded-sm bg-changed-chip px-1 text-[0.625rem] font-semibold tracking-wide text-changed-foreground uppercase">
               {t("field.new")}
             </span>
           ) : null}

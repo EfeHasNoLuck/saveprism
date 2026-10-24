@@ -455,9 +455,10 @@ export function listBackups(): Promise<BackupRow[]> {
 /**
  * Puts a backup back in place of the open file and opens the file again. The current file is
  * backed up first, so it shows up in the list as the newest backup. Pending edits are lost.
+ * `keepBackups` is the number of backups to keep for the file (1 to 50, 10 when missing).
  */
-export function restoreBackup(name: string): Promise<OpenInfo> {
-  return invoke<OpenInfo>("restore_backup", { name });
+export function restoreBackup(name: string, keepBackups?: number): Promise<OpenInfo> {
+  return invoke<OpenInfo>("restore_backup", { name, keepBackups: keepBackups ?? null });
 }
 
 /** True when the installer includes `THIRD_PARTY_NOTICES.md`. */
@@ -473,7 +474,8 @@ export function openNotices(): Promise<void> {
 /**
  * Saves to `target`. The open file's own path overwrites it (a backup is always made); any other
  * path is "save as" and fails with `ErrorCodes.targetExists` unless `overwrite` is true.
+ * `keepBackups` is the number of backups to keep for the file (1 to 50, 10 when missing).
  */
-export function save(target: string, overwrite = false): Promise<SaveResult> {
-  return invoke<SaveResult>("save", { target, overwrite });
+export function save(target: string, overwrite = false, keepBackups?: number): Promise<SaveResult> {
+  return invoke<SaveResult>("save", { target, overwrite, keepBackups: keepBackups ?? null });
 }

@@ -60,6 +60,10 @@ mod tests;
 
 /// Most rows one call returns.
 pub const MAX_PAGE: usize = 500;
+/// Backups kept per file when the settings do not say.
+pub const DEFAULT_KEEP_BACKUPS: usize = 10;
+/// Highest number of backups the settings may ask for.
+pub const MAX_KEEP_BACKUPS: usize = 50;
 /// Most hits one search collects.
 pub const MAX_SEARCH_HITS: usize = 10_000;
 /// Longest value preview, in characters.
@@ -68,6 +72,13 @@ const PREVIEW_CHARS: usize = 120;
 const QUOTE_CHARS: usize = 40;
 /// The encryption layer of Easy Save 3.
 const ES3_AES_LAYER: &str = "crypto.es3-aes";
+
+/// The backups to keep: the setting, clamped to 1..=50, or 10 when it is missing.
+pub(crate) fn clamp_keep_backups(value: Option<usize>) -> usize {
+    value
+        .unwrap_or(DEFAULT_KEEP_BACKUPS)
+        .clamp(1, MAX_KEEP_BACKUPS)
+}
 
 /// Error codes of the desktop app itself (the core and the codecs keep their own).
 pub mod app_codes {
@@ -1133,8 +1144,14 @@ impl Session {
     /// Encodes the document and writes it to `target` with the core safe write, then reads the
     /// written file again and checks every edited value. `target` equal to the open file replaces it
     /// (a backup is always made); another path is "save as" and refuses to replace an existing file
-    /// unless `overwrite` is true.
-    pub fn save(&mut self, target: &str, overwrite: bool) -> Result<SaveResult, ApiError> {
+    /// unless `overwrite` is true. `keep_backups` is the number of backups kept for the file,
+    /// clamped to 1..=50 (10 when missing).
+    pub fn save(
+        &mut self,
+        target: &str,
+        overwrite: bool,
+        keep_backups: Option<usize>,
+    ) -> Result<SaveResult, ApiError> {
         if !self.editable {
             return Err(self.read_only_error());
         }
@@ -1150,7 +1167,8 @@ impl Session {
 
         let recipe = with_password(&self.recipe, self.password.as_deref());
         let bytes = pipeline::encode(&self.doc, &recipe, &self.reg)?;
-        let opts = WriteOptions::new(self.backup_root()?);
+        let mut opts = WriteOptions::new(self.backup_root()?);
+        opts.keep_last = clamp_keep_backups(keep_backups);
 
         let verify = |written: &[u8]| self.verify_edits(&recipe, written);
         let report = safe_write(&target_path, &bytes, &opts, &verify)?;

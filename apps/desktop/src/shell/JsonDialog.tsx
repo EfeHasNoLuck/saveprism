@@ -525,9 +525,9 @@ export function JsonDialog({
 
         <div className="min-h-0 flex-1 overflow-hidden rounded-sm border border-border bg-card">
           {state.status === "loading" ? (
-            <p className="p-4 text-[13px] text-muted-foreground">{t("common.loading")}</p>
+            <p className="p-4 text-[0.8125rem] text-muted-foreground">{t("common.loading")}</p>
           ) : state.status === "error" ? (
-            <p role="alert" className="p-4 text-[13px] text-destructive">
+            <p role="alert" className="p-4 text-[0.8125rem] text-destructive">
               {state.message}
             </p>
           ) : (

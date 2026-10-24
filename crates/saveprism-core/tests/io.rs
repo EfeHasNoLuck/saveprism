@@ -116,6 +116,47 @@ fn backups_form_a_ring_of_ten() {
 }
 
 #[test]
+fn keep_last_trims_only_the_written_file() {
+    let (_tmp, saves, backups) = setup();
+    let first = saves.join("slot1.sav");
+    let other = saves.join("slot2.sav");
+    fs::write(&first, b"v0").unwrap();
+    fs::write(&other, b"w0").unwrap();
+    let mut opts = WriteOptions::new(backups.clone());
+    for i in 1..=3 {
+        safe_write(&other, format!("w{i}").as_bytes(), &opts, &ok).unwrap();
+    }
+
+    opts.keep_last = 1;
+    for i in 1..=3 {
+        safe_write(&first, format!("v{i}").as_bytes(), &opts, &ok).unwrap();
+    }
+
+    assert_eq!(list_backups(&backups, &first).len(), 1);
+    assert_eq!(list_backups(&backups, &other).len(), 3);
+}
+
+#[test]
+fn the_backup_just_made_stays_when_the_clock_went_back() {
+    let (_tmp, saves, backups) = setup();
+    let target = saves.join("slot1.sav");
+    fs::write(&target, b"v0").unwrap();
+    let mut opts = WriteOptions::new(backups.clone());
+    safe_write(&target, b"v1", &opts, &ok).unwrap();
+    // A backup from "the future" sorts after the one the next write makes.
+    let folder = only_backup_folder(&backups);
+    fs::write(folder.join("99999999999999.bak"), b"future").unwrap();
+
+    opts.keep_last = 1;
+    let report = safe_write(&target, b"v2", &opts, &ok).unwrap();
+
+    let made = report.backup_path.unwrap();
+    assert_eq!(fs::read(&made).unwrap(), b"v1");
+    assert!(folder.join("99999999999999.bak").exists());
+    assert_eq!(backup_files(&backups).len(), 2);
+}
+
+#[test]
 fn old_backups_are_pruned_but_the_newest_and_strangers_stay() {
     let (_tmp, saves, backups) = setup();
     let target = saves.join("slot1.sav");

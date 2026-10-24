@@ -36,7 +36,7 @@ export function Toasts() {
           <div className="flex items-start justify-between gap-2">
             <p
               className={cn(
-                "text-[13px] font-semibold",
+                "text-[0.8125rem] font-semibold",
                 toast.kind === "success" && "text-success",
                 toast.kind === "error" && "text-destructive",
               )}

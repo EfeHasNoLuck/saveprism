@@ -168,7 +168,12 @@ pub fn safe_write(
         return Err(recover(target, &dir, backup_path.as_deref(), failure));
     }
 
-    let pruned = prune_all(&opts.backup_root, opts, now_ms());
+    let pruned = prune_all(
+        opts,
+        &backup_folder(&opts.backup_root, target),
+        backup_path.as_deref(),
+        now_ms(),
+    );
     Ok(WriteReport {
         backup_path,
         bytes_written: u64::try_from(bytes.len()).unwrap_or(u64::MAX),
@@ -448,23 +453,44 @@ fn parse_backup_name(name: &str) -> Option<(u64, u32)> {
     }
 }
 
-/// Prunes every backup folder under `root`; returns the number of removed backups.
-fn prune_all(root: &std::path::Path, opts: &WriteOptions, now_ms: u64) -> usize {
-    let Ok(entries) = fs::read_dir(root) else {
+/// Prunes the backup folders under `opts.backup_root`; returns the number of removed backups.
+///
+/// `keep_last` applies only to `written`, the folder of the file just written: other files'
+/// backups are pruned by age alone, so a low count never trims another game's backups. The
+/// backup `made` by this write is never removed (a clock that went back can sort it as old).
+fn prune_all(
+    opts: &WriteOptions,
+    written: &std::path::Path,
+    made: Option<&std::path::Path>,
+    now_ms: u64,
+) -> usize {
+    let Ok(entries) = fs::read_dir(&opts.backup_root) else {
         return 0;
     };
     let mut removed = 0;
     for entry in entries.flatten() {
         if entry.file_type().is_ok_and(|kind| kind.is_dir()) {
-            removed += prune_folder(&entry.path(), opts, now_ms);
+            let folder = entry.path();
+            let keep_last = if folder == written {
+                opts.keep_last
+            } else {
+                usize::MAX
+            };
+            removed += prune_folder(&folder, keep_last, opts.max_age, made, now_ms);
         }
     }
     removed
 }
 
 /// Prunes one backup folder: removes backups older than `max_age` or outside the newest
-/// `keep_last`; the newest backup always stays. Unrecognised files are never touched.
-fn prune_folder(folder: &std::path::Path, opts: &WriteOptions, now_ms: u64) -> usize {
+/// `keep_last`; the newest backup and `made` always stay. Unrecognised files are never touched.
+fn prune_folder(
+    folder: &std::path::Path,
+    keep_last: usize,
+    max_age: Option<Duration>,
+    made: Option<&std::path::Path>,
+    now_ms: u64,
+) -> usize {
     let Ok(entries) = fs::read_dir(folder) else {
         return 0;
     };
@@ -480,14 +506,12 @@ fn prune_folder(folder: &std::path::Path, opts: &WriteOptions, now_ms: u64) -> u
     backups.sort();
 
     let total = backups.len();
-    let keep_from = total.saturating_sub(opts.keep_last.max(1));
-    let max_age_ms = opts
-        .max_age
-        .map(|age| u64::try_from(age.as_millis()).unwrap_or(u64::MAX));
+    let keep_from = total.saturating_sub(keep_last.max(1));
+    let max_age_ms = max_age.map(|age| u64::try_from(age.as_millis()).unwrap_or(u64::MAX));
 
     let mut removed = 0;
     for (index, (ms, _, path)) in backups.iter().enumerate() {
-        if index + 1 == total {
+        if index + 1 == total || made == Some(path.as_path()) {
             continue;
         }
         let too_old = max_age_ms.is_some_and(|limit| now_ms.saturating_sub(*ms) > limit);

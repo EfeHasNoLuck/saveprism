@@ -146,7 +146,8 @@
   "backups": {
     "title": "Backups",
     "description": "Copies of {{name}} made before it was saved over, newest first.",
-    "retention": "The last 10 backups of each file are kept, for up to 30 days.",
+    "retention_one": "Only the last backup of each file is kept, for up to 30 days.",
+    "retention_other": "The last {{count}} backups of each file are kept, for up to 30 days.",
     "empty": "No backups of this file yet. A backup is made each time you save over it.",
     "failed": "The backups could not be read.",
     "restore": "Restore",
@@ -230,12 +231,44 @@
     "pattern": "Background pattern",
     "patternInfo": "A faint lattice behind the app. Turn it off for a plain background.",
     "patternStrength": "Pattern strength",
+    "textSize": "Text size",
+    "textSizes": {
+      "small": "Small",
+      "normal": "Normal",
+      "large": "Large"
+    },
+    "colors": "Colors",
+    "changedColor": "Changed values",
+    "accentColor": "Accent",
+    "errorColor": "Errors",
+    "colorPresets": {
+      "changed": {
+        "violet": "Violet",
+        "rose": "Rose",
+        "indigo": "Indigo",
+        "amber": "Amber"
+      },
+      "accent": {
+        "cyan": "Cyan",
+        "blue": "Blue",
+        "green": "Green",
+        "amber": "Amber"
+      },
+      "error": {
+        "red": "Red",
+        "orange": "Orange",
+        "pink": "Pink",
+        "brown": "Brown"
+      }
+    },
     "language": "Language",
     "saving": "Saving",
     "defaultAction": "Default save action",
     "defaultActionInfo": "Choose what the main Save button does. The other option stays in its menu.",
     "saveAsNew": "Save as new file",
     "overwriteOriginal": "Overwrite original",
+    "keepBackups": "Backups to keep",
+    "keepBackupsInfo": "How many backups of the file you save are kept (1 to 50), for up to 30 days. Older ones of that file are removed on the next save; the newest is always kept.",
     "recentSection": "Recent files",
     "showRecent": "Show recent files",
     "showRecentInfo": "Shows the last 5 files on the start screen. The list is stored on this computer only.",

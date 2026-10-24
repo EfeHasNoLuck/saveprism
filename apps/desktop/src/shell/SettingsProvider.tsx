@@ -1,4 +1,5 @@
-import { useCallback, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useLayoutEffect, useMemo, useState, type ReactNode } from "react";
+import { applyColors, applyTextSize } from "./appearance";
 import { SettingsContext, type SettingsContextValue } from "./context";
 import {
   browserStorage,
@@ -18,6 +19,11 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       return next;
     });
   }, []);
+
+  useLayoutEffect(() => {
+    applyTextSize(settings.textSize);
+    applyColors(settings.colors);
+  }, [settings.textSize, settings.colors]);
 
   const value = useMemo<SettingsContextValue>(() => ({ settings, update }), [settings, update]);
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;

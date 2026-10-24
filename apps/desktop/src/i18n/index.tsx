@@ -112,7 +112,7 @@ export function LanguageSwitcher() {
           size="sm"
           aria-label={t("language.label")}
           title={t("language.label")}
-          className="gap-1 px-1.5 font-mono text-[11px] text-foreground-variant uppercase"
+          className="gap-1 px-1.5 font-mono text-[0.6875rem] text-foreground-variant uppercase"
         >
           <Languages />
           {current}

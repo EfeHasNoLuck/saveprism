@@ -121,7 +121,7 @@ export function BottomBar({
               {changeKinds.added > 0 ? (
                 <span
                   title={t("bottom.addedTip", { count: changeKinds.added })}
-                  className="rounded-sm bg-changed-chip px-1 text-[11px] font-semibold text-changed-foreground"
+                  className="rounded-sm bg-changed-chip px-1 text-[0.6875rem] font-semibold text-changed-foreground"
                 >
                   +{changeKinds.added}
                 </span>
@@ -129,7 +129,7 @@ export function BottomBar({
               {changeKinds.removed > 0 ? (
                 <span
                   title={t("bottom.removedTip", { count: changeKinds.removed })}
-                  className="rounded-sm bg-error-container px-1 text-[11px] font-semibold text-destructive"
+                  className="rounded-sm bg-error-container px-1 text-[0.6875rem] font-semibold text-destructive"
                 >
                   −{changeKinds.removed}
                 </span>
@@ -137,18 +137,18 @@ export function BottomBar({
             </Button>
           </PopoverTrigger>
           <PopoverContent align="start" className="w-[28rem]">
-            <p className="mb-2 text-[13px] font-semibold">{t("bottom.changesTitle")}</p>
+            <p className="mb-2 text-[0.8125rem] font-semibold">{t("bottom.changesTitle")}</p>
             {changes === null ? (
-              <p className="text-[13px] text-muted-foreground">{t("common.loading")}</p>
+              <p className="text-[0.8125rem] text-muted-foreground">{t("common.loading")}</p>
             ) : (
               <ul className="dense-scroll flex max-h-72 flex-col gap-1 overflow-y-auto">
                 {changes.map((change) => (
                   <li key={change.path} className="rounded-sm bg-surface-high px-2.5 py-1 text-xs">
-                    <span className="block truncate font-mono text-[11px] text-muted-foreground" title={change.path}>
+                    <span className="block truncate font-mono text-[0.6875rem] text-muted-foreground" title={change.path}>
                       {change.path}
                     </span>
                     {change.kind !== "set" ? (
-                      <span className="text-[11px] font-medium text-muted-foreground">
+                      <span className="text-[0.6875rem] font-medium text-muted-foreground">
                         {t(change.kind === "added" ? "bottom.addedTag" : "bottom.removedTag")}
                       </span>
                     ) : null}

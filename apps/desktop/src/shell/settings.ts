@@ -3,7 +3,18 @@
  * with a fake or a broken storage object. Theme and language keep their own keys and modules.
  */
 
+import { DEFAULT_COLORS, isColorPreset, type ColorChoices, type ColorGroup } from "./colors";
+
 export type SaveDefault = "saveAs" | "overwrite";
+
+export type TextSize = "small" | "normal" | "large";
+
+/** Root font sizes of the three text sizes, in pixels. */
+export const TEXT_SIZE_PX: Record<TextSize, number> = {
+  small: 15,
+  normal: 16,
+  large: 18,
+};
 
 export interface Settings {
   /** Show the background lattice. */
@@ -16,6 +27,12 @@ export interface Settings {
   showRecent: boolean;
   /** Show the notifications bell. */
   showNotifications: boolean;
+  /** Backups kept per file; 1 to 50, 10 by default. */
+  keepBackups: number;
+  /** Root font size of the whole interface. */
+  textSize: TextSize;
+  /** Preset of the changed, accent and error colours. */
+  colors: ColorChoices;
 }
 
 export const SETTINGS_KEY = "saveprism.settings";
@@ -26,6 +43,9 @@ export const DEFAULT_SETTINGS: Settings = {
   saveDefault: "saveAs",
   showRecent: false,
   showNotifications: true,
+  keepBackups: 10,
+  textSize: "normal",
+  colors: DEFAULT_COLORS,
 };
 
 /** The two methods of `Storage` that settings need. */
@@ -39,6 +59,26 @@ export interface WritableStorage {
 function clampStrength(value: number): number {
   if (!Number.isFinite(value)) return DEFAULT_SETTINGS.patternStrength;
   return Math.min(100, Math.max(0, Math.round(value)));
+}
+
+/** Clamps the number of backups kept to 1..50; unusable values give the default 10. */
+export function clampKeepBackups(value: number): number {
+  if (!Number.isFinite(value)) return DEFAULT_SETTINGS.keepBackups;
+  return Math.min(50, Math.max(1, Math.round(value)));
+}
+
+function parseTextSize(value: unknown): TextSize {
+  return value === "small" || value === "normal" || value === "large"
+    ? value
+    : DEFAULT_SETTINGS.textSize;
+}
+
+function parseColor(colors: unknown, group: ColorGroup): string {
+  const value =
+    typeof colors === "object" && colors !== null && !Array.isArray(colors)
+      ? (colors as Record<string, unknown>)[group]
+      : undefined;
+  return isColorPreset(group, value) ? value : DEFAULT_COLORS[group];
 }
 
 /** Parses stored text. Anything unusable falls back to the default of that field. */
@@ -75,6 +115,16 @@ export function parseSettings(raw: string | null): Settings {
       typeof record.showNotifications === "boolean"
         ? record.showNotifications
         : DEFAULT_SETTINGS.showNotifications,
+    keepBackups:
+      typeof record.keepBackups === "number"
+        ? clampKeepBackups(record.keepBackups)
+        : DEFAULT_SETTINGS.keepBackups,
+    textSize: parseTextSize(record.textSize),
+    colors: {
+      changed: parseColor(record.colors, "changed"),
+      accent: parseColor(record.colors, "accent"),
+      error: parseColor(record.colors, "error"),
+    },
   };
 }
 

@@ -225,7 +225,10 @@ export function pagerLabel(page: number, total: number, size: number): string {
   return `${clampPage(page, total, size) + 1} / ${pageCount(total, size)}`;
 }
 
-/** Narrowest column of the entry grids, in pixels. */
+/**
+ * Narrowest column of the entry grids, in pixels. These sizes are pixels at the default 16px text
+ * size; callers scale them with the Text size setting (`rootScale` in `grid.ts`).
+ */
 export const MIN_COLUMN = 232;
 /** Space between the columns, in pixels (Tailwind `gap-x-3`). */
 export const COLUMN_GAP = 12;

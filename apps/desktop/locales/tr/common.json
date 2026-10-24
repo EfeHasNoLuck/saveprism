@@ -146,7 +146,8 @@
   "backups": {
     "title": "Yedekler",
     "description": "{{name}} dosyasının üzerine kaydedilmeden önce alınan kopyalar, en yenisi üstte.",
-    "retention": "Her dosyanın son 10 yedeği en çok 30 gün saklanır.",
+    "retention_one": "Her dosyanın yalnızca son yedeği en çok 30 gün saklanır.",
+    "retention_other": "Her dosyanın son {{count}} yedeği en çok 30 gün saklanır.",
     "empty": "Bu dosyanın henüz yedeği yok. Üzerine her kaydettiğinde bir yedek alınır.",
     "failed": "Yedekler okunamadı.",
     "restore": "Geri yükle",
@@ -230,12 +231,44 @@
     "pattern": "Arka plan deseni",
     "patternInfo": "Uygulamanın arkasında silik bir kafes. Düz arka plan için kapat.",
     "patternStrength": "Desen yoğunluğu",
+    "textSize": "Yazı boyutu",
+    "textSizes": {
+      "small": "Küçük",
+      "normal": "Normal",
+      "large": "Büyük"
+    },
+    "colors": "Renkler",
+    "changedColor": "Değişen değerler",
+    "accentColor": "Vurgu",
+    "errorColor": "Hatalar",
+    "colorPresets": {
+      "changed": {
+        "violet": "Mor",
+        "rose": "Gül",
+        "indigo": "Çivit",
+        "amber": "Amber"
+      },
+      "accent": {
+        "cyan": "Turkuaz",
+        "blue": "Mavi",
+        "green": "Yeşil",
+        "amber": "Amber"
+      },
+      "error": {
+        "red": "Kırmızı",
+        "orange": "Turuncu",
+        "pink": "Pembe",
+        "brown": "Kahverengi"
+      }
+    },
     "language": "Dil",
     "saving": "Kaydetme",
     "defaultAction": "Varsayılan kaydetme işlemi",
     "defaultActionInfo": "Ana Kaydet düğmesinin ne yapacağını seç. Diğer seçenek menüsünde kalır.",
     "saveAsNew": "Yeni dosya olarak kaydet",
     "overwriteOriginal": "Orijinalin üzerine yaz",
+    "keepBackups": "Saklanacak yedek sayısı",
+    "keepBackupsInfo": "Kaydettiğin dosyanın kaç yedeği saklanır (1 ile 50 arası, en çok 30 gün). O dosyanın daha eski yedekleri bir sonraki kayıtta silinir; en yeni yedek her zaman kalır.",
     "recentSection": "Son dosyalar",
     "showRecent": "Son dosyaları göster",
     "showRecentInfo": "Başlangıç ekranında son 5 dosyayı gösterir. Liste yalnız bu bilgisayarda tutulur.",

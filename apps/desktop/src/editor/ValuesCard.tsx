@@ -109,7 +109,7 @@ function LeafCell({ node }: { node: ValueNode }) {
         title={`${node.name} · ${tip}`}
       >
         <span className="min-w-0 truncate">{node.name}</span>
-        <span className="ml-auto flex min-w-0 items-center gap-1 text-[11px] text-muted-foreground">
+        <span className="ml-auto flex min-w-0 items-center gap-1 text-[0.6875rem] text-muted-foreground">
           <Lock aria-hidden="true" className="size-3 shrink-0" />
           <span className="min-w-0 truncate">{text}</span>
         </span>
@@ -141,7 +141,7 @@ function LeafCell({ node }: { node: ValueNode }) {
         {node.name}
       </span>
       <span
-        className="ml-auto min-w-0 truncate font-mono text-[11px] text-muted-foreground"
+        className="ml-auto min-w-0 truncate font-mono text-[0.6875rem] text-muted-foreground"
         title={node.preview}
       >
         {node.preview}
@@ -264,11 +264,11 @@ function GroupBlock({
           <span className="min-w-0 truncate font-semibold" title={node.name}>
             {node.name}
           </span>
-          <span className="shrink-0 text-[11px] text-muted-foreground tabular-nums">
+          <span className="shrink-0 text-[0.6875rem] text-muted-foreground tabular-nums">
             {t("values.items", { count: node.children })}
           </span>
           {changed > 0 ? (
-            <span className="shrink-0 text-[11px] font-medium text-changed-foreground tabular-nums">
+            <span className="shrink-0 text-[0.6875rem] font-medium text-changed-foreground tabular-nums">
               {t("count.changed", { count: changed, changed: format(changed) })}
             </span>
           ) : null}

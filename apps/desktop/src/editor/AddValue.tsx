@@ -65,7 +65,7 @@ export function AddValueButton({
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-72">
-        <p className="text-[13px] font-semibold">{t("addValue.title")}</p>
+        <p className="text-[0.8125rem] font-semibold">{t("addValue.title")}</p>
         <p className="mt-0.5 mb-2.5 text-xs text-muted-foreground">{t("addValue.hint")}</p>
         <form
           className="flex flex-col gap-2"

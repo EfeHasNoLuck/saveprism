@@ -225,13 +225,13 @@ export function EditorView({
 
   if (loadError !== null) {
     return (
-      <p role="alert" className="p-4 text-[13px] text-destructive">
+      <p role="alert" className="p-4 text-[0.8125rem] text-destructive">
         {t("loadFailed", { message: loadError.message, hint: loadError.hint }).trim()}
       </p>
     );
   }
   if (view === null) {
-    return <p className="p-4 text-[13px] text-muted-foreground">{t("loading")}</p>;
+    return <p className="p-4 text-[0.8125rem] text-muted-foreground">{t("loading")}</p>;
   }
 
   return (
