@@ -8,6 +8,7 @@ const EXTENSION_LABELS: Record<string, string> = {
   rxdata: "RPG Maker XP",
   lsd: "RPG Maker 2000/2003",
   es3: "Easy Save 3",
+  rsv: "RAGS",
   sav: "SAV",
   sol: "Flash",
 };
@@ -24,6 +25,7 @@ const CODEC_LABELS: Record<string, string> = {
   "format.flash-sol": "Flash LSO",
   "format.pokemon-gen3": "Pokémon Gen 3",
   "format.lcf": "RPG Maker 2000/2003",
+  "format.nrbf": ".NET BinaryFormatter",
 };
 
 const ENGINE_LABELS: Record<string, string> = {

@@ -26,6 +26,11 @@ impl NodeId {
     pub fn index(self) -> usize {
         self.0 as usize
     }
+
+    /// Creates an id for an arena index when it fits the document's id space.
+    pub fn from_index(index: usize) -> Option<Self> {
+        u32::try_from(index).ok().map(Self)
+    }
 }
 
 /// Integer width of a node; `Unbounded` is used by text formats that have no fixed width.

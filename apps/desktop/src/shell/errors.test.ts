@@ -34,6 +34,8 @@ describe("engine helpers", () => {
     expect(engineLabel("Save1.rxdata", "format.ruby-marshal")).toBe("RPG Maker XP");
     expect(engineLabel("Save1.rvdata", "format.ruby-marshal")).toBe("RPG Maker VX");
     expect(engineLabel("Save01.rvdata2", "format.ruby-marshal")).toBe("RPG Maker VX Ace");
+    expect(engineLabel("slot.rsv", "format.nrbf")).toBe("RAGS");
+    expect(engineLabel("player.dat", "format.nrbf")).toBe(".NET BinaryFormatter");
     expect(engineLabel("data.bin", "format.ruby-marshal")).toBe("Ruby Marshal");
     expect(engineLabel("data.bin", "format.java-serialization")).toBe("Java");
     expect(engineLabel("data.bin", "format.json")).toBe("JSON");

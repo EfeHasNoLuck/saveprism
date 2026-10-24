@@ -13,6 +13,7 @@ pub mod json;
 pub mod layers;
 pub mod lcf;
 pub mod marshal;
+pub mod nrbf;
 pub mod palworld;
 pub mod pickle;
 pub mod renpy;
@@ -34,6 +35,7 @@ pub fn register_all(reg: &mut Registry) {
     pickle::register(reg);
     renpy::register(reg);
     sol::register(reg);
+    nrbf::register(reg);
 }
 
 #[cfg(test)]

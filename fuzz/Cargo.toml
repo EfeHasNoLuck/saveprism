@@ -77,3 +77,10 @@ path = "fuzz_targets/pickle.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "nrbf"
+path = "fuzz_targets/nrbf.rs"
+test = false
+doc = false
+bench = false
