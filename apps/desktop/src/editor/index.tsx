@@ -196,7 +196,11 @@ export function EditorView({
     async (text: string, count: number) => {
       try {
         await navigator.clipboard.writeText(text);
-        notify({ kind: "saved", title: tc("toast.copiedForAi", { count }) });
+        notify({
+          kind: "saved",
+          title: tc("toast.copiedForAi", { count }),
+          detail: tc("toast.copiedForAiBody"),
+        });
       } catch {
         notify({ kind: "error", title: tc("toast.copyAiFailed") });
       }
