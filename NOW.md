@@ -76,17 +76,22 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
    contrast-tested), backups to keep 1-50 (only the saved file's folder is trimmed; review fixed), save mode (was there).
    Own names for unnamed RPG Maker variables/switches, kept per game (`a900b54`, checked in the running app) and
    `docs/themes.md`. Todo 3 is done.
-4. AI. Done 2026-10-24: `SavePrism.exe mcp` is an MCP server over stdio (`e553b88`; 16 tools over the same Session:
+4. AI. Done 2026-10-24: `saveprism-desktop.exe mcp` is an MCP server over stdio (`e553b88`; 16 tools over the same Session:
    open, game view by section/filter/page, list, search, propose edits in memory, add/remove, undo, pending changes,
    save with backup + verify only to the open file or a new file next to it, backups; 80,000-character result cap;
    a panic closes the save unwritten). Saving over a file that changed on disk is refused (SP-APP-023) in the app too.
    Checked end to end on a real RPG Maker MV save copy (edit, save, backup, reopen, changed-file refusal); reviewed by a
-   Claude subagent, findings fixed. The release exe (window subsystem) answers over stdio too. "Ask AI" on every list card and Settings → AI tools → Copy setup (`f4fe817`,
-   checked in the running app, dark/light, EN/TR). Docs: `docs/ai.md`.
+   Claude subagent, findings fixed. The release exe (window subsystem) answers over stdio too. A real client works:
+   Claude Code (`claude -p --mcp-config`, sonnet) opened a copy of a real MV save, set gold 200 → 4321 and an item
+   1 → 9, saved with a backup; values re-checked. A byte order mark before a line (Windows PowerShell pipes) is ignored.
+   "Ask AI" on every list card and Settings → AI tools → Copy setup (`f4fe817`, checked in the running app, dark/light,
+   EN/TR); its toast tells chatbot users what to do (`304baf0`). Docs: `docs/ai.md`.
 5. Installer. 2026-10-24: version 0.1.0, README rewritten (install, all formats, AI), notices regenerated (now with
    rusqlite and lz4_flex), `tauri build` → `SavePrism_0.1.0_x64-setup.exe` (4.0 MB) and `SavePrism_0.1.0_x64_en-US.msi`
-   (6.5 MB) in `target/release/bundle/`; the release exe opens its window and answers `mcp`. Left: the user's OK to
-   publish (a GitHub release; the repo is private, and real saves in `bed2ed9` need a history cleanup before it goes public).
+   (6.5 MB) in `target/release/bundle/`. The MSI unpacked without installing (`msiexec /a`) holds
+   `PFiles\SavePrism\saveprism-desktop.exe` (the exe name users see), the DLL and the notices; that exe opens its
+   window and answers `mcp`. Not installed for real yet (no Windows Sandbox on the dev PC). Publishing waits until the
+   app is proven; do not ask the user before that.
 
 ## Known gaps
 - Turkish UI: the body of host error toasts stays English (only the title is translated; `shell/errors.ts` shows the

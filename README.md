@@ -56,7 +56,7 @@ A file that does not survive the round-trip check opens read-only with a warning
 ## Use it with AI
 
 - **Ask AI** on every list copies the values with a short note, ready to paste into any AI chat.
-- **MCP server:** `SavePrism.exe mcp` lets AI apps such as Claude Desktop, Claude Code or Cursor open and edit saves through
+- **MCP server:** `saveprism-desktop.exe mcp` lets AI apps such as Claude Desktop, Claude Code or Cursor open and edit saves through
   SavePrism, with the same checks and backups. **Settings → AI tools → Copy setup** gives you the entry to paste.
 
 See [docs/ai.md](docs/ai.md).

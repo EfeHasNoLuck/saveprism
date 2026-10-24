@@ -119,7 +119,8 @@ pub fn serve(
             buffer.pop();
         }
         let line = match std::str::from_utf8(&buffer) {
-            Ok(line) => line,
+            // Windows PowerShell puts a byte order mark before the first line it pipes.
+            Ok(line) => line.strip_prefix('\u{feff}').unwrap_or(line),
             Err(_) => {
                 write_reply(
                     output,

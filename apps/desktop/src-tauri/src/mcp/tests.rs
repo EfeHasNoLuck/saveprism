@@ -383,6 +383,16 @@ fn a_line_that_is_not_utf8_gets_a_parse_error_and_the_server_goes_on() {
 }
 
 #[test]
+fn a_byte_order_mark_before_a_line_is_ignored() {
+    let responses = run_bytes(
+        b"\xef\xbb\xbf{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"ping\"}\n",
+        None,
+    );
+    assert_eq!(responses.len(), 1);
+    assert_eq!(responses[0]["result"], json!({}));
+}
+
+#[test]
 fn a_result_over_the_cap_is_refused_with_a_hint() {
     let env = env();
     let path = write_big_save(&env);

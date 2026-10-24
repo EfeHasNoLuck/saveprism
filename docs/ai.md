@@ -18,7 +18,7 @@ for the final boss". Then make the changes in SavePrism.
 
 ## MCP server
 
-The SavePrism program is also an MCP server: started as `SavePrism.exe mcp`, it talks to the AI app over standard
+The SavePrism program is also an MCP server: started as `saveprism-desktop.exe mcp`, it talks to the AI app over standard
 input and output and opens no window. It does not listen on a network port.
 
 ### Setup
@@ -30,7 +30,7 @@ SavePrism program filled in:
 {
   "mcpServers": {
     "saveprism": {
-      "command": "C:\\Users\\you\\AppData\\Local\\SavePrism\\SavePrism.exe",
+      "command": "C:\\Program Files\\SavePrism\\saveprism-desktop.exe",
       "args": ["mcp"]
     }
   }
@@ -39,7 +39,7 @@ SavePrism program filled in:
 
 - **Claude Desktop:** Settings → Developer → Edit Config. Paste the `saveprism` entry into `mcpServers` of
   `claude_desktop_config.json` and restart Claude Desktop.
-- **Claude Code:** `claude mcp add saveprism -- "C:\path\to\SavePrism.exe" mcp`
+- **Claude Code:** `claude mcp add saveprism -- "C:\Program Files\SavePrism\saveprism-desktop.exe" mcp` (use the path from **Copy setup**)
 - **Cursor:** Settings → MCP → Add new MCP server, or paste the entry into `%USERPROFILE%\.cursor\mcp.json`.
 - **VS Code:** add it to `.vscode/mcp.json` under `servers` (VS Code calls the key `servers`, not `mcpServers`, and wants
   `"type": "stdio"` in the entry).
