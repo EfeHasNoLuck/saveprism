@@ -50,6 +50,10 @@ SavePrism needs Microsoft Edge WebView2, which Windows 10 and 11 already have; t
 | Java serialization | object streams | values (read as data, never run) |
 | SQLite | database saves | table values |
 | JSON and text | `.json`, zip- or gzip-packed JSON | values; add and remove entries |
+| MessagePack | `.msgpack`, `.msgp` | values (extension payloads are read-only) |
+| CBOR | `.cbor` | values (tags stay as read-only wrappers) |
+| BSON | `.bson` | doubles, strings, ints and booleans (other types read-only) |
+| Minecraft NBT | `.dat`, `.nbt` (Java big-endian, Bedrock little-endian, gzip) | values and numeric array elements |
 
 A file that does not survive the round-trip check opens read-only with a warning.
 

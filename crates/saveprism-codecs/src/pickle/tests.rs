@@ -634,3 +634,18 @@ proptest! {
         writes_back(&bytes);
     }
 }
+
+#[test]
+fn a_standalone_pickle_is_detected_without_renpy() {
+    // Protocol 2, an empty dict with one memo entry, STOP: a complete standalone pickle.
+    let bytes = b"\x80\x02}q\x00.";
+    let mut reg = Registry::default();
+    crate::register_all(&mut reg);
+    let opts = DetectOptions {
+        file_name: Some("save.pkl".to_string()),
+        ..DetectOptions::default()
+    };
+    let found = detect(bytes, &reg, &Limits::default(), &opts).unwrap();
+    assert_eq!(found.best.recipe.kinds(), vec!["format.python-pickle"]);
+    exact(bytes);
+}
