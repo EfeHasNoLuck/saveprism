@@ -99,8 +99,10 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
      signed with the player's own key; BZip2/Zstd/XZ/LZMA/LZ4/Brotli/TAR layers + hex/URL-encoded codes;
      XML/INI/properties/TOML/YAML/CSV/plist kept byte-exact; pickle files, MessagePack, CBOR, BSON, NBT;
      "Where is my save?" help and "Compare with another save".
-   - Wave 2: Unity Easy Save 2, Odin, Adventure Creator, Pixel Crushers; Terraria `.plr`/`.wld`; text encodings
-     (Shift-JIS, GB18030, CP949, UTF-16/32); a generic "find a value" tool for unknown binaries; Witcher 3 Gwent view.
+   - Wave 2, first: a generic fallback for unknown files (read-only "find a value", patch only after a re-read check),
+     so no player hits a dead end; it covers the long tail of the list at once. Then Unity Easy Save 2, Odin, Adventure
+     Creator, Pixel Crushers; Terraria `.plr`/`.wld`; text encodings (Shift-JIS, GB18030, CP949, UTF-16/32); Witcher 3
+     Gwent view.
    - Wave 3: VN/indie engines (AGS, Artemis, Pixel Game Maker MV, Smile Game Builder, KiriKiri, NScripter, AliceSoft,
      LiveMaker, Emuera, GameMaker, Construct Classic, Visionaire); containers (BioWare ERF/GFF, BND4, MPQ, PS1/PS2 memory
      cards, emulator states, SharkPort); LevelDB/RocksDB/LiteDB; a local "unsupported file" report. Then the same REA
