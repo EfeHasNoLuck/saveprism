@@ -100,8 +100,9 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
      XML/INI/properties/TOML/YAML/CSV/plist kept byte-exact; pickle files, MessagePack, CBOR, BSON, NBT;
      "Where is my save?" help and "Compare with another save".
      Merged: Ren'Py signing with the player's key (`13505dc`; reviewed, Ren'Py's own `ecsign.py` verified our
-     signatures; follow-ups in `wt/renpyfix`), MessagePack/CBOR/BSON/NBT (`095ce2e`). Stopped at EVREN's daily token
-     limit on 2026-10-24 23:4x (still limited 00:16) with partial work in their worktrees: layers, text, ui, renpyfix; resume (HANDOFF.md) with
+     signatures; follow-ups in `wt/renpyfix`), MessagePack/CBOR/BSON/NBT (`095ce2e`), BZip2/Zstd/XZ/LZMA/LZ4/Brotli/TAR
+     layers + hex/percent codes (`fe4f891`, rust 3/3). Stopped at EVREN's daily token limit on 2026-10-24 23:4x (still
+     limited 00:31) with partial work in their worktrees: text, ui, renpyfix; resume (HANDOFF.md) with
      `opencode run --continue` in each worktree.
    - No value finder / memory-scanner for unknown binaries (user, 2026-10-25: Cheat Engine already does that; it would
      widen the scope).
