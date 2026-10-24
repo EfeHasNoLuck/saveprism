@@ -26,6 +26,8 @@ allow = [
     "MPL-2.0",
     "CC0-1.0",
     "0BSD",
+    # libbz2-rs-sys: Julian Seward's permissive, BSD-style libbzip2 license (bzip2 crate backend).
+    "bzip2-1.0.6",
     "BSL-1.0",
     "CDLA-Permissive-2.0",
 ]
