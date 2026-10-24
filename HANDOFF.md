@@ -1,36 +1,30 @@
 # HANDOFF
 
-**State (2026-10-24, late morning):** NOW.md todos 1-3 are done (todo 2 formats all merged, todo 3 customization finished).
-Last code commit `ef5c335`. Nothing in flight; working tree clean except git-ignored `fixtures/external/` and `.motor/`.
+**State (2026-10-24, evening):** NOW.md todos 1-4 are done; todo 5 waits only for the user's OK to publish.
+Last code commit `910e293` (version 0.1.0). Working tree clean except git-ignored `fixtures/external/` and `.motor/`.
 
 **Works (with evidence)**
-- Every screen merged overnight was checked in the running app over CDP (dark/light, EN/TR) by a Claude subagent; its
-  findings were fixed and re-checked (`422a4bb`, `9f4ce9d`): big numbers no longer cut, read-only top-level rows show their
-  value, Ren'Py alias rows have unique keys and a read-only tooltip, Add popover texts, TR header fits, dimmed locked toggles.
-- Customization (`45d202f`, `a900b54`): Text size S/N/L (grids and cards scale), color presets (full tonal sets,
-  `colors.test.ts` checks 4.5:1), backups to keep 1-50, own names for unnamed RPG Maker variables/switches per game,
-  `docs/themes.md`. Checked in the running app. Review of the backup count found that a low count trimmed every game's
-  backups: fixed in core (`keep_last` only for the written file's folder; the backup just made is never pruned; tests).
-- Real saves (local only, `fixtures/external/SOURCES.md` lists them): TyranoScript 2, zip JSON 3, Gen 3 3, Witcher 3 3,
-  Ren'Py 1, RPG Maker XP 1, Godot JSON 1, all `inspect` → exact, editable. Gen 3 and Witcher 3 needed fixes (`ef5c335`).
-- `bash .claude/araclar/kontrol.sh rust` 3/3 and `web` 3/3 on `ef5c335`.
+- MCP server (`e553b88`): `SavePrism.exe mcp` (dev: `target/debug/saveprism-desktop.exe mcp`) speaks MCP over stdio,
+  16 tools over the same `Session` the UI uses (`apps/desktop/src-tauri/src/mcp/`). Checked end to end on a copy of a
+  real RPG Maker MV save: open, game view, propose edits, save (backup made, verified), reopen shows the values, a file
+  changed on disk is refused (SP-APP-023). The release exe (window subsystem) answers over stdio too. A Claude subagent
+  reviewed it; fixed: save_changes writes only the open file or a new file next to it, empty filter, 80,000-character
+  result cap, `pendingCount`, panic closes the save, non-UTF-8 lines, annotations, `args_os`.
+- Ask AI on every list card + Settings → AI tools → Copy setup (`f4fe817`), checked in the running app by a subagent
+  (dark/light, EN/TR, clipboard text and toasts). Plain-JSON number limits left out of the note (`1c5fb17`).
+- Docs: `docs/ai.md` (setup for Claude Desktop, Claude Code, Cursor, VS Code; tool table; safety). README rewritten.
+- Installers: `target/release/bundle/nsis/SavePrism_0.1.0_x64-setup.exe`, `.../msi/SavePrism_0.1.0_x64_en-US.msi`;
+  the release exe opens its window titled SavePrism.
+- `bash .claude/araclar/kontrol.sh rust` 3/3 and `web` 3/3 after the MCP merge.
 
 **Broken / not checked**
-- Turkish UI: host error toast bodies stay English (NOW.md Known gaps).
-- A zip with several JSON entries opens only the largest (Shapez 2, House Flipper 2 `header.json`).
-- No real saves found for VX/VX Ace, 2000/2003, Wolf RPG, QSP, Naninovel, Flash `.sol`, SugarCube.
-- The CLI `decode`/`encode` only handle JSON, RPG Maker JSON, ES3 and GVAS (not the newer codecs).
-- Remote Control is blocked by the organization's policy (the user asked for it; only their admin can allow it).
-- The visual-check subagent once reset the dev app's localStorage (`saveprism.settings`, theme, lang) in the WebView
-  profile; restored to `{"saveDefault":"overwrite"}`, lang `tr`, system theme. Other old dev settings were lost. Told the user.
+- Not tried with a real MCP client (Claude Desktop/Code); only hand-written JSON-RPC over pipes.
+- The installers were built but not installed and run.
+- Layout gaps found by the visual check are in NOW.md Known gaps (list header wraps at 1000 px; TR bottom bar at 900 px).
 
-**Next step:** NOW.md todo 4 (AI): an MCP server over the same core (open, read, search, propose and apply edits; saving
-still makes a backup), then "Ask AI" (copy the selected values with a short context), then docs. Start with a short design
-note in the brief (which process hosts the server, stdio vs the desktop app, how edits reach the open session), then hand
-the code to EVREN (`.motor/` brief, deepseek-v4.1-flash, "run every command from the repo root, no /tmp") and review it
-with a Claude subagent (it writes files).
+**Next step:** ask the user whether to publish v0.1.0 (draft GitHub release on the private repo with both installers,
+or make the repo public first, which needs a history cleanup of the real saves in `bed2ed9` and their OK).
 
-**Engines (2026-10-24):** EVREN deepseek-v4.1-flash did all chores today well (real-save search, customization drafts,
-Gen 3 / Witcher 3 fixes). Codex is at its limit until 17 Nov; Cursor free plan at its limit. The visual-check subagent must
-snapshot every `saveprism.*` localStorage key first and restore it exactly at the end. Hook note: a Bash command that
-writes files (sed -i, heredoc into a script) must not also mention `.claude/araclar` or `LICENSE`, or the hook refuses it.
+**Engines:** EVREN deepseek-v4.1-flash wrote the MCP server and Ask AI well; its fix run stopped midway (a leftover
+`opencode.exe` from a stopped task kept editing; see memory `external-engines`). Stale branch `wt/mcp` is left (the hook
+refuses `git branch -D`); it is superseded by `e553b88`. Weekly Claude quota was ~80% used on 2026-10-24.
