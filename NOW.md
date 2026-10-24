@@ -99,6 +99,10 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
      signed with the player's own key; BZip2/Zstd/XZ/LZMA/LZ4/Brotli/TAR layers + hex/URL-encoded codes;
      XML/INI/properties/TOML/YAML/CSV/plist kept byte-exact; pickle files, MessagePack, CBOR, BSON, NBT;
      "Where is my save?" help and "Compare with another save".
+     Merged: Ren'Py signing with the player's key (`13505dc`; reviewed, Ren'Py's own `ecsign.py` verified our
+     signatures; follow-ups in `wt/renpyfix`), MessagePack/CBOR/BSON/NBT (`095ce2e`). Stopped at EVREN's daily token
+     limit on 2026-10-24 23:4x with partial work in their worktrees: layers, text, ui, renpyfix; resume with
+     `opencode run --continue` in each worktree.
    - Wave 2, first: a generic fallback for unknown files (read-only "find a value", patch only after a re-read check),
      so no player hits a dead end; it covers the long tail of the list at once. Next, auto-unlock (user idea,
      2026-10-24): every layer tried by content whatever the extension; simple XOR obfuscation broken automatically from
