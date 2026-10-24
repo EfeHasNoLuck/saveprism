@@ -103,13 +103,19 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
      signatures; follow-ups in `wt/renpyfix`), MessagePack/CBOR/BSON/NBT (`095ce2e`). Stopped at EVREN's daily token
      limit on 2026-10-24 23:4x with partial work in their worktrees: layers, text, ui, renpyfix; resume with
      `opencode run --continue` in each worktree.
-   - Wave 2, first: a generic fallback for unknown files (read-only "find a value", patch only after a re-read check),
-     so no player hits a dead end; it covers the long tail of the list at once. Next, auto-unlock (user idea,
-     2026-10-24): every layer tried by content whatever the extension; simple XOR obfuscation broken automatically from
-     the expected start of the inner format (`{`, `<?xml`, `PK`...); a key finder that reads candidate passwords from the
-     game's own files (Unity `Assembly-CSharp.dll` strings, IL2CPP `global-metadata.dat`, engine config files) and tries
-     them on the save, with the evidence kept (AGENTS.md rule 7). One short line tells the player it was unlocked.
-     Keys that are not on the PC (online, DRM) stay out of scope. Then Unity Easy Save 2, Odin, Adventure
+   - Wave 2, first: a value finder for unknown files, so no player hits a dead end. Not a one-file guess: (1) peel known
+     layers first and search the inner data; (2) narrow down like a memory scanner: the player gives the value in two or
+     more saves (gold 1234 here, 1500 there) and only offsets that match in every save stay, across int8-64 LE/BE,
+     float/double and text; (3) spot common checksums (CRC32, Adler-32, simple sums over the rest of the file) and fix
+     them after a patch; (4) patch with backup + re-read check; (5) remember found fields per game locally ("Gold at
+     0x1A4, int32") so that game opens with named values next time. Uses "Compare with another save" from wave 1.
+     Next, auto-unlock (user idea, 2026-10-24): every layer tried by content whatever the extension; simple XOR
+     obfuscation broken automatically from the expected start of the inner format (`{`, `<?xml`, `PK`...); a key finder
+     that reads candidate passwords from the game's own files (Unity `Assembly-CSharp.dll` strings, IL2CPP
+     `global-metadata.dat`, engine config files) and tries them on the save, with the evidence kept (AGENTS.md rule 7).
+     It looks for the game folder itself (next to the save, Steam libraries); only when nothing is found does it ask the
+     player to pick the game folder. No notice when it works: the file just opens (user, 2026-10-25: keep backend work
+     invisible). Keys that are not on the PC (online, DRM) stay out of scope. Then Unity Easy Save 2, Odin, Adventure
      Creator, Pixel Crushers; Terraria `.plr`/`.wld`; text encodings (Shift-JIS, GB18030, CP949, UTF-16/32); Witcher 3
      Gwent view.
    - Wave 3: VN/indie engines (AGS, Artemis, Pixel Game Maker MV, Smile Game Builder, KiriKiri, NScripter, AliceSoft,
