@@ -44,7 +44,8 @@
     "increase": "Artır",
     "decrease": "Azalt",
     "new": "yeni",
-    "removeAdded": "Kaldır (eklendi)"
+    "removeAdded": "Kaldır (eklendi)",
+    "readOnly": "burada salt okunur (örneğin kayıt bu değeri iki adla saklıyor)"
   },
   "search": {
     "list": "İsim, #id veya değer ara",
@@ -56,7 +57,7 @@
     "next": "Sonraki sayfa"
   },
   "bulk": {
-    "trigger": "Tümünü ayarla",
+    "trigger": "Toplu",
     "triggerTip": "Bu listenin gösterdiği tüm değerleri aynı değere ayarla",
     "titleNumber": "Tümünü şuna ayarla…",
     "titleSwitch": "Tümünü aç ya da kapat",
@@ -154,7 +155,7 @@
   "addEntry": {
     "trigger": "Ekle",
     "triggerTip": "Bu listeye bir {{label}} ekle",
-    "title": "{{label}} ekle",
+    "title": "Yeni {{label}}",
     "label": {
       "item": "eşya",
       "weapon": "silah",

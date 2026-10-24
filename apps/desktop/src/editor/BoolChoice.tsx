@@ -35,7 +35,7 @@ export function BoolChoice({ value, onChange, label, disabled = false, changed =
       className={cn(
         "inline-flex h-6.5 shrink-0 items-center gap-0.5 justify-self-start rounded-sm border border-input/70 bg-field p-0.5 dark:border-transparent",
         changed && "border-changed dark:border-changed",
-        disabled && "cursor-not-allowed",
+        disabled && "cursor-not-allowed opacity-55",
       )}
     >
       {OPTIONS.map((option) => (

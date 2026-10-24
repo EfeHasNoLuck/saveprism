@@ -247,10 +247,13 @@ export function FieldCell({
           <ValueInput
             edit={edit}
             label={name}
-            className={cn(
-              "shrink-0",
-              fixedLabel || kind === "string" ? "min-w-12 flex-1" : "w-16",
-            )}
+            className={cn("shrink-0", (fixedLabel || kind === "string") && "min-w-12 flex-1")}
+            // Numbers grow with their digits so a long value is never shown cut short.
+            inputClassName={
+              fixedLabel || kind === "string"
+                ? undefined
+                : "w-auto min-w-16 max-w-44 field-sizing-content"
+            }
           />
           <UndoButton edit={edit} />
           {remove !== undefined ? (

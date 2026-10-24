@@ -197,6 +197,8 @@ pub struct ValueRow {
     pub field: Option<Field>,
     /// Number of children of a group.
     pub children: usize,
+    /// Short text of a value without a field or children (read-only); empty otherwise.
+    pub preview: String,
     /// Why the value is shown read-only (story view); `None` elsewhere.
     pub note: Option<RowNote>,
     /// True when a value can be added to this group (`add_value` with `path` as the parent).
@@ -1024,6 +1026,7 @@ impl Ctx<'_> {
             path: at.1.to_string(),
             field: self.field(&at, UNLIMITED),
             children,
+            preview: String::new(),
             note: None,
             addable: false,
             removable: false,
@@ -1147,13 +1150,13 @@ impl Session {
         }
         if let Some(rows) = self.naninovel_view(&ctx) {
             return Ok(GameView::Values {
-                rows,
+                rows: self.with_previews(rows),
                 add_parent: None,
             });
         }
         if let Some(rows) = self.renpy_view(&ctx) {
             return Ok(GameView::Values {
-                rows,
+                rows: self.with_previews(rows),
                 add_parent: None,
             });
         }
@@ -1185,9 +1188,25 @@ impl Session {
             .addable(&self.doc, &Path::root(), root)
             .then(String::new);
         Ok(GameView::Values {
-            rows: ctx.value_rows(easy_save, &shaper),
+            rows: self.with_previews(ctx.value_rows(easy_save, &shaper)),
             add_parent,
         })
+    }
+
+    /// Fills the preview of the rows that show neither an editor nor children, so a read-only value
+    /// is still visible.
+    fn with_previews(&self, mut rows: Vec<ValueRow>) -> Vec<ValueRow> {
+        for row in &mut rows {
+            if row.field.is_some() || row.children > 0 || row.note.is_some() {
+                continue;
+            }
+            if let Ok(path) = Path::parse(&row.path)
+                && let Some(node) = self.doc.resolve(&path).and_then(|id| self.doc.get(id))
+            {
+                row.preview = super::preview(node);
+            }
+        }
+        rows
     }
 
     /// Reads the names from a game data folder the player picked, for the rest of the session, and

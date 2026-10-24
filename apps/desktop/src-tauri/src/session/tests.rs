@@ -2802,6 +2802,20 @@ const NANINOVEL_GZIP: &str = "synthetic/naninovel/GameSave001-gzip.nson";
 const NANINOVEL_DEFLATE: &str = "synthetic/naninovel/GameSave001-deflate.nson";
 
 #[test]
+fn read_only_top_level_rows_show_a_preview() {
+    let env = env();
+    let path = copy_in(&env, "synthetic/sol/amf3.sol");
+    let session = open(&env, &path, None).unwrap();
+    let rows = value_rows(&session);
+    let plain: Vec<&ValueRow> = rows
+        .iter()
+        .filter(|row| row.field.is_none() && row.children == 0 && row.note.is_none())
+        .collect();
+    assert!(!plain.is_empty());
+    assert!(plain.iter().all(|row| !row.preview.is_empty()), "{plain:?}");
+}
+
+#[test]
 fn naninovel_lists_custom_variables_first() {
     let env = env();
     let path = copy_in(&env, NANINOVEL_SAVE);
@@ -2818,7 +2832,7 @@ fn naninovel_lists_custom_variables_first() {
         names,
         [
             "coins",
-            "g_cleared (global)",
+            "g_cleared",
             "has_key",
             "hero_name",
             "objectJsonMap",
@@ -2837,10 +2851,7 @@ fn naninovel_lists_custom_variables_first() {
     let name = value_row(&rows, "hero_name").field.as_ref().unwrap();
     assert_eq!(name.value, "Aster");
     assert_eq!(name.kind, FieldKind::String);
-    let cleared = value_row(&rows, "g_cleared (global)")
-        .field
-        .as_ref()
-        .unwrap();
+    let cleared = value_row(&rows, "g_cleared").field.as_ref().unwrap();
     assert_eq!(cleared.kind, FieldKind::Bool);
     assert_eq!(value_row(&rows, "objectJsonMap").children, 2);
 }

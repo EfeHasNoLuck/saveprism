@@ -111,6 +111,7 @@ impl Ctx<'_> {
             path: at.1.to_string(),
             field: None,
             children: 0,
+            preview: String::new(),
             note: Some(RowNote {
                 kind,
                 count: None,
@@ -134,6 +135,7 @@ impl Ctx<'_> {
                     path: at.1.to_string(),
                     field: None,
                     children,
+                    preview: String::new(),
                     note: None,
                     addable: false,
                     removable: false,
@@ -145,6 +147,7 @@ impl Ctx<'_> {
                     path: at.1.to_string(),
                     field: Some(field),
                     children: 0,
+                    preview: String::new(),
                     note: None,
                     addable: false,
                     removable: false,

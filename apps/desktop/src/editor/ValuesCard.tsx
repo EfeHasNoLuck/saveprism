@@ -45,7 +45,7 @@ function fromRow(row: ValueRow): ValueNode {
     path: row.path,
     field: row.field,
     children: row.children,
-    preview: "",
+    preview: row.preview,
     note: row.note,
     addable: row.addable,
     removable: row.removable,
@@ -118,11 +118,15 @@ function LeafCell({ node }: { node: ValueNode }) {
   }
   if (node.field !== null) {
     const typeName = node.field.typeName;
+    const tip = [
+      typeName ? t("type.source", { name: typeName }) : null,
+      node.field.editable ? null : t("field.readOnly"),
+    ].filter((part) => part !== null);
     return (
       <FieldCell
         field={node.field}
         name={node.name}
-        title={typeName ? `${node.name} · ${t("type.source", { name: typeName })}` : undefined}
+        title={tip.length > 0 ? [node.name, ...tip].join(" · ") : undefined}
         remove={
           node.removable && !node.field.added
             ? { path: node.path, name: node.name }
@@ -154,7 +158,7 @@ function LeafGrid({ nodes }: { nodes: ValueNode[] }) {
       {nodes.length > 0 ? (
         <DenseGrid columns={columns} count={nodes.length}>
           {nodes.map((n) => (
-            <LeafCell key={n.path} node={n} />
+            <LeafCell key={`${n.path}|${n.name}`} node={n} />
           ))}
         </DenseGrid>
       ) : null}
@@ -207,7 +211,7 @@ function GroupChildren({ path, query }: { path: string; query: string }) {
     <div className="flex flex-col gap-1">
       <LeafGrid nodes={leaves} />
       {groups.map((g) => (
-        <GroupBlock key={g.path} node={g} query={query} />
+        <GroupBlock key={`${g.path}|${g.name}`} node={g} query={query} />
       ))}
       {nodes.length < total ? (
         <div>
@@ -357,7 +361,7 @@ export function ValuesCard({
             {shown.length > 0 ? (
               <DenseGrid columns={columns} count={shown.length}>
                 {shown.map((n) => (
-                  <LeafCell key={n.path} node={n} />
+                  <LeafCell key={`${n.path}|${n.name}`} node={n} />
                 ))}
               </DenseGrid>
             ) : q !== "" && leaves.length > 0 ? (
@@ -366,7 +370,7 @@ export function ValuesCard({
             {groups.length > 0 ? (
               <div className={cn("flex flex-col gap-0.5", shown.length > 0 && "border-t border-border pt-1.5")}>
                 {groups.map((g) => (
-                  <GroupBlock key={g.path} node={g} query={query} defaultOpen={openFirst} />
+                  <GroupBlock key={`${g.path}|${g.name}`} node={g} query={query} defaultOpen={openFirst} />
                 ))}
               </div>
             ) : null}

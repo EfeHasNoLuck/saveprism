@@ -334,6 +334,8 @@ export interface ValueRow {
   path: string;
   field: Field | null;
   children: number;
+  /** Short text of a value without a field or children (read-only); empty otherwise. */
+  preview: string;
   /** Why the value is read-only (story view only), else null. */
   note: RowNote | null;
   /** A value can be added to this group (`addValue` with `path` as the parent). */

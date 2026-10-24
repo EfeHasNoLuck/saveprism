@@ -32,6 +32,7 @@ impl Ctx<'_> {
             path: at.1.to_string(),
             field: self.field(at, UNLIMITED),
             children: child_count(&node.value),
+            preview: String::new(),
             note: None,
             addable: false,
             removable: false,
@@ -84,6 +85,13 @@ impl Ctx<'_> {
                         };
                         let Some(field_at) = self.entry(&value_at, field) else {
                             continue;
+                        };
+                        // Naninovel names global variables `g_…`; only others get the suffix.
+                        let suffix = if name.get(..2).is_some_and(|p| p.eq_ignore_ascii_case("g_"))
+                        {
+                            ""
+                        } else {
+                            suffix
                         };
                         if let Some(row) = self.naninovel_row(format!("{name}{suffix}"), &field_at)
                         {

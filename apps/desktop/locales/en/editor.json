@@ -44,7 +44,8 @@
     "increase": "Increase",
     "decrease": "Decrease",
     "new": "new",
-    "removeAdded": "Remove (added)"
+    "removeAdded": "Remove (added)",
+    "readOnly": "read-only here (for example, the save stores it under two names)"
   },
   "search": {
     "list": "Search name, #id or value",
@@ -153,8 +154,8 @@
   },
   "addEntry": {
     "trigger": "Add",
-    "triggerTip": "Add a {{label}} to this list",
-    "title": "Add a {{label}}",
+    "triggerTip": "Add {{label}} to this list",
+    "title": "Add {{label}}",
     "label": {
       "item": "item",
       "weapon": "weapon",

@@ -169,7 +169,7 @@ export function AddEntryButton({
           </label>
           {countProblem !== null && countProblem !== "empty" ? (
             <p role="alert" className="text-xs font-medium text-destructive">
-              {t(`problem.${countProblem}`)}
+              {t(`problem.${countProblem}`, { min: 1, max: 99 })}
             </p>
           ) : null}
           <Button type="submit" size="sm" disabled={!valid || running}>
