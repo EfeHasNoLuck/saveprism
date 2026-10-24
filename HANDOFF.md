@@ -23,8 +23,9 @@ The Witcher 3 `5da1244`. Who wrote what is in each commit message (Claude, Codex
 - A Claude subagent wrote the first half of the card-view work through Bash after the project hook refused Edit/Write in a
   worktree outside the project (my mistake: I created worktrees in `../saveprism-wt/`). It is merged after checks
   (`dde3b23`); the user may want it reviewed.
-- Leftover folders to delete by hand: `../saveprism-wt/` (only `lcf` is still registered: a superseded partial draft) and
-  `.claude/worktrees/agent-*` (harness worktrees of merged branches).
+- Leftover folders (the user was told to delete them by hand): `../saveprism-wt/` and `.claude/worktrees/`. Both harness
+  worktrees are already unregistered; after the user deletes the folders, run `git worktree prune` once (it drops the stale
+  `wt/lcf` entry). The `wt/*` and `worktree-agent-*` branches are merged and can stay.
 
 **Engines (2026-10-24)**: Codex at its usage limit until 17 Nov; Cursor free plan at its limit; agy research only. EVREN
 deepseek-v4.1-flash did 10 codecs well when the brief said "verify with webfetch, run every command from the worktree root,
