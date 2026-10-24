@@ -28,6 +28,7 @@ const CODEC_LABELS: Record<string, string> = {
   "format.lcf": "RPG Maker 2000/2003",
   "format.nrbf": ".NET BinaryFormatter",
   "format.reg": "Registry (.reg)",
+  "format.wolf-rpg": "Wolf RPG",
 };
 
 const ENGINE_LABELS: Record<string, string> = {

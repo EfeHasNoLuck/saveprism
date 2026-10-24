@@ -20,6 +20,7 @@ pub mod reg;
 pub mod renpy;
 pub mod rpgmaker;
 pub mod sol;
+pub mod wolf;
 
 /// Registers every layer and codec of this crate into `reg`.
 pub fn register_all(reg: &mut Registry) {
@@ -38,6 +39,7 @@ pub fn register_all(reg: &mut Registry) {
     renpy::register(reg);
     sol::register(reg);
     nrbf::register(reg);
+    wolf::register(reg);
 }
 
 #[cfg(test)]
