@@ -19,6 +19,7 @@ aes.workspace = true
 cbc.workspace = true
 pbkdf2.workspace = true
 sha1.workspace = true
+p256.workspace = true
 serde_json.workspace = true
 rusqlite.workspace = true
 

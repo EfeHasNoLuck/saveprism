@@ -7,13 +7,18 @@
 //! The whole archive is kept in the parameter `archive`. Encoding with the same `log` bytes gives
 //! the archive back unchanged. A changed `log` is compressed again and written in place; every other
 //! entry is copied byte for byte, and CRC, sizes, offsets and the central directory are written
-//! anew. The `signatures` entry is then written empty (same name, same place): Ren'Py refuses a
-//! save whose signature does not match, but loads an unsigned one after asking the player whether
-//! to trust it (parameter `signed` tells whether the original had signatures).
+//! anew. When the archive has a `signatures` entry and the caller passes the text of the player's
+//! `security_keys.txt` in the parameter `sign_key`, the entry is signed with those keys (see
+//! [`sign`] and `renpy/savetoken.py`); otherwise it is written empty. Empty means Ren'Py asks the
+//! player whether to trust the edited save; a signature made with a key in the player's
+//! `security_keys.txt` loads without that question (parameter `signed` tells whether the original
+//! had signatures). Saves from before Ren'Py 7.6 have no entry and are left as they are.
 //!
 //! Only the `log` entry is ever decompressed (under the output budget); every entry's declared size
 //! is checked against that budget. Zip64, encrypted entries and archives with data before the first
 //! entry or between the entries and the central directory are refused.
+
+pub mod sign;
 
 #[cfg(test)]
 mod tests;
@@ -36,6 +41,8 @@ pub const RENPY_ZIP: ErrorCode = ErrorCode::new("SP-RENPY-001");
 pub const RENPY_UNSUPPORTED: ErrorCode = ErrorCode::new("SP-RENPY-002");
 /// The archive could not be written again.
 pub const RENPY_WRITE: ErrorCode = ErrorCode::new("SP-RENPY-003");
+/// The given Ren'Py key file holds no usable signing key.
+pub const RENPY_KEY: ErrorCode = ErrorCode::new("SP-RENPY-004");
 
 /// Name of the entry that holds the pickled game state.
 pub const LOG_ENTRY: &str = "log";
@@ -47,6 +54,9 @@ pub const VERSION_ENTRY: &str = "renpy_version";
 pub const ARCHIVE_PARAM: &str = "archive";
 /// Parameter: true when the original `signatures` entry was not empty.
 pub const SIGNED_PARAM: &str = "signed";
+/// Parameter: the text of the player's `security_keys.txt`, whose `signing-key` lines sign an
+/// edited save. Set only for the write; the decode recipe never holds it.
+pub const SIGN_KEY_PARAM: &str = "sign_key";
 
 const CODES: ZipCodes = ZipCodes {
     damaged: RENPY_ZIP,
@@ -151,6 +161,22 @@ impl Layer for RenpySaveLayer {
         if original == inner {
             return Ok(input.to_vec());
         }
+        let signatures = match (
+            archive.find(SIGNATURES_ENTRY.as_bytes()),
+            params.opt_str(SIGN_KEY_PARAM)?,
+        ) {
+            (Some(_), Some(text)) => {
+                let keys = sign::parse_key_file(text);
+                if keys.is_empty() {
+                    return Err(Error::new(
+                        RENPY_KEY,
+                        "the Ren'Py key file has no usable signing-key line",
+                    ));
+                }
+                sign::sign_data(inner, &keys).into_bytes()
+            }
+            _ => Vec::new(),
+        };
         let changes = [
             Change {
                 name: LOG_ENTRY.as_bytes(),
@@ -158,7 +184,7 @@ impl Layer for RenpySaveLayer {
             },
             Change {
                 name: SIGNATURES_ENTRY.as_bytes(),
-                contents: &[],
+                contents: &signatures,
             },
         ];
         rebuild(input, &archive, &changes, &CODES)

@@ -52,7 +52,8 @@ pub use game::{
 };
 use history::{DocStep, History, MAX_VALUES, Mutation, scalar_owned};
 pub use history::{HistoryResult, HistoryState};
-pub use renpy::{NOTICE_SIGNED_PERSISTENT, NOTICE_SIGNED_SAVE};
+use renpy::RenpyKeySource;
+pub use renpy::{NOTICE_KEY_SIGNED, NOTICE_SIGNED_PERSISTENT, NOTICE_SIGNED_SAVE};
 pub use sugarcube::SugarCubeView;
 
 #[cfg(test)]
@@ -401,6 +402,9 @@ pub struct Session {
     pasted: bool,
     /// The game data folder the player picked (the folder the names are read from), if any.
     data_folder: Option<PathBuf>,
+    /// The player's Ren'Py `security_keys.txt`, when it was found and holds a signing key. The key
+    /// itself is read only while signing; the path is all that is kept.
+    renpy_key: Option<PathBuf>,
 }
 
 fn io_error(path: &FsPath, source: std::io::Error) -> Error {
@@ -691,7 +695,24 @@ impl Session {
         password: Option<String>,
         backup_root: Option<PathBuf>,
     ) -> Result<Session, ApiError> {
-        Self::open_path(PathBuf::from(path), password, backup_root)
+        Self::open_path(
+            PathBuf::from(path),
+            password,
+            backup_root,
+            RenpyKeySource::Default,
+        )
+    }
+
+    /// Opens a file with an explicit Ren'Py key source; tests pass a key file of their own (or none)
+    /// so they never read the player's real `security_keys.txt`.
+    #[cfg(test)]
+    pub(in crate::session) fn open_with_keys(
+        path: &str,
+        password: Option<String>,
+        backup_root: Option<PathBuf>,
+        keys: RenpyKeySource,
+    ) -> Result<Session, ApiError> {
+        Self::open_path(PathBuf::from(path), password, backup_root, keys)
     }
 
     /// [`Session::open`] with the path already as a file system path.
@@ -699,6 +720,7 @@ impl Session {
         path: PathBuf,
         password: Option<String>,
         backup_root: Option<PathBuf>,
+        keys: RenpyKeySource,
     ) -> Result<Session, ApiError> {
         let mut reg = Registry::default();
         saveprism_codecs::register_all(&mut reg);
@@ -733,6 +755,7 @@ impl Session {
             history: History::default(),
             pasted: false,
             data_folder: None,
+            renpy_key: keys.resolve(),
         };
         // A signed Ren'Py persistent file is thrown away by the game after any change.
         if session.renpy_locked() {
@@ -1221,7 +1244,7 @@ impl Session {
             }
         }
 
-        let recipe = with_password(&self.recipe, self.password.as_deref());
+        let recipe = self.renpy_recipe(&with_password(&self.recipe, self.password.as_deref()))?;
         let bytes = pipeline::encode(&self.doc, &recipe, &self.reg)?;
         let mut opts = WriteOptions::new(self.backup_root()?);
         opts.keep_last = clamp_keep_backups(keep_backups);
