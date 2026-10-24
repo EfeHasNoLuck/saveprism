@@ -275,6 +275,14 @@ fn notices_file(app: &AppHandle) -> Option<PathBuf> {
     .find(|path| path.is_file())
 }
 
+/// Path of the running SavePrism executable, for the setup snippet of an AI app.
+#[tauri::command]
+fn mcp_command() -> Result<String, ApiError> {
+    std::env::current_exe()
+        .map(|path| path.to_string_lossy().into_owned())
+        .map_err(|_| ApiError::internal())
+}
+
 /// True when the third-party notices are bundled with this build.
 #[tauri::command]
 fn notices_available(app: AppHandle) -> bool {
@@ -336,6 +344,7 @@ pub fn run() {
             restore_backup,
             notices_available,
             open_notices,
+            mcp_command,
         ])
         .run(tauri::generate_context!());
 

@@ -34,7 +34,7 @@ import { copyCodePlace, pastedText, saveAsDefaultPath } from "./shell/code";
 import { CodeTextDialog, PasteCodeDialog, type OpenCodeResult } from "./shell/CodeDialogs";
 import { ConfirmDiscardDialog } from "./shell/ConfirmDiscardDialog";
 import { useNotify, useSettings } from "./shell/context";
-import { baseName, exportFileName } from "./shell/engine";
+import { baseName, engineLabel, exportFileName } from "./shell/engine";
 import { describeError } from "./shell/errors";
 import { applyJson, exportJson, exportJsonFile } from "./shell/exportApi";
 import { Header } from "./shell/Header";
@@ -727,6 +727,11 @@ function App() {
                 key={editorKey}
                 ref={editorRef}
                 readOnly={readOnly}
+                fileName={file.fileName}
+                formatLabel={
+                  engineLabel(file.fileName, file.codec, file.engine) ??
+                  t("header.engineUnknown")
+                }
                 saveFolder={saveFolder}
                 onChangesChanged={applyChanges}
                 onInvalidChanged={setInvalid}

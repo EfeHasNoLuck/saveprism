@@ -21,6 +21,8 @@ import {
 } from "@/shell/names";
 import { browserStorage } from "@/shell/settings";
 import { AddEntryButton } from "./AddEntry";
+import { AskAiButton } from "./AskAiButton";
+import type { AskAiRow } from "./askAi";
 import { BulkEdit } from "./BulkEdit";
 import { countPending, useEditorContext, useFormatNumber } from "./context";
 import { FieldCell } from "./FieldEditor";
@@ -145,6 +147,24 @@ export function EntryList({
       ),
     [bulkKind, fields, filtered],
   );
+  // The values "Ask AI" copies: what the list shows (search applied), on every page.
+  const askRows = useMemo<AskAiRow[]>(
+    () =>
+      filtered.map((entry) => {
+        const own = ownList !== null ? nameFor(names, ownList, entry.id) : null;
+        const field = fields.get(entry.field.path) ?? entry.field;
+        return {
+          name: entryName(entry, own, (id) => t(`fallback.${kind}`, { id })),
+          id: entry.name !== null || own !== null ? entry.id : undefined,
+          path: field.path,
+          value: field.value,
+          kind: field.kind,
+          min: field.min,
+          max: field.max,
+        };
+      }),
+    [fields, filtered, kind, names, ownList, t],
+  );
   const searching = query.trim() !== "";
   const count = searching
     ? `${format(filtered.length)} / ${format(entries.length)}`
@@ -249,13 +269,16 @@ export function EntryList({
       info={info}
       className={className}
       style={style}
-      aside={search === null && bulk === null && add === null ? null : (
-        <>
-          {search}
-          {add}
-          {bulk}
-        </>
-      )}
+      aside={
+        search === null && bulk === null && add === null && askRows.length === 0 ? null : (
+          <>
+            {search}
+            {add}
+            <AskAiButton list={title} query={query} rows={askRows} total={filtered.length} />
+            {bulk}
+          </>
+        )
+      }
     >
       <div ref={ref} className="min-w-0">
         {entries.length === 0 ? (

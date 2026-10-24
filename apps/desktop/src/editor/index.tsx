@@ -41,6 +41,10 @@ export interface EditorHandle {
 
 export interface EditorViewProps {
   readOnly: boolean;
+  /** Name of the open file, for the "Ask AI" note. */
+  fileName: string;
+  /** The format as the header names it, or null when unknown. */
+  formatLabel: string | null;
   /** Folder of the open save; null for a pasted code (own names need a real game folder). */
   saveFolder: string | null;
   onChangesChanged: (changes: Change[]) => void;
@@ -54,6 +58,8 @@ export interface EditorViewProps {
 
 export function EditorView({
   readOnly,
+  fileName,
+  formatLabel,
   saveFolder,
   onChangesChanged,
   onInvalidChanged,
@@ -185,9 +191,25 @@ export function EditorView({
     }
   }, []);
 
+  /** Copies the "Ask AI" note; a clipboard that refuses gets the error toast. */
+  const copyForAi = useCallback(
+    async (text: string, count: number) => {
+      try {
+        await navigator.clipboard.writeText(text);
+        notify({ kind: "saved", title: tc("toast.copiedForAi", { count }) });
+      } catch {
+        notify({ kind: "error", title: tc("toast.copyAiFailed") });
+      }
+    },
+    [notify, tc],
+  );
+
   const ctx = useMemo<EditorContextValue>(
     () => ({
       readOnly,
+      fileName,
+      formatLabel,
+      copyForAi,
       fields,
       setField,
       reportInvalid,
@@ -215,6 +237,9 @@ export function EditorView({
     }),
     [
       readOnly,
+      fileName,
+      formatLabel,
+      copyForAi,
       fields,
       setField,
       reportInvalid,

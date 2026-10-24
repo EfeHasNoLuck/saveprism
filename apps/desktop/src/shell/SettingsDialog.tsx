@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { Info } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { mcpCommand } from "@/api/commands";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -13,9 +14,10 @@ import { Switch } from "@/components/ui/switch";
 import { SUPPORTED_LANGUAGES, type Language } from "@/i18n";
 import { useTheme, type ThemePreference } from "@/theme";
 import { COLOR_PRESETS, type ColorGroup } from "./colors";
-import { useSettings } from "./context";
+import { useNotify, useSettings } from "./context";
 import { InfoTip } from "@/components/ui/info-tip";
 import { clampKeepBackups, type SaveDefault, type TextSize } from "./settings";
+import { mcpSetupJson } from "./setup";
 
 const LANGUAGE_NAMES: Record<Language, string> = { en: "English", tr: "Türkçe" };
 const THEMES: ThemePreference[] = ["system", "light", "dark"];
@@ -199,8 +201,20 @@ interface SettingsDialogProps {
 export function SettingsDialog({ open, onOpenChange, onOpenAbout }: SettingsDialogProps) {
   const { t, i18n } = useTranslation();
   const { settings, update } = useSettings();
+  const { notify } = useNotify();
   const { preference, setPreference } = useTheme();
   const language: Language = i18n.resolvedLanguage === "tr" ? "tr" : "en";
+
+  /** Copies the MCP setup of this install; a clipboard that refuses gets the error toast. */
+  async function copySetup() {
+    try {
+      const exe = await mcpCommand();
+      await navigator.clipboard.writeText(mcpSetupJson(exe));
+      notify({ kind: "saved", title: t("toast.setupCopied") });
+    } catch {
+      notify({ kind: "error", title: t("toast.copySetupFailed") });
+    }
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -320,6 +334,15 @@ export function SettingsDialog({ open, onOpenChange, onOpenAbout }: SettingsDial
               onCommit={(keepBackups) => update({ keepBackups })}
             />
           </Row>
+        </Section>
+
+        <Section title={t("settings.aiTools")}>
+          <p className="text-[0.8125rem] text-muted-foreground">{t("settings.aiToolsInfo")}</p>
+          <div>
+            <Button variant="secondary" size="sm" onClick={() => void copySetup()}>
+              {t("settings.copySetup")}
+            </Button>
+          </div>
         </Section>
 
         <Section title={t("settings.recentSection")}>

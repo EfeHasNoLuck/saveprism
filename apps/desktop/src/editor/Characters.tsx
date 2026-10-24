@@ -3,6 +3,8 @@ import { Select } from "radix-ui";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { Actor } from "@/api/commands";
+import { AskAiButton } from "./AskAiButton";
+import type { AskAiRow } from "./askAi";
 import { actorPaths, countPending, useEditorContext, useFormatNumber } from "./context";
 import { FieldCell } from "./FieldEditor";
 import { EmptyText, Section } from "./parts";
@@ -102,6 +104,32 @@ export function Characters({
     <FieldCell key={field.path} field={field} name={label} fixedLabel />
   );
 
+  // The values "Ask AI" copies: the picked character's fields as the card shows them.
+  const askRows = useMemo<AskAiRow[]>(() => {
+    if (actor === undefined) return [];
+    const row = (name: string, f: Actor["level"]): AskAiRow => {
+      const field = ctx.fields.get(f.path) ?? f;
+      return {
+        name,
+        path: field.path,
+        value: field.value,
+        kind: field.kind,
+        min: field.min,
+        max: field.max,
+      };
+    };
+    const rows = [
+      row(t("actor.level"), actor.level),
+      row(t("actor.hp"), actor.hp),
+      row(t("actor.mp"), actor.mp),
+    ];
+    if (actor.exp !== null) rows.push(row(t("actor.exp"), actor.exp));
+    for (const b of actor.bonuses) {
+      rows.push(row(t(`stat.${b.key}`, { defaultValue: b.key }), b.field));
+    }
+    return rows;
+  }, [actor, ctx.fields, t]);
+
   return (
     <Section
       title={t("sections.characters")}
@@ -111,7 +139,15 @@ export function Characters({
       className={className}
       aside={
         actor === undefined ? null : (
-          <ActorSelect actors={actors} value={actor.id} onChange={setSelectedId} />
+          <>
+            <ActorSelect actors={actors} value={actor.id} onChange={setSelectedId} />
+            <AskAiButton
+              list={`${t("sections.character")} #${actor.id} ${actor.name}`}
+              query=""
+              rows={askRows}
+              total={askRows.length}
+            />
+          </>
         )
       }
     >

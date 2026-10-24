@@ -471,6 +471,11 @@ export function openNotices(): Promise<void> {
   return invoke<void>("open_notices");
 }
 
+/** Path of the running SavePrism executable, for the AI app setup snippet. */
+export function mcpCommand(): Promise<string> {
+  return invoke<string>("mcp_command");
+}
+
 /**
  * Saves to `target`. The open file's own path overwrites it (a backup is always made); any other
  * path is "save as" and fails with `ErrorCodes.targetExists` unless `overwrite` is true.

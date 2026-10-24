@@ -12,6 +12,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { AddValueButton } from "./AddValue";
+import { AskAiButton } from "./AskAiButton";
+import type { AskAiRow } from "./askAi";
 import { countPendingUnder, useEditorContext, useFormatNumber } from "./context";
 import { RemoveValueButton } from "./RemoveValue";
 import { FieldCell } from "./FieldEditor";
@@ -306,7 +308,7 @@ export function ValuesCard({
 }) {
   const { t } = useTranslation("editor");
   const format = useFormatNumber();
-  const { pending } = useEditorContext();
+  const { pending, fields } = useEditorContext();
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(0);
   const { ref, columns } = useGridColumns();
@@ -318,6 +320,23 @@ export function ValuesCard({
   const filtered = useMemo(
     () => (q === "" ? leaves : leaves.filter((n) => matches(n, q))),
     [leaves, q],
+  );
+  // The values "Ask AI" copies: the filtered leaves, on every page (read-only rows have no value).
+  const askRows = useMemo<AskAiRow[]>(
+    () =>
+      filtered.flatMap((n) => {
+        const field = n.field === null ? null : (fields.get(n.path) ?? n.field);
+        if (field === null) return [];
+        return [{
+          name: n.name,
+          path: field.path,
+          value: field.value,
+          kind: field.kind,
+          min: field.min,
+          max: field.max,
+        }];
+      }),
+    [fields, filtered],
   );
   const size = columns * ROWS_PER_PAGE;
   const shown = pageItems(filtered, page, size);
@@ -349,6 +368,12 @@ export function ValuesCard({
               <Pager page={page} total={filtered.length} size={size} onPage={setPage} />
             ) : null}
             {addParent != null ? <AddValueButton parent={addParent} /> : null}
+            <AskAiButton
+              list={title ?? t("sections.values")}
+              query={query}
+              rows={askRows}
+              total={askRows.length}
+            />
           </>
         )
       }

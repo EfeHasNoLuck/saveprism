@@ -11,6 +11,12 @@ import type { FormatNumber } from "./helpers";
 
 export interface EditorContextValue {
   readOnly: boolean;
+  /** Name of the open file, as the header shows it. */
+  fileName: string;
+  /** The format as the header names it ("RPG Maker MV"), or null when unknown. */
+  formatLabel: string | null;
+  /** Copies a note for an AI chat and tells the player; `count` is the number of values in it. */
+  copyForAi: (text: string, count: number) => Promise<void>;
   /** Latest known state of fields that were edited (by path). */
   fields: ReadonlyMap<string, Field>;
   setField: (field: Field) => void;

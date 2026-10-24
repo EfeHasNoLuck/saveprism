@@ -137,6 +137,22 @@
     "changed_one": "{{changed}} değişti",
     "changed_other": "{{changed}} değişti"
   },
+  "askAi": {
+    "label": "AI'a sor",
+    "tip": "Bu değerleri kısa bir notla kopyala; bir AI sohbetine yapıştır",
+    "intro": "SavePrism ile bir oyun kaydını düzenliyorum.",
+    "file": "Dosya: {{name}} ({{format}})",
+    "filePlain": "Dosya: {{name}}",
+    "list": "Liste: {{list}}",
+    "listSearch": "Liste: {{list}}, arama \"{{query}}\"",
+    "values": "Değerler ({{count}}):",
+    "valuesFirst": "Değerler ({{total}} değerden ilk {{shown}}):",
+    "row": "- {{subject}} = {{value}}{{detail}} [{{path}}]",
+    "subjectName": "{{name}} #{{id}}",
+    "subjectId": "#{{id}}",
+    "subjectValue": "bu değer",
+    "ask": "Hangi değerleri neye değiştireceğimi isimle söyle. Her değeri sınırları içinde tut."
+  },
   "story": {
     "title": "Kayıt",
     "passage": "Pasaj",

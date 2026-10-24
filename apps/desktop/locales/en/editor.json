@@ -137,6 +137,22 @@
     "changed_one": "{{changed}} changed",
     "changed_other": "{{changed}} changed"
   },
+  "askAi": {
+    "label": "Ask AI",
+    "tip": "Copy these values with a short note to paste into an AI chat",
+    "intro": "I am editing a game save with SavePrism.",
+    "file": "File: {{name}} ({{format}})",
+    "filePlain": "File: {{name}}",
+    "list": "List: {{list}}",
+    "listSearch": "List: {{list}}, search \"{{query}}\"",
+    "values": "Values ({{count}}):",
+    "valuesFirst": "Values (first {{shown}} of {{total}}):",
+    "row": "- {{subject}} = {{value}}{{detail}} [{{path}}]",
+    "subjectName": "{{name}} #{{id}}",
+    "subjectId": "#{{id}}",
+    "subjectValue": "this value",
+    "ask": "Tell me which values to change and to what, by name. Keep each value inside its limits."
+  },
   "story": {
     "title": "Save",
     "passage": "Passage",
