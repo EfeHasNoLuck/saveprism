@@ -83,9 +83,10 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
    Checked end to end on a real RPG Maker MV save copy (edit, save, backup, reopen, changed-file refusal); reviewed by a
    Claude subagent, findings fixed. The release exe (window subsystem) answers over stdio too. "Ask AI" on every list card and Settings → AI tools → Copy setup (`f4fe817`,
    checked in the running app, dark/light, EN/TR). Docs: `docs/ai.md`.
-5. Installer: `tauri build` works (test build `0.0.1`, 2026-10-23); `THIRD_PARTY_NOTICES.md` generated and bundled
-   (`scripts/third-party-notices/generate.sh`). Left: version 0.1.0, README install section (user: not before the work is
-   done), then ask the user to publish.
+5. Installer. 2026-10-24: version 0.1.0, README rewritten (install, all formats, AI), notices regenerated (now with
+   rusqlite and lz4_flex), `tauri build` → `SavePrism_0.1.0_x64-setup.exe` (4.0 MB) and `SavePrism_0.1.0_x64_en-US.msi`
+   (6.5 MB) in `target/release/bundle/`; the release exe opens its window and answers `mcp`. Left: the user's OK to
+   publish (a GitHub release; the repo is private, and real saves in `bed2ed9` need a history cleanup before it goes public).
 
 ## Known gaps
 - Turkish UI: the body of host error toasts stays English (only the title is translated; `shell/errors.ts` shows the

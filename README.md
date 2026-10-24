@@ -1,34 +1,74 @@
 # SavePrism
 
-A free, local, MIT-licensed desktop app for editing game save files. Open a save from RPG Maker, Unity, Unreal Engine and more,
-change values like gold, stats and items, and save it back **byte-for-byte in its original format**. Your files never leave your computer.
+A free, local, MIT-licensed desktop app for editing game save files. Open a save from RPG Maker, Unity, Unreal Engine,
+Ren'Py, Twine and more, change values like gold, stats, items, variables and switches, and save it back **in its original
+format**. Your files never leave your computer.
 
-**Status:** pre-release. The core and the command-line tool work today; the Windows desktop app (v0.1) is being built.
+**Status:** v0.1 for Windows.
 
 ---
+
+## Install (Windows 10 and 11)
+
+1. Download `SavePrism_0.1.0_x64-setup.exe` (or `SavePrism_0.1.0_x64_en-US.msi`) from the Releases page.
+2. Run it. The installer is not code-signed yet, so Windows SmartScreen may say "Windows protected your PC":
+   choose **More info → Run anyway**.
+3. Open SavePrism, then drop a save file on the window or press **Open file**. You can also paste a save code.
+
+SavePrism needs Microsoft Edge WebView2, which Windows 10 and 11 already have; the installer fetches it if it is missing.
 
 ## Why
 
 1. **Online editors have limits:** upload caps, waiting times, paywalls, and your file goes to someone else's server.
 2. **Open-source tools are scattered:** one CLI per engine, and the best desktop editors cover only a few engines.
-3. **Nothing round-trips safely:** SavePrism decodes a save, re-encodes it unchanged and checks that the bytes match before it lets you
-   edit. Every write makes a backup first and is verified afterwards.
+3. **Nothing round-trips safely:** SavePrism decodes a save, re-encodes it unchanged and checks the result before it lets
+   you edit. Every write makes a backup first (kept in `%LOCALAPPDATA%\SavePrism\backups`, never next to the save) and is
+   read back and checked afterwards.
 
 ## Supported formats
 
-| Engine | Files | Notes |
+| Engine or format | Files | What you can edit |
 |---|---|---|
-| RPG Maker MV / MZ | `.rpgsave`, `.rmmzsave` | |
-| Unity · Easy Save 3 | `.es3` | plain, GZip, and AES-encrypted (password needed) |
-| Unreal Engine | `.sav` (GVAS) | |
-| Palworld | `.sav` (PlZ) | PlM (Oodle) not supported yet |
-| Plain JSON | `.json` | |
+| RPG Maker MV / MZ | `.rpgsave`, `.rmmzsave` | gold, characters, items, weapons, armors, variables, switches, with names from the game's `data` folder |
+| RPG Maker XP / VX / VX Ace | `.rxdata`, `.rvdata`, `.rvdata2` | the same sections, names from the `Data` folder |
+| RPG Maker 2000 / 2003 | `.lsd` | the same sections, names from `RPG_RT.ldb` |
+| Wolf RPG Editor | `.sav` (not encrypted) | switches, variables, the variable database |
+| Unity · Easy Save 3 | `.es3` | plain, GZip and AES (password needed) |
+| Unity · PlayerPrefs | registry export `.reg` | ints, floats, strings |
+| Unity / .NET BinaryFormatter | `.dat`, RAGS `.rsv` | values (read as data, never run) |
+| Unreal Engine | `.sav` (GVAS) | values |
+| Palworld | `.sav` (PlZ) | values (PlM/Oodle not supported) |
+| Godot | ConfigFile text, `store_var` binary, JSON | values (encrypted files are refused) |
+| Ren'Py | `.save`, `persistent` | store variables (read as data, never run) |
+| Twine · SugarCube 2 | save files and save codes | story variables |
+| TyranoScript | `.sav` | values |
+| Naninovel | save slots | custom variables |
+| QSP | `.sav` | values |
+| Flash | `.sol` (AMF0 / AMF3) | values |
+| Pokémon Gen 3 | `.sav` | money, coins, bag, party EXP / IVs / EVs / stats |
+| The Witcher 3 | `.sav` | orens, item quantities |
+| Java serialization | object streams | values (read as data, never run) |
+| SQLite | database saves | table values |
+| JSON and text | `.json`, zip- or gzip-packed JSON | values; add and remove entries |
+
+A file that does not survive the round-trip check opens read-only with a warning.
+
+## Use it with AI
+
+- **Ask AI** on every list copies the values with a short note, ready to paste into any AI chat.
+- **MCP server:** `SavePrism.exe mcp` lets AI apps such as Claude Desktop, Claude Code or Cursor open and edit saves through
+  SavePrism, with the same checks and backups. **Settings → AI tools → Copy setup** gives you the entry to paste.
+
+See [docs/ai.md](docs/ai.md).
 
 ## Platforms
 
 Windows first. Linux and macOS builds come later.
 
 ## Command line
+
+The `saveprism` command line tool (built from `crates/saveprism-cli`) detects every format above; `decode` and `encode`
+work for JSON, RPG Maker MV/MZ, Easy Save 3 and GVAS.
 
 ```
 saveprism inspect <save>                                   # detected format and round-trip result
@@ -39,16 +79,15 @@ saveprism keys try <save> --candidates <list.txt>          # find the password o
 
 ## Documentation
 
-Planning notes are written in Turkish; code, identifiers and commit messages are in English.
-
 | File | Contents |
 |---|---|
 | [NOW.md](NOW.md) | Current state and the next step |
-| [docs/ROADMAP.md](docs/ROADMAP.md) | Milestones and tasks |
-| [docs/architecture/MIMARI.md](docs/architecture/MIMARI.md) | Architecture |
-| [docs/architecture/kararlar.md](docs/architecture/kararlar.md) | Decision records (ADR) |
+| [docs/ai.md](docs/ai.md) | Ask AI and the MCP server |
+| [docs/themes.md](docs/themes.md) | Colors and themes |
+| [docs/architecture/MIMARI.md](docs/architecture/MIMARI.md) | Architecture (Turkish) |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | How to build and contribute |
 
 ## License
 
-[MIT](LICENSE). Made for single-player saves of games you own. Online games, anti-cheat and DRM are out of scope.
+[MIT](LICENSE). Third-party licenses: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Made for single-player saves of
+games you own. Online games, anti-cheat and DRM are out of scope.
