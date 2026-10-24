@@ -124,6 +124,10 @@ pub mod app_codes {
     pub const NOT_ADDABLE: &str = "SP-APP-021";
     /// This entry cannot be removed (the format or the container does not allow it).
     pub const NOT_REMOVABLE: &str = "SP-APP-022";
+    /// The open file changed on disk after it was opened or last saved.
+    pub const FILE_CHANGED: &str = "SP-APP-023";
+    /// An argument of an MCP tool has a value the tool cannot use.
+    pub const MCP_ARGUMENT: &str = "SP-APP-024";
 }
 
 /// An error as the UI receives it.
@@ -966,8 +970,9 @@ impl Session {
     }
 
     /// Changes every scalar in `paths` to `text`, each parsed by its own type and checked against its
-    /// own limits. Everything is checked first: on any problem nothing is changed. The whole edit is
-    /// one undo step. Returns the values that changed, like an undo does.
+    /// own limits. Repeated paths are skipped. Everything is checked first: on any problem nothing
+    /// is changed. The whole edit is one undo step. Returns the values that changed, like an undo
+    /// does.
     pub fn edit_values(&mut self, paths: &[String], text: &str) -> Result<HistoryResult, ApiError> {
         if !self.editable {
             return Err(self.read_only_error());
@@ -982,16 +987,50 @@ impl Session {
                 "Narrow the list with its search box and set the values in parts.",
             ));
         }
-        let bounds = self.rpg_bounds();
         let mut seen = HashSet::with_capacity(paths.len());
-        let mut touched = Vec::with_capacity(paths.len());
         let mut edits = Vec::with_capacity(paths.len());
         for path in paths {
             let parsed = Path::parse(path)?;
             let id = self.doc.resolve(&parsed).ok_or_else(|| bad_path(path))?;
-            if !seen.insert(id) {
-                continue;
+            if seen.insert(id) {
+                edits.push((path.clone(), text.to_string()));
             }
+        }
+        self.edit_each(&edits)
+    }
+
+    /// Changes each scalar in `edits` to its own text, each parsed by its own type and checked
+    /// against its own limits. Everything is checked first: on any problem nothing is changed. A
+    /// path that appears twice is refused. The whole edit is one undo step. Returns the values that
+    /// changed, like an undo does.
+    pub fn edit_each(&mut self, edits: &[(String, String)]) -> Result<HistoryResult, ApiError> {
+        if !self.editable {
+            return Err(self.read_only_error());
+        }
+        if edits.len() > MAX_VALUES {
+            return Err(ApiError::new(
+                app_codes::TOO_MANY_VALUES,
+                format!(
+                    "{} values were sent at once; the limit is {MAX_VALUES}",
+                    edits.len()
+                ),
+                "Narrow the list with its search box and set the values in parts.",
+            ));
+        }
+        let bounds = self.rpg_bounds();
+        let mut seen = HashSet::with_capacity(edits.len());
+        let mut touched = Vec::with_capacity(edits.len());
+        let mut set_edits = Vec::with_capacity(edits.len());
+        for (path, text) in edits {
+            if !seen.insert(path.as_str()) {
+                return Err(ApiError::new(
+                    app_codes::BAD_VALUE,
+                    format!("the path \"{}\" is in the list twice", quote(path)),
+                    "Send each path only once.",
+                ));
+            }
+            let parsed = Path::parse(path)?;
+            let id = self.doc.resolve(&parsed).ok_or_else(|| bad_path(path))?;
             let node = self.doc.get(id).ok_or_else(|| bad_path(path))?;
             if node.flags.contains(NodeFlags::READ_ONLY) {
                 return Err(Error::new(
@@ -1005,13 +1044,13 @@ impl Session {
             let old = value_text(node).unwrap_or_default();
             let before = scalar_owned(&node.value);
             touched.push((id, parsed.to_string(), old, before));
-            edits.push(Edit::Set {
+            set_edits.push(Edit::Set {
                 path: parsed,
                 value,
             });
         }
         // One atomic edit: on an error the document is unchanged.
-        apply_edits(&mut self.doc, &edits, &self.limits)?;
+        apply_edits(&mut self.doc, &set_edits, &self.limits)?;
         let mut changes = Vec::with_capacity(touched.len());
         let mut step = Vec::with_capacity(touched.len());
         for (id, path, old, before) in touched {
@@ -1163,6 +1202,23 @@ impl Session {
                 format!("\"{}\" already exists", target_path.display()),
                 "Pick another file name, or confirm that the existing file may be replaced (a backup is made first).",
             ));
+        }
+        if same && let Ok(meta) = fs::metadata(&target_path) {
+            self.limits.check_input(meta.len()).map_err(|error| {
+                error.context(format!("while reading {}", target_path.display()))
+            })?;
+            let current = fs::read(&target_path).map_err(|error| io_error(&target_path, error))?;
+            if current != self.original {
+                let name = target_path
+                    .file_name()
+                    .map(|name| name.to_string_lossy().into_owned())
+                    .unwrap_or_else(|| target_path.display().to_string());
+                return Err(ApiError::new(
+                    app_codes::FILE_CHANGED,
+                    format!("\"{name}\" changed on disk after it was opened"),
+                    "Use Save as to keep your edits in another file, or open the file again.",
+                ));
+            }
         }
 
         let recipe = with_password(&self.recipe, self.password.as_deref());

@@ -3,6 +3,7 @@
 //! The logic lives in [`session`] (no Tauri types). The commands here only lock the shared
 //! `Option<Session>` and call it. They are `async` so a large file does not block the window thread.
 
+pub mod mcp;
 pub mod session;
 
 use std::path::PathBuf;

@@ -312,6 +312,43 @@ fn save_as_onto_an_existing_file_needs_overwrite() {
     assert_eq!(row(&reopened, "/level").preview, "5");
 }
 
+#[test]
+fn save_refuses_a_file_that_changed_on_disk_and_leaves_it_alone() {
+    let env = env();
+    let path = copy_in(&env, "synthetic/json/compact.json");
+    let mut session = open(&env, &path, None).unwrap();
+    session.edit_value("/level", "99").unwrap();
+
+    let written_by_another_program = b"{\"level\":7}".to_vec();
+    fs::write(&path, &written_by_another_program).unwrap();
+    let error = session
+        .save(path.to_str().unwrap(), false, None)
+        .unwrap_err();
+    assert_eq!(error.code, app_codes::FILE_CHANGED);
+    assert_eq!(
+        error.message,
+        "\"compact.json\" changed on disk after it was opened"
+    );
+    assert_eq!(fs::read(&path).unwrap(), written_by_another_program);
+}
+
+#[test]
+fn save_writes_an_unchanged_file_and_a_second_save_after_it() {
+    let env = env();
+    let path = copy_in(&env, "synthetic/json/compact.json");
+    let mut session = open(&env, &path, None).unwrap();
+
+    session.edit_value("/level", "5").unwrap();
+    session.save(path.to_str().unwrap(), false, None).unwrap();
+    let first = fs::read(&path).unwrap();
+
+    session.edit_value("/level", "6").unwrap();
+    session.save(path.to_str().unwrap(), false, None).unwrap();
+    assert_ne!(fs::read(&path).unwrap(), first);
+    let reopened = open(&env, &path, None).unwrap();
+    assert_eq!(row(&reopened, "/level").preview, "6");
+}
+
 /// Names of the files in `dir`, sorted.
 fn file_names(dir: &Path) -> Vec<String> {
     let mut names: Vec<String> = fs::read_dir(dir)
