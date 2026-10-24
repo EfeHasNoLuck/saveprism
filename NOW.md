@@ -92,6 +92,19 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
    `PFiles\SavePrism\saveprism-desktop.exe` (the exe name users see), the DLL and the notices; that exe opens its
    window and answers `mcp`. Not installed for real yet (no Windows Sandbox on the dev PC). Publishing waits until the
    app is proven; do not ask the user before that.
+6. Full parity with saveeditonline.com's `/formats` page (about 70 formats; the home page we matched lists 13). REA
+   analysis 2026-10-24: `docs/research/saveeditonline-behavior.md` (section 9 = ranked gaps). The site uploads every save
+   to its server, keeps it a day, limits free use per IP, has no backup/undo/round-trip check.
+   - Wave 1 (EVREN, started 2026-10-24, worktrees `../saveprism-wt/{renpysign,layers,text,binobj,ui}`): Ren'Py saves
+     signed with the player's own key; BZip2/Zstd/XZ/LZMA/LZ4/Brotli/TAR layers + hex/URL-encoded codes;
+     XML/INI/properties/TOML/YAML/CSV/plist kept byte-exact; pickle files, MessagePack, CBOR, BSON, NBT;
+     "Where is my save?" help and "Compare with another save".
+   - Wave 2: Unity Easy Save 2, Odin, Adventure Creator, Pixel Crushers; Terraria `.plr`/`.wld`; text encodings
+     (Shift-JIS, GB18030, CP949, UTF-16/32); a generic "find a value" tool for unknown binaries; Witcher 3 Gwent view.
+   - Wave 3: VN/indie engines (AGS, Artemis, Pixel Game Maker MV, Smile Game Builder, KiriKiri, NScripter, AliceSoft,
+     LiveMaker, Emuera, GameMaker, Construct Classic, Visionaire); containers (BioWare ERF/GFF, BND4, MPQ, PS1/PS2 memory
+     cards, emulator states, SharkPort); LevelDB/RocksDB/LiteDB; a local "unsupported file" report. Then the same REA
+     pass on saveeditor.online.
 
 ## Known gaps
 - Turkish UI: the body of host error toasts stays English (only the title is translated; `shell/errors.ts` shows the
