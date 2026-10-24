@@ -30,10 +30,11 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
    - Done: RPG Maker MV/MZ, Easy Save 3, Unreal GVAS, Palworld, JSON/text, SugarCube, paste/copy code, Ruby Marshal codec,
      RPG Maker XP/VX/VX Ace sections (gold, items, weapons, armors, actors, variables, switches, names from a plain `Data`
      folder; 2026-10-24, synthetic saves only; XP shows SP as "MP"), Flash `.sol` (AMF0/AMF3), Pokémon Gen 3 (money, coins, bag, party EXP/IV/EV/stats; 2026-10-24, synthetic only), Java serialization streams (data only; fixtures
-     from a real JDK writer).
+     from a real JDK writer), RPG Maker 2000/2003 `.lsd` with the sections view and names from
+     `RPG_RT.ldb` (ids checked against liblcf; non-ASCII text edits are refused only at save).
    - Formats left: Ren'Py `.save` (pickle as data only + re-sign), TyranoScript, Godot, Wolf RPG `.sav`, Unity generic
      `.dat`/`.save` and PlayerPrefs (also in the registry, *new*), QSP, SQLite,
-     Naninovel view, RPG Maker 2000/2003 `.lsd` (*new*), Rags `.rsv` (*new*), The Witcher 3 `.sav` (*new*), packed (zip/gz) saves
+     Naninovel view, Rags `.rsv` (*new*), The Witcher 3 `.sav` (*new*), packed (zip/gz) saves
      (*new*).
    - Features left: add/delete a value from the card view, pick the game's data folder by hand.
    Done 2026-10-23: Twine SugarCube 2 story view (current-moment variables edited at their last writer in `state.delta`;

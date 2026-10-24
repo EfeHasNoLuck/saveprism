@@ -6,6 +6,7 @@ const EXTENSION_LABELS: Record<string, string> = {
   rvdata2: "RPG Maker VX Ace",
   rvdata: "RPG Maker VX",
   rxdata: "RPG Maker XP",
+  lsd: "RPG Maker 2000/2003",
   es3: "Easy Save 3",
   sav: "SAV",
   sol: "Flash",
@@ -21,6 +22,7 @@ const CODEC_LABELS: Record<string, string> = {
   "format.java-serialization": "Java",
   "format.flash-sol": "Flash LSO",
   "format.pokemon-gen3": "Pokémon Gen 3",
+  "format.lcf": "RPG Maker 2000/2003",
 };
 
 const ENGINE_LABELS: Record<string, string> = {

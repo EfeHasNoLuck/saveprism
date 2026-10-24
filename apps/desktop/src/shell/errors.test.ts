@@ -40,6 +40,8 @@ describe("engine helpers", () => {
     expect(engineLabel("shared.sol", "format.flash-sol")).toBe("Flash");
     expect(engineLabel("shared.bin", "format.flash-sol")).toBe("Flash LSO");
     expect(engineLabel("save.srm", "format.pokemon-gen3")).toBe("Pokémon Gen 3");
+    expect(engineLabel("Save01.lsd", "format.lcf")).toBe("RPG Maker 2000/2003");
+    expect(engineLabel("RPG_RT.ldb", "format.lcf")).toBe("RPG Maker 2000/2003");
     expect(engineLabel("data.bin", "format.unknown")).toBeNull();
     expect(engineLabel("slot1.save", "format.json", "sugarcube")).toBe("SugarCube");
     expect(engineLabel("file1.rpgsave", "format.json", null)).toBe("RPG Maker MV");
