@@ -77,3 +77,10 @@ path = "fuzz_targets/pickle.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "sqlite"
+path = "fuzz_targets/sqlite.rs"
+test = false
+doc = false
+bench = false

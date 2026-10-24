@@ -18,6 +18,7 @@ pub mod pickle;
 pub mod renpy;
 pub mod rpgmaker;
 pub mod sol;
+pub mod sqlite;
 
 /// Registers every layer and codec of this crate into `reg`.
 pub fn register_all(reg: &mut Registry) {
@@ -34,6 +35,7 @@ pub fn register_all(reg: &mut Registry) {
     pickle::register(reg);
     renpy::register(reg);
     sol::register(reg);
+    sqlite::register(reg);
 }
 
 #[cfg(test)]

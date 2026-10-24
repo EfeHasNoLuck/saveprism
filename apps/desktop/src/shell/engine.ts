@@ -10,6 +10,9 @@ const EXTENSION_LABELS: Record<string, string> = {
   es3: "Easy Save 3",
   sav: "SAV",
   sol: "Flash",
+  sqlite: "SQLite",
+  sqlite3: "SQLite",
+  db: "SQLite",
 };
 
 const CODEC_LABELS: Record<string, string> = {
@@ -24,6 +27,7 @@ const CODEC_LABELS: Record<string, string> = {
   "format.flash-sol": "Flash LSO",
   "format.pokemon-gen3": "Pokémon Gen 3",
   "format.lcf": "RPG Maker 2000/2003",
+  "format.sqlite": "SQLite",
 };
 
 const ENGINE_LABELS: Record<string, string> = {
