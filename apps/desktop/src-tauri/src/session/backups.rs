@@ -98,6 +98,7 @@ impl Session {
             self.path.clone(),
             self.password.clone(),
             self.backup_root.clone(),
+            super::RenpyKeySource::Default,
         )?;
         restored.pasted = self.pasted;
         Ok(restored)

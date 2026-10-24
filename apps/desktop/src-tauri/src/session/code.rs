@@ -198,7 +198,12 @@ impl Session {
             })?;
         let dir = pasted_dir(&root)?;
         let path = write_new_code(&dir, code.as_bytes())?;
-        match Session::open_path(path.clone(), None, backup_root) {
+        match Session::open_path(
+            path.clone(),
+            None,
+            backup_root,
+            super::RenpyKeySource::Default,
+        ) {
             Ok(mut session) => {
                 session.pasted = true;
                 prune_codes(&dir, &path);

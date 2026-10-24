@@ -7,14 +7,20 @@
 //! Numbers, on/off values and texts are edited in place; lists, dicts and game objects open as
 //! groups; a value stored under two names points at its first place.
 //!
-//! Signatures (Ren'Py 7.6 / 8.1 and later): an edited save is written with an empty `signatures`
-//! entry, so the game asks the player whether to trust it; the UI says to answer Yes. A signed
-//! `persistent` file would be thrown away by the game after any change (and the player's data with
-//! it), so it opens read-only. Nothing is executed.
+//! Signatures (Ren'Py 7.6 / 8.1 and later): when the player's own `security_keys.txt` is found, an
+//! edited save is signed with it and the game loads it without asking whether to trust it; a signed
+//! `persistent` file is edited and signed the same way. Without a key file an edited save gets an
+//! empty `signatures` entry (the game asks the player to trust it) and a signed `persistent` file
+//! stays read-only, because Ren'Py would throw an edited copy away. The key is read only while
+//! signing, lives in memory only and is never logged. Nothing is executed.
+
+use std::fs;
+use std::path::{Path as FsPath, PathBuf};
 
 use saveprism_codecs::pickle::python_class;
-use saveprism_codecs::renpy::SIGNED_PARAM;
-use saveprism_core::{Node, Path, Value};
+use saveprism_codecs::renpy::sign;
+use saveprism_codecs::renpy::{RENPY_KEY, SIGN_KEY_PARAM, SIGNED_PARAM};
+use saveprism_core::{Node, Path, Recipe, Value};
 
 use super::game::{At, Ctx, MAX_VALUE_ROWS, NoteKind, RowNote, UNLIMITED, ValueRow};
 use super::{ApiError, Session, app_codes, child_count, read_only_document};
@@ -31,6 +37,74 @@ const PERSISTENT_CLASS: &str = "renpy.persistent.Persistent";
 pub const NOTICE_SIGNED_SAVE: &str = "renpy-signed";
 /// Notice for a signed `persistent` file: it is open read-only.
 pub const NOTICE_SIGNED_PERSISTENT: &str = "renpy-persistent-signed";
+/// Notice when the player's own key signs the edited file.
+pub const NOTICE_KEY_SIGNED: &str = "renpy-key-signed";
+
+/// File name of Ren'Py's key list (`savetoken.load_tokens`).
+const KEY_FILE: &str = "security_keys.txt";
+
+/// Where the player's key file comes from. Production reads the default Ren'Py folder; tests name
+/// a file of their own or turn the lookup off.
+#[derive(Clone, Debug)]
+pub(super) enum RenpyKeySource {
+    /// `%APPDATA%/RenPy/tokens/security_keys.txt` and the platform equivalents.
+    Default,
+    /// An explicit file (or none); tests only.
+    #[cfg(test)]
+    At(Option<PathBuf>),
+}
+
+impl RenpyKeySource {
+    /// The key file to use, when it exists and holds at least one `signing-key` line.
+    pub(super) fn resolve(self) -> Option<PathBuf> {
+        match self {
+            RenpyKeySource::Default => default_key_file(),
+            #[cfg(test)]
+            RenpyKeySource::At(path) => path.filter(|path| key_file_works(path)),
+        }
+    }
+}
+
+/// The Ren'Py token folder for this platform, the one `renpy.py:path_to_saves` builds.
+fn default_key_file() -> Option<PathBuf> {
+    let mut candidates = Vec::new();
+    if let Some(appdata) = std::env::var_os("APPDATA") {
+        candidates.push(
+            PathBuf::from(appdata)
+                .join("RenPy")
+                .join("tokens")
+                .join(KEY_FILE),
+        );
+    }
+    if let Some(home) = std::env::var_os("HOME").or_else(|| std::env::var_os("USERPROFILE")) {
+        let base = if cfg!(target_os = "macos") {
+            PathBuf::from(home).join("Library").join("RenPy")
+        } else {
+            PathBuf::from(home).join(".renpy")
+        };
+        candidates.push(base.join("tokens").join(KEY_FILE));
+    }
+    candidates.into_iter().find(|path| key_file_works(path))
+}
+
+/// True when `path` is a readable key file with at least one usable signing key.
+fn key_file_works(path: &FsPath) -> bool {
+    fs::read_to_string(path)
+        .ok()
+        .is_some_and(|text| !sign::parse_key_file(&text).is_empty())
+}
+
+/// The error for a key file that was found when the save was opened but cannot be used now.
+fn key_error(path: Option<&FsPath>) -> ApiError {
+    let where_ = path
+        .map(|path| format!("\"{}\"", path.display()))
+        .unwrap_or_else(|| "the Ren'Py key file".to_string());
+    ApiError::new(
+        RENPY_KEY.as_str(),
+        format!("{where_} could not be read as a Ren'Py key file"),
+        "Check that security_keys.txt exists and has a signing-key line, then open the save again.",
+    )
+}
 
 /// First name parts of the variables Ren'Py itself keeps in the store.
 const INTERNAL_NAMES: [&str; 40] = [
@@ -230,20 +304,30 @@ impl Session {
         Some(RenpyFile::Persistent { signed })
     }
 
-    /// True for a signed `persistent` file, which must not be written.
+    /// True for a signed `persistent` file, which must not be written. With the player's own key it
+    /// can be signed again, so it is editable.
     pub(super) fn renpy_locked(&self) -> bool {
         matches!(
             self.renpy_file(),
             Some(RenpyFile::Persistent { signed: true })
-        )
+        ) && self.renpy_key.is_none()
     }
 
     /// The notice key for the UI and its English text.
     pub(super) fn renpy_notice(&self) -> Option<(&'static str, &'static str)> {
+        let key = self.renpy_key.is_some();
         match self.renpy_file()? {
+            RenpyFile::Save { signed: true } if key => Some((
+                NOTICE_KEY_SIGNED,
+                "After you save changes, the save is signed with your own Ren'Py key, so the game opens it without asking whether to trust it.",
+            )),
             RenpyFile::Save { signed: true } => Some((
                 NOTICE_SIGNED_SAVE,
                 "After you save changes, the game asks whether to trust this save (it was made on another device). Answer Yes.",
+            )),
+            RenpyFile::Persistent { signed: true } if key => Some((
+                NOTICE_KEY_SIGNED,
+                "This Ren'Py persistent file is signed; changes are saved and signed again with your own Ren'Py key.",
             )),
             RenpyFile::Persistent { signed: true } => Some((
                 NOTICE_SIGNED_PERSISTENT,
@@ -251,6 +335,61 @@ impl Session {
             )),
             _ => None,
         }
+    }
+
+    /// The recipe for a write: when the player's key is known, it is added to the save layer (an
+    /// edited save gets fresh `signatures`), or used to sign the uncompressed persistent data and
+    /// replace the zlib `trailing` signature. The key text lives in this copy only.
+    pub(super) fn renpy_recipe(&self, recipe: &Recipe) -> Result<Recipe, ApiError> {
+        let Some(file) = self.renpy_file() else {
+            return Ok(recipe.clone());
+        };
+        let Some(path) = self.renpy_key.as_deref() else {
+            return Ok(recipe.clone());
+        };
+        let text = fs::read_to_string(path).map_err(|_| key_error(Some(path)))?;
+        let mut recipe = recipe.clone();
+        match file {
+            RenpyFile::Save { .. } => {
+                let mut found = false;
+                for step in &mut recipe.steps {
+                    if step.kind == SAVE_LAYER {
+                        step.params.set(SIGN_KEY_PARAM, text.clone());
+                        found = true;
+                    }
+                }
+                if !found {
+                    return Err(key_error(Some(path)));
+                }
+            }
+            RenpyFile::Persistent { .. } => {
+                let keys = sign::parse_key_file(&text);
+                if keys.is_empty() {
+                    return Err(key_error(Some(path)));
+                }
+                let (codec_step, layer_steps) = recipe
+                    .steps
+                    .split_last_mut()
+                    .ok_or_else(ApiError::internal)?;
+                let codec = self
+                    .reg
+                    .codec(PICKLE_CODEC)
+                    .ok_or_else(ApiError::internal)?;
+                let inner = codec.encode(&self.doc, &codec_step.params)?;
+                let signatures = sign::sign_data(&inner, &keys);
+                let mut found = false;
+                for step in layer_steps.iter_mut() {
+                    if step.kind == ZLIB_LAYER {
+                        step.params.set("trailing", signatures.clone().into_bytes());
+                        found = true;
+                    }
+                }
+                if !found {
+                    return Err(key_error(Some(path)));
+                }
+            }
+        }
+        Ok(recipe)
     }
 
     /// The error for an edit or save of a read-only document.

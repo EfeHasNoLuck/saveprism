@@ -707,13 +707,18 @@ function App() {
           </div>
         ) : null}
 
-        {file?.notice === "renpy-signed" ? (
+        {file?.notice === "renpy-signed" ||
+        file?.notice === "renpy-key-signed" ? (
           <div
             role="status"
             className="relative z-10 flex h-8 shrink-0 items-center gap-2 border-b border-border bg-chrome px-3 text-xs font-medium text-muted-foreground"
           >
             <Info className="size-3.5 shrink-0" />
-            {t("banner.renpySigned")}
+            {t(
+              file?.notice === "renpy-key-signed"
+                ? "banner.renpyKeySigned"
+                : "banner.renpySigned",
+            )}
           </div>
         ) : null}
 

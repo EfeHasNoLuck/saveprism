@@ -4,6 +4,9 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use saveprism_codecs::es3::{ES3_PASSWORD_REQUIRED, ES3_WRONG_PASSWORD};
+use saveprism_codecs::layers::ZlibLayer;
+use saveprism_codecs::renpy::sign;
+use saveprism_core::{DecodeCtx, Layer, Limits};
 
 use super::*;
 
@@ -44,10 +47,11 @@ fn copy_in(env: &Env, relative: &str) -> PathBuf {
 }
 
 fn open(env: &Env, path: &Path, password: Option<&str>) -> Result<Session, ApiError> {
-    Session::open(
+    Session::open_with_keys(
         path.to_str().unwrap(),
         password.map(str::to_string),
         Some(env.backups.clone()),
+        RenpyKeySource::At(None),
     )
 }
 
@@ -2860,8 +2864,94 @@ fn an_unsigned_renpy_persistent_lists_and_saves_its_fields() {
     assert_eq!(reopened.field_info("/play_count").unwrap().value, "9");
 }
 
-// Naninovel save slots.
+// A synthetic Ren'Py key pair (SEC1 private key and SPKI public key), the two fields
+// `savetoken.create_token` writes to `security_keys.txt`. Not a real player's key.
+const RENPY_KEY_TEXT: &str = "signing-key \
+MHcCAQEEIHYeYqUSRQdnOtTkdbq1IB+USR19c3ph/EYnOlYi7s7joAoGCCqGSM49AwEHoUQDQgAEXtIZeHL7RF/vKerE96+NB+YwoEB477I5QSJ6rmvVzAm/QQZFT3WcZJFoS3BUTGH6JkbbRgH5+uWxD51/+Gch7g== \
+MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEXtIZeHL7RF/vKerE96+NB+YwoEB477I5QSJ6rmvVzAm/QQZFT3WcZJFoS3BUTGH6JkbbRgH5+uWxD51/+Gch7g==\n";
 
+fn key_file(env: &Env) -> PathBuf {
+    let path = env.work.join("security_keys.txt");
+    fs::write(&path, RENPY_KEY_TEXT).unwrap();
+    path
+}
+
+fn open_with_key(env: &Env, path: &Path, key: &Path) -> Result<Session, ApiError> {
+    Session::open_with_keys(
+        path.to_str().unwrap(),
+        None,
+        Some(env.backups.clone()),
+        RenpyKeySource::At(Some(key.to_path_buf())),
+    )
+}
+
+#[test]
+fn a_signed_renpy_save_is_signed_with_the_players_key() {
+    let env = env();
+    let key = key_file(&env);
+    let path = copy_in(&env, RENPY_SIGNED);
+    let mut session = open_with_key(&env, &path, &key).unwrap();
+    let info = session.info();
+    assert_eq!(info.notice.as_deref(), Some(NOTICE_KEY_SIGNED));
+    assert!(info.warning.unwrap().contains("your own Ren'Py key"));
+    assert!(info.editable);
+    session.edit_value("/0/store.money", "888").unwrap();
+    session.save(path.to_str().unwrap(), false, None).unwrap();
+
+    let reopened = open_with_key(&env, &path, &key).unwrap();
+    assert_eq!(reopened.info().notice.as_deref(), Some(NOTICE_KEY_SIGNED));
+    assert_eq!(reopened.info().guard, GuardLevel::Exact);
+    assert_eq!(reopened.field_info("/0/store.money").unwrap().value, "888");
+    // Without a key the same saved file is still a signed save: the game would ask.
+    let plain = open(&env, &path, None).unwrap();
+    assert_eq!(plain.info().notice.as_deref(), Some(NOTICE_SIGNED_SAVE));
+}
+
+#[test]
+fn an_old_renpy_save_without_a_signatures_entry_stays_unsigned() {
+    let env = env();
+    let key = key_file(&env);
+    let path = copy_in(&env, RENPY_SAVE);
+    let mut session = open_with_key(&env, &path, &key).unwrap();
+    assert_eq!(session.info().notice, None);
+    session.edit_value("/0/store.money", "321").unwrap();
+    session.save(path.to_str().unwrap(), false, None).unwrap();
+    // Ren'Py before 7.6 does not check signatures, so there is no entry to sign.
+    let reopened = open_with_key(&env, &path, &key).unwrap();
+    assert_eq!(reopened.info().notice, None);
+    assert_eq!(reopened.info().guard, GuardLevel::Exact);
+    assert_eq!(reopened.field_info("/0/store.money").unwrap().value, "321");
+}
+
+#[test]
+fn a_signed_renpy_persistent_with_the_players_key_is_editable_and_signed() {
+    let env = env();
+    let key = key_file(&env);
+    let path = copy_in(&env, RENPY_PERSISTENT_SIGNED);
+    let mut session = open_with_key(&env, &path, &key).unwrap();
+    let info = session.info();
+    assert_eq!(info.notice.as_deref(), Some(NOTICE_KEY_SIGNED));
+    assert!(info.editable);
+    session.edit_value("/play_count", "9").unwrap();
+    session.save(path.to_str().unwrap(), false, None).unwrap();
+
+    // The signature after the zlib stream verifies the uncompressed data, as
+    // `renpy.persistent.load` checks it.
+    let written = fs::read(&path).unwrap();
+    let limits = Limits::default();
+    let mut ctx = DecodeCtx::new(&limits);
+    let (data, params) = ZlibLayer.decode(&written, &mut ctx).unwrap();
+    let trailing = params.bytes("trailing").unwrap();
+    let signatures = std::str::from_utf8(trailing).unwrap();
+    assert!(!signatures.is_empty());
+    assert!(sign::verify_data(&data, signatures));
+
+    let reopened = open_with_key(&env, &path, &key).unwrap();
+    assert_eq!(reopened.info().notice.as_deref(), Some(NOTICE_KEY_SIGNED));
+    assert_eq!(reopened.field_info("/play_count").unwrap().value, "9");
+}
+
+// Naninovel save slots.
 const NANINOVEL_SAVE: &str = "synthetic/naninovel/GameSave001.json";
 const NANINOVEL_GZIP: &str = "synthetic/naninovel/GameSave001-gzip.nson";
 const NANINOVEL_DEFLATE: &str = "synthetic/naninovel/GameSave001-deflate.nson";

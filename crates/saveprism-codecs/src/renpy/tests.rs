@@ -2,6 +2,9 @@
 
 use std::path::PathBuf;
 
+use base64::Engine as _;
+use base64::engine::general_purpose::STANDARD;
+use p256::ecdsa::SigningKey;
 use proptest::prelude::*;
 use saveprism_core::{Confidence, DecodeCtx, Layer, Limits, Params, SniffCtx, codes};
 
@@ -118,6 +121,80 @@ fn an_unsigned_save_gets_no_signatures_entry() {
     assert_eq!(decode(&written).0, log);
 }
 
+/// A `security_keys.txt` and its signing key, made the way `savetoken.create_token` writes one.
+fn key_file() -> (String, SigningKey) {
+    let mut scalar = [0_u8; 32];
+    scalar[31] = 11;
+    let signing = SigningKey::from_slice(&scalar).unwrap();
+    let point = signing.verifying_key().to_encoded_point(false);
+    let sec1 = sign::sec1_der(&signing.to_bytes(), point.as_bytes()).unwrap();
+    let spki = sign::spki_from_point(point.as_bytes()).unwrap();
+    (
+        format!(
+            "signing-key {} {}\n",
+            STANDARD.encode(sec1),
+            STANDARD.encode(spki)
+        ),
+        signing,
+    )
+}
+
+#[test]
+fn an_edited_save_is_signed_with_the_players_key() {
+    let input = fixture(SIGNED);
+    let (mut log, params) = decode(&input);
+    let (text, signing) = key_file();
+    // The unchanged log still comes back byte for byte, key or no key (the round-trip guard).
+    let mut with_key = params.clone();
+    with_key.set(SIGN_KEY_PARAM, text.clone());
+    assert_eq!(RenpySaveLayer.encode(&log, &with_key).unwrap(), input);
+
+    log.insert(log.len() - 1, b'N');
+    log.insert(log.len() - 1, b'0');
+    let written = RenpySaveLayer.encode(&log, &with_key).unwrap();
+
+    let before = entries(&input);
+    let after = entries(&written);
+    let signatures = after
+        .iter()
+        .find(|(name, _, _)| name == SIGNATURES_ENTRY)
+        .map(|(_, _, data)| data)
+        .unwrap();
+    assert!(!signatures.is_empty());
+    let text = String::from_utf8(signatures.clone()).unwrap();
+    assert_eq!(text.lines().count(), 1);
+    // The check `savetoken.verify_data` makes, with the public key the game trusts.
+    assert!(sign::verify_data(&log, &text));
+    assert!(!sign::verify_data(b"not the log", &text));
+    let point = signing.verifying_key().to_encoded_point(false);
+    let spki = STANDARD.encode(sign::spki_from_point(point.as_bytes()).unwrap());
+    assert!(text.contains(&spki));
+    // Everything but the log and the signatures is copied byte for byte.
+    for ((name, stored_before, data_before), (_, stored_after, data_after)) in
+        before.iter().zip(&after)
+    {
+        if name.as_str() == LOG_ENTRY || name.as_str() == SIGNATURES_ENTRY {
+            continue;
+        }
+        assert_eq!(stored_after, stored_before, "{name}");
+        assert_eq!(data_after, data_before, "{name}");
+    }
+    let (again, params) = decode(&written);
+    assert_eq!(again, log);
+    assert!(params.bool(SIGNED_PARAM).unwrap());
+}
+
+#[test]
+fn a_key_file_without_a_signing_key_is_an_error() {
+    let input = fixture(SIGNED);
+    let (mut log, mut params) = decode(&input);
+    log.insert(log.len() - 1, b'N');
+    log.insert(log.len() - 1, b'0');
+    params.set(SIGN_KEY_PARAM, "# only a comment\n");
+    let error = RenpySaveLayer.encode(&log, &params).unwrap_err();
+    assert_eq!(error.code(), RENPY_KEY);
+}
+
 #[test]
 fn sniff_wants_a_zip_with_a_log() {
     let ctx = SniffCtx::default();
@@ -182,6 +259,7 @@ fn error_codes_are_stable() {
     assert_eq!(RENPY_ZIP.as_str(), "SP-RENPY-001");
     assert_eq!(RENPY_UNSUPPORTED.as_str(), "SP-RENPY-002");
     assert_eq!(RENPY_WRITE.as_str(), "SP-RENPY-003");
+    assert_eq!(RENPY_KEY.as_str(), "SP-RENPY-004");
 }
 
 proptest! {

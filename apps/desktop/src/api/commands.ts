@@ -91,9 +91,15 @@ export interface OpenInfo {
   textCode: boolean;
   /**
    * A notice to show: "renpy-signed" (the game will ask whether to trust the edited save; the
-   * player answers Yes) or "renpy-persistent-signed" (the file is open read-only), else null.
+   * player answers Yes), "renpy-key-signed" (the save is signed with the player's own Ren'Py key,
+   * so the game opens it without asking) or "renpy-persistent-signed" (the file is open read-only),
+   * else null.
    */
-  notice: "renpy-signed" | "renpy-persistent-signed" | null;
+  notice:
+    | "renpy-signed"
+    | "renpy-key-signed"
+    | "renpy-persistent-signed"
+    | null;
 }
 
 export interface NodeRow {
