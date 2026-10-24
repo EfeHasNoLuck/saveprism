@@ -22,6 +22,7 @@ pub mod renpy;
 pub mod rpgmaker;
 pub mod sol;
 pub mod sqlite;
+pub mod wolf;
 mod zip_common;
 
 /// Registers every layer and codec of this crate into `reg`.
@@ -43,6 +44,7 @@ pub fn register_all(reg: &mut Registry) {
     nrbf::register(reg);
     godot::register(reg);
     sqlite::register(reg);
+    wolf::register(reg);
 }
 
 #[cfg(test)]

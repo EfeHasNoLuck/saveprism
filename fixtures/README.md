@@ -54,6 +54,8 @@ the expected value and the found value.
 
 | `synthetic/sqlite/` | Python 3 standard library, [`tools/sqlite/make_sqlite.py`](tools/sqlite/make_sqlite.py) | An invented game save in one SQLite 3 database (rollback journal, not WAL): `player` (INTEGER gold, REAL hp, TEXT name, BLOB flags, NULL nickname), `inventory`, a `WITHOUT ROWID` `variables` table, a table with a generated column and a view. The script builds it with Python's `sqlite3` module and runs `VACUUM`. No game code or real player data (2026-10-24). |
 
+| `synthetic/wolf/` | Python 3 standard library, [`tools/wolf/make_wolf.py`](tools/wolf/make_wolf.py) | Unencrypted WOLF RPG Editor save slots written from the public layout described by the MIT-licensed [Sinflower/WolfSave](https://github.com/Sinflower/WolfSave) project and cross-checked against the [SakiMika/wolfrpg-dsi](https://github.com/SakiMika/wolfrpg-dsi) engine port: 0x14 byte header, `0x19` start byte, `u16`-prefixed game name, `u16` file version, SavePart1 (switches and variables), SavePart2-5, the variable database (numeric and string fields) and SavePart7. `SaveData01.sav` is version 0x8E with UTF-8 text; `SaveData02.sav` is version 0x63 with byte switches and non-UTF-8 text. Data is invented (2026-10-24). |
+
 ## Personal data
 
 Before adding a real save, remove personal data: user names (also inside paths and file names), Steam IDs,

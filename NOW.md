@@ -39,8 +39,9 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
      Unity's 8-byte `hex(4)` floats, UTF-8 strings; regedit line wrapping kept), Godot ConfigFile text and `store_var` binary (Godot 3 and 4 type
      tables checked against the docs; packed number arrays read-only; encrypted GDEC files refused), SQLite saves (`rusqlite` bundled, MIT; edits are parameterized
      UPDATEs on an in-memory copy; tables with triggers, views and WITHOUT ROWID tables read-only), saves packed in zip archives (one payload entry
-     rewritten, the rest kept byte-identical; gzip was already a layer).
-   - Formats left: Wolf RPG `.sav`, QSP,
+     rewritten, the rest kept byte-identical; gzip was already a layer), Wolf RPG Editor `.sav` (unencrypted; switches, variables and the
+     Variable DB; layout from the MIT WolfSave project, save part order from one source only; encrypted saves refused).
+   - Formats left: QSP,
      Naninovel view, The Witcher 3 `.sav` (*new*).
    - Features left: add/delete a value from the card view, pick the game's data folder by hand.
    Done 2026-10-23: Twine SugarCube 2 story view (current-moment variables edited at their last writer in `state.delta`;
