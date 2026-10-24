@@ -329,6 +329,12 @@ impl SaveDoc {
         self.nodes.get(id.index())
     }
 
+    /// Reads a node by its stable arena position. Intended for format writers that must inspect
+    /// every decoded leaf without exposing a mutable node ID constructor.
+    pub fn get_index(&self, index: usize) -> Option<&Node> {
+        self.nodes.get(index)
+    }
+
     /// Mutable access for the crate's own edit code; never exposed to callers.
     pub(crate) fn node_mut(&mut self, id: NodeId) -> Option<&mut Node> {
         self.nodes.get_mut(id.index())

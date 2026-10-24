@@ -49,3 +49,10 @@ path = "fuzz_targets/sol.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "gen3"
+path = "fuzz_targets/gen3.rs"
+test = false
+doc = false
+bench = false
