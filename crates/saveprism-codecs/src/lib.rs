@@ -22,6 +22,7 @@ pub mod renpy;
 pub mod rpgmaker;
 pub mod sol;
 pub mod sqlite;
+pub mod witcher3;
 pub mod wolf;
 mod zip_common;
 
@@ -45,6 +46,7 @@ pub fn register_all(reg: &mut Registry) {
     godot::register(reg);
     sqlite::register(reg);
     wolf::register(reg);
+    witcher3::register(reg);
 }
 
 #[cfg(test)]
