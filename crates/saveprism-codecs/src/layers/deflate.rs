@@ -6,7 +6,7 @@ use flate2::Compression;
 use flate2::read::DeflateDecoder;
 use flate2::write::DeflateEncoder;
 use saveprism_core::limits::len_u64;
-use saveprism_core::{DecodeCtx, Error, ErrorCode, Result};
+use saveprism_core::{Confidence, DecodeCtx, Error, ErrorCode, Layer, Params, Result, SniffCtx};
 
 use super::LAY_ENCODE_FAILED;
 
@@ -82,4 +82,54 @@ pub(crate) fn level_param(params: &saveprism_core::Params) -> Result<u32> {
         ));
     }
     Ok(level)
+}
+
+/// `compression.deflate`: a raw deflate stream (RFC 1951) without a header, as .NET's
+/// `DeflateStream` writes it. Naninovel `.nson` slots use this by default.
+///
+/// Parameters: `level` (0..=9) and `exact` (whether it reproduces the original bytes).
+#[derive(Clone, Copy, Debug, Default)]
+pub struct DeflateLayer;
+
+impl Layer for DeflateLayer {
+    fn id(&self) -> &'static str {
+        "compression.deflate"
+    }
+
+    fn sniff(&self, _input: &[u8], ctx: &SniffCtx<'_>) -> Confidence {
+        let nson = ctx
+            .file_name
+            .is_some_and(|name| name.to_ascii_lowercase().ends_with(".nson"));
+        if nson {
+            Confidence::new(0.55)
+        } else {
+            Confidence::NONE
+        }
+    }
+
+    fn decode(&self, input: &[u8], ctx: &mut DecodeCtx<'_>) -> Result<(Vec<u8>, Params)> {
+        let inflated = inflate(
+            input,
+            len_u64(input.len()),
+            ctx,
+            super::LAY_DEFLATE_INVALID,
+            0,
+        )?;
+        if inflated.consumed != input.len() {
+            return Err(Error::new(
+                super::LAY_DEFLATE_INVALID,
+                "the raw deflate stream is followed by unexpected bytes",
+            )
+            .with_offset(len_u64(inflated.consumed)));
+        }
+        let exact = find_level(&inflated.data, input);
+        let mut params = Params::new();
+        params.set("level", i64::from(exact.unwrap_or(6)));
+        params.set("exact", exact.is_some());
+        Ok((inflated.data, params))
+    }
+
+    fn encode(&self, inner: &[u8], params: &Params) -> Result<Vec<u8>> {
+        deflate(inner, level_param(params)?)
+    }
 }

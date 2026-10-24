@@ -14,6 +14,7 @@ pub mod json;
 pub mod layers;
 pub mod lcf;
 pub mod marshal;
+pub mod naninovel;
 pub mod nrbf;
 pub mod palworld;
 pub mod pickle;
@@ -34,6 +35,7 @@ pub fn register_all(reg: &mut Registry) {
     gvas::register(reg);
     palworld::register(reg);
     marshal::register(reg);
+    naninovel::register(reg);
     javaser::register(reg);
     lcf::register(reg);
     pickle::register(reg);

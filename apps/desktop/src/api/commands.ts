@@ -64,10 +64,17 @@ export interface OpenInfo {
   warning: string | null;
   root: RootInfo;
   /**
-   * The engine known from the document's shape ("sugarcube", "renpy"), or null. A pasted code has
+   * The engine known from the document's shape ("sugarcube", "renpy", "naninovel"), or null. A pasted code has
    * no file name to tell the engine, so its RPG Maker layer names it ("rpgmaker-mv", "rpgmaker-mz").
    */
-  engine: "sugarcube" | "renpy" | "tyranoscript" | "rpgmaker-mv" | "rpgmaker-mz" | null;
+  engine:
+    | "sugarcube"
+    | "renpy"
+    | "naninovel"
+    | "tyranoscript"
+    | "rpgmaker-mv"
+    | "rpgmaker-mz"
+    | null;
   /** Opened from a pasted save code; `path` is SavePrism's own copy until a "save as". */
   pasted: boolean;
   /** The file is text a player can copy and paste, so `copyCode` can give it back as a code. */
@@ -305,7 +312,7 @@ export type GameView =
 
 /**
  * The game view of the open file: RPG Maker sections for MV, MZ, XP, VX and VX Ace saves, the story
- * view for SugarCube saves, else a flat Values list.
+ * view for SugarCube saves, the variables-first list for Naninovel saves, else a flat Values list.
  */
 export function gameView(): Promise<GameView> {
   return invoke<GameView>("game_view");

@@ -35,11 +35,13 @@ const CODEC_LABELS: Record<string, string> = {
   "format.godot-config": "Godot",
   "format.godot-variant": "Godot",
   "format.sqlite": "SQLite",
+  "format.naninovel": "Naninovel",
 };
 
 const ENGINE_LABELS: Record<string, string> = {
   sugarcube: "SugarCube",
   renpy: "Ren'Py",
+  naninovel: "Naninovel",
   tyranoscript: "TyranoScript",
   "rpgmaker-mv": "RPG Maker MV",
   "rpgmaker-mz": "RPG Maker MZ",

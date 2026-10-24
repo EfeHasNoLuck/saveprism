@@ -44,6 +44,13 @@ doc = false
 bench = false
 
 [[bin]]
+name = "naninovel"
+path = "fuzz_targets/naninovel.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "sol"
 path = "fuzz_targets/sol.rs"
 test = false
