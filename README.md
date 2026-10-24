@@ -54,6 +54,9 @@ SavePrism needs Microsoft Edge WebView2, which Windows 10 and 11 already have; t
 | CBOR | `.cbor` | values (tags stay as read-only wrappers) |
 | BSON | `.bson` | doubles, strings, ints and booleans (other types read-only) |
 | Minecraft NBT | `.dat`, `.nbt` (Java big-endian, Bedrock little-endian, gzip) | values and numeric array elements |
+| Compressed saves | bzip2, Zstandard, xz, LZMA-alone, LZ4 frame, Brotli (`.br`) | the same formats inside any of these layers |
+| Tar archives | `.tar` | one payload entry, the rest of the archive kept byte-identical |
+| Pasted hex / percent codes | text | decoded when the text spells a format SavePrism knows |
 
 A file that does not survive the round-trip check opens read-only with a warning.
 

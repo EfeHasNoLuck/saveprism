@@ -4,13 +4,23 @@ use libfuzzer_sys::fuzz_target;
 use saveprism_codecs::register_all;
 use saveprism_core::{DecodeCtx, Limits, Registry};
 
-const LAYERS: [&str; 6] = [
+const LAYERS: [&str; 16] = [
     "encoding.base64",
+    "encoding.hex",
+    "encoding.percent",
     "compression.gzip",
     "compression.zlib",
+    "compression.bzip2",
+    "compression.zstd",
+    "compression.xz",
+    "compression.lzma",
+    "compression.lz4",
+    "compression.brotli",
     "compression.lz-string",
     "encoding.url-escape",
     "container.zip",
+    "container.tar",
+    "compression.deflate",
 ];
 
 fuzz_target!(|data: &[u8]| {

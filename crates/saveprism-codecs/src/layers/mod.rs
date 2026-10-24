@@ -1,29 +1,51 @@
-//! Byte layers: base64, gzip, zlib, LZ-String, the TyranoScript URL escape and the zip container.
+//! Byte layers: base64, hex, percent escapes, gzip, zlib, deflate, bzip2, zstd, xz, lzma, lz4,
+//! brotli, LZ-String, the TyranoScript URL escape, the zip container and tar.
 //!
 //! Every layer records the parameters it needs to wrap the inner bytes again exactly as they were.
-//! Layers that produce output read it through `DecodeCtx::read_bounded` (or an equivalent budget),
-//! so a decompression bomb stops while it is being produced.
+//! Compression layers also keep the original compressed bytes together with a digest of the
+//! contents, so an unchanged file is written back byte for byte and an edited one is compressed
+//! again with the recorded settings. Layers that produce output read it through
+//! `DecodeCtx::read_bounded` (or an equivalent budget), so a decompression bomb stops while it is
+//! being produced.
 
 use std::sync::Arc;
 
 use saveprism_core::codes;
-use saveprism_core::{Error, ErrorCode, Params, Registry, Result};
+use saveprism_core::{Confidence, Error, ErrorCode, Params, Registry, Result, SniffCtx};
 
 mod base64;
+mod brotli;
+mod bzip2;
 mod deflate;
 mod gzip;
+mod hex;
+mod lz4;
+mod lzma;
 mod lzstring;
+mod percent;
+mod tar;
 mod url_escape;
+mod xz;
 mod zip;
 mod zlib;
+mod zstd;
 
 pub use base64::Base64Layer;
+pub use brotli::BrotliLayer;
+pub use bzip2::Bzip2Layer;
 pub use deflate::DeflateLayer;
 pub use gzip::GzipLayer;
+pub use hex::HexLayer;
+pub use lz4::Lz4Layer;
+pub use lzma::LzmaLayer;
 pub use lzstring::LzStringLayer;
+pub use percent::PercentLayer;
+pub use tar::{TAR_DAMAGED, TAR_NO_PAYLOAD, TAR_WRITE, TarLayer};
 pub use url_escape::UrlEscapeLayer;
+pub use xz::XzLayer;
 pub use zip::{ZIP_DAMAGED, ZIP_NO_PAYLOAD, ZIP_UNSUPPORTED, ZIP_WRITE, ZipLayer};
 pub use zlib::ZlibLayer;
+pub use zstd::ZstdLayer;
 
 /// The input is not valid base64.
 pub const LAY_BASE64_INVALID: ErrorCode = ErrorCode::new("SP-LAY-001");
@@ -43,16 +65,157 @@ pub const LAY_URL_ESCAPE_INVALID: ErrorCode = ErrorCode::new("SP-URL-001");
 pub const LAY_URL_ESCAPE_UTF8: ErrorCode = ErrorCode::new("SP-URL-002");
 /// The input is not a valid raw deflate stream.
 pub const LAY_DEFLATE_INVALID: ErrorCode = ErrorCode::new("SP-LAY-007");
+/// The input is not a valid bzip2 stream.
+pub const LAY_BZIP2_INVALID: ErrorCode = ErrorCode::new("SP-LAY-008");
+/// The input is not a valid Zstandard frame.
+pub const LAY_ZSTD_INVALID: ErrorCode = ErrorCode::new("SP-LAY-009");
+/// The input is not a valid xz stream.
+pub const LAY_XZ_INVALID: ErrorCode = ErrorCode::new("SP-LAY-00A");
+/// The input is not a valid LZMA-alone stream.
+pub const LAY_LZMA_INVALID: ErrorCode = ErrorCode::new("SP-LAY-00B");
+/// The input is not a valid LZ4 frame.
+pub const LAY_LZ4_INVALID: ErrorCode = ErrorCode::new("SP-LAY-00C");
+/// The input is not valid Brotli data.
+pub const LAY_BROTLI_INVALID: ErrorCode = ErrorCode::new("SP-LAY-00D");
+/// The input is not valid hex text.
+pub const LAY_HEX_INVALID: ErrorCode = ErrorCode::new("SP-HEX-001");
+/// The input is not valid percent-encoded text.
+pub const LAY_PERCENT_INVALID: ErrorCode = ErrorCode::new("SP-PCT-001");
 
-/// Registers the six byte layers.
+/// Parameter: the original wrapped bytes (kept so an unchanged inner value is written back
+/// byte for byte).
+pub(crate) const SOURCE_PARAM: &str = "source";
+/// Parameter: size of the inner bytes at decode time.
+pub(crate) const INNER_LEN_PARAM: &str = "inner_len";
+/// Parameter: FNV-1a digest of the inner bytes at decode time.
+pub(crate) const INNER_HASH_PARAM: &str = "inner_hash";
+
+/// Registers the byte layers.
 pub fn register(reg: &mut Registry) {
     reg.add_layer(Arc::new(Base64Layer));
+    reg.add_layer(Arc::new(HexLayer));
+    reg.add_layer(Arc::new(PercentLayer));
     reg.add_layer(Arc::new(GzipLayer));
     reg.add_layer(Arc::new(DeflateLayer));
     reg.add_layer(Arc::new(ZlibLayer));
+    reg.add_layer(Arc::new(Bzip2Layer));
+    reg.add_layer(Arc::new(ZstdLayer));
+    reg.add_layer(Arc::new(XzLayer));
+    reg.add_layer(Arc::new(LzmaLayer));
+    reg.add_layer(Arc::new(Lz4Layer));
+    reg.add_layer(Arc::new(BrotliLayer));
     reg.add_layer(Arc::new(LzStringLayer));
     reg.add_layer(Arc::new(UrlEscapeLayer));
     zip::register(reg);
+    tar::register(reg);
+}
+
+/// 64-bit FNV-1a digest of `data`.
+fn fnv1a(data: &[u8]) -> [u8; 8] {
+    let mut hash = 0xCBF2_9CE4_8422_2325_u64;
+    for &byte in data {
+        hash ^= u64::from(byte);
+        hash = hash.wrapping_mul(0x0000_0100_0000_01B3);
+    }
+    hash.to_be_bytes()
+}
+
+/// Records `source` (the wrapped bytes) and a digest of `inner`, so [`source_if_unchanged`] can
+/// return the original bytes when the content was not edited.
+pub(crate) fn keep_source(params: &mut Params, source: &[u8], inner: &[u8]) {
+    params.set(SOURCE_PARAM, source.to_vec());
+    params.set(
+        INNER_LEN_PARAM,
+        i64::try_from(inner.len()).unwrap_or(i64::MAX),
+    );
+    params.set(INNER_HASH_PARAM, fnv1a(inner).to_vec());
+}
+
+/// The original wrapped bytes when `inner` is still exactly what `decode` returned.
+pub(crate) fn source_if_unchanged(inner: &[u8], params: &Params) -> Result<Option<Vec<u8>>> {
+    let Some(source) = params.opt_bytes(SOURCE_PARAM)? else {
+        return Ok(None);
+    };
+    let Some(stored_len) = params.opt_int(INNER_LEN_PARAM)? else {
+        return Ok(None);
+    };
+    let Ok(stored_len) = usize::try_from(stored_len) else {
+        return Ok(None);
+    };
+    let Some(stored_hash) = params.opt_bytes(INNER_HASH_PARAM)? else {
+        return Ok(None);
+    };
+    if stored_len == inner.len() && stored_hash == fnv1a(inner) {
+        Ok(Some(source.to_vec()))
+    } else {
+        Ok(None)
+    }
+}
+
+/// True when a registered codec or a non-text layer recognises `data`. Used by the container and
+/// text-encoding layers, which only unwrap bytes that lead somewhere.
+pub(crate) fn inner_is_known(data: &[u8]) -> bool {
+    thread_local! {
+        static IN_KNOWN: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+    }
+    IN_KNOWN.with(|busy| {
+        if busy.replace(true) {
+            return false;
+        }
+        let mut reg = Registry::default();
+        crate::register_all(&mut reg);
+        let ctx = SniffCtx::default();
+        let known = reg
+            .codecs()
+            .any(|codec| codec.sniff(data, &ctx) >= Confidence::MEDIUM)
+            || reg.layers().any(|layer| {
+                !matches!(layer.id(), "encoding.hex" | "encoding.percent")
+                    && layer.sniff(data, &ctx) >= Confidence::MEDIUM
+            });
+        busy.set(false);
+        known
+    })
+}
+
+/// A writer that stops a decompressor at the output budget.
+pub(crate) struct BoundedSink<'a> {
+    out: &'a mut Vec<u8>,
+    budget: u64,
+    over: bool,
+}
+
+impl<'a> BoundedSink<'a> {
+    pub(crate) fn new(out: &'a mut Vec<u8>, budget: u64) -> Self {
+        Self {
+            out,
+            budget,
+            over: false,
+        }
+    }
+
+    pub(crate) fn over_budget(&self) -> bool {
+        self.over
+    }
+}
+
+impl std::io::Write for BoundedSink<'_> {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        let next = u64::try_from(self.out.len())
+            .unwrap_or(u64::MAX)
+            .saturating_add(u64::try_from(buf.len()).unwrap_or(u64::MAX));
+        if next > self.budget {
+            self.over = true;
+            return Err(std::io::Error::other(
+                "the decoded output exceeds the size budget",
+            ));
+        }
+        self.out.extend_from_slice(buf);
+        Ok(buf.len())
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
 }
 
 /// A `CORE_INVALID_PARAM` error with a message.
@@ -87,21 +250,30 @@ mod tests {
     use super::*;
 
     #[test]
-    fn register_adds_the_six_layers() {
+    fn register_adds_every_layer() {
         let mut reg = Registry::default();
         register(&mut reg);
         for id in [
             "encoding.base64",
+            "encoding.hex",
+            "encoding.percent",
             "compression.gzip",
             "compression.deflate",
             "compression.zlib",
+            "compression.bzip2",
+            "compression.zstd",
+            "compression.xz",
+            "compression.lzma",
+            "compression.lz4",
+            "compression.brotli",
             "compression.lz-string",
             "encoding.url-escape",
             "container.zip",
+            "container.tar",
         ] {
             assert!(reg.is_layer(id), "{id} is not registered");
         }
-        assert_eq!(reg.layers().count(), 7);
+        assert_eq!(reg.layers().count(), 16);
     }
 
     #[test]
@@ -113,12 +285,89 @@ mod tests {
         assert_eq!(LAY_INVALID_UTF16.as_str(), "SP-LAY-005");
         assert_eq!(LAY_ENCODE_FAILED.as_str(), "SP-LAY-006");
         assert_eq!(LAY_DEFLATE_INVALID.as_str(), "SP-LAY-007");
+        assert_eq!(LAY_BZIP2_INVALID.as_str(), "SP-LAY-008");
+        assert_eq!(LAY_ZSTD_INVALID.as_str(), "SP-LAY-009");
+        assert_eq!(LAY_XZ_INVALID.as_str(), "SP-LAY-00A");
+        assert_eq!(LAY_LZMA_INVALID.as_str(), "SP-LAY-00B");
+        assert_eq!(LAY_LZ4_INVALID.as_str(), "SP-LAY-00C");
+        assert_eq!(LAY_BROTLI_INVALID.as_str(), "SP-LAY-00D");
+        assert_eq!(LAY_HEX_INVALID.as_str(), "SP-HEX-001");
+        assert_eq!(LAY_PERCENT_INVALID.as_str(), "SP-PCT-001");
         assert_eq!(LAY_URL_ESCAPE_INVALID.as_str(), "SP-URL-001");
         assert_eq!(LAY_URL_ESCAPE_UTF8.as_str(), "SP-URL-002");
         assert_eq!(ZIP_DAMAGED.as_str(), "SP-ZIP-001");
         assert_eq!(ZIP_UNSUPPORTED.as_str(), "SP-ZIP-002");
         assert_eq!(ZIP_WRITE.as_str(), "SP-ZIP-003");
         assert_eq!(ZIP_NO_PAYLOAD.as_str(), "SP-ZIP-004");
+        assert_eq!(TAR_DAMAGED.as_str(), "SP-TAR-001");
+        assert_eq!(TAR_NO_PAYLOAD.as_str(), "SP-TAR-002");
+        assert_eq!(TAR_WRITE.as_str(), "SP-TAR-003");
+    }
+
+    #[test]
+    fn new_layers_do_not_claim_the_other_fixtures() {
+        use saveprism_core::{Layer, SniffCtx};
+        use std::fmt::Write as _;
+
+        fn files(root: &std::path::Path, out: &mut Vec<std::path::PathBuf>) {
+            let Ok(entries) = std::fs::read_dir(root) else {
+                return;
+            };
+            for entry in entries.flatten() {
+                let path = entry.path();
+                match entry.file_type() {
+                    Ok(kind) if kind.is_dir() => files(&path, out),
+                    Ok(kind) if kind.is_file() => out.push(path),
+                    _ => {}
+                }
+            }
+        }
+
+        let root =
+            std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../fixtures/synthetic");
+        let mut paths = Vec::new();
+        files(&root, &mut paths);
+        let new_layers: [&dyn Layer; 9] = [
+            &Bzip2Layer,
+            &ZstdLayer,
+            &XzLayer,
+            &LzmaLayer,
+            &Lz4Layer,
+            &BrotliLayer,
+            &HexLayer,
+            &PercentLayer,
+            &TarLayer,
+        ];
+        let ctx = SniffCtx::default();
+        let mut failures = Vec::new();
+        for path in paths {
+            let relative = path
+                .strip_prefix(&root)
+                .unwrap_or(&path)
+                .to_string_lossy()
+                .replace('\\', "/");
+            if relative.starts_with("layers/") {
+                continue;
+            }
+            let Ok(bytes) = std::fs::read(&path) else {
+                continue;
+            };
+            for layer in new_layers {
+                if layer.sniff(&bytes, &ctx) > Confidence::NONE {
+                    failures.push(format!("{} claims {relative}", layer.id()));
+                }
+            }
+        }
+        if !failures.is_empty() {
+            let mut message = String::from(
+                "new layers claimed existing fixtures:
+",
+            );
+            for failure in failures {
+                writeln!(message, "  {failure}").ok();
+            }
+            panic!("{message}");
+        }
     }
 
     #[test]

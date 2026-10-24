@@ -717,7 +717,7 @@ mod tests {
                 let mut params = Params::new();
                 params.set("style", style);
                 let encoded = UrlEscapeLayer.encode(text.as_bytes(), &params).unwrap();
-                let (inner, _) = decode(&encoded).unwrap();
+                let (inner, _) = decode_with_style(&encoded, style).unwrap();
                 prop_assert_eq!(inner, text.as_bytes());
             }
         }
