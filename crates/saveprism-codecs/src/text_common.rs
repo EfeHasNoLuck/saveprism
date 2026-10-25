@@ -9,6 +9,25 @@ use saveprism_core::{
     ByteSpan, Error, ErrorCode, Node, NodeFlags, NodeId, Result, SaveDoc, TypeHint, Value,
 };
 
+use crate::text_encoding::{DecodedText, TextPatch, apply_text_patches, decode_sniff};
+
+/// Decodes the original file for a writer. The spans recorded by the reader are offsets into the
+/// returned UTF-8 text (the BOM is already stripped).
+pub(crate) fn decode_original(original: &[u8], code: ErrorCode) -> Result<DecodedText> {
+    decode_sniff(original)
+        .ok_or_else(|| Error::new(code, "the text encoding of the original file is not known"))
+}
+
+/// Applies UTF-8-text patches to the original bytes, translating spans into the file encoding.
+pub(crate) fn apply_encoded_patches(
+    original: &[u8],
+    decoded: &DecodedText,
+    code: ErrorCode,
+    patches: &mut Vec<TextPatch>,
+) -> Result<Vec<u8>> {
+    apply_text_patches(original, decoded, code, patches)
+}
+
 /// Applies non-overlapping byte patches to `original`.
 pub(crate) fn apply_patches(
     original: &[u8],

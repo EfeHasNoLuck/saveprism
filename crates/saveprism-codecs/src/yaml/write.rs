@@ -3,10 +3,11 @@
 use saveprism_core::{Error, NodeFlags, Result, SaveDoc, TypeHint, Value};
 
 use super::YAML_WRITE;
-use crate::text_common::{apply_patches, format_float, span_range};
+use crate::text_common::{format_float, span_range};
+use crate::text_encoding::TextPatch;
 
-/// Applies the edited leaves to `original`.
-pub(crate) fn encode(doc: &SaveDoc, original: &[u8]) -> Result<Vec<u8>> {
+/// Collects the edited leaves as patches over the decoded UTF-8 text.
+pub(crate) fn encode(doc: &SaveDoc, original: &[u8]) -> Result<Vec<TextPatch>> {
     let mut patches = Vec::new();
     let mut stack = vec![doc.root()];
     let mut visited = 0usize;
@@ -52,7 +53,7 @@ pub(crate) fn encode(doc: &SaveDoc, original: &[u8]) -> Result<Vec<u8>> {
             patches.push((start, end, replacement.into_bytes()));
         }
     }
-    apply_patches(original, YAML_WRITE, &mut patches)
+    Ok(patches)
 }
 
 fn render_string(text: &str, style: &str) -> String {

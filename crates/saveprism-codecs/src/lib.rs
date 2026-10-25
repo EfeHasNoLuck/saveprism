@@ -34,12 +34,19 @@ pub mod rpgmaker;
 pub mod sol;
 pub mod sqlite;
 mod text_common;
+mod text_encoding;
 pub mod toml_text;
 pub mod witcher3;
 pub mod wolf;
 pub mod xml;
 pub mod yaml;
 mod zip_common;
+
+/// Turns an encoding label (a name, a WHATWG label or an EasyRPG `RPG_RT.ini` code page) into the
+/// canonical name this crate stores in a step. Returns `None` for an encoding it cannot use.
+pub fn resolve_text_encoding(label: &str) -> Option<&'static str> {
+    text_encoding::TextEncoding::from_name(label).map(text_encoding::TextEncoding::name)
+}
 
 /// Registers every layer and codec of this crate into `reg`.
 pub fn register_all(reg: &mut Registry) {

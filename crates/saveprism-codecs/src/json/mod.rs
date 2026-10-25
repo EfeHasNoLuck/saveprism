@@ -47,7 +47,8 @@ pub const JSON_UNWRITABLE: ErrorCode = ErrorCode::new("SP-JSON-004");
 /// A string with an unpaired surrogate escape cannot be kept without loss (object keys).
 pub const JSON_LONE_SURROGATE: ErrorCode = ErrorCode::new("SP-JSON-005");
 
-const BOM: [u8; 3] = [0xEF, 0xBB, 0xBF];
+/// Parameter: the text encoding of the file (`utf-8`, `shift_jis`, ...).
+pub(crate) const P_TEXT_ENCODING: &str = "text_encoding";
 
 /// Parses a JSON text into a document (used by codecs whose values hold JSON text, such as
 /// Naninovel state slots). The caller charges the nodes of the returned document.
@@ -81,27 +82,20 @@ pub fn new_value_hint(value: &OwnedValue) -> Option<TypeHint> {
 /// The `format.json` codec.
 pub(crate) struct JsonCodec;
 
-fn is_ws(byte: u8) -> bool {
-    matches!(byte, b' ' | b'\t' | b'\n' | b'\r')
-}
-
 impl Codec for JsonCodec {
     fn id(&self) -> &'static str {
         "format.json"
     }
 
     fn sniff(&self, input: &[u8], ctx: &SniffCtx<'_>) -> Confidence {
-        let body = input.strip_prefix(&BOM[..]).unwrap_or(input);
-        let first = body
-            .iter()
-            .position(|byte| !is_ws(*byte))
-            .and_then(|index| body.get(index))
-            .copied();
-        let last = body
-            .iter()
-            .rposition(|byte| !is_ws(*byte))
-            .and_then(|index| body.get(index))
-            .copied();
+        let Some(decoded) = crate::text_encoding::decode_sniff(input) else {
+            return Confidence::NONE;
+        };
+        let trimmed = decoded
+            .text
+            .trim_matches(|ch: char| ch.is_ascii_whitespace());
+        let first = trimmed.as_bytes().first().copied();
+        let last = trimmed.as_bytes().last().copied();
         let structure = match (first, last) {
             (Some(b'{'), Some(b'}')) | (Some(b'['), Some(b']')) => 0.7,
             (Some(b'{' | b'['), _) => 0.3,
@@ -120,29 +114,29 @@ impl Codec for JsonCodec {
     }
 
     fn decode(&self, input: &[u8], ctx: &mut DecodeCtx<'_>) -> Result<Decoded> {
-        let (bom, body) = match input.strip_prefix(&BOM[..]) {
-            Some(rest) => (true, rest),
-            None => (false, input),
-        };
-        let base = if bom { len_u64(BOM.len()) } else { 0 };
-        let text = std::str::from_utf8(body).map_err(|source| {
+        let decoded = crate::text_encoding::decode_sniff(input).ok_or_else(|| {
             Error::new(
                 JSON_UTF8,
-                format!(
-                    "the input is not valid UTF-8 (invalid byte at offset {})",
-                    base + len_u64(source.valid_up_to())
-                ),
+                "the JSON text is not valid in any encoding SavePrism reads (UTF-8, UTF-16, UTF-32, Shift_JIS, GB18030, CP949, Windows-1252)",
             )
-            .with_offset(base + len_u64(source.valid_up_to()))
-            .with_source(source)
         })?;
-
+        let text = decoded.text.as_str();
+        let base = if decoded.encoding == crate::text_encoding::TextEncoding::Utf8 {
+            len_u64(decoded.bom_len)
+        } else {
+            0
+        };
         let parsed = parse::parse(text, base, ctx)?;
         ctx.charge_nodes(len_u64(parsed.doc.len()))?;
 
-        let profile = Profile::infer(text, &parsed.observed, bom);
-        let regular =
-            write::write_document(&parsed.doc, &profile).is_ok_and(|written| written == input);
+        let mut profile = Profile::infer(text, &parsed.observed, decoded.bom_len > 0);
+        profile.text_encoding = decoded.encoding;
+        let regular = write::write_document(&parsed.doc, &profile).is_ok_and(|written| {
+            std::str::from_utf8(&written).is_ok_and(|written| {
+                crate::text_encoding::encode_with(written, decoded.encoding, decoded.bom_len > 0)
+                    .is_ok_and(|bytes| bytes == input)
+            })
+        });
         Ok(Decoded {
             doc: parsed.doc,
             params: profile.to_params(regular),
@@ -151,6 +145,13 @@ impl Codec for JsonCodec {
 
     fn encode(&self, doc: &SaveDoc, params: &Params) -> Result<Vec<u8>> {
         let profile = Profile::from_params(params)?;
-        write::write_document(doc, &profile)
+        let written = write::write_document(doc, &profile)?;
+        let text = std::str::from_utf8(&written).map_err(|_| {
+            Error::new(
+                JSON_UNWRITABLE,
+                "internal error: the writer produced invalid UTF-8",
+            )
+        })?;
+        crate::text_encoding::encode_with(text, profile.text_encoding, profile.bom)
     }
 }

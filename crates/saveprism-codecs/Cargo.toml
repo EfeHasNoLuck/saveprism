@@ -30,6 +30,7 @@ quick-xml.workspace = true
 toml_edit.workspace = true
 saphyr.workspace = true
 saphyr-parser.workspace = true
+encoding_rs.workspace = true
 
 [dev-dependencies]
 proptest.workspace = true

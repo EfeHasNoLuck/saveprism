@@ -68,6 +68,8 @@ export interface OpenInfo {
   /** All recipe step ids, layers first. */
   recipe: string[];
   byteSize: number;
+  /** Text encoding the codec detected (`utf-8`, `shift_jis`, ...), when recorded. */
+  textEncoding: string | null;
   guard: GuardLevel;
   /** False when the guard failed (the file is read-only). */
   editable: boolean;

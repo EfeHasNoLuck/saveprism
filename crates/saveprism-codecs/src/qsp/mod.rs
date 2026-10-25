@@ -115,184 +115,30 @@ pub struct QspCodec;
 pub(crate) enum Encoding {
     /// UTF-16 little endian (modern QSP).
     Utf16Le,
-    /// One byte per character (legacy QSP; Windows-1251).
-    Ansi,
+    /// One byte per character (legacy QSP). The code page is detected per file; Windows-1251 and
+    /// KOI8-R are the two the QSP builds use.
+    Ansi(crate::text_encoding::TextEncoding),
 }
 
 impl Encoding {
     fn name(self) -> &'static str {
         match self {
             Encoding::Utf16Le => "utf16le",
-            Encoding::Ansi => "ansi",
+            Encoding::Ansi(crate::text_encoding::TextEncoding::Koi8R) => "ansi-koi8r",
+            Encoding::Ansi(_) => "ansi",
         }
     }
 
     fn from_name(name: &str) -> Option<Self> {
         match name {
             "utf16le" => Some(Encoding::Utf16Le),
-            "ansi" => Some(Encoding::Ansi),
+            "ansi" => Some(Encoding::Ansi(
+                crate::text_encoding::TextEncoding::Windows1251,
+            )),
+            "ansi-koi8r" => Some(Encoding::Ansi(crate::text_encoding::TextEncoding::Koi8R)),
             _ => None,
         }
     }
-}
-
-/// Windows-1251 byte to a character. The few undefined bytes keep their control value so a file
-/// that contains one still round-trips (byte `0x98` is the only one in practice).
-pub(crate) fn ansi_to_char(byte: u8) -> char {
-    if byte < 0x80 {
-        return char::from(byte);
-    }
-    if byte >= 0xC0 {
-        let offset = u32::from(byte - 0xC0);
-        return char::from_u32(0x0410 + offset).unwrap_or('\u{FFFD}');
-    }
-    let code = match byte {
-        0x80 => 0x0402,
-        0x81 => 0x0403,
-        0x82 => 0x201A,
-        0x83 => 0x0453,
-        0x84 => 0x201E,
-        0x85 => 0x2026,
-        0x86 => 0x2020,
-        0x87 => 0x2021,
-        0x88 => 0x20AC,
-        0x89 => 0x2030,
-        0x8A => 0x0409,
-        0x8B => 0x2039,
-        0x8C => 0x040A,
-        0x8D => 0x040C,
-        0x8E => 0x040B,
-        0x8F => 0x040F,
-        0x90 => 0x0452,
-        0x91 => 0x2018,
-        0x92 => 0x2019,
-        0x93 => 0x201C,
-        0x94 => 0x201D,
-        0x95 => 0x2022,
-        0x96 => 0x2013,
-        0x97 => 0x2014,
-        0x98 => 0x0098,
-        0x99 => 0x2122,
-        0x9A => 0x0459,
-        0x9B => 0x203A,
-        0x9C => 0x045A,
-        0x9D => 0x045C,
-        0x9E => 0x045B,
-        0x9F => 0x045F,
-        0xA0 => 0x00A0,
-        0xA1 => 0x040E,
-        0xA2 => 0x045E,
-        0xA3 => 0x0408,
-        0xA4 => 0x00A4,
-        0xA5 => 0x0490,
-        0xA6 => 0x00A6,
-        0xA7 => 0x00A7,
-        0xA8 => 0x0401,
-        0xA9 => 0x00A9,
-        0xAA => 0x0404,
-        0xAB => 0x00AB,
-        0xAC => 0x00AC,
-        0xAD => 0x00AD,
-        0xAE => 0x00AE,
-        0xAF => 0x0407,
-        0xB0 => 0x00B0,
-        0xB1 => 0x00B1,
-        0xB2 => 0x0406,
-        0xB3 => 0x0456,
-        0xB4 => 0x0491,
-        0xB5 => 0x00B5,
-        0xB6 => 0x00B6,
-        0xB7 => 0x00B7,
-        0xB8 => 0x0451,
-        0xB9 => 0x2116,
-        0xBA => 0x0454,
-        0xBB => 0x00BB,
-        0xBC => 0x0458,
-        0xBD => 0x0405,
-        0xBE => 0x0455,
-        0xBF => 0x0457,
-        _ => 0x0098,
-    };
-    char::from_u32(code).unwrap_or('\u{FFFD}')
-}
-
-/// A character as a Windows-1251 byte; `None` when the code page has no byte for it.
-pub(crate) fn char_to_ansi(ch: char) -> Option<u8> {
-    let code = u32::from(ch);
-    if code < 0x80 {
-        return u8::try_from(code).ok();
-    }
-    if (0x0410..=0x044F).contains(&code) {
-        return u8::try_from(0xC0 + (code - 0x0410)).ok();
-    }
-    let byte = match code {
-        0x0402 => 0x80,
-        0x0403 => 0x81,
-        0x201A => 0x82,
-        0x0453 => 0x83,
-        0x201E => 0x84,
-        0x2026 => 0x85,
-        0x2020 => 0x86,
-        0x2021 => 0x87,
-        0x20AC => 0x88,
-        0x2030 => 0x89,
-        0x0409 => 0x8A,
-        0x2039 => 0x8B,
-        0x040A => 0x8C,
-        0x040C => 0x8D,
-        0x040B => 0x8E,
-        0x040F => 0x8F,
-        0x0452 => 0x90,
-        0x2018 => 0x91,
-        0x2019 => 0x92,
-        0x201C => 0x93,
-        0x201D => 0x94,
-        0x2022 => 0x95,
-        0x2013 => 0x96,
-        0x2014 => 0x97,
-        0x0098 => 0x98,
-        0x2122 => 0x99,
-        0x0459 => 0x9A,
-        0x203A => 0x9B,
-        0x045A => 0x9C,
-        0x045C => 0x9D,
-        0x045B => 0x9E,
-        0x045F => 0x9F,
-        0x00A0 => 0xA0,
-        0x040E => 0xA1,
-        0x045E => 0xA2,
-        0x0408 => 0xA3,
-        0x00A4 => 0xA4,
-        0x0490 => 0xA5,
-        0x00A6 => 0xA6,
-        0x00A7 => 0xA7,
-        0x0401 => 0xA8,
-        0x00A9 => 0xA9,
-        0x0404 => 0xAA,
-        0x00AB => 0xAB,
-        0x00AC => 0xAC,
-        0x00AD => 0xAD,
-        0x00AE => 0xAE,
-        0x0407 => 0xAF,
-        0x00B0 => 0xB0,
-        0x00B1 => 0xB1,
-        0x0406 => 0xB2,
-        0x0456 => 0xB3,
-        0x0491 => 0xB4,
-        0x00B5 => 0xB5,
-        0x00B6 => 0xB6,
-        0x00B7 => 0xB7,
-        0x0451 => 0xB8,
-        0x2116 => 0xB9,
-        0x0454 => 0xBA,
-        0x00BB => 0xBB,
-        0x0458 => 0xBC,
-        0x0405 => 0xBD,
-        0x0455 => 0xBE,
-        0x0457 => 0xBF,
-        _ => return None,
-    };
-    Some(byte)
 }
 
 impl Codec for QspCodec {

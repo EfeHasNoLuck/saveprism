@@ -8,6 +8,8 @@ use std::ops::Range;
 
 use saveprism_core::{Error, ParamValue, Params, Result, codes};
 
+use crate::text_encoding::TextEncoding;
+
 /// Largest indent (spaces per level) the profile accepts.
 const MAX_INDENT: usize = 32;
 
@@ -35,7 +37,10 @@ pub(crate) struct Profile {
     /// Empty containers are written `[ ]` / `{ }` instead of `[]` / `{}`.
     pub empty_spaced: bool,
     pub trailing_newline: bool,
+    /// The file starts with the BOM of `text_encoding`.
     pub bom: bool,
+    /// Encoding of the file (UTF-8 unless detection found another one).
+    pub text_encoding: TextEncoding,
 }
 
 impl Default for Profile {
@@ -48,6 +53,7 @@ impl Default for Profile {
             empty_spaced: false,
             trailing_newline: false,
             bom: false,
+            text_encoding: TextEncoding::Utf8,
         }
     }
 }
@@ -140,6 +146,7 @@ impl Profile {
         params.set("empty", if self.empty_spaced { "[ ]" } else { "[]" });
         params.set("trailing_newline", self.trailing_newline);
         params.set("bom", self.bom);
+        params.set(super::P_TEXT_ENCODING, self.text_encoding.name());
         params.set("regular", regular);
         params
     }
@@ -155,6 +162,10 @@ impl Profile {
                 _ => return Err(invalid("indent")),
             },
             Some(_) => return Err(invalid("indent")),
+        };
+        let text_encoding = match params.opt_str(super::P_TEXT_ENCODING)? {
+            None => TextEncoding::Utf8,
+            Some(name) => TextEncoding::from_name(name).ok_or_else(|| invalid("text_encoding"))?,
         };
         let crlf = match params.opt_str("newline")? {
             None | Some("lf") => false,
@@ -184,6 +195,7 @@ impl Profile {
             empty_spaced,
             trailing_newline: params.opt_bool("trailing_newline")?.unwrap_or(false),
             bom: params.opt_bool("bom")?.unwrap_or(false),
+            text_encoding,
         })
     }
 }

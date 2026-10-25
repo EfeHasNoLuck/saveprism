@@ -7,8 +7,9 @@ use saveprism_core::{
 
 use super::{
     ANSI_MAGIC, Encoding, MAX_NESTING, P_ENCODING, P_VARIANT_TYPES, QSP_PARSE, QSP_UNSUPPORTED,
-    SHIFT, SIGNATURE, UTF16_MAGIC, ansi_to_char,
+    SHIFT, SIGNATURE, UTF16_MAGIC,
 };
+use crate::text_encoding::{TextEncoding, guess_cyrillic};
 
 /// One line of the save; the unit width follows the file encoding.
 #[derive(Clone, Debug)]
@@ -19,16 +20,29 @@ enum Line {
 
 /// Reads the whole file: signature, version, then the fields in QSP's order.
 pub(super) fn read_all(input: &[u8], ctx: &DecodeCtx<'_>) -> Result<(SaveDoc, Params)> {
-    let encoding = if input.starts_with(&UTF16_MAGIC) {
-        Encoding::Utf16Le
+    let wide = if input.starts_with(&UTF16_MAGIC) {
+        true
     } else if input.starts_with(ANSI_MAGIC) {
-        Encoding::Ansi
+        false
     } else {
         return Err(parse("not a QSP save (no QSPSAVEDGAME signature)"));
     };
-    let lines = split_lines(input, encoding)?;
+    let lines = split_lines(input, wide)?;
+    let encoding = if wide {
+        Encoding::Utf16Le
+    } else {
+        let mut sample = Vec::new();
+        for line in &lines {
+            if let Line::Byte(bytes) = line {
+                sample.extend(bytes.iter().copied().map(decode_byte));
+                sample.push(0x0A);
+            }
+        }
+        Encoding::Ansi(guess_cyrillic(&sample))
+    };
     let mut reader = Reader {
         lines,
+        encoding,
         pos: 0,
         doc: ctx.new_doc(),
         params: Params::new(),
@@ -49,9 +63,9 @@ fn unsupported(message: impl Into<String>) -> Error {
 
 /// Splits the input at CRLF. The file must end with a separator (QSP always writes a final empty
 /// line); a lone CR or LF is part of the line, as in QSP's own splitter.
-fn split_lines(input: &[u8], encoding: Encoding) -> Result<Vec<Line>> {
-    match encoding {
-        Encoding::Utf16Le => {
+fn split_lines(input: &[u8], wide: bool) -> Result<Vec<Line>> {
+    match wide {
+        true => {
             if !input.len().is_multiple_of(2) {
                 return Err(parse("a UTF-16 save has an odd number of bytes"));
             }
@@ -77,7 +91,7 @@ fn split_lines(input: &[u8], encoding: Encoding) -> Result<Vec<Line>> {
             }
             Ok(lines)
         }
-        Encoding::Ansi => {
+        false => {
             let mut lines = Vec::new();
             let mut current = Vec::new();
             let mut index = 0;
@@ -149,18 +163,21 @@ fn raw_text(line: &Line) -> Result<String> {
 }
 
 /// The plain text of an encoded line.
-fn encoded_text(line: &Line) -> Result<String> {
+fn encoded_text(line: &Line, encoding: Encoding) -> Result<String> {
     match line {
         Line::Wide(units) => {
             let decoded: Vec<u16> = units.iter().copied().map(decode_unit).collect();
             String::from_utf16(&decoded).map_err(|_| parse("a text field is not valid UTF-16"))
         }
         Line::Byte(bytes) => {
-            let mut text = String::with_capacity(bytes.len());
-            for byte in bytes {
-                text.push(ansi_to_char(decode_byte(*byte)));
-            }
-            Ok(text)
+            let decoded: Vec<u8> = bytes.iter().copied().map(decode_byte).collect();
+            let text_encoding = match encoding {
+                Encoding::Ansi(codec) => codec,
+                Encoding::Utf16Le => TextEncoding::Windows1251,
+            };
+            text_encoding
+                .decode(&decoded)
+                .ok_or_else(|| parse("a text field is not valid in the detected code page"))
         }
     }
 }
@@ -253,6 +270,7 @@ struct Field {
 
 struct Reader {
     lines: Vec<Line>,
+    encoding: Encoding,
     pos: usize,
     doc: SaveDoc,
     params: Params,
@@ -281,7 +299,7 @@ impl Reader {
 
     fn field(&mut self) -> Result<Field> {
         let line = self.next_line()?.clone();
-        let text = encoded_text(&line)?;
+        let text = encoded_text(&line, self.encoding)?;
         Ok(Field { text })
     }
 

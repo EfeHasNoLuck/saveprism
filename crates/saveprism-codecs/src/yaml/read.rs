@@ -25,6 +25,14 @@ pub(crate) fn well_formed(text: &str) -> bool {
     parser.load(&mut collector, true).is_ok()
 }
 
+/// saphyr's marker index counts characters for `Parser::new_from_str`; convert it to a byte
+/// offset so the writer's spans line up with the UTF-8 text.
+fn byte_offset(text: &str, index: usize) -> usize {
+    text.char_indices()
+        .nth(index)
+        .map_or(text.len(), |(byte, _)| byte)
+}
+
 struct MapFrame {
     entries: Vec<(String, NodeId)>,
     pending: Option<(String, NodeId)>,
@@ -81,7 +89,7 @@ pub(crate) fn parse(text: &str, base: usize, ctx: &mut DecodeCtx<'_>) -> Result<
 }
 
 impl Builder<'_> {
-    fn event(&mut self, event: Event<'_>, span: Span, _text: &str, max_depth: usize) -> Result<()> {
+    fn event(&mut self, event: Event<'_>, span: Span, text: &str, max_depth: usize) -> Result<()> {
         match event {
             Event::StreamStart | Event::StreamEnd | Event::Nothing => Ok(()),
             Event::DocumentStart(_) => {
@@ -103,8 +111,12 @@ impl Builder<'_> {
             }
             Event::Scalar(value, style, anchor, tag) => {
                 let locked = anchor != 0 || tag.is_some();
-                let start = self.base.saturating_add(span.start.index());
-                let end = self.base.saturating_add(span.end.index());
+                let start = self
+                    .base
+                    .saturating_add(byte_offset(text, span.start.index()));
+                let end = self
+                    .base
+                    .saturating_add(byte_offset(text, span.end.index()));
                 let (parsed, hint) = scalar_value(&value, style);
                 let editable = !locked
                     && !matches!(style, ScalarStyle::Folded)
@@ -121,8 +133,12 @@ impl Builder<'_> {
                 self.attach(id)
             }
             Event::Alias(anchor) => {
-                let start = self.base.saturating_add(span.start.index());
-                let end = self.base.saturating_add(span.end.index());
+                let start = self
+                    .base
+                    .saturating_add(byte_offset(text, span.start.index()));
+                let end = self
+                    .base
+                    .saturating_add(byte_offset(text, span.end.index()));
                 let id = self.doc.push(node(
                     Value::Str(format!("*{anchor}")),
                     &format!("{PREFIX}alias"),

@@ -53,10 +53,10 @@ impl Codec for YamlCodec {
     }
 
     fn sniff(&self, input: &[u8], ctx: &SniffCtx<'_>) -> Confidence {
-        let Ok(text) = std::str::from_utf8(input) else {
+        let Some(decoded) = crate::text_encoding::decode_sniff(input) else {
             return Confidence::NONE;
         };
-        let body = text.trim_start_matches('\u{feff}');
+        let body = decoded.text.as_str();
         let start = body.trim_start();
         if start.is_empty()
             || start.starts_with('<')
@@ -103,16 +103,14 @@ impl Codec for YamlCodec {
 
     fn decode(&self, input: &[u8], ctx: &mut DecodeCtx<'_>) -> Result<Decoded> {
         ctx.limits().check_input(len_u64(input.len()))?;
-        let (body, base) = match input.strip_prefix(&[0xEF, 0xBB, 0xBF]) {
-            Some(rest) => (rest, 3usize),
-            None => (input, 0usize),
-        };
-        let text = std::str::from_utf8(body)
-            .map_err(|_| Error::new(YAML_PARSE, "YAML is not valid UTF-8"))?;
-        let doc = read::parse(text, base, ctx)?;
+        let decoded = crate::text_encoding::decode_sniff(input)
+            .ok_or_else(|| Error::new(YAML_PARSE, "YAML text encoding could not be detected"))?;
+        let text = decoded.text.as_str();
+        let doc = read::parse(text, 0, ctx)?;
         ctx.charge_nodes(len_u64(doc.len()))?;
         let mut params = Params::new();
         params.set("original", input.to_vec());
+        params.set("text_encoding", decoded.encoding.name());
         Ok(Decoded { doc, params })
     }
 
@@ -120,7 +118,9 @@ impl Codec for YamlCodec {
         let Some(ParamValue::Bytes(original)) = params.get("original") else {
             return Err(Error::new(YAML_WRITE, "the original YAML text is missing"));
         };
-        write::encode(doc, original)
+        let decoded = crate::text_common::decode_original(original, YAML_WRITE)?;
+        let mut patches = write::encode(doc, decoded.text.as_bytes())?;
+        crate::text_common::apply_encoded_patches(original, &decoded, YAML_WRITE, &mut patches)
     }
 }
 

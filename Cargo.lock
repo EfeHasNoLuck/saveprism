@@ -3574,6 +3574,7 @@ dependencies = [
  "brotli",
  "bzip2",
  "cbc",
+ "encoding_rs",
  "flate2",
  "lz-str",
  "lz4_flex",

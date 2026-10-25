@@ -14,14 +14,10 @@ struct Frame {
     text_end: usize,
 }
 
-/// Parses XML `input`; the caller keeps the original bytes as the codec parameter.
-pub(crate) fn parse(input: &[u8], ctx: &mut DecodeCtx<'_>) -> Result<SaveDoc> {
-    let (body, base) = match input.strip_prefix(&[0xEF, 0xBB, 0xBF]) {
-        Some(rest) => (rest, 3usize),
-        None => (input, 0usize),
-    };
-    let text =
-        std::str::from_utf8(body).map_err(|_| Error::new(XML_PARSE, "XML is not valid UTF-8"))?;
+/// Parses XML `text` (already decoded to UTF-8); the caller keeps the original bytes.
+pub(crate) fn parse(text: &str, ctx: &mut DecodeCtx<'_>) -> Result<SaveDoc> {
+    let body = text.as_bytes();
+    let base = 0usize;
     let mut doc = ctx.new_doc();
     let mut reader = Reader::from_str(text);
     let mut stack: Vec<Frame> = Vec::new();

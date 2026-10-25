@@ -74,3 +74,31 @@ fn generated_csv_fixtures_round_trip() {
         assert_eq!(encode(&decoded), input, "{name}");
     }
 }
+
+fn encoding_fixture(name: &str) -> Vec<u8> {
+    let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../fixtures/synthetic/encodings")
+        .join(name);
+    std::fs::read(path).expect("fixture")
+}
+
+#[test]
+fn a_utf16be_csv_round_trips_and_edits() {
+    let bytes = encoding_fixture("csv-utf16be.csv");
+    let mut decoded = decode(&bytes);
+    assert_eq!(encode(&decoded), bytes);
+    set(
+        &mut decoded,
+        "/0/name",
+        OwnedValue::Str("\u{30a2}\u{30ad}".into()),
+    );
+    let again = decode(&encode(&decoded));
+    let id = again
+        .doc
+        .resolve(&Path::parse("/0/name").expect("path"))
+        .expect("node");
+    assert_eq!(
+        again.doc.get(id).map(|node| node.value.clone()),
+        Some(saveprism_core::Value::Str("アキ".into()))
+    );
+}

@@ -30,7 +30,36 @@ fn set(decoded: &mut saveprism_core::Decoded, path: &str, value: OwnedValue) {
     .expect("edit applies");
 }
 
+fn encoding_fixture(name: &str) -> Vec<u8> {
+    let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../fixtures/synthetic/encodings")
+        .join(name);
+    std::fs::read(path).expect("fixture")
+}
+
 const SAMPLE: &str = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!-- top -->\n<save version=\"2\">\n  <player name='Mira &amp; Rune' hp=\"42\">\n    <item id=\"1\">Sword</item>\n    <item id=\"2\"><![CDATA[Raw <text>]]></item>\n    <note>line</note>\n  </player>\n  <empty/>\n</save>\n";
+
+#[test]
+fn a_gb18030_document_round_trips_and_edits() {
+    let bytes = encoding_fixture("xml-gb18030.xml");
+    let mut decoded = decode(&bytes);
+    assert_eq!(encode(&decoded), bytes);
+    set(
+        &mut decoded,
+        "/save/player/@name",
+        OwnedValue::Str("\u{5f20}\u{4e09}".into()),
+    );
+    let written = encode(&decoded);
+    let again = decode(&written);
+    let id = again
+        .doc
+        .resolve(&Path::parse("/save/player/@name").expect("path"))
+        .expect("node");
+    assert_eq!(
+        again.doc.get(id).map(|node| node.value.clone()),
+        Some(saveprism_core::Value::Str("张三".into()))
+    );
+}
 
 #[test]
 fn round_trips_and_keeps_every_byte() {
