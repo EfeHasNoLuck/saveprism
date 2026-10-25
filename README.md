@@ -31,7 +31,7 @@ SavePrism needs Microsoft Edge WebView2, which Windows 10 and 11 already have; t
 |---|---|---|
 | RPG Maker MV / MZ | `.rpgsave`, `.rmmzsave` | gold, characters, items, weapons, armors, variables, switches, with names from the game's `data` folder |
 | RPG Maker XP / VX / VX Ace | `.rxdata`, `.rvdata`, `.rvdata2` | the same sections, names from the `Data` folder |
-| RPG Maker 2000 / 2003 | `.lsd` | the same sections, names from `RPG_RT.ldb` |
+| RPG Maker 2000 / 2003 | `.lsd` | the same sections, names from `RPG_RT.ldb`; Shift-JIS or Windows-1252 text (also from `RPG_RT.ini`) |
 | Wolf RPG Editor | `.sav` (not encrypted) | switches, variables, the variable database |
 | Unity · Easy Save 3 | `.es3` | plain, GZip and AES (password needed) |
 | Unity · PlayerPrefs | registry export `.reg` | ints, floats, strings |
@@ -43,7 +43,7 @@ SavePrism needs Microsoft Edge WebView2, which Windows 10 and 11 already have; t
 | Twine · SugarCube 2 | save files and save codes | story variables |
 | TyranoScript | `.sav` | values |
 | Naninovel | save slots | custom variables |
-| QSP | `.sav` | values |
+| QSP | `.sav` | values; Windows-1251 and KOI8-R legacy saves |
 | Flash | `.sol` (AMF0 / AMF3) | values |
 | Pokémon Gen 3 | `.sav` | money, coins, bag, party EXP / IVs / EVs / stats |
 | The Witcher 3 | `.sav` | orens, item quantities |
@@ -63,6 +63,7 @@ SavePrism needs Microsoft Edge WebView2, which Windows 10 and 11 already have; t
 | TOML | `.toml` | strings, integers, floats and booleans |
 | YAML | `.yaml`, `.yml` | plain, quoted and literal-block scalars (anchors and tags stay read-only) |
 | CSV | `.csv` | cells (quoting kept) |
+| Text encodings | every text format above | UTF-8/16/32 (with or without BOM), Shift-JIS, GB18030, CP949, Windows-1252; an edit the encoding cannot hold is refused |
 | Property lists | `.plist` (XML and binary) | XML strings, integers, reals and booleans; binary lists open read-only |
 
 A file that does not survive the round-trip check opens read-only with a warning.

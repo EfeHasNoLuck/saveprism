@@ -457,6 +457,41 @@ impl Session {
     }
 }
 
+/// The `[EasyRPG] Encoding=` code page from `RPG_RT.ini` next to the save, when present.
+/// EasyRPG documents the setting as a code page number (932 for Shift-JIS, 1252 for Western);
+/// see `https://wiki.easyrpg.org/doku.php?id=user:player:special-features`.
+pub(super) fn easyrpg_encoding(save: &FsPath) -> Option<&'static str> {
+    let path = save.parent()?.join("RPG_RT.ini");
+    let bytes = std::fs::read(path).ok()?;
+    let text = String::from_utf8_lossy(&bytes);
+    let mut section = String::new();
+    for line in text.lines() {
+        let line = line.trim();
+        if line.is_empty() || line.starts_with(';') || line.starts_with('#') {
+            continue;
+        }
+        if let Some(inner) = line
+            .strip_prefix('[')
+            .and_then(|rest| rest.strip_suffix(']'))
+        {
+            section = inner.trim().to_ascii_lowercase();
+            continue;
+        }
+        if section != "easyrpg" {
+            continue;
+        }
+        let Some((key, value)) = line.split_once('=') else {
+            continue;
+        };
+        if !key.trim().eq_ignore_ascii_case("encoding") {
+            continue;
+        }
+        let value = value.trim().trim_matches('"').trim_matches('\'');
+        return saveprism_codecs::resolve_text_encoding(value);
+    }
+    None
+}
+
 #[cfg(test)]
 mod tests {
     use super::name_from_bytes;

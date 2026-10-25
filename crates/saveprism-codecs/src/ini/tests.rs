@@ -87,3 +87,31 @@ fn generated_ini_fixture_round_trips() {
     let decoded = decode(&input);
     assert_eq!(encode(&decoded), input);
 }
+
+fn encoding_fixture(name: &str) -> Vec<u8> {
+    let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../fixtures/synthetic/encodings")
+        .join(name);
+    std::fs::read(path).expect("fixture")
+}
+
+#[test]
+fn a_cp949_ini_round_trips_and_edits() {
+    let bytes = encoding_fixture("ini-cp949.ini");
+    let mut decoded = decode(&bytes);
+    assert_eq!(encode(&decoded), bytes);
+    set(
+        &mut decoded,
+        "/Player/name",
+        OwnedValue::Str("\u{bbf8}\u{bbf8}".into()),
+    );
+    let again = decode(&encode(&decoded));
+    let id = again
+        .doc
+        .resolve(&Path::parse("/Player/name").expect("path"))
+        .expect("node");
+    assert_eq!(
+        again.doc.get(id).map(|node| node.value.clone()),
+        Some(saveprism_core::Value::Str("미미".into()))
+    );
+}

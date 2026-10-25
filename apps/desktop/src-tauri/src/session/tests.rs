@@ -2498,6 +2498,23 @@ fn open_lcf(env: &Env, save: &str, database: Option<&str>) -> Session {
 }
 
 #[test]
+fn an_rpg_rt_ini_encoding_hint_is_used_and_reported() {
+    let env = env();
+    let save = open_lcf(&env, SAVE_2K, None);
+    assert_eq!(save.info().text_encoding.as_deref(), Some("windows-1252"));
+
+    let path = copy_in(&env, SAVE_2K);
+    fs::write(
+        env.work.join("RPG_RT.ini"),
+        b"[EasyRPG]\r\nEncoding=932\r\n",
+    )
+    .unwrap();
+    let hinted = open(&env, &path, None).unwrap();
+    assert_eq!(hinted.info().text_encoding.as_deref(), Some("shift_jis"));
+    assert_eq!(hinted.info().guard, GuardLevel::Exact);
+}
+
+#[test]
 fn a_2k_save_becomes_rpg_maker_sections() {
     let env = env();
     let view = rpg_view(&open_lcf(&env, SAVE_2K, None)).unwrap();

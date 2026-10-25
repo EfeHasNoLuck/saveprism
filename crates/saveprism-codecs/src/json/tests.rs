@@ -20,6 +20,13 @@ fn encode(decoded: &Decoded) -> Vec<u8> {
     JsonCodec.encode(&decoded.doc, &decoded.params).unwrap()
 }
 
+fn encoding_fixture(name: &str) -> Vec<u8> {
+    let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../fixtures/synthetic/encodings")
+        .join(name);
+    std::fs::read(path).unwrap()
+}
+
 fn regular(decoded: &Decoded) -> bool {
     decoded.params.bool("regular").unwrap()
 }
@@ -52,6 +59,53 @@ fn pretty(unit: &str, nl: &str) -> String {
     format!(
         "{{{nl}{i1}\"a\": 1,{nl}{i1}\"b\": [{nl}{i2}1,{nl}{i2}2.5,{nl}{i2}\"x\"{nl}{i1}],{nl}{i1}\"c\": {{{nl}{i2}\"d\": null{nl}{i1}}},{nl}{i1}\"e\": [],{nl}{i1}\"f\": {{}}{nl}}}"
     )
+}
+
+#[test]
+fn every_encoding_fixture_round_trips_exactly() {
+    for name in [
+        "json-shiftjis.json",
+        "json-utf16le.json",
+        "json-utf16be.json",
+        "json-utf32le.json",
+        "json-utf32be.json",
+    ] {
+        let bytes = encoding_fixture(name);
+        let decoded = decode(&bytes);
+        assert_eq!(encode(&decoded), bytes, "{name}");
+        assert!(regular(&decoded), "{name}");
+    }
+}
+
+#[test]
+fn a_shift_jis_value_can_be_edited_and_an_unrepresentable_one_is_refused() {
+    let bytes = encoding_fixture("json-shiftjis.json");
+    let mut decoded = decode(&bytes);
+    assert_eq!(node_at(&decoded, "/name").value, Value::Str("ミラ".into()));
+    apply_edits(
+        &mut decoded.doc,
+        &[Edit::Set {
+            path: Path::parse("/name").unwrap(),
+            value: OwnedValue::Str("アキ".into()),
+        }],
+        &Limits::default(),
+    )
+    .unwrap();
+    let written = encode(&decoded);
+    let again = decode(&written);
+    assert_eq!(node_at(&again, "/name").value, Value::Str("アキ".into()));
+
+    apply_edits(
+        &mut decoded.doc,
+        &[Edit::Set {
+            path: Path::parse("/name").unwrap(),
+            value: OwnedValue::Str("😀".into()),
+        }],
+        &Limits::default(),
+    )
+    .unwrap();
+    let error = JsonCodec.encode(&decoded.doc, &decoded.params).unwrap_err();
+    assert_eq!(error.code(), crate::text_encoding::TEXT_UNREPRESENTABLE);
 }
 
 #[test]
@@ -320,17 +374,16 @@ fn trailing_data_is_reported() {
 }
 
 #[test]
-fn invalid_utf8_is_reported_with_the_byte_offset() {
-    let error = decode_with(&[b'[', b'"', 0xFF, b'"', b']'], &Limits::default()).unwrap_err();
+fn text_that_no_encoding_can_read_is_reported() {
+    let error = decode_with(&[b'[', b'"', 0x81, b'"', b']'], &Limits::default()).unwrap_err();
     assert_eq!(error.code(), JSON_UTF8);
-    assert_eq!(error.offset(), Some(2));
+    assert!(error.to_string().contains("encoding"));
     let with_bom = decode_with(
-        &[0xEF, 0xBB, 0xBF, b'[', b'"', 0xFF, b'"', b']'],
+        &[0xEF, 0xBB, 0xBF, b'[', b'"', 0x81, b'"', b']'],
         &Limits::default(),
     )
     .unwrap_err();
     assert_eq!(with_bom.code(), JSON_UTF8);
-    assert_eq!(with_bom.offset(), Some(5));
 }
 
 #[test]

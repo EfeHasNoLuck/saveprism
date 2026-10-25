@@ -3,9 +3,8 @@
 use saveprism_core::{Error, Node, NodeId, ParamValue, Params, Result, SaveDoc, Value};
 
 use super::read::{VariantKind, variant_kind_from_hint};
-use super::{
-    Encoding, MAX_NESTING, P_ENCODING, P_VARIANT_TYPES, QSP_WRITE, SEPARATOR, SHIFT, char_to_ansi,
-};
+use super::{Encoding, MAX_NESTING, P_ENCODING, P_VARIANT_TYPES, QSP_WRITE, SEPARATOR, SHIFT};
+use crate::text_encoding::TextEncoding;
 
 fn write_error(message: impl Into<String>) -> Error {
     Error::new(QSP_WRITE, message)
@@ -23,14 +22,14 @@ fn encoding(params: &Params) -> Result<Encoding> {
 /// The output text, before it is turned into bytes.
 enum Out {
     Wide(Vec<u16>),
-    Byte(Vec<u8>),
+    Byte(Vec<u8>, TextEncoding),
 }
 
 impl Out {
     fn new(encoding: Encoding) -> Self {
         match encoding {
             Encoding::Utf16Le => Out::Wide(Vec::new()),
-            Encoding::Ansi => Out::Byte(Vec::new()),
+            Encoding::Ansi(codec) => Out::Byte(Vec::new(), codec),
         }
     }
 
@@ -40,7 +39,7 @@ impl Out {
                 units.push(u16::from(SEPARATOR[0]));
                 units.push(u16::from(SEPARATOR[1]));
             }
-            Out::Byte(bytes) => bytes.extend_from_slice(&SEPARATOR),
+            Out::Byte(bytes, _) => bytes.extend_from_slice(&SEPARATOR),
         }
     }
 
@@ -52,7 +51,7 @@ impl Out {
             }
             match self {
                 Out::Wide(units) => units.push(u16::from(ch as u8)),
-                Out::Byte(bytes) => bytes.push(ch as u8),
+                Out::Byte(bytes, _) => bytes.push(ch as u8),
             }
         }
         self.separator();
@@ -67,14 +66,11 @@ impl Out {
                     units.push(encode_unit(unit));
                 }
             }
-            Out::Byte(bytes) => {
-                for ch in text.chars() {
-                    let byte = char_to_ansi(ch).ok_or_else(|| {
-                        write_error(format!(
-                            "the character U+{:04X} is not representable in Windows-1251",
-                            u32::from(ch)
-                        ))
-                    })?;
+            Out::Byte(bytes, codec) => {
+                let encoded = codec
+                    .encode(text)
+                    .map_err(|error| write_error(error.to_string()))?;
+                for byte in encoded {
                     bytes.push(encode_byte(byte));
                 }
             }
@@ -92,7 +88,7 @@ impl Out {
                 }
                 bytes
             }
-            Out::Byte(bytes) => bytes,
+            Out::Byte(bytes, _) => bytes,
         }
     }
 }

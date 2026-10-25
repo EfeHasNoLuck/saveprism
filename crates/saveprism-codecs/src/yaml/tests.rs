@@ -99,3 +99,31 @@ fn generated_yaml_fixture_round_trips() {
     let decoded = decode(&input);
     assert_eq!(encode(&decoded), input);
 }
+
+fn encoding_fixture(name: &str) -> Vec<u8> {
+    let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../fixtures/synthetic/encodings")
+        .join(name);
+    std::fs::read(path).expect("fixture")
+}
+
+#[test]
+fn a_gb18030_yaml_round_trips_and_edits() {
+    let bytes = encoding_fixture("yaml-gb18030.yaml");
+    let mut decoded = decode(&bytes);
+    assert_eq!(encode(&decoded), bytes);
+    set(
+        &mut decoded,
+        "/0/save/player/name",
+        OwnedValue::Str("\u{5f20}\u{4e09}".into()),
+    );
+    let again = decode(&encode(&decoded));
+    let id = again
+        .doc
+        .resolve(&Path::parse("/0/save/player/name").expect("path"))
+        .expect("node");
+    assert_eq!(
+        again.doc.get(id).map(|node| node.value.clone()),
+        Some(saveprism_core::Value::Str("张三".into()))
+    );
+}

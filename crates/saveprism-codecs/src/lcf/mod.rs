@@ -83,6 +83,8 @@ pub(crate) const P_RAW_BER: &str = "raw_ber";
 pub(crate) const P_END_MARK: &str = "end_mark";
 /// Parameter: bytes after the top-level end mark.
 pub(crate) const P_TRAILING: &str = "trailing";
+/// Parameter: the text encoding of strings (from `RPG_RT.ini` or guessed from the strings).
+pub(crate) const P_TEXT_ENCODING: &str = "text_encoding";
 /// Longest BER number.
 const MAX_BER: usize = 5;
 

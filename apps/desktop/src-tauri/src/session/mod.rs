@@ -311,6 +311,9 @@ pub struct OpenInfo {
     pub recipe: Vec<String>,
     /// Size of the file in bytes.
     pub byte_size: u64,
+    /// Text encoding the codec detected for the file (`utf-8`, `shift_jis`, ...), when it records
+    /// one. The UI already receives this struct; it is shown only where a field exists.
+    pub text_encoding: Option<String>,
     /// Result of the round-trip guard.
     pub guard: GuardLevel,
     /// False when the guard failed.
@@ -470,7 +473,19 @@ fn decode_file(
     };
     let detect_error = match detect(bytes, reg, limits, &opts) {
         Ok(detection) => {
-            return pipeline::decode(bytes, &detection.best.recipe, reg, limits)
+            let mut recipe = detection.best.recipe;
+            // RPG Maker 2000/2003 saves do not carry their text encoding; the game's
+            // `RPG_RT.ini` can name it when EasyRPG wrote one.
+            if recipe
+                .steps
+                .last()
+                .is_some_and(|step| step.kind == "format.lcf")
+                && let Some(encoding) = lcf::easyrpg_encoding(path)
+                && let Some(step) = recipe.steps.last_mut()
+            {
+                step.params.set("text_encoding", encoding);
+            }
+            return pipeline::decode(bytes, &recipe, reg, limits)
                 .map_err(|e| e.context(format!("while opening {}", path.display())));
         }
         Err(error) => error,
@@ -807,6 +822,18 @@ impl Session {
             codec: recipe.last().cloned().unwrap_or_default(),
             recipe,
             byte_size: u64::try_from(self.original.len()).unwrap_or(u64::MAX),
+            text_encoding: self
+                .recipe
+                .steps
+                .last()
+                .and_then(|step| {
+                    step.params
+                        .opt_str("text_encoding")
+                        .ok()
+                        .flatten()
+                        .or_else(|| step.params.opt_str("encoding").ok().flatten())
+                })
+                .map(str::to_owned),
             guard: self.guard,
             editable: self.editable,
             warning,

@@ -184,6 +184,22 @@ def save_2k() -> bytes:
     ])
 
 
+def save_2k_sjis() -> bytes:
+    """A Japanese save: names stored in Shift_JIS (the code page of Japanese RPG Maker 2000)."""
+    return file(b"LcfSaveData", [
+        chunk(0x64, title("ミラ".encode("shift_jis"), 12, 250, 45123.75)),
+        chunk(0x65, system([1, 0, 1], [100, -7, 0])),
+        chunk(0x6C, array([
+            (1, actor("ミラ".encode("shift_jis"), 12, 3400, 250, 40,
+                      (10, 5, 3, 2, 0, 1), [1, 3], [2, 5, 0, 0, 0])),
+            (2, actor("アキ".encode("shift_jis"), 8, 1200, 140, 95,
+                      (0, 20, 0, 0, 4, 2), [4], [0, 0, 0, 0, 0])),
+        ])),
+        chunk(0x6D, inventory([1, 2], [(1, 3)], gold=1200)),
+        *common_tail(),
+    ])
+
+
 def save_2k3() -> bytes:
     battle = [
         chunk(0x50, int32s([1, 2, 3, 4, 0, 0, 0])),
@@ -254,6 +270,7 @@ def main() -> None:
     OUT_2K.mkdir(parents=True, exist_ok=True)
     OUT_2K3.mkdir(parents=True, exist_ok=True)
     (OUT_2K / "Save01.lsd").write_bytes(save_2k())
+    (OUT_2K / "Save02.lsd").write_bytes(save_2k_sjis())
     (OUT_2K / "RPG_RT.ldb").write_bytes(database_2k())
     (OUT_2K3 / "Save01.lsd").write_bytes(save_2k3())
     (OUT_2K3 / "RPG_RT.ldb").write_bytes(database_2k3())

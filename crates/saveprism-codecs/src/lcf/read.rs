@@ -7,9 +7,10 @@ use saveprism_core::{
 
 use super::types::{self, Field, TypeDef, key_of, type_def};
 use super::{
-    ID_KEY, Kind, LCF_PARSE, LCF_UNSUPPORTED, P_END_MARK, P_RAW_BER, P_TRAILING, RAW_PREFIX,
-    is_canonical, read_ber,
+    ID_KEY, Kind, LCF_PARSE, LCF_UNSUPPORTED, P_END_MARK, P_RAW_BER, P_TEXT_ENCODING, P_TRAILING,
+    RAW_PREFIX, is_canonical, read_ber,
 };
+use crate::text_encoding::{TextEncoding, decode_sniff};
 
 /// One chunk: its id, the raw bytes of its id and length, and its data.
 struct Chunk<'a> {
@@ -125,6 +126,19 @@ fn split_array(data: &[u8]) -> Option<(&[u8], Vec<Element<'_>>)> {
     cursor.at_end().then_some((count_raw, elements))
 }
 
+fn guess(data: &[u8]) -> Option<TextEncoding> {
+    let detected = decode_sniff(data)?;
+    Some(match detected.encoding {
+        TextEncoding::Utf8
+        | TextEncoding::ShiftJis
+        | TextEncoding::Windows1252
+        | TextEncoding::Windows1251 => detected.encoding,
+        // The two-byte Chinese/Korean tables can decode Japanese bytes too; RPG Maker 2000/2003
+        // releases are Japanese or Western, so fall back to the closest of those.
+        _ => TextEncoding::Windows1252,
+    })
+}
+
 /// Exactly one BER number.
 fn single_ber(data: &[u8]) -> Option<u32> {
     let (value, used) = read_ber(data)?;
@@ -150,6 +164,8 @@ struct Reader {
     /// counts, end marks) in reader order.
     ordinal: i64,
     raws: Params,
+    /// Encoding of non-ASCII strings, from the caller's hint or guessed from the first one.
+    encoding: Option<TextEncoding>,
 }
 
 impl Reader {
@@ -229,11 +245,9 @@ impl Reader {
                 ),
                 Err(_) => self.bytes(data, Kind::Bytes),
             },
-            Kind::Text => match std::str::from_utf8(data) {
-                Ok(text) if is_printable_ascii(data) => {
-                    self.push(Value::Str(text.to_string()), kind, false)
-                }
-                _ => self.bytes(data, kind),
+            Kind::Text => match self.text_node(data) {
+                Some(text) => self.push(Value::Str(text), kind, false),
+                None => self.bytes(data, kind),
             },
             Kind::Bytes => self.bytes(data, kind),
             Kind::Int16s | Kind::Int32s | Kind::UInt8s | Kind::Bools => self.vector(kind, data),
@@ -246,6 +260,27 @@ impl Reader {
                 _ => self.bytes(data, Kind::Bytes),
             },
         }
+    }
+
+    /// A string chunk as editable text: ASCII always, otherwise with the file's encoding when the
+    /// bytes decode to text that writes back exactly.
+    fn text_node(&mut self, data: &[u8]) -> Option<String> {
+        if is_printable_ascii(data) {
+            return std::str::from_utf8(data).ok().map(str::to_owned);
+        }
+        let encoding = match self.encoding {
+            Some(encoding) => encoding,
+            None => {
+                let encoding = guess(data)?;
+                self.encoding = Some(encoding);
+                encoding
+            }
+        };
+        let text = encoding.decode(data)?;
+        if text.chars().any(char::is_control) {
+            return None;
+        }
+        (encoding.encode(&text).ok().as_deref() == Some(data)).then_some(text)
     }
 
     /// A fixed-size little-endian vector.
@@ -320,10 +355,17 @@ impl Reader {
 
 /// Decodes a whole LCF file.
 pub(super) fn decode(input: &[u8], ctx: &DecodeCtx<'_>) -> Result<(SaveDoc, Params)> {
+    let hinted = ctx
+        .hints()
+        .opt_str(P_TEXT_ENCODING)
+        .ok()
+        .flatten()
+        .and_then(TextEncoding::from_name);
     let mut reader = Reader {
         doc: ctx.new_doc(),
         ordinal: 0,
         raws: Params::new(),
+        encoding: hinted,
     };
     let mut cursor = Cursor::new(input);
     let (len, len_raw) = cursor
@@ -371,6 +413,9 @@ pub(super) fn decode(input: &[u8], ctx: &DecodeCtx<'_>) -> Result<(SaveDoc, Para
     reader.doc.set_root(root);
     if !reader.raws.is_empty() {
         params.set(P_RAW_BER, ParamValue::Table(reader.raws));
+    }
+    if let Some(encoding) = reader.encoding {
+        params.set(P_TEXT_ENCODING, encoding.name());
     }
     Ok((reader.doc, params))
 }

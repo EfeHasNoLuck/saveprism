@@ -51,10 +51,10 @@ impl Codec for CsvCodec {
     }
 
     fn sniff(&self, input: &[u8], ctx: &SniffCtx<'_>) -> Confidence {
-        let Ok(text) = std::str::from_utf8(input) else {
+        let Some(decoded) = crate::text_encoding::decode_sniff(input) else {
             return Confidence::NONE;
         };
-        let body = text.trim_start_matches('\u{feff}');
+        let body = decoded.text.as_str();
         let start = body.trim_start();
         if start.is_empty()
             || start.starts_with('<')
@@ -100,13 +100,10 @@ impl Codec for CsvCodec {
 
     fn decode(&self, input: &[u8], ctx: &mut DecodeCtx<'_>) -> Result<Decoded> {
         ctx.limits().check_input(len_u64(input.len()))?;
-        let (body, base) = match input.strip_prefix(&[0xEF, 0xBB, 0xBF]) {
-            Some(rest) => (rest, 3usize),
-            None => (input, 0usize),
-        };
-        let text = std::str::from_utf8(body)
-            .map_err(|_| Error::new(CSV_PARSE, "CSV is not valid UTF-8"))?;
-        let records = parse_records(text, base)?;
+        let decoded = crate::text_encoding::decode_sniff(input)
+            .ok_or_else(|| Error::new(CSV_PARSE, "CSV text encoding could not be detected"))?;
+        let text = decoded.text.as_str();
+        let records = parse_records(text, 0)?;
         if records.is_empty() {
             return Err(Error::new(CSV_PARSE, "the CSV file has no records"));
         }
@@ -156,6 +153,7 @@ impl Codec for CsvCodec {
         ctx.charge_nodes(len_u64(doc.len()))?;
         let mut params = Params::new();
         params.set("original", input.to_vec());
+        params.set("text_encoding", decoded.encoding.name());
         Ok(Decoded { doc, params })
     }
 
@@ -163,6 +161,8 @@ impl Codec for CsvCodec {
         let Some(ParamValue::Bytes(original)) = params.get("original") else {
             return Err(Error::new(CSV_WRITE, "the original CSV text is missing"));
         };
+        let decoded = crate::text_common::decode_original(original, CSV_WRITE)?;
+        let text = decoded.text.as_bytes();
         let mut patches = Vec::new();
         let mut stack = vec![doc.root()];
         let mut visited = 0usize;
@@ -189,7 +189,7 @@ impl Codec for CsvCodec {
                 continue;
             }
             let (start, end) = span_range(node, CSV_WRITE)?;
-            let old = original
+            let old = text
                 .get(start..end)
                 .ok_or_else(|| Error::new(CSV_WRITE, "cell span outside the original text"))?;
             let quoted = old.first() == Some(&b'"');
@@ -198,7 +198,7 @@ impl Codec for CsvCodec {
                 patches.push((start, end, rendered.into_bytes()));
             }
         }
-        crate::text_common::apply_patches(original, CSV_WRITE, &mut patches)
+        crate::text_common::apply_encoded_patches(original, &decoded, CSV_WRITE, &mut patches)
     }
 }
 

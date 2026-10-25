@@ -54,9 +54,10 @@ impl Codec for TomlCodec {
     }
 
     fn sniff(&self, input: &[u8], ctx: &SniffCtx<'_>) -> Confidence {
-        let Ok(text) = std::str::from_utf8(input) else {
+        let Some(decoded) = crate::text_encoding::decode_sniff(input) else {
             return Confidence::NONE;
         };
+        let text = decoded.text.as_str();
         if ctx
             .file_name
             .is_some_and(crate::text_common::is_generic_text_name)
@@ -80,8 +81,9 @@ impl Codec for TomlCodec {
 
     fn decode(&self, input: &[u8], ctx: &mut DecodeCtx<'_>) -> Result<Decoded> {
         ctx.limits().check_input(len_u64(input.len()))?;
-        let text = std::str::from_utf8(input)
-            .map_err(|_| Error::new(TOML_PARSE, "TOML is not valid UTF-8"))?;
+        let decoded = crate::text_encoding::decode_sniff(input)
+            .ok_or_else(|| Error::new(TOML_PARSE, "TOML text encoding could not be detected"))?;
+        let text = decoded.text.as_str();
         let document = Document::<String>::from_str(text)
             .map_err(|error| Error::new(TOML_PARSE, format!("invalid TOML: {error}")))?;
         let mut doc = ctx.new_doc();
@@ -98,6 +100,7 @@ impl Codec for TomlCodec {
         ctx.charge_nodes(len_u64(doc.len()))?;
         let mut params = Params::new();
         params.set("original", input.to_vec());
+        params.set("text_encoding", decoded.encoding.name());
         Ok(Decoded { doc, params })
     }
 
@@ -105,6 +108,8 @@ impl Codec for TomlCodec {
         let Some(ParamValue::Bytes(original)) = params.get("original") else {
             return Err(Error::new(TOML_WRITE, "the original TOML text is missing"));
         };
+        let decoded = crate::text_common::decode_original(original, TOML_WRITE)?;
+        let text = decoded.text.as_bytes();
         let mut patches = Vec::new();
         let mut stack = vec![doc.root()];
         let mut visited = 0usize;
@@ -131,14 +136,14 @@ impl Codec for TomlCodec {
                 _ => continue,
             };
             let (start, end) = span_range(node, TOML_WRITE)?;
-            let old = original
+            let old = text
                 .get(start..end)
                 .ok_or_else(|| Error::new(TOML_WRITE, "value span outside the original text"))?;
             if old != rendered.as_bytes() {
                 patches.push((start, end, rendered.into_bytes()));
             }
         }
-        crate::text_common::apply_patches(original, TOML_WRITE, &mut patches)
+        crate::text_common::apply_encoded_patches(original, &decoded, TOML_WRITE, &mut patches)
     }
 }
 

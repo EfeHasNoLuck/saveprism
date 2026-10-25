@@ -15,6 +15,7 @@ use super::*;
 const FULL: &str = "synthetic/qsp/chapter-one.sav";
 const MINIMAL: &str = "synthetic/qsp/minimal.sav";
 const ANSI: &str = "synthetic/qsp/legacy-ansi.sav";
+const KOI8: &str = "synthetic/qsp/legacy-koi8r.sav";
 const PADDED: &str = "synthetic/qsp/padded-numbers.sav";
 
 fn fixtures() -> PathBuf {
@@ -92,7 +93,7 @@ fn set(decoded: &mut Decoded, path: &str, value: OwnedValue) {
 
 #[test]
 fn every_fixture_round_trips_exactly() {
-    for name in [FULL, MINIMAL, ANSI, PADDED] {
+    for name in [FULL, MINIMAL, ANSI, KOI8, PADDED] {
         let bytes = fixture(name);
         let decoded = exact(&bytes);
         assert_eq!(hint_of(&decoded.doc, ""), "QSP:save", "{name} root hint");
@@ -145,6 +146,16 @@ fn an_ansi_save_is_read_and_written_in_its_code_page() {
         decoded.params.get(P_ENCODING),
         Some(&saveprism_core::ParamValue::Str("ansi".into()))
     );
+}
+
+#[test]
+fn koi8_r_is_told_apart_from_windows_1251() {
+    let ansi = exact(&fixture(ANSI));
+    assert_eq!(ansi.params.str(P_ENCODING).unwrap(), "ansi");
+    let koi8 = exact(&fixture(KOI8));
+    assert_eq!(koi8.params.str(P_ENCODING).unwrap(), "ansi-koi8r");
+    assert_eq!(text_at(&koi8.doc, "/location"), "Мастерская");
+    assert_eq!(text_at(&koi8.doc, "/variables/1/name"), "ИМЯ");
 }
 
 #[test]
@@ -247,7 +258,7 @@ fn detection_and_guard_pick_the_codec() {
     let mut reg = Registry::default();
     crate::register_all(&mut reg);
     let limits = Limits::default();
-    for name in [FULL, MINIMAL, ANSI, PADDED] {
+    for name in [FULL, MINIMAL, ANSI, KOI8, PADDED] {
         let bytes = fixture(name);
         let options = DetectOptions {
             file_name: Some(name.rsplit('/').next().unwrap().to_string()),

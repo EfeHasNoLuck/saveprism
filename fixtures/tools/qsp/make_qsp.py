@@ -24,7 +24,7 @@ OUT = pathlib.Path(__file__).resolve().parents[2] / "synthetic" / "qsp"
 
 class Save:
     def __init__(self, encoding: str = "utf16") -> None:
-        if encoding not in ("utf16", "ansi"):
+        if encoding not in ("utf16", "ansi", "koi8-r"):
             raise ValueError(encoding)
         self.encoding = encoding
         self.parts: list[bytes] = []
@@ -32,6 +32,8 @@ class Save:
     def _unit_bytes(self, text: str) -> bytes:
         if self.encoding == "utf16":
             return text.encode("utf-16-le")
+        if self.encoding == "koi8-r":
+            return text.encode("koi8-r")
         return text.encode("cp1251")
 
     def _shift(self, data: bytes) -> bytes:
@@ -202,7 +204,15 @@ def make_minimal() -> bytes:
 
 
 def make_legacy_ansi() -> bytes:
-    save = Save("ansi")
+    return make_legacy("ansi")
+
+
+def make_legacy_koi8r() -> bytes:
+    return make_legacy("koi8-r")
+
+
+def make_legacy(codepage: str) -> bytes:
+    save = Save(codepage)
     save.raw("QSPSAVEDGAME")
     save.raw("4.2.0")
     save.number(42)
@@ -266,6 +276,7 @@ def main() -> None:
         "chapter-one.sav": make_full("utf16"),
         "minimal.sav": make_minimal(),
         "legacy-ansi.sav": make_legacy_ansi(),
+        "legacy-koi8r.sav": make_legacy_koi8r(),
         "padded-numbers.sav": make_padded_numbers(),
     }
     for name, data in files.items():

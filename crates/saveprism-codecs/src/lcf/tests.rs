@@ -11,6 +11,7 @@ use saveprism_core::{
 use super::*;
 
 const SAVE_2K: &str = "synthetic/rpgmaker-2k/Save01.lsd";
+const SAVE_2K_SJIS: &str = "synthetic/rpgmaker-2k/Save02.lsd";
 const SAVE_2K3: &str = "synthetic/rpgmaker-2k3/Save01.lsd";
 const DB_2K: &str = "synthetic/rpgmaker-2k/RPG_RT.ldb";
 const DB_2K3: &str = "synthetic/rpgmaker-2k3/RPG_RT.ldb";
@@ -206,14 +207,13 @@ fn the_2k_save_becomes_a_tree_of_named_fields() {
     assert_eq!(int_at(doc, "/actors/1/(id)"), 2);
     assert!(read_only(doc, "/actors/1/(id)"));
     assert_eq!(at(doc, "/actors/1/name").value, Value::Str("Mira".into()));
-    // "\x01" (use the database name) and a Windows-1252 name are read-only bytes.
+    // "\x01" (use the database name) is a control byte and stays read-only; the Windows-1252
+    // name is decoded with the file's encoding and is editable.
     assert_eq!(at(doc, "/actors/0/name").value, Value::Bytes(vec![1]));
     assert_eq!(hint_of(doc, "/actors/0/name"), "LCF:string");
     assert!(read_only(doc, "/actors/0/name"));
-    assert_eq!(
-        at(doc, "/actors/2/name").value,
-        Value::Bytes(b"Jos\xe9".to_vec())
-    );
+    assert_eq!(at(doc, "/actors/2/name").value, Value::Str("José".into()));
+    assert!(!read_only(doc, "/actors/2/name"));
     assert_eq!(int_at(doc, "/actors/0/level"), 12);
     assert_eq!(int_at(doc, "/actors/0/equipped/1"), 5);
     assert_eq!(hint_of(doc, "/actors/0/equipped"), "LCF:int16[]");
@@ -228,7 +228,31 @@ fn the_2k_save_becomes_a_tree_of_named_fields() {
     assert_eq!(hint_of(doc, "/inventory/item_counts"), "LCF:uint8[]");
     assert_eq!(int_at(doc, "/targets/0/map_y"), 4);
     assert_eq!(at(doc, "/common_events").value, Value::Array(Vec::new()));
-    assert!(decoded.params.is_empty(), "{:?}", decoded.params);
+    assert_eq!(decoded.params.str(P_TEXT_ENCODING).unwrap(), "windows-1252");
+}
+
+#[test]
+fn japanese_shift_jis_names_are_editable() {
+    let mut decoded = exact(&fixture(SAVE_2K_SJIS));
+    assert_eq!(decoded.params.str(P_TEXT_ENCODING).unwrap(), "shift_jis");
+    assert_eq!(
+        at(&decoded.doc, "/title/hero_name").value,
+        Value::Str("ミラ".into())
+    );
+    assert_eq!(
+        at(&decoded.doc, "/actors/1/name").value,
+        Value::Str("アキ".into())
+    );
+    set(
+        &mut decoded,
+        "/title/hero_name",
+        OwnedValue::Str("アキラ".into()),
+    );
+    let again = reopen(&decoded);
+    assert_eq!(
+        at(&again.doc, "/title/hero_name").value,
+        Value::Str("アキラ".into())
+    );
 }
 
 #[test]
@@ -249,10 +273,7 @@ fn the_2k3_save_and_the_databases_read() {
     assert_eq!(hint_of(doc, ""), "LCF:struct:Database");
     assert_eq!(at(doc, "/actors/2/name").value, Value::Str("Jose".into()));
     assert_eq!(int_at(doc, "/items/1/type"), 1);
-    assert_eq!(
-        at(doc, "/items/4/name").value,
-        Value::Bytes(b"\xc9lixir".to_vec())
-    );
+    assert_eq!(at(doc, "/items/4/name").value, Value::Str("Élixir".into()));
     assert_eq!(
         at(doc, "/variables/2/name").value,
         Value::Str("Zero Counter".into())
@@ -468,7 +489,7 @@ fn values_that_cannot_be_written_are_refused() {
     set(
         &mut decoded,
         "/title/hero_name",
-        OwnedValue::Str("Jos\u{e9}".into()),
+        OwnedValue::Str("\u{30df}\u{30e9}".into()),
     );
     let error = LcfCodec.encode(&decoded.doc, &decoded.params).unwrap_err();
     assert_eq!(error.code(), LCF_WRITE);

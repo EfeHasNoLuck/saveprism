@@ -2,12 +2,12 @@
 
 use saveprism_core::{Error, Node, NodeId, ParamValue, Params, Result, SaveDoc, Value};
 
-use super::read::is_printable_ascii;
 use super::types::{self, TypeDef, type_def};
 use super::{
-    DATABASE_HEADER, ID_KEY, Kind, LCF_WRITE, P_END_MARK, P_RAW_BER, P_TRAILING, RAW_PREFIX,
-    SAVE_HEADER, parse_hint, push_ber, read_ber,
+    DATABASE_HEADER, ID_KEY, Kind, LCF_WRITE, P_END_MARK, P_RAW_BER, P_TEXT_ENCODING, P_TRAILING,
+    RAW_PREFIX, SAVE_HEADER, parse_hint, push_ber, read_ber,
 };
+use crate::text_encoding::TextEncoding;
 
 /// Deepest struct nesting written (the field tables nest three levels).
 const MAX_NESTING: usize = 16;
@@ -39,6 +39,8 @@ fn len_u32(len: usize, what: &str) -> Result<u32> {
 struct Writer<'a> {
     doc: &'a SaveDoc,
     raws: Option<&'a Params>,
+    /// Encoding of non-ASCII string edits.
+    text_encoding: TextEncoding,
     /// Number of the next structural BER number, in the order the reader counted them.
     ordinal: i64,
 }
@@ -118,12 +120,10 @@ impl<'a> Writer<'a> {
             }
             (Kind::Double, Value::Float { v, .. }) => out.extend_from_slice(&v.to_le_bytes()),
             (Kind::Text, Value::Str(text)) => {
-                if !is_printable_ascii(text.as_bytes()) {
-                    return Err(write_error(format!(
-                        "the text at '{key}' must be plain ASCII (letters, digits, punctuation)"
-                    )));
-                }
-                out.extend_from_slice(text.as_bytes());
+                let encoded = self.text_encoding.encode(text).map_err(|error| {
+                    write_error(format!("the text at '{key}' cannot be written: {error}"))
+                })?;
+                out.extend_from_slice(&encoded);
             }
             (Kind::Text | Kind::Bytes, Value::Bytes(bytes)) => out.extend_from_slice(bytes),
             (Kind::Int16s | Kind::Int32s | Kind::UInt8s | Kind::Bools, Value::Array(items)) => {
@@ -249,9 +249,14 @@ pub(super) fn encode(doc: &SaveDoc, params: &Params) -> Result<Vec<u8>> {
         None => None,
         Some(_) => return Err(write_error("the parameter 'raw_ber' must be a table")),
     };
+    let text_encoding = params
+        .opt_str(P_TEXT_ENCODING)?
+        .and_then(TextEncoding::from_name)
+        .unwrap_or(TextEncoding::Windows1252);
     let mut writer = Writer {
         doc,
         raws,
+        text_encoding,
         ordinal: 0,
     };
     let mut out = Vec::new();

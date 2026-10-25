@@ -15,9 +15,6 @@ const HEX: &[u8; 16] = b"0123456789abcdef";
 /// Writes the whole document with the given profile.
 pub(crate) fn write_document(doc: &SaveDoc, profile: &Profile) -> Result<Vec<u8>> {
     let mut out = Vec::new();
-    if profile.bom {
-        out.extend_from_slice(&[0xEF, 0xBB, 0xBF]);
-    }
     write_value(doc, doc.root(), profile, &mut out)?;
     if profile.trailing_newline {
         newline(profile, &mut out);
