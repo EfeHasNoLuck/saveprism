@@ -168,3 +168,10 @@ path = "fuzz_targets/structured_text.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "xor_lzf"
+path = "fuzz_targets/xor_lzf.rs"
+test = false
+doc = false
+bench = false
