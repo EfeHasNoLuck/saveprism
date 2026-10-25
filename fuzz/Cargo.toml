@@ -182,3 +182,24 @@ path = "fuzz_targets/odin.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "tjs2"
+path = "fuzz_targets/tjs2.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "gamemaker"
+path = "fuzz_targets/gamemaker.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "kirikiri"
+path = "fuzz_targets/kirikiri.rs"
+test = false
+doc = false
+bench = false

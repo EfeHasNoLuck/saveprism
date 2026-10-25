@@ -1,0 +1,11 @@
+{
+  "variables": {
+    "gold": 120,
+    "hp": 35,
+    "name": "Mira"
+  },
+  "switches": {
+    "met_guard": true
+  },
+  "version": 1
+}

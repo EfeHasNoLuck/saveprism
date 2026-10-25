@@ -1,6 +1,6 @@
 //! Byte layers: base64, hex, percent escapes, gzip, zlib, deflate, bzip2, zstd, xz, lzma, lz4,
-//! brotli, LZ-String, LZF, single/repeating-key XOR, the TyranoScript URL escape, the zip container
-//! and tar.
+//! brotli, LZ-String, LZF, single/repeating-key XOR, the KiriKiri text-stream wrapper, the
+//! TyranoScript URL escape, the zip container and tar.
 //!
 //! Every layer records the parameters it needs to wrap the inner bytes again exactly as they were.
 //! Compression layers also keep the original compressed bytes together with a digest of the
@@ -20,6 +20,7 @@ mod bzip2;
 mod deflate;
 mod gzip;
 mod hex;
+mod kirikiri;
 mod lz4;
 mod lzf;
 mod lzma;
@@ -39,6 +40,7 @@ pub use bzip2::Bzip2Layer;
 pub use deflate::DeflateLayer;
 pub use gzip::GzipLayer;
 pub use hex::HexLayer;
+pub use kirikiri::KirikiriLayer;
 pub use lz4::Lz4Layer;
 pub use lzf::LzfLayer;
 pub use lzma::LzmaLayer;
@@ -103,6 +105,7 @@ pub(crate) const INNER_HASH_PARAM: &str = "inner_hash";
 pub fn register(reg: &mut Registry) {
     reg.add_layer(Arc::new(Base64Layer));
     reg.add_layer(Arc::new(HexLayer));
+    reg.add_layer(Arc::new(KirikiriLayer));
     reg.add_layer(Arc::new(PercentLayer));
     reg.add_layer(Arc::new(GzipLayer));
     reg.add_layer(Arc::new(DeflateLayer));
@@ -291,6 +294,7 @@ mod tests {
             "compression.brotli",
             "compression.lzf",
             "obfuscation.xor",
+            "obfuscation.kirikiri",
             "compression.lz-string",
             "encoding.url-escape",
             "container.zip",
@@ -298,7 +302,7 @@ mod tests {
         ] {
             assert!(reg.is_layer(id), "{id} is not registered");
         }
-        assert_eq!(reg.layers().count(), 18);
+        assert_eq!(reg.layers().count(), 19);
     }
 
     #[test]
