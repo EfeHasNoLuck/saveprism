@@ -15,12 +15,13 @@
 //! signing, lives in memory only and is never logged. Nothing is executed.
 
 use std::fs;
+use std::io::Read as _;
 use std::path::{Path as FsPath, PathBuf};
 
 use saveprism_codecs::pickle::python_class;
 use saveprism_codecs::renpy::sign;
-use saveprism_codecs::renpy::{RENPY_KEY, SIGN_KEY_PARAM, SIGNED_PARAM};
-use saveprism_core::{Node, Path, Recipe, Value};
+use saveprism_codecs::renpy::{RENPY_KEY, SIGNATURES_PARAM, SIGNED_PARAM};
+use saveprism_core::{Node, Path, Recipe, Value, pipeline};
 
 use super::game::{At, Ctx, MAX_VALUE_ROWS, NoteKind, RowNote, UNLIMITED, ValueRow};
 use super::{ApiError, Session, app_codes, child_count, read_only_document};
@@ -37,61 +38,110 @@ const PERSISTENT_CLASS: &str = "renpy.persistent.Persistent";
 pub const NOTICE_SIGNED_SAVE: &str = "renpy-signed";
 /// Notice for a signed `persistent` file: it is open read-only.
 pub const NOTICE_SIGNED_PERSISTENT: &str = "renpy-persistent-signed";
-/// Notice when the player's own key signs the edited file.
+/// Notice when the player's own key signs the edited save.
 pub const NOTICE_KEY_SIGNED: &str = "renpy-key-signed";
+/// Notice when the player's own key signs the edited `persistent` data.
+pub const NOTICE_KEY_SIGNED_PERSISTENT: &str = "renpy-persistent-key-signed";
 
 /// File name of Ren'Py's key list (`savetoken.load_tokens`).
 const KEY_FILE: &str = "security_keys.txt";
+/// Largest key file read; a bigger file is treated as no key file at all.
+const MAX_KEY_FILE_BYTES: u64 = 64 * 1024;
+/// The portable save folder Ren'Py looks for above its own base (`renpy.py:path_to_saves`).
+const PORTABLE_DIR: &str = "Ren'Py Data";
 
-/// Where the player's key file comes from. Production reads the default Ren'Py folder; tests name
-/// a file of their own or turn the lookup off.
+/// Where the player's key file comes from. Production reads the folders Ren'Py itself uses; tests
+/// name a file of their own, turn the lookup off, or count the calls.
 #[derive(Clone, Debug)]
 pub(super) enum RenpyKeySource {
-    /// `%APPDATA%/RenPy/tokens/security_keys.txt` and the platform equivalents.
+    /// The token folder `renpy.py:path_to_saves` would use on this system.
     Default,
     /// An explicit file (or none); tests only.
     #[cfg(test)]
     At(Option<PathBuf>),
+    /// Records that it was asked; tests only.
+    #[cfg(test)]
+    Recording {
+        calls: std::sync::Arc<std::sync::atomic::AtomicUsize>,
+        path: Option<PathBuf>,
+    },
 }
 
 impl RenpyKeySource {
-    /// The key file to use, when it exists and holds at least one `signing-key` line.
-    pub(super) fn resolve(self) -> Option<PathBuf> {
+    /// The key file to use, when it exists and holds at least one `signing-key` line. `save` is the
+    /// open file, used to find a portable `Ren'Py Data` folder next to it.
+    pub(super) fn resolve(&self, save: &FsPath) -> Option<PathBuf> {
         match self {
-            RenpyKeySource::Default => default_key_file(),
+            RenpyKeySource::Default => default_key_file(save),
             #[cfg(test)]
-            RenpyKeySource::At(path) => path.filter(|path| key_file_works(path)),
+            RenpyKeySource::At(path) => path.as_ref().filter(|path| key_file_works(path)).cloned(),
+            #[cfg(test)]
+            RenpyKeySource::Recording { calls, path } => {
+                calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                path.as_ref().filter(|path| key_file_works(path)).cloned()
+            }
         }
     }
 }
 
-/// The Ren'Py token folder for this platform, the one `renpy.py:path_to_saves` builds.
-fn default_key_file() -> Option<PathBuf> {
+/// The Ren'Py token folder for this system, from `renpy.py:path_to_saves`: `RENPY_PATH_TO_SAVES`,
+/// then a portable `Ren'Py Data` folder next to the save, then the platform location. Windows has no
+/// `~/.renpy` folder.
+fn default_key_file(save: &FsPath) -> Option<PathBuf> {
     let mut candidates = Vec::new();
-    if let Some(appdata) = std::env::var_os("APPDATA") {
-        candidates.push(
-            PathBuf::from(appdata)
-                .join("RenPy")
-                .join("tokens")
-                .join(KEY_FILE),
-        );
+    if let Some(base) = std::env::var_os("RENPY_PATH_TO_SAVES") {
+        candidates.push(PathBuf::from(base).join("tokens").join(KEY_FILE));
     }
-    if let Some(home) = std::env::var_os("HOME").or_else(|| std::env::var_os("USERPROFILE")) {
-        let base = if cfg!(target_os = "macos") {
-            PathBuf::from(home).join("Library").join("RenPy")
-        } else {
-            PathBuf::from(home).join(".renpy")
-        };
-        candidates.push(base.join("tokens").join(KEY_FILE));
+    // The save may live in `<...>/Ren'Py Data/<save_directory>/`; the tokens are its sibling.
+    for ancestor in save.ancestors().skip(1) {
+        if ancestor.file_name().is_some_and(|name| name == PORTABLE_DIR) {
+            candidates.push(ancestor.join("tokens").join(KEY_FILE));
+        }
+    }
+    let home = || std::env::var_os("HOME").or_else(|| std::env::var_os("USERPROFILE"));
+    if cfg!(target_os = "windows") {
+        if let Some(appdata) = std::env::var_os("APPDATA") {
+            candidates.push(
+                PathBuf::from(appdata)
+                    .join("RenPy")
+                    .join("tokens")
+                    .join(KEY_FILE),
+            );
+        } else if let Some(home) = home() {
+            candidates.push(PathBuf::from(home).join("RenPy").join("tokens").join(KEY_FILE));
+        }
+    } else if cfg!(target_os = "macos") {
+        if let Some(home) = home() {
+            candidates.push(
+                PathBuf::from(home)
+                    .join("Library")
+                    .join("RenPy")
+                    .join("tokens")
+                    .join(KEY_FILE),
+            );
+        }
+    } else if let Some(home) = home() {
+        candidates.push(PathBuf::from(home).join(".renpy").join("tokens").join(KEY_FILE));
     }
     candidates.into_iter().find(|path| key_file_works(path))
 }
 
+/// Reads a key file, at most [`MAX_KEY_FILE_BYTES`]; a bigger or unreadable file is no key file.
+fn read_key_file(path: &FsPath) -> Option<String> {
+    let file = fs::File::open(path).ok()?;
+    let mut bytes = Vec::new();
+    file.take(MAX_KEY_FILE_BYTES.saturating_add(1))
+        .read_to_end(&mut bytes)
+        .ok()?;
+    if u64::try_from(bytes.len()).unwrap_or(u64::MAX) > MAX_KEY_FILE_BYTES {
+        return None;
+    }
+    String::from_utf8(bytes).ok()
+}
+
 /// True when `path` is a readable key file with at least one usable signing key.
 fn key_file_works(path: &FsPath) -> bool {
-    fs::read_to_string(path)
-        .ok()
-        .is_some_and(|text| !sign::parse_key_file(&text).is_empty())
+    read_key_file(path).is_some_and(|text| !sign::parse_key_file(&text).is_empty())
 }
 
 /// The error for a key file that was found when the save was opened but cannot be used now.
@@ -319,42 +369,63 @@ impl Session {
         match self.renpy_file()? {
             RenpyFile::Save { signed: true } if key => Some((
                 NOTICE_KEY_SIGNED,
-                "After you save changes, the save is signed with your own Ren'Py key, so the game opens it without asking whether to trust it.",
+                "After you save changes, the save is signed with your own Ren'Py key.",
             )),
             RenpyFile::Save { signed: true } => Some((
                 NOTICE_SIGNED_SAVE,
                 "After you save changes, the game asks whether to trust this save (it was made on another device). Answer Yes.",
             )),
             RenpyFile::Persistent { signed: true } if key => Some((
-                NOTICE_KEY_SIGNED,
-                "This Ren'Py persistent file is signed; changes are saved and signed again with your own Ren'Py key.",
+                NOTICE_KEY_SIGNED_PERSISTENT,
+                "This Ren'Py persistent data is signed; changes are saved and signed with your own Ren'Py key.",
             )),
             RenpyFile::Persistent { signed: true } => Some((
                 NOTICE_SIGNED_PERSISTENT,
-                "This Ren'Py persistent file is signed. The game would throw away an edited copy and start over, so it is open read-only.",
+                "This Ren'Py persistent data is signed. The game would throw away an edited copy and start over, so it is open read-only.",
             )),
             _ => None,
         }
     }
 
-    /// The recipe for a write: when the player's key is known, it is added to the save layer (an
-    /// edited save gets fresh `signatures`), or used to sign the uncompressed persistent data and
-    /// replace the zlib `trailing` signature. The key text lives in this copy only.
+    /// The recipe for a write: when the player's key is known and the file was signed before, a
+    /// fresh `signatures` text is made for the save layer, or the uncompressed persistent data is
+    /// signed and the zlib `trailing` signature replaced. The key text itself never enters the
+    /// recipe. An unchanged signed `persistent` keeps its original signature bytes.
     pub(super) fn renpy_recipe(&self, recipe: &Recipe) -> Result<Recipe, ApiError> {
         let Some(file) = self.renpy_file() else {
             return Ok(recipe.clone());
         };
+        // An unsigned file must not gain a signature: Ren'Py would start asking where it did not.
+        if matches!(
+            file,
+            RenpyFile::Save { signed: false } | RenpyFile::Persistent { signed: false }
+        ) {
+            return Ok(recipe.clone());
+        }
         let Some(path) = self.renpy_key.as_deref() else {
             return Ok(recipe.clone());
         };
-        let text = fs::read_to_string(path).map_err(|_| key_error(Some(path)))?;
+        let text = read_key_file(path).ok_or_else(|| key_error(Some(path)))?;
+        let keys = sign::parse_key_file(&text);
+        if keys.is_empty() {
+            return Err(key_error(Some(path)));
+        }
         let mut recipe = recipe.clone();
         match file {
             RenpyFile::Save { .. } => {
+                let Some(codec_step) = recipe.steps.last() else {
+                    return Err(key_error(Some(path)));
+                };
+                let codec = self
+                    .reg
+                    .codec(PICKLE_CODEC)
+                    .ok_or_else(ApiError::internal)?;
+                let inner = codec.encode(&self.doc, &codec_step.params)?;
+                let signatures = sign::sign_data(&inner, &keys);
                 let mut found = false;
                 for step in &mut recipe.steps {
                     if step.kind == SAVE_LAYER {
-                        step.params.set(SIGN_KEY_PARAM, text.clone());
+                        step.params.set(SIGNATURES_PARAM, signatures.clone());
                         found = true;
                     }
                 }
@@ -363,10 +434,6 @@ impl Session {
                 }
             }
             RenpyFile::Persistent { .. } => {
-                let keys = sign::parse_key_file(&text);
-                if keys.is_empty() {
-                    return Err(key_error(Some(path)));
-                }
                 let (codec_step, layer_steps) = recipe
                     .steps
                     .split_last_mut()
@@ -376,6 +443,9 @@ impl Session {
                     .codec(PICKLE_CODEC)
                     .ok_or_else(ApiError::internal)?;
                 let inner = codec.encode(&self.doc, &codec_step.params)?;
+                if self.original_inner().as_deref() == Some(inner.as_slice()) {
+                    return Ok(recipe);
+                }
                 let signatures = sign::sign_data(&inner, &keys);
                 let mut found = false;
                 for step in layer_steps.iter_mut() {
@@ -390,6 +460,13 @@ impl Session {
             }
         }
         Ok(recipe)
+    }
+
+    /// The pickle bytes of the opened file (the codec input), for comparing a re-encoding with it.
+    fn original_inner(&self) -> Option<Vec<u8>> {
+        pipeline::decode(&self.original, &self.recipe, &self.reg, &self.limits)
+            .ok()
+            .and_then(|out| out.frames.last().cloned())
     }
 
     /// The error for an edit or save of a read-only document.

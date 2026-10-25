@@ -53,7 +53,9 @@ pub use game::{
 use history::{DocStep, History, MAX_VALUES, Mutation, scalar_owned};
 pub use history::{HistoryResult, HistoryState};
 use renpy::RenpyKeySource;
-pub use renpy::{NOTICE_KEY_SIGNED, NOTICE_SIGNED_PERSISTENT, NOTICE_SIGNED_SAVE};
+pub use renpy::{
+    NOTICE_KEY_SIGNED, NOTICE_KEY_SIGNED_PERSISTENT, NOTICE_SIGNED_PERSISTENT, NOTICE_SIGNED_SAVE,
+};
 pub use sugarcube::SugarCubeView;
 
 #[cfg(test)]
@@ -402,8 +404,10 @@ pub struct Session {
     pasted: bool,
     /// The game data folder the player picked (the folder the names are read from), if any.
     data_folder: Option<PathBuf>,
-    /// The player's Ren'Py `security_keys.txt`, when it was found and holds a signing key. The key
-    /// itself is read only while signing; the path is all that is kept.
+    /// Where the player's Ren'Py `security_keys.txt` may be found. Only Ren'Py documents resolve it.
+    renpy_keys: RenpyKeySource,
+    /// The player's Ren'Py key file, when the document is Ren'Py and one was found. The key itself is
+    /// read only while signing; the path is all that is kept.
     renpy_key: Option<PathBuf>,
 }
 
@@ -755,8 +759,13 @@ impl Session {
             history: History::default(),
             pasted: false,
             data_folder: None,
-            renpy_key: keys.resolve(),
+            renpy_keys: keys,
+            renpy_key: None,
         };
+        // Only a Ren'Py document looks for the player's key file; every other format never touches it.
+        if session.renpy_file().is_some() {
+            session.renpy_key = session.renpy_keys.resolve(&session.path);
+        }
         // A signed Ren'Py persistent file is thrown away by the game after any change.
         if session.renpy_locked() {
             session.editable = false;
