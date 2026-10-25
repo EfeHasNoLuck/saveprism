@@ -1,6 +1,8 @@
 //! Byte layers: base64, hex, percent escapes, gzip, zlib, deflate, bzip2, zstd, xz, lzma, lz4,
 //! brotli, LZ-String, LZF, single/repeating-key XOR, the KiriKiri text-stream wrapper, the
 //! TyranoScript URL escape, the zip container and tar.
+//! brotli, LZ-String, LZF, single/repeating-key XOR, the TyranoScript URL escape, the zip and tar
+//! containers, PS1/PS2 memory cards, PS2 `.psu` exports and SharkPort GBA snapshots.
 //!
 //! Every layer records the parameters it needs to wrap the inner bytes again exactly as they were.
 //! Compression layers also keep the original compressed bytes together with a digest of the
@@ -26,6 +28,10 @@ mod lzf;
 mod lzma;
 mod lzstring;
 mod percent;
+mod ps2;
+mod psu;
+mod psx;
+mod sharkport;
 mod tar;
 mod url_escape;
 mod xor;
@@ -46,6 +52,12 @@ pub use lzf::LzfLayer;
 pub use lzma::LzmaLayer;
 pub use lzstring::LzStringLayer;
 pub use percent::PercentLayer;
+pub use ps2::{PS2_DAMAGED, PS2_NO_PAYLOAD, PS2_WRITE, Ps2CardLayer};
+pub use psu::{PSU_DAMAGED, PSU_NO_PAYLOAD, PSU_WRITE, PsuLayer};
+pub use psx::{
+    GME_DAMAGED, GME_WRITE, PSX_DAMAGED, PSX_NO_PAYLOAD, PSX_WRITE, PsxCardLayer, PsxGmeLayer,
+};
+pub use sharkport::{SPS_DAMAGED, SPS_UNSUPPORTED, SPS_WRITE, SharkPortLayer};
 pub use tar::{TAR_DAMAGED, TAR_NO_PAYLOAD, TAR_WRITE, TarLayer};
 pub use url_escape::UrlEscapeLayer;
 pub use xor::XorLayer;
@@ -122,6 +134,10 @@ pub fn register(reg: &mut Registry) {
     reg.add_layer(Arc::new(UrlEscapeLayer));
     zip::register(reg);
     tar::register(reg);
+    psx::register(reg);
+    ps2::register(reg);
+    psu::register(reg);
+    sharkport::register(reg);
 }
 
 /// 64-bit FNV-1a digest of `data`.
@@ -302,7 +318,7 @@ mod tests {
         ] {
             assert!(reg.is_layer(id), "{id} is not registered");
         }
-        assert_eq!(reg.layers().count(), 19);
+        assert_eq!(reg.layers().count(), 24);
     }
 
     #[test]
@@ -333,6 +349,20 @@ mod tests {
         assert_eq!(TAR_DAMAGED.as_str(), "SP-TAR-001");
         assert_eq!(TAR_NO_PAYLOAD.as_str(), "SP-TAR-002");
         assert_eq!(TAR_WRITE.as_str(), "SP-TAR-003");
+        assert_eq!(PSX_DAMAGED.as_str(), "SP-PSX-001");
+        assert_eq!(PSX_WRITE.as_str(), "SP-PSX-002");
+        assert_eq!(PSX_NO_PAYLOAD.as_str(), "SP-PSX-003");
+        assert_eq!(GME_DAMAGED.as_str(), "SP-GME-001");
+        assert_eq!(GME_WRITE.as_str(), "SP-GME-002");
+        assert_eq!(PS2_DAMAGED.as_str(), "SP-PS2-001");
+        assert_eq!(PS2_WRITE.as_str(), "SP-PS2-002");
+        assert_eq!(PS2_NO_PAYLOAD.as_str(), "SP-PS2-003");
+        assert_eq!(PSU_DAMAGED.as_str(), "SP-PSU-001");
+        assert_eq!(PSU_NO_PAYLOAD.as_str(), "SP-PSU-002");
+        assert_eq!(PSU_WRITE.as_str(), "SP-PSU-003");
+        assert_eq!(SPS_DAMAGED.as_str(), "SP-SPS-001");
+        assert_eq!(SPS_UNSUPPORTED.as_str(), "SP-SPS-002");
+        assert_eq!(SPS_WRITE.as_str(), "SP-SPS-003");
     }
 
     #[test]
@@ -358,7 +388,7 @@ mod tests {
             std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../fixtures/synthetic");
         let mut paths = Vec::new();
         files(&root, &mut paths);
-        let new_layers: [&dyn Layer; 9] = [
+        let new_layers: [&dyn Layer; 14] = [
             &Bzip2Layer,
             &ZstdLayer,
             &XzLayer,
@@ -368,6 +398,11 @@ mod tests {
             &HexLayer,
             &PercentLayer,
             &TarLayer,
+            &PsxCardLayer,
+            &PsxGmeLayer,
+            &Ps2CardLayer,
+            &PsuLayer,
+            &SharkPortLayer,
         ];
         let ctx = SniffCtx::default();
         let mut failures = Vec::new();
@@ -377,7 +412,7 @@ mod tests {
                 .unwrap_or(&path)
                 .to_string_lossy()
                 .replace('\\', "/");
-            if relative.starts_with("layers/") {
+            if relative.starts_with("layers/") || relative.starts_with("console/") {
                 continue;
             }
             let Ok(bytes) = std::fs::read(&path) else {

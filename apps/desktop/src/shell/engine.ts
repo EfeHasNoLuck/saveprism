@@ -10,6 +10,14 @@ const EXTENSION_LABELS: Record<string, string> = {
   es3: "Easy Save 3",
   rsv: "RAGS",
   sav: "SAV",
+  mcr: "PS1 memory card",
+  mcd: "Memory card",
+  mem: "PS1 memory card",
+  gme: "PS1 memory card (.gme)",
+  ps2: "PS2 memory card",
+  psu: "PS2 .psu",
+  sps: "SharkPort GBA",
+  xps: "X-Port GBA",
   sol: "Flash",
   reg: "Registry (.reg)",
   sqlite: "SQLite",
@@ -64,6 +72,11 @@ const CODEC_LABELS: Record<string, string> = {
   "format.yaml": "YAML",
   "format.csv": "CSV",
   "format.plist": "Property list",
+  "container.psx-card": "PS1 memory card",
+  "container.psx-gme": "PS1 memory card (.gme)",
+  "container.ps2-card": "PS2 memory card",
+  "container.psu": "PS2 .psu",
+  "container.sharkport": "SharkPort GBA",
 };
 
 const ENGINE_LABELS: Record<string, string> = {

@@ -29,6 +29,7 @@ pub mod pickle;
 pub mod plist;
 pub mod properties;
 pub mod qsp;
+pub mod raw;
 pub mod reg;
 pub mod renpy;
 pub mod rpgmaker;
@@ -53,6 +54,7 @@ pub fn resolve_text_encoding(label: &str) -> Option<&'static str> {
 /// Registers every layer and codec of this crate into `reg`.
 pub fn register_all(reg: &mut Registry) {
     layers::register(reg);
+    raw::register(reg);
     msgpack::register(reg);
     cbor::register(reg);
     bson::register(reg);
