@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { useNotify } from "./context";
 import { describeError } from "./errors";
+import { translatePathPlaceholders, type PlaceholderLabels } from "./locations";
 
 type LocationsState =
   | { status: "loading" }
@@ -31,12 +32,19 @@ export function SaveLocationsDialog({ onClose }: SaveLocationsDialogProps) {
   const { t } = useTranslation();
   const { notify } = useNotify();
   const [state, setState] = useState<LocationsState>({ status: "loading" });
+  // The host sends `<game folder>`, `<game>` and `<company>` as they are; only the display text is
+  // translated, so a path the player copies or opens is unchanged.
+  const labels: PlaceholderLabels = {
+    gameFolder: t("locations.placeholder.gameFolder"),
+    game: t("locations.placeholder.game"),
+    company: t("locations.placeholder.company"),
+  };
 
   /** Opens a folder in Explorer; a refusal is reported as a toast. */
   function openFolder(folder: string) {
     if (folder === "") return;
     void openSaveLocation(folder).catch((error: unknown) => {
-      const { reason, fix } = describeError(error);
+      const { reason, fix } = describeError(error, t);
       notify({
         kind: "error",
         title: t("locations.openFailed"),
@@ -51,7 +59,7 @@ export function SaveLocationsDialog({ onClose }: SaveLocationsDialogProps) {
       .then((locations) => !cancelled && setState({ status: "ready", locations }))
       .catch((error: unknown) => {
         if (cancelled) return;
-        const { reason, fix } = describeError(error);
+        const { reason, fix } = describeError(error, t);
         setState({
           status: "error",
           message: `${t("locations.failed")} ${t("toast.errorDetail", { reason, fix })}`.trim(),
@@ -91,33 +99,43 @@ export function SaveLocationsDialog({ onClose }: SaveLocationsDialogProps) {
                 <p className="text-[0.6875rem] text-muted-foreground">
                   {t(`locations.note.${location.engine}`)}
                 </p>
-                {location.paths.map((path) => (
-                  <div key={path.shown} className="flex min-w-0 items-center gap-2">
-                    <span
-                      className="min-w-0 flex-1 truncate font-mono text-[0.6875rem] text-foreground-variant"
-                      title={path.shown}
-                    >
-                      {path.shown}
+                {location.paths.length === 0 ? (
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span className="min-w-0 flex-1 text-[0.6875rem] text-foreground-variant">
+                      {t("locations.inBrowser")}
                     </span>
-                    {path.folder !== null ? (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="shrink-0"
-                        onClick={() => {
-                          openFolder(path.folder ?? "");
-                        }}
-                      >
-                        <FolderOpen />
-                        {t("locations.openFolder")}
-                      </Button>
-                    ) : (
-                      <span className="shrink-0 text-[0.625rem] text-muted-foreground">
-                        {t("locations.notFound")}
-                      </span>
-                    )}
                   </div>
-                ))}
+                ) : null}
+                {location.paths.map((path) => {
+                  const shown = translatePathPlaceholders(path.shown, labels);
+                  return (
+                    <div key={path.shown} className="flex min-w-0 items-center gap-2">
+                      <span
+                        className="min-w-0 flex-1 truncate font-mono text-[0.6875rem] text-foreground-variant"
+                        title={shown}
+                      >
+                        {shown}
+                      </span>
+                      {path.folder !== null ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="shrink-0"
+                          onClick={() => {
+                            openFolder(path.folder ?? "");
+                          }}
+                        >
+                          <FolderOpen />
+                          {t("locations.openFolder")}
+                        </Button>
+                      ) : (
+                        <span className="shrink-0 text-[0.625rem] text-muted-foreground">
+                          {t("locations.notFound")}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
               </section>
             ))}
           </div>

@@ -58,7 +58,7 @@ export function AboutDialog({ open, onOpenChange }: AboutDialogProps) {
 
   const showNotices = () => {
     openNotices().catch((error: unknown) => {
-      const { reason, fix } = describeError(error);
+      const { reason, fix } = describeError(error, t);
       notify({
         kind: "error",
         title: t("about.noticesFailed"),

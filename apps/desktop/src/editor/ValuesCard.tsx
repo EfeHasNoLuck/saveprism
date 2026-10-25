@@ -277,8 +277,12 @@ function GroupBlock({
   const [open, setOpen] = useState(defaultOpen);
   const changed = countPendingUnder(pending, node.path);
   const q = query.trim().toLowerCase();
+  // Open for a value inside the group and for the group itself (a compare row that names a whole
+  // container has no row of its own, so its values are shown instead).
   const wanted =
-    reveal !== null && reveal.path.startsWith(`${node.path}/`) ? reveal.nonce : null;
+    reveal !== null && (reveal.path === node.path || reveal.path.startsWith(`${node.path}/`))
+      ? reveal.nonce
+      : null;
   useEffect(() => {
     if (wanted === null) return;
     const handle = window.requestAnimationFrame(() => setOpen(true));

@@ -119,7 +119,7 @@ function App() {
 
   const notifyError = useCallback(
     (title: string, error: unknown) => {
-      const { reason, fix } = describeError(error);
+      const { reason, fix } = describeError(error, t);
       notify({
         kind: "error",
         title,
@@ -575,7 +575,7 @@ function App() {
     exportJson()
       .then((text) => setJsonState({ status: "ready", text }))
       .catch((error: unknown) => {
-        const { reason, fix } = describeError(error);
+        const { reason, fix } = describeError(error, t);
         setJsonState({
           status: "error",
           message: `${t("json.failed")} ${t("toast.errorDetail", { reason, fix })}`.trim(),
@@ -604,7 +604,7 @@ function App() {
       try {
         setJsonState({ status: "ready", text: await exportJson() });
       } catch (error) {
-        const { reason, fix } = describeError(error);
+        const { reason, fix } = describeError(error, t);
         setJsonState({
           status: "error",
           message: `${t("json.failed")} ${t("toast.errorDetail", { reason, fix })}`.trim(),

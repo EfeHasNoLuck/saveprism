@@ -1,7 +1,28 @@
 // @vitest-environment node
+import type { TFunction } from "i18next";
 import { describe, expect, it } from "vitest";
 import { baseName, dirName, engineLabel, exportFileName } from "./engine";
-import { capitalize, describeError } from "./errors";
+import { capitalize, describeError, errorParams } from "./errors";
+
+const MESSAGES: Record<string, string> = {
+  "errors.codes.SP-APP-002.reason": "no file is open",
+  "errors.codes.SP-APP-002.fix": "Open a save file first.",
+  "errors.codes.SP-APP-005.reason": "{{value}} is outside the allowed range for this field",
+  "errors.codes.SP-APP-005.reasonPlain": "the number is outside the allowed range for this field",
+  "errors.codes.SP-APP-005.fix": "Type a number inside the range shown for the field.",
+  "errors.codes.SP-DET-001.reason": "SavePrism does not know this file yet",
+  "errors.codes.SP-DET-001.fix": "Attach a sample file to an issue so support can be added.",
+};
+
+/** A tiny stand-in for i18next's `t`: key lookup, `defaultValue` and `{{name}}` interpolation. */
+function fakeT(key: string, options?: Record<string, unknown>): string {
+  const template =
+    MESSAGES[key] ?? (typeof options?.defaultValue === "string" ? options.defaultValue : "");
+  return template.replace(/\{\{(\w+)\}\}/g, (_, name: string) =>
+    String(options?.[name] ?? ""),
+  );
+}
+const t = fakeT as unknown as TFunction;
 
 describe("describeError", () => {
   it("splits a host error into reason and fix", () => {
@@ -14,6 +35,51 @@ describe("describeError", () => {
     expect(parts.fix).toBe("Open a save file first.");
   });
 
+  it("uses the translated text of a known code", () => {
+    const parts = describeError(
+      { code: "SP-APP-002", message: "no file is open", hint: "Open a save file first." },
+      t,
+    );
+    expect(parts.reason).toBe("No file is open (SP-APP-002).");
+    expect(parts.fix).toBe("Open a save file first.");
+  });
+
+  it("greets an unknown file in plain words", () => {
+    const parts = describeError(
+      {
+        code: "SP-DET-001",
+        message: "no layer or codec matched after 3 trial decodes",
+        hint: "Attach a sample file to an issue so support can be added.",
+      },
+      t,
+    );
+    expect(parts.reason).toBe("SavePrism does not know this file yet (SP-DET-001).");
+    expect(parts.fix).not.toMatch(/layer|codec|trial decode/i);
+  });
+
+  it("fills the parameters of a translated error from the host message", () => {
+    const parts = describeError(
+      {
+        code: "SP-APP-005",
+        message: "120 is outside the range of this value (0 to 99)",
+        hint: "Type a number from 0 to 99.",
+      },
+      t,
+    );
+    expect(parts.reason).toBe(
+      "120 is outside the allowed range for this field (SP-APP-005).",
+    );
+  });
+
+  it("falls back to the host text for an unknown code", () => {
+    const parts = describeError(
+      { code: "SP-XXX-999", message: "something broke", hint: "Try again." },
+      t,
+    );
+    expect(parts.reason).toBe("Something broke (SP-XXX-999).");
+    expect(parts.fix).toBe("Try again.");
+  });
+
   it("shows other values as plain text", () => {
     expect(describeError(new Error("boom")).reason).toBe("Boom.");
     expect(describeError("plain").fix).toBe("");
@@ -23,6 +89,35 @@ describe("describeError", () => {
   it("capitalizes only the first letter", () => {
     expect(capitalize("abc def")).toBe("Abc def");
     expect(capitalize("")).toBe("");
+  });
+});
+
+describe("errorParams", () => {
+  it("reads the value of a bad or duplicate value", () => {
+    expect(errorParams("SP-APP-004", '"abc" is not a whole number')).toEqual({ value: "abc" });
+    expect(errorParams("SP-APP-020", '"gold" is there already')).toEqual({ value: "gold" });
+  });
+
+  it("reads the value and range of an out-of-range number", () => {
+    expect(errorParams("SP-APP-005", "120 is outside the range of this value (0 to 99)")).toEqual({
+      value: "120",
+      low: "0",
+      high: "99",
+    });
+    expect(errorParams("SP-APP-005", "100 is outside the range of a count (1 to 99)")).toEqual({
+      value: "100",
+    });
+  });
+
+  it("reads the name of a missing backup", () => {
+    expect(errorParams("SP-APP-013", 'there is no backup "x.bak" of this file')).toEqual({
+      name: "x.bak",
+    });
+  });
+
+  it("gives null for a code or message without parameters", () => {
+    expect(errorParams("SP-APP-002", "no file is open")).toBeNull();
+    expect(errorParams("SP-APP-005", "something else")).toBeNull();
   });
 });
 

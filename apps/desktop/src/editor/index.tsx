@@ -23,6 +23,7 @@ import {
   type GameView,
   type HistoryState,
 } from "@/api/commands";
+import { pickRevealTarget } from "@/shell/compare";
 import { useNotify } from "@/shell/context";
 import { describeError } from "@/shell/errors";
 import {
@@ -123,7 +124,7 @@ export function EditorView({
 
   const reportCommandError = useCallback(
     (titleKey: string, error: unknown) => {
-      const { reason, fix } = describeError(error);
+      const { reason, fix } = describeError(error, tc);
       notify({
         kind: "error",
         title: tc(titleKey),
@@ -194,24 +195,33 @@ export function EditorView({
   );
 
   // Scrolls to the value the app asked for. The groups along the way open themselves, so this
-  // waits a few frames for the rows to appear.
+  // waits a few frames for the rows to appear. A compare row can name a whole container with no
+  // row of its own: the nearest shown ancestor, else the first shown descendant, is used instead.
   useEffect(() => {
     if (reveal === null) return;
     let frame = 0;
     let handle = 0;
-    const find = (): HTMLElement | null => {
+    const shown = (): Map<string, HTMLElement> => {
+      const found = new Map<string, HTMLElement>();
       for (const element of document.querySelectorAll<HTMLElement>("[data-field-path]")) {
-        if (element.dataset.fieldPath === reveal.path) return element;
+        const path = element.dataset.fieldPath;
+        if (path !== undefined && !found.has(path)) found.set(path, element);
       }
-      return null;
+      return found;
     };
     const tick = () => {
-      const element = find();
-      if (element !== null) {
-        element.scrollIntoView({ block: "center", behavior: "smooth" });
-        const control = element.querySelector<HTMLElement>("input, button");
-        control?.focus({ preventScroll: true });
-        return;
+      const elements = shown();
+      const target = pickRevealTarget(reveal.path, [...elements.keys()]);
+      // Give an exact row the frames it needs; a stand-in is only taken once it is clear the row
+      // itself cannot appear (its container has to open first, which takes a few frames too).
+      if (target !== null && (target === reveal.path || frame >= 40)) {
+        const element = elements.get(target);
+        if (element !== undefined) {
+          element.scrollIntoView({ block: "center", behavior: "smooth" });
+          const control = element.querySelector<HTMLElement>("input, button");
+          control?.focus({ preventScroll: true });
+          return;
+        }
       }
       frame += 1;
       if (frame < 120) handle = window.requestAnimationFrame(tick);

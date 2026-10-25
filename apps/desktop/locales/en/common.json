@@ -184,6 +184,12 @@
     "description": "SavePrism does not scan your PC. These are the usual places; open one and look for the game's folder. <game> and <company> stand for the game's own folder names.",
     "openFolder": "Open folder",
     "notFound": "Not found on this PC",
+    "inBrowser": "In the browser's own storage",
+    "placeholder": {
+      "gameFolder": "game folder",
+      "game": "game",
+      "company": "company"
+    },
     "openFailed": "The folder could not be opened",
     "failed": "The save locations could not be read.",
     "engine": {
@@ -276,6 +282,222 @@
     "addFailed": "The entry could not be added",
     "removeFailed": "The entry could not be removed",
     "dataFolderFailed": "The data folder could not be read"
+  },
+  "errors": {
+    "codes": {
+      "SP-APP-001": {
+        "reason": "SavePrism could not start",
+        "fix": "Restart SavePrism. If it keeps happening, report the code on the issue tracker."
+      },
+      "SP-APP-002": {
+        "reason": "no file is open",
+        "fix": "Open a save file first."
+      },
+      "SP-APP-003": {
+        "reason": "this file is read-only, so it cannot be saved",
+        "fix": "Open a copy of the file, or wait for support for this format."
+      },
+      "SP-APP-004": {
+        "reason": "\"{{value}}\" is not valid for this field",
+        "reasonPlain": "the value is not valid for this field",
+        "fix": "Type a value that fits the field's type."
+      },
+      "SP-APP-005": {
+        "reason": "{{value}} is outside the allowed range for this field",
+        "reasonPlain": "the number is outside the allowed range for this field",
+        "fix": "Type a number inside the range shown for the field."
+      },
+      "SP-APP-006": {
+        "reason": "a file with that name is already there",
+        "fix": "Pick another name or another folder."
+      },
+      "SP-APP-007": {
+        "reason": "this value cannot be edited",
+        "fix": "Open the container and pick one of its values."
+      },
+      "SP-APP-008": {
+        "reason": "the JSON export needs a different name",
+        "fix": "Choose a name ending in .json that is not the open save file."
+      },
+      "SP-APP-009": {
+        "reason": "SavePrism could not use its own state",
+        "fix": "Restart SavePrism."
+      },
+      "SP-APP-010": {
+        "reason": "the JSON text is not valid",
+        "fix": "Fix the highlighted place and apply again."
+      },
+      "SP-APP-011": {
+        "reason": "the JSON text changes more than values",
+        "fix": "Change only values; leave field names, list items and placeholders as they are."
+      },
+      "SP-APP-012": {
+        "reason": "the third-party notices could not be opened",
+        "fix": "Read them in the SavePrism install folder."
+      },
+      "SP-APP-013": {
+        "reason": "there is no backup \"{{name}}\" of this file",
+        "reasonPlain": "that backup is no longer there",
+        "fix": "Open the backups list again."
+      },
+      "SP-APP-014": {
+        "reason": "that backup does not open as a save",
+        "fix": "Nothing was written. Pick another backup."
+      },
+      "SP-APP-015": {
+        "reason": "that is too many values for one change",
+        "fix": "Change fewer values at once."
+      },
+      "SP-APP-016": {
+        "reason": "the save code is empty",
+        "fix": "Paste the whole code the game gave you."
+      },
+      "SP-APP-017": {
+        "reason": "this save has no code to copy",
+        "fix": "Use Save as to keep the edited file."
+      },
+      "SP-APP-018": {
+        "reason": "that folder does not hold the game's data",
+        "fix": "Pick the game's data folder or its game folder."
+      },
+      "SP-APP-019": {
+        "reason": "this save has no sections that take names from a data folder",
+        "fix": "Open an RPG Maker save to use game names."
+      },
+      "SP-APP-020": {
+        "reason": "\"{{value}}\" is already there",
+        "reasonPlain": "that entry is already there",
+        "fix": "Pick another name, or change the value that is there."
+      },
+      "SP-APP-021": {
+        "reason": "nothing can be added here",
+        "fix": "Add values in a JSON, Easy Save 3, SugarCube or RPG Maker list."
+      },
+      "SP-APP-022": {
+        "reason": "this entry cannot be removed",
+        "fix": "Set it to 0, empty or off instead."
+      },
+      "SP-APP-023": {
+        "reason": "the file changed on disk after you opened it",
+        "fix": "Open the file again, or use Save as to keep your edits."
+      },
+      "SP-APP-024": {
+        "reason": "an AI tool sent a value SavePrism cannot use",
+        "fix": "Check the tool's arguments and try again."
+      },
+      "SP-APP-025": {
+        "reason": "the file to compare with is encrypted, so it cannot be read",
+        "fix": "Compare with an unencrypted copy of the save instead."
+      },
+      "SP-APP-026": {
+        "reason": "the folder could not be opened",
+        "fix": "Open it by hand in File Explorer."
+      },
+      "SP-DET-001": {
+        "reason": "SavePrism does not know this file yet",
+        "fix": "Attach a sample file to an issue so support can be added."
+      },
+      "SP-DET-002": {
+        "reason": "SavePrism could not work out this file",
+        "fix": "Try again with a smaller or unencrypted copy."
+      },
+      "SP-ES3-001": {
+        "reason": "this is not an Easy Save 3 file",
+        "fix": "Check that you picked the game's save file."
+      },
+      "SP-ES3-002": {
+        "reason": "this Easy Save 3 file holds something SavePrism cannot write",
+        "fix": "Open it read-only, or report a sample on the issue tracker."
+      },
+      "SP-ES3-003": {
+        "reason": "this encrypted Easy Save 3 file is damaged",
+        "fix": "Restore it from a backup or from the game and try again."
+      },
+      "SP-ES3-004": {
+        "reason": "that password did not open the file",
+        "fix": "Check the password in the game's Easy Save settings and try again."
+      },
+      "SP-ES3-005": {
+        "reason": "this file is encrypted and needs its password",
+        "fix": "Enter the password used by the game and open the file again."
+      },
+      "SP-CORE-006": {
+        "reason": "the file is too large",
+        "fix": "Open a smaller file."
+      },
+      "SP-CORE-007": {
+        "reason": "the file expands to too much data",
+        "fix": "The file may be damaged; try another copy."
+      },
+      "SP-CORE-008": {
+        "reason": "the file is nested too deeply",
+        "fix": "The file may be damaged; try another copy."
+      },
+      "SP-CORE-009": {
+        "reason": "the file holds too many values",
+        "fix": "Try another copy of the file."
+      },
+      "SP-CORE-010": {
+        "reason": "the file has too many layers",
+        "fix": "Try another copy of the file."
+      },
+      "SP-CORE-011": {
+        "reason": "that value is no longer in the file",
+        "fix": "Pick the value again from the tree; the path may have changed."
+      },
+      "SP-CORE-012": {
+        "reason": "the change could not be applied",
+        "fix": "Try again; if it keeps failing, report the code on the issue tracker."
+      },
+      "SP-CORE-013": {
+        "reason": "this value is read-only",
+        "fix": "This value cannot be changed."
+      },
+      "SP-IO-001": {
+        "reason": "the backup could not be made",
+        "fix": "Check free disk space and the backup folder's permissions. Nothing was written."
+      },
+      "SP-IO-002": {
+        "reason": "the temporary file could not be written",
+        "fix": "Close the game and other programs that use the file, then try again."
+      },
+      "SP-IO-003": {
+        "reason": "the file could not be replaced",
+        "fix": "Close the game and other programs that use the file, check that it is not read-only, then try again."
+      },
+      "SP-IO-004": {
+        "reason": "the saved file did not check out, so the backup was restored",
+        "fix": "Your save is unchanged."
+      },
+      "SP-IO-005": {
+        "reason": "the saved file did not check out and the backup could not be restored",
+        "fix": "Restore the file from the backup folder by hand and report the code on the issue tracker."
+      },
+      "SP-IO-006": {
+        "reason": "no backup folder could be found",
+        "fix": "Check that your user profile folder is available, then try again."
+      },
+      "SP-IO-007": {
+        "reason": "the file could not be read",
+        "fix": "Check that the file exists and can be read, then try again."
+      },
+      "SP-RENPY-001": {
+        "reason": "this Ren'Py save is not a file SavePrism can read",
+        "fix": "Open the save the game wrote, not a copy from another game."
+      },
+      "SP-RENPY-002": {
+        "reason": "this Ren'Py save holds something SavePrism cannot write",
+        "fix": "Open it read-only, or report a sample on the issue tracker."
+      },
+      "SP-RENPY-003": {
+        "reason": "this Ren'Py save could not be written",
+        "fix": "Open it read-only and keep a copy of the file."
+      },
+      "SP-RENPY-004": {
+        "reason": "the Ren'Py key file could not be read",
+        "fix": "Check that security_keys.txt exists and has a signing-key line, then open the save again."
+      }
+    }
   },
   "bell": {
     "title": "This session",

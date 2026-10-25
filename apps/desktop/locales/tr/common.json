@@ -181,9 +181,15 @@
   },
   "locations": {
     "title": "Kaydım nerede?",
-    "description": "SavePrism bilgisayarını taramaz. Bunlar olağan konumlardır; birini açıp oyunun klasörünü bul. <game> ve <company> oyunun kendi klasör adlarının yerini tutar.",
+    "description": "SavePrism bilgisayarını taramaz. Bunlar olağan konumlardır; birini açıp oyunun klasörünü bul. <Oyun> ve <Şirket> oyunun kendi klasör adlarının yerini tutar.",
     "openFolder": "Klasörü aç",
     "notFound": "Bu bilgisayarda yok",
+    "inBrowser": "Tarayıcının kendi deposunda",
+    "placeholder": {
+      "gameFolder": "Oyun klasörü",
+      "game": "Oyun",
+      "company": "Şirket"
+    },
     "openFailed": "Klasör açılamadı",
     "failed": "Kayıt konumları okunamadı.",
     "engine": {
@@ -276,6 +282,222 @@
     "addFailed": "Kayıt eklenemedi",
     "removeFailed": "Değer kaldırılamadı",
     "dataFolderFailed": "Veri klasörü okunamadı"
+  },
+  "errors": {
+    "codes": {
+      "SP-APP-001": {
+        "reason": "SavePrism başlatılamadı",
+        "fix": "SavePrism'i yeniden başlat. Sorun sürerse kodu hata takipçisinde bildir."
+      },
+      "SP-APP-002": {
+        "reason": "açık bir dosya yok",
+        "fix": "Önce bir kayıt dosyası aç."
+      },
+      "SP-APP-003": {
+        "reason": "bu dosya salt okunur, bu yüzden kaydedilemiyor",
+        "fix": "Dosyanın bir kopyasını aç ya da bu biçim için desteğin gelmesini bekle."
+      },
+      "SP-APP-004": {
+        "reason": "\"{{value}}\" bu alan için geçerli değil",
+        "reasonPlain": "değer bu alan için geçerli değil",
+        "fix": "Alanın türüne uyan bir değer yaz."
+      },
+      "SP-APP-005": {
+        "reason": "{{value}} bu alan için izin verilen aralığın dışında",
+        "reasonPlain": "sayı bu alan için izin verilen aralığın dışında",
+        "fix": "Alan için gösterilen aralıkta bir sayı yaz."
+      },
+      "SP-APP-006": {
+        "reason": "bu adda bir dosya zaten var",
+        "fix": "Başka bir ad ya da klasör seç."
+      },
+      "SP-APP-007": {
+        "reason": "bu değer düzenlenemiyor",
+        "fix": "Kapsayıcıyı açıp içindeki değerlerden birini seç."
+      },
+      "SP-APP-008": {
+        "reason": "JSON dışa aktarması için başka bir ad gerekiyor",
+        "fix": ".json ile biten ve açık kayıt dosyası olmayan bir ad seç."
+      },
+      "SP-APP-009": {
+        "reason": "SavePrism kendi durumunu kullanamadı",
+        "fix": "SavePrism'i yeniden başlat."
+      },
+      "SP-APP-010": {
+        "reason": "JSON metni geçerli değil",
+        "fix": "İşaretli yeri düzeltip tekrar uygula."
+      },
+      "SP-APP-011": {
+        "reason": "JSON metni yalnızca değerleri değiştirmiyor",
+        "fix": "Yalnızca değerleri değiştir; alan adlarını, liste öğelerini ve yer tutucuları olduğu gibi bırak."
+      },
+      "SP-APP-012": {
+        "reason": "üçüncü taraf bildirimleri açılamadı",
+        "fix": "SavePrism kurulum klasöründen oku."
+      },
+      "SP-APP-013": {
+        "reason": "bu dosyanın \"{{name}}\" adlı yedeği yok",
+        "reasonPlain": "o yedek artık yok",
+        "fix": "Yedekler listesini yeniden aç."
+      },
+      "SP-APP-014": {
+        "reason": "o yedek bir kayıt olarak açılmıyor",
+        "fix": "Hiçbir şey yazılmadı. Başka bir yedek seç."
+      },
+      "SP-APP-015": {
+        "reason": "tek bir değişiklik için çok fazla değer var",
+        "fix": "Tek seferde daha az değer değiştir."
+      },
+      "SP-APP-016": {
+        "reason": "kayıt kodu boş",
+        "fix": "Oyunun verdiği kodun tamamını yapıştır."
+      },
+      "SP-APP-017": {
+        "reason": "bu kaydın kopyalanacak kodu yok",
+        "fix": "Düzenlenen dosyayı saklamak için Farklı kaydet'i kullan."
+      },
+      "SP-APP-018": {
+        "reason": "o klasör oyunun verisini içermiyor",
+        "fix": "Oyunun veri klasörünü ya da oyun klasörünü seç."
+      },
+      "SP-APP-019": {
+        "reason": "bu kayıtta veri klasöründen ad alan bölümler yok",
+        "fix": "Oyun adlarını kullanmak için bir RPG Maker kaydı aç."
+      },
+      "SP-APP-020": {
+        "reason": "\"{{value}}\" zaten var",
+        "reasonPlain": "bu kayıt zaten var",
+        "fix": "Başka bir ad seç ya da oradaki değeri değiştir."
+      },
+      "SP-APP-021": {
+        "reason": "buraya hiçbir şey eklenemiyor",
+        "fix": "JSON, Easy Save 3, SugarCube veya RPG Maker listesine değer ekle."
+      },
+      "SP-APP-022": {
+        "reason": "bu kayıt kaldırılamıyor",
+        "fix": "Bunun yerine 0, boş ya da kapalı yap."
+      },
+      "SP-APP-023": {
+        "reason": "dosya sen açtıktan sonra diskte değişti",
+        "fix": "Dosyayı yeniden aç ya da değişikliklerini saklamak için Farklı kaydet'i kullan."
+      },
+      "SP-APP-024": {
+        "reason": "bir AI aracı SavePrism'in kullanamayacağı bir değer gönderdi",
+        "fix": "Aracın bağımsız değişkenlerini kontrol edip tekrar dene."
+      },
+      "SP-APP-025": {
+        "reason": "karşılaştırılacak dosya şifreli, bu yüzden okunamıyor",
+        "fix": "Bunun yerine kaydın şifresiz bir kopyasıyla karşılaştır."
+      },
+      "SP-APP-026": {
+        "reason": "klasör açılamadı",
+        "fix": "Dosya Gezgini'nde elle aç."
+      },
+      "SP-DET-001": {
+        "reason": "SavePrism bu dosyayı henüz tanımıyor",
+        "fix": "Destek eklenebilmesi için bir sorun kaydına örnek dosya ekle."
+      },
+      "SP-DET-002": {
+        "reason": "SavePrism bu dosyayı çözemedi",
+        "fix": "Daha küçük ya da şifresiz bir kopyayla tekrar dene."
+      },
+      "SP-ES3-001": {
+        "reason": "bu bir Easy Save 3 dosyası değil",
+        "fix": "Oyunun kayıt dosyasını seçtiğinden emin ol."
+      },
+      "SP-ES3-002": {
+        "reason": "bu Easy Save 3 dosyası SavePrism'in yazamayacağı bir şey içeriyor",
+        "fix": "Salt okunur aç ya da sorun kaydına bir örnek bildir."
+      },
+      "SP-ES3-003": {
+        "reason": "bu şifreli Easy Save 3 dosyası hasarlı",
+        "fix": "Yedekten ya da oyundan geri yükleyip tekrar dene."
+      },
+      "SP-ES3-004": {
+        "reason": "bu parola dosyayı açmadı",
+        "fix": "Oyunun Easy Save ayarlarındaki parolayı kontrol edip tekrar dene."
+      },
+      "SP-ES3-005": {
+        "reason": "bu dosya şifreli ve parolası gerekiyor",
+        "fix": "Oyunun kullandığı parolayı girip dosyayı yeniden aç."
+      },
+      "SP-CORE-006": {
+        "reason": "dosya çok büyük",
+        "fix": "Daha küçük bir dosya aç."
+      },
+      "SP-CORE-007": {
+        "reason": "dosya açıldığında çok fazla veriye dönüşüyor",
+        "fix": "Dosya hasarlı olabilir; başka bir kopyayı dene."
+      },
+      "SP-CORE-008": {
+        "reason": "dosya çok derin iç içe",
+        "fix": "Dosya hasarlı olabilir; başka bir kopyayı dene."
+      },
+      "SP-CORE-009": {
+        "reason": "dosya çok fazla değer içeriyor",
+        "fix": "Dosyanın başka bir kopyasını dene."
+      },
+      "SP-CORE-010": {
+        "reason": "dosyada çok fazla katman var",
+        "fix": "Dosyanın başka bir kopyasını dene."
+      },
+      "SP-CORE-011": {
+        "reason": "o değer artık dosyada yok",
+        "fix": "Değeri ağaçtan yeniden seç; yol değişmiş olabilir."
+      },
+      "SP-CORE-012": {
+        "reason": "değişiklik uygulanamadı",
+        "fix": "Tekrar dene; sürerse kodu hata takipçisinde bildir."
+      },
+      "SP-CORE-013": {
+        "reason": "bu değer salt okunur",
+        "fix": "Bu değer değiştirilemez."
+      },
+      "SP-IO-001": {
+        "reason": "yedek alınamadı",
+        "fix": "Boş disk alanını ve yedek klasörünün izinlerini kontrol et. Hiçbir şey yazılmadı."
+      },
+      "SP-IO-002": {
+        "reason": "geçici dosya yazılamadı",
+        "fix": "Dosyayı kullanan oyunu ve diğer programları kapatıp tekrar dene."
+      },
+      "SP-IO-003": {
+        "reason": "dosyanın üzerine yazılamadı",
+        "fix": "Dosyayı kullanan oyunu ve diğer programları kapat, salt okunur olmadığını kontrol edip tekrar dene."
+      },
+      "SP-IO-004": {
+        "reason": "kaydedilen dosya doğrulanamadı, bu yüzden yedek geri yüklendi",
+        "fix": "Kaydın değişmedi."
+      },
+      "SP-IO-005": {
+        "reason": "kaydedilen dosya doğrulanamadı ve yedek geri yüklenemedi",
+        "fix": "Dosyayı yedek klasöründen elle geri yükle ve kodu hata takipçisinde bildir."
+      },
+      "SP-IO-006": {
+        "reason": "yedek klasörü bulunamadı",
+        "fix": "Kullanıcı profil klasörünün erişilebilir olduğunu kontrol edip tekrar dene."
+      },
+      "SP-IO-007": {
+        "reason": "dosya okunamadı",
+        "fix": "Dosyanın var olduğunu ve okunabildiğini kontrol edip tekrar dene."
+      },
+      "SP-RENPY-001": {
+        "reason": "bu Ren'Py kaydı SavePrism'in okuyabileceği bir dosya değil",
+        "fix": "Başka bir oyundan kopya değil, oyunun yazdığı kaydı aç."
+      },
+      "SP-RENPY-002": {
+        "reason": "bu Ren'Py kaydı SavePrism'in yazamayacağı bir şey içeriyor",
+        "fix": "Salt okunur aç ya da sorun kaydına bir örnek bildir."
+      },
+      "SP-RENPY-003": {
+        "reason": "bu Ren'Py kaydı yazılamadı",
+        "fix": "Salt okunur aç ve dosyanın bir kopyasını sakla."
+      },
+      "SP-RENPY-004": {
+        "reason": "Ren'Py anahtar dosyası okunamadı",
+        "fix": "security_keys.txt dosyasının var olduğunu ve bir imzalama anahtarı satırı içerdiğini kontrol edip kaydı yeniden aç."
+      }
+    }
   },
   "bell": {
     "title": "Bu oturum",

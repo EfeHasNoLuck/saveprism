@@ -58,7 +58,7 @@ export function PasteCodeDialog({ initialText = "", changeCount, onOpen, onClose
     if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) submit(event);
   };
 
-  const shown = refused !== null && refused.text === text ? describeError(refused.error) : null;
+  const shown = refused !== null && refused.text === text ? describeError(refused.error, t) : null;
 
   return (
     <Dialog open onOpenChange={(open) => (open || busy ? undefined : onClose())}>
