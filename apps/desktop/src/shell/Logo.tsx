@@ -1,25 +1,29 @@
+import { useId } from "react";
+
+/** The outline of the SavePrism "S": a hexagonal prism folded into the letter. */
+const S_PATH =
+  "M56 0 100 25V50L74 65V39L56 29 28 45 100 85V110L44 142 0 117V92L26 77V103L44 113 72 97 0 57V32Z";
+
 /**
- * The SavePrism mark: two squares (one turned 45 degrees) that interlock into an 8-point star.
- * Blues are the brand colours; four short pieces of the light square are drawn over the dark one
- * so the squares look woven.
+ * The SavePrism mark (from `docs/brand/SavePrism-icon-transparent.svg`): a light-blue "S" with
+ * two blue faces and one cyan face clipped to its outline. The view box is square so the mark
+ * sizes like an icon.
  */
 export function Logo({ className }: { className?: string }) {
+  const clip = useId();
   return (
-    <svg
-      viewBox="0 0 24 24"
-      className={className}
-      fill="none"
-      strokeWidth="1.8"
-      strokeLinejoin="round"
-      strokeLinecap="round"
-      aria-hidden="true"
-    >
-      <path d="M12 2.1L21.9 12L12 21.9L2.1 12Z" stroke="#8FC0F7" />
-      <path d="M5 5H19V19H5Z" stroke="#4A7FD6" />
-      <path
-        d="M17.8 7.9L20.2 10.3M16.1 17.8L13.7 20.2M6.2 16.1L3.8 13.7M7.9 6.2L10.3 3.8"
-        stroke="#8FC0F7"
-      />
+    <svg viewBox="-21 0 142 142" className={className} aria-hidden="true">
+      <defs>
+        <clipPath id={clip}>
+          <path d={S_PATH} />
+        </clipPath>
+      </defs>
+      <path d={S_PATH} fill="#ABC7FF" />
+      <g clipPath={`url(#${clip})`}>
+        <path d="M56 29 82 14 100 25 74 40Z" fill="#5D90E8" />
+        <path d="M74 39 100 25V50L74 65Z" fill="#4CD7F6" />
+        <path d="M0 92 26 77V103L0 117Z" fill="#5D90E8" />
+      </g>
     </svg>
   );
 }

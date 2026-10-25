@@ -168,6 +168,7 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
 - Any unknown file whose size is a multiple of 16 bytes opens the "This file is encrypted" password dialog (it could be
   Easy Save 3 AES); a cut-off copy of a known format says "SavePrism does not know this file yet" (visual check,
   2026-10-25). After a wrong password the field is emptied.
+- "Copy file report" (`585479e`) is tested only in Rust and vitest, not yet clicked in the running app.
 - Light theme: the Compare "only here/there" chips barely differ from the row background (text contrast is fine).
 - Ask AI on the Values card copies only the top-level values (as its search does), not values inside groups.
 - An MCP edit does not reach a SavePrism window with the same file open; that window refuses to save over it
