@@ -282,6 +282,10 @@
     "copyAiFailed": "Could not copy to the clipboard",
     "setupCopied": "Setup copied. Paste it into your AI app's MCP settings.",
     "copySetupFailed": "The setup could not be copied",
+    "copyReport": "Copy file report",
+    "reportCopied": "Report copied",
+    "reportCopiedBody": "Paste it into a new issue with the game's name.",
+    "reportFailed": "The report could not be copied",
     "addFailed": "The entry could not be added",
     "removeFailed": "The entry could not be removed",
     "dataFolderFailed": "The data folder could not be read"
@@ -395,6 +399,10 @@
       "SP-APP-026": {
         "reason": "the folder could not be opened",
         "fix": "Open it by hand in File Explorer."
+      },
+      "SP-APP-027": {
+        "reason": "a file report can only be made for a regular file",
+        "fix": "Pick the save file itself, not a folder or a shortcut."
       },
       "SP-DET-001": {
         "reason": "SavePrism does not know this file yet",

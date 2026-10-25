@@ -46,6 +46,7 @@ mod lcf;
 mod locations;
 mod naninovel;
 mod renpy;
+mod report;
 mod rgss;
 mod structure;
 mod sugarcube;
@@ -66,6 +67,7 @@ use renpy::RenpyKeySource;
 pub use renpy::{
     NOTICE_KEY_SIGNED, NOTICE_KEY_SIGNED_PERSISTENT, NOTICE_SIGNED_PERSISTENT, NOTICE_SIGNED_SAVE,
 };
+pub use report::{EntropyClass, FileReport, read_file_report};
 pub use sugarcube::SugarCubeView;
 
 #[cfg(test)]
@@ -149,6 +151,8 @@ pub mod app_codes {
     pub const COMPARE_ENCRYPTED: &str = "SP-APP-025";
     /// A save folder from the "Where is my save?" list could not be opened.
     pub const LOCATION_OPEN: &str = "SP-APP-026";
+    /// A file report was asked for something that is not a regular file (a folder, a link).
+    pub const FILE_REPORT: &str = "SP-APP-027";
 }
 
 /// An error as the UI receives it.

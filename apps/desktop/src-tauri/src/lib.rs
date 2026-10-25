@@ -10,9 +10,9 @@ use std::path::PathBuf;
 use std::sync::{Mutex, MutexGuard, PoisonError};
 
 use session::{
-    ApiError, BackupRow, Change, CompareResult, Field, FieldKind, GameView, HistoryResult,
-    HistoryState, NodeRow, OpenInfo, Page, SaveLocation, SaveResult, Session, app_codes,
-    save_locations,
+    ApiError, BackupRow, Change, CompareResult, Field, FieldKind, FileReport, GameView,
+    HistoryResult, HistoryState, NodeRow, OpenInfo, Page, SaveLocation, SaveResult, Session,
+    app_codes, read_file_report, save_locations,
 };
 use tauri::{AppHandle, Manager, State};
 use tauri_plugin_opener::OpenerExt;
@@ -312,6 +312,14 @@ async fn restore_backup(
     Ok(info)
 }
 
+/// A short, local report about the file at `path` for a GitHub issue (extension, size, first bytes,
+/// SHA-256), made when SavePrism does not know the format. It holds no path or file name, the file
+/// is only read, and nothing is sent anywhere. Only a regular file is accepted.
+#[tauri::command]
+async fn file_report(path: String) -> Result<FileReport, ApiError> {
+    read_file_report(&PathBuf::from(path))
+}
+
 /// The file name of the third-party notices in the installer.
 const NOTICES_FILE: &str = "THIRD_PARTY_NOTICES.md";
 
@@ -399,6 +407,7 @@ pub fn run() {
             save_location_list,
             open_save_location,
             compare_with,
+            file_report,
             list_backups,
             restore_backup,
             notices_available,

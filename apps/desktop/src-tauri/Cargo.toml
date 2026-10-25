@@ -28,6 +28,7 @@ saveprism-core = { path = "../../../crates/saveprism-core" }
 saveprism-codecs = { workspace = true }
 tauri-plugin-dialog = "2"
 tempfile = { workspace = true }
+sha2 = { workspace = true }
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.56"

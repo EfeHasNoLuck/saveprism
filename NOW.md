@@ -149,6 +149,7 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
      LiveMaker, Emuera, GameMaker, Construct Classic, Visionaire); containers (BioWare ERF/GFF, BND4, MPQ, PS1/PS2 memory
      cards, emulator states, SharkPort); LevelDB/RocksDB/LiteDB; a local "unsupported file" report. Then the same REA
      pass on saveeditor.online.
+   - Wave 3, 2026-10-25: local unsupported-file report done (Copy file report on the SP-DET-001 toast).
 
 ## Known gaps
 - A zip save with several JSON entries opens only the largest (Shapez 2: `local-player.json`, not `research.json` or

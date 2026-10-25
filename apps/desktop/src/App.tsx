@@ -10,6 +10,7 @@ import {
   discardChanges,
   editValues,
   ErrorCodes,
+  fileReport,
   isApiError,
   openCode,
   openFile,
@@ -35,10 +36,11 @@ import { copyCodePlace, pastedText, saveAsDefaultPath } from "./shell/code";
 import { CodeTextDialog, PasteCodeDialog, type OpenCodeResult } from "./shell/CodeDialogs";
 import { CompareDialog } from "./shell/CompareDialog";
 import { ConfirmDiscardDialog } from "./shell/ConfirmDiscardDialog";
-import { useNotify, useSettings } from "./shell/context";
+import { useNotify, useSettings, type ToastAction } from "./shell/context";
 import { baseName, engineLabel, exportFileName } from "./shell/engine";
 import { describeError } from "./shell/errors";
 import { applyJson, exportJson, exportJsonFile } from "./shell/exportApi";
+import { buildFileReport } from "./shell/fileReport";
 import { Header } from "./shell/Header";
 import { JsonDialog, type ApplyResult, type JsonState } from "./shell/JsonDialog";
 import { OpeningOverlay } from "./shell/OpeningOverlay";
@@ -118,15 +120,43 @@ function App() {
   }, []);
 
   const notifyError = useCallback(
-    (title: string, error: unknown) => {
+    (title: string, error: unknown, action?: ToastAction) => {
       const { reason, fix } = describeError(error, t);
       notify({
         kind: "error",
         title,
         detail: t("toast.errorDetail", { reason, fix }).trim(),
+        action,
       });
     },
     [notify, t],
+  );
+
+  /**
+   * Copies the local report of a file SavePrism does not know (extension, size, first bytes, hash;
+   * never the path) so the player can paste it into an issue. Nothing is sent anywhere.
+   */
+  const copyFileReport = useCallback(
+    async (path: string) => {
+      let text: string;
+      try {
+        text = buildFileReport(await fileReport(path));
+      } catch (error) {
+        notifyError(t("toast.reportFailed"), error);
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(text);
+        notify({
+          kind: "saved",
+          title: t("toast.reportCopied"),
+          detail: t("toast.reportCopiedBody"),
+        });
+      } catch {
+        notify({ kind: "error", title: t("toast.reportFailed") });
+      }
+    },
+    [notify, notifyError, t],
   );
 
   const rememberRecent = useCallback(
@@ -179,7 +209,14 @@ function App() {
           });
         } else {
           setPasswordRequest(null);
-          notifyError(t("toast.openFailed"), error);
+          const unknownFormat = isApiError(error) && error.code === ErrorCodes.unknownFormat;
+          notifyError(
+            t("toast.openFailed"),
+            error,
+            unknownFormat
+              ? { label: t("toast.copyReport"), run: () => void copyFileReport(path) }
+              : undefined,
+          );
         }
       } finally {
         window.clearTimeout(cover);
@@ -187,7 +224,7 @@ function App() {
         setBusy(false);
       }
     },
-    [notify, notifyError, rememberRecent, resetChanges, t],
+    [copyFileReport, notify, notifyError, rememberRecent, resetChanges, t],
   );
 
   /**

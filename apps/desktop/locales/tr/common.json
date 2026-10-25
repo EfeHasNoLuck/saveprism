@@ -282,6 +282,10 @@
     "copyAiFailed": "Panoya kopyalanamadı",
     "setupCopied": "Kurulum kopyalandı. AI uygulamanızın MCP ayarlarına yapıştırın.",
     "copySetupFailed": "Kurulum kopyalanamadı",
+    "copyReport": "Dosya raporunu kopyala",
+    "reportCopied": "Rapor kopyalandı",
+    "reportCopiedBody": "Oyunun adıyla birlikte yeni bir sorun kaydına yapıştır.",
+    "reportFailed": "Rapor kopyalanamadı",
     "addFailed": "Kayıt eklenemedi",
     "removeFailed": "Değer kaldırılamadı",
     "dataFolderFailed": "Veri klasörü okunamadı"
@@ -395,6 +399,10 @@
       "SP-APP-026": {
         "reason": "klasör açılamadı",
         "fix": "Dosya Gezgini'nde elle aç."
+      },
+      "SP-APP-027": {
+        "reason": "dosya raporu yalnızca normal bir dosya için hazırlanabilir",
+        "fix": "Klasörü ya da kısayolu değil, kayıt dosyasının kendisini seç."
       },
       "SP-DET-001": {
         "reason": "SavePrism bu dosyayı henüz tanımıyor",

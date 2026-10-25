@@ -39,6 +39,8 @@ export const ErrorCodes = {
   /** "Save as" would replace an existing file: ask, then call `save` with `overwrite: true`. */
   targetExists: "SP-APP-006",
   notEditableNode: "SP-APP-007",
+  /** No format matched the file: offer the local file report. */
+  unknownFormat: "SP-DET-001",
   /** The pasted save code is empty. */
   emptyCode: "SP-APP-016",
   /** The format is not text, so `copyCode` has no code to give: use Save as. */
@@ -542,6 +544,36 @@ export function listBackups(): Promise<BackupRow[]> {
  */
 export function restoreBackup(name: string, keepBackups?: number): Promise<OpenInfo> {
   return invoke<OpenInfo>("restore_backup", { name, keepBackups: keepBackups ?? null });
+}
+
+/** A rough guess at what the first bytes of a file are. */
+export type EntropyClass = "empty" | "text" | "binary" | "compressed";
+
+/**
+ * What the host knows about a file it cannot open, for a GitHub issue. It never holds the path or
+ * the file name, only the extension, so the text built from it is safe to paste.
+ */
+export interface FileReport {
+  /** Lower-case extension without the dot; empty when there is none. */
+  extension: string;
+  byteSize: number;
+  /** The first 32 bytes as lower-case hex pairs separated by spaces. */
+  headHex: string;
+  /** The same bytes as printable ASCII, other bytes as dots. */
+  headAscii: string;
+  entropy: EntropyClass;
+  /** SHA-256 of the whole file, or null for a file above 256 MiB. */
+  sha256: string | null;
+  /** The SavePrism version that made the report. */
+  version: string;
+}
+
+/**
+ * Reads the report of the regular file at `path` (extension, size, first bytes, SHA-256). The file
+ * is only read and nothing is sent anywhere; a folder or link is refused.
+ */
+export function fileReport(path: string): Promise<FileReport> {
+  return invoke<FileReport>("file_report", { path });
 }
 
 /** True when the installer includes `THIRD_PARTY_NOTICES.md`. */

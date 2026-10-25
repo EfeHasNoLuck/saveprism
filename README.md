@@ -84,6 +84,9 @@ SavePrism needs Microsoft Edge WebView2, which Windows 10 and 11 already have; t
 A file that does not survive the round-trip check opens read-only with a warning. Easy Save 2 files are not opened: Moodkie
 publishes no byte-level layout for them, so SavePrism does not guess.
 
+If SavePrism does not know a file, press **Copy file report** on the message and paste it into a new issue with the game's
+name (extension, size, first bytes and a hash only; never the file or its path, and nothing is uploaded).
+
 ## Use it with AI
 
 - **Ask AI** on every list copies the values with a short note, ready to paste into any AI chat.
