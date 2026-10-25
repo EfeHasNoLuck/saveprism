@@ -64,6 +64,10 @@ const METHOD_IL2CPP: &str = "il2cpp-string-literal";
 const METHOD_SETTINGS: &str = "es3-settings-text";
 /// Method id for a key read back from the evidence file.
 const METHOD_STORED: &str = "stored";
+/// Method id for a key read from a .NET `#US` heap outside Unity (Terraria's own `Terraria.exe`).
+const METHOD_TERRARIA: &str = "terraria-us-heap";
+/// Largest `Terraria.exe` read while looking for its key.
+const MAX_TERRARIA_EXE_BYTES: u64 = 256 * 1024 * 1024;
 
 /// A key whose `Debug` prints no key material.
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -92,12 +96,44 @@ pub(crate) struct Candidate {
     game_folder: PathBuf,
     /// Stable method id (`dotnet-us-heap`, `il2cpp-string-literal`, ...).
     method: &'static str,
+    /// Which encrypted format this key belongs to.
+    kind: GameKind,
+}
+
+/// The encrypted format a candidate key is for.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum GameKind {
+    /// Unity Easy Save 3 (PBKDF2 + AES-128-CBC).
+    Es3,
+    /// Terraria `.plr` (AES-CBC with the UTF-16LE key as key and IV).
+    Terraria,
+}
+
+impl GameKind {
+    fn as_str(self) -> &'static str {
+        match self {
+            GameKind::Es3 => "es3",
+            GameKind::Terraria => "terraria",
+        }
+    }
+
+    fn from_str(text: &str) -> Self {
+        match text {
+            "terraria" => GameKind::Terraria,
+            _ => GameKind::Es3,
+        }
+    }
 }
 
 impl Candidate {
-    /// The candidate text, to be tried as the save's password.
+    /// The candidate text, to be tried as the save's key.
     pub(crate) fn key(&self) -> &str {
         self.key.as_str()
+    }
+
+    /// True when this key belongs to a Terraria player file.
+    pub(crate) fn is_terraria(&self) -> bool {
+        self.kind == GameKind::Terraria
     }
 }
 
@@ -108,6 +144,7 @@ impl fmt::Debug for Candidate {
             .field("source", &self.source)
             .field("game_folder", &self.game_folder)
             .field("method", &self.method)
+            .field("kind", &self.kind.as_str())
             .finish()
     }
 }
@@ -127,7 +164,7 @@ struct GameFiles {
 impl GameFiles {
     fn new(game_folder: PathBuf, data_dir: PathBuf, limit: usize) -> Self {
         Self {
-            collector: Collector::new(game_folder, limit),
+            collector: Collector::new(game_folder, limit, GameKind::Es3),
             data_dir,
         }
     }
@@ -175,21 +212,81 @@ impl KeyCandidates for GameFiles {
     }
 }
 
+/// A Terraria install folder: the `#US` heap of its managed `Terraria.exe` holds the key string.
+struct TerrariaFiles {
+    exe: PathBuf,
+    collector: Collector,
+}
+
+impl TerrariaFiles {
+    fn new(game_folder: PathBuf, exe: PathBuf, limit: usize) -> Self {
+        Self {
+            collector: Collector::new(game_folder, limit, GameKind::Terraria),
+            exe,
+        }
+    }
+}
+
+impl KeyCandidates for TerrariaFiles {
+    fn candidates(&mut self) -> Vec<Candidate> {
+        if let Some(bytes) = read_file(&self.exe, MAX_TERRARIA_EXE_BYTES)
+            && let Some(metadata) = dotnet_metadata(&bytes)
+            && let Some(heap) = metadata_stream(metadata, b"#US")
+        {
+            for text in us_heap_strings(heap, self.collector.room()) {
+                self.collector.add(&text, &self.exe, METHOD_TERRARIA);
+            }
+        }
+        self.collector.take()
+    }
+}
+
+/// True when `save` is a Terraria player file (`.plr`) or lives in the game's `Players` folder.
+fn is_terraria_save(save: &Path) -> bool {
+    let plr = save
+        .extension()
+        .is_some_and(|extension| extension.eq_ignore_ascii_case("plr"));
+    if plr {
+        return true;
+    }
+    let parts: Vec<String> = save
+        .components()
+        .filter_map(|component| match component {
+            std::path::Component::Normal(name) => Some(name.to_string_lossy().into_owned()),
+            _ => None,
+        })
+        .collect();
+    parts
+        .iter()
+        .any(|part| part.eq_ignore_ascii_case("Terraria"))
+        && parts
+            .iter()
+            .any(|part| part.eq_ignore_ascii_case("Players"))
+}
+
+/// The `Terraria.exe` in a game folder, when this is a Terraria install.
+fn terraria_exe(folder: &Path) -> Option<PathBuf> {
+    let exe = folder.join("Terraria.exe");
+    exe.is_file().then_some(exe)
+}
+
 /// Collects candidate keys without duplicates, up to a limit.
 struct Collector {
     game_folder: PathBuf,
     seen: HashSet<String>,
     out: Vec<Candidate>,
     limit: usize,
+    kind: GameKind,
 }
 
 impl Collector {
-    fn new(game_folder: PathBuf, limit: usize) -> Self {
+    fn new(game_folder: PathBuf, limit: usize, kind: GameKind) -> Self {
         Self {
             game_folder,
             seen: HashSet::new(),
             out: Vec::new(),
             limit,
+            kind,
         }
     }
 
@@ -206,6 +303,7 @@ impl Collector {
             source: source.to_path_buf(),
             game_folder: self.game_folder.clone(),
             method,
+            kind: self.kind,
         });
     }
 
@@ -297,6 +395,7 @@ impl KeyFinder {
                 source: store_path.to_path_buf(),
                 game_folder: PathBuf::from(&stored.game_folder),
                 method: METHOD_STORED,
+                kind: GameKind::from_str(stored.kind.as_deref().unwrap_or("es3")),
             })
             .collect()
     }
@@ -311,18 +410,26 @@ impl KeyFinder {
             .map(load_store)
             .unwrap_or_default();
         let local_low = local_low_parts(save);
+        let terraria = is_terraria_save(save);
         let mut out: Vec<Candidate> = Vec::new();
         let mut seen = HashSet::new();
         for game_folder in self.game_folders(save, local_low.as_ref(), &store) {
             if out.len() >= MAX_CANDIDATES {
                 break;
             }
-            let mut scan = Budget::new(MAX_DIR_ENTRIES);
-            let Some(data_dir) = data_dir_of(&game_folder, &mut scan) else {
-                continue;
-            };
             let limit = MAX_CANDIDATES.saturating_sub(out.len());
-            let mut files = GameFiles::new(game_folder, data_dir, limit);
+            let mut files: Box<dyn KeyCandidates> = if terraria {
+                let Some(exe) = terraria_exe(&game_folder) else {
+                    continue;
+                };
+                Box::new(TerrariaFiles::new(game_folder, exe, limit))
+            } else {
+                let mut scan = Budget::new(MAX_DIR_ENTRIES);
+                let Some(data_dir) = data_dir_of(&game_folder, &mut scan) else {
+                    continue;
+                };
+                Box::new(GameFiles::new(game_folder, data_dir, limit))
+            };
             for candidate in files.candidates() {
                 push_unique(&mut out, &mut seen, candidate);
                 if out.len() >= MAX_CANDIDATES {
@@ -366,9 +473,14 @@ impl KeyFinder {
             None => (None, None),
         };
         let folder = found.game_folder.to_string_lossy().into_owned();
+        let stored_kind = found.kind.as_str();
         store.games.retain(|stored| {
-            !(stored.game_folder == folder
-                || (company.is_some() && stored.company == company && stored.product == product))
+            let same_kind = stored.kind.as_deref().unwrap_or("es3") == stored_kind;
+            !(same_kind
+                && (stored.game_folder == folder
+                    || (company.is_some()
+                        && stored.company == company
+                        && stored.product == product)))
         });
         store.games.push(StoredKey {
             company,
@@ -378,6 +490,7 @@ impl KeyFinder {
             source: found.source.to_string_lossy().into_owned(),
             method: found.method.to_string(),
             date: today(),
+            kind: Some(found.kind.as_str().to_string()),
         });
         store.version = STORE_VERSION;
         store.picked_folders.retain(|picked| picked != &folder);
@@ -421,6 +534,19 @@ impl KeyFinder {
         // A save that lives inside the game's own folder.
         for ancestor in save.ancestors().skip(1).take(4) {
             add(ancestor.to_path_buf());
+        }
+        // Terraria is a plain .NET game, not Unity: its install folder is the Steam app folder.
+        if is_terraria_save(save) {
+            let mut listing = Budget::new(MAX_DIR_ENTRIES);
+            for root in self.steam_roots_or_platform() {
+                for library in library_folders(&root) {
+                    let game = library.join("steamapps").join("common").join("Terraria");
+                    let _ = listing.take();
+                    if game.is_dir() {
+                        add(game);
+                    }
+                }
+            }
         }
         // Steam libraries. Without a company/product pair there is nothing to match against. This
         // listing has its own budget; each `_Data` lookup below gets a fresh one, so a large
@@ -489,6 +615,13 @@ fn local_low_parts(save: &Path) -> Option<(String, String)> {
 
 /// True when a stored entry belongs to this save.
 fn stored_matches(stored: &StoredKey, local_low: Option<&(String, String)>, save: &Path) -> bool {
+    let terraria = stored.kind.as_deref() == Some("terraria");
+    if terraria {
+        return is_terraria_save(save) || save.starts_with(Path::new(&stored.game_folder));
+    }
+    if is_terraria_save(save) {
+        return false;
+    }
     if let Some((company, product)) = local_low
         && stored
             .company
@@ -1042,6 +1175,8 @@ struct StoredKey {
     source: String,
     method: String,
     date: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    kind: Option<String>,
 }
 
 /// The evidence file.
@@ -1128,6 +1263,7 @@ fn civil_from_days(days: i64) -> (i64, u32, u32) {
 #[cfg(test)]
 mod tests {
     use saveprism_codecs::es3::Es3AesLayer;
+    use saveprism_codecs::terraria::aes::TerrariaPlayerLayer;
     use saveprism_core::{Layer, Params};
     use std::fs;
 
@@ -1461,6 +1597,7 @@ mod tests {
             source: "earlier run".into(),
             method: METHOD_US_HEAP.into(),
             date: today(),
+            kind: None,
         });
         save_store(&store_path, &store);
 
@@ -1541,7 +1678,7 @@ mod tests {
 
     #[test]
     fn candidates_are_deduped_and_stop_at_the_limit() {
-        let mut collector = Collector::new(PathBuf::from("game"), 3);
+        let mut collector = Collector::new(PathBuf::from("game"), 3, GameKind::Es3);
         for text in ["one", "two", "one", "three", "four"] {
             collector.add(text, Path::new("source"), METHOD_US_HEAP);
         }
@@ -1550,7 +1687,7 @@ mod tests {
         assert_eq!(keys, ["one", "two", "three"]);
         assert_eq!(
             format!("{:?}", out.first().unwrap()),
-            "Candidate { key: <redacted>, source: \"source\", game_folder: \"game\", method: \"dotnet-us-heap\" }"
+            "Candidate { key: <redacted>, source: \"source\", game_folder: \"game\", method: \"dotnet-us-heap\", kind: \"es3\" }"
         );
     }
 
@@ -1671,6 +1808,7 @@ mod tests {
             source: "C:\\Games\\MyGame\\MyGame_Data\\Managed\\Assembly-CSharp.dll".into(),
             method: METHOD_US_HEAP.into(),
             date: today(),
+            kind: None,
         });
         save_store(&path, &store);
         let loaded = load_store(&path);
@@ -1682,5 +1820,54 @@ mod tests {
     fn dates_are_civil() {
         assert_eq!(civil_from_days(0), (1970, 1, 1));
         assert_eq!(civil_from_days(19_000), (2022, 1, 8));
+    }
+
+    #[test]
+    fn a_terraria_key_is_read_from_the_games_own_exe() {
+        let root = tempfile::tempdir().unwrap();
+        let steam = root.path().join("Steam");
+        let game = steam.join("steamapps").join("common").join("Terraria");
+        write(
+            &game.join("Terraria.exe"),
+            &assembly_with_user_strings(&["not-the-key", "FakeKey1"]),
+        );
+        let plain = fs::read(
+            Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../../../fixtures/synthetic/terraria/player-decrypted.plr"),
+        )
+        .unwrap();
+        let mut params = Params::new();
+        params.set("password", "FakeKey1");
+        let encrypted = TerrariaPlayerLayer.encode(&plain, &params).unwrap();
+        let save = root
+            .path()
+            .join("Documents")
+            .join("My Games")
+            .join("Terraria")
+            .join("Players")
+            .join("Mira.plr");
+        write(&save, &encrypted);
+
+        let store = root.path().join("app data").join("keys.json");
+        let finder = KeyFinder::for_test(store.clone()).with_steam_root(steam.clone());
+        let candidates = finder.search(&save);
+        assert!(
+            candidates
+                .iter()
+                .any(|candidate| candidate.key() == "FakeKey1" && candidate.is_terraria()),
+            "{candidates:?}"
+        );
+
+        let session = open_with(&save, finder, &store).unwrap();
+        assert_eq!(session.info().guard, crate::session::GuardLevel::Exact);
+        let text = fs::read_to_string(&store).unwrap();
+        assert!(text.contains("FakeKey1"), "{text}");
+        assert!(text.contains("terraria-us-heap"), "{text}");
+        assert!(text.contains("Terraria.exe"), "{text}");
+        assert!(text.contains("\"kind\": \"terraria\""), "{text}");
+
+        // The stored key opens it again without reading the game folder.
+        let again = open_with(&save, KeyFinder::for_test(store.clone()), &store).unwrap();
+        assert_eq!(again.info().guard, crate::session::GuardLevel::Exact);
     }
 }

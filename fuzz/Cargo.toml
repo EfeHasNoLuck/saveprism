@@ -210,3 +210,10 @@ path = "fuzz_targets/kirikiri.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "terraria"
+path = "fuzz_targets/terraria.rs"
+test = false
+doc = false
+bench = false

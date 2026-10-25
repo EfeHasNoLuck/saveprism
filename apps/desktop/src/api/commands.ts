@@ -28,10 +28,10 @@ export interface ApiError {
 
 /** Error codes the UI reacts to. */
 export const ErrorCodes = {
-  /** The encrypted Easy Save 3 file needs a password: ask for one. */
-  passwordRequired: "SP-ES3-005",
+  /** An encrypted Easy Save 3 or Terraria file needs its password: ask for one. */
+  passwordRequired: ["SP-ES3-005", "SP-TERRARIA-006"] as readonly string[],
   /** The password did not open the file: ask again. */
-  wrongPassword: "SP-ES3-004",
+  wrongPassword: ["SP-ES3-004", "SP-TERRARIA-005"] as readonly string[],
   noDocument: "SP-APP-002",
   readOnlyDocument: "SP-APP-003",
   badValue: "SP-APP-004",

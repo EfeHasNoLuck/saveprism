@@ -78,6 +78,13 @@ const CATALOG: &[(&str, &[&str])] = &[
         &["%USERPROFILE%\\Documents\\The Witcher 3\\gamesaves"],
     ),
     ("palworld", &["%LOCALAPPDATA%\\Pal\\Saved\\SaveGames"]),
+    (
+        "terraria",
+        &[
+            "%USERPROFILE%\\Documents\\My Games\\Terraria\\Players",
+            "%USERPROFILE%\\Documents\\My Games\\Terraria\\Worlds",
+        ],
+    ),
 ];
 
 /// The usual save folders of every engine the dialog names.
@@ -168,6 +175,7 @@ mod tests {
             "flash",
             "witcher3",
             "palworld",
+            "terraria",
         ] {
             assert!(engines.contains(&engine), "{engine}");
         }

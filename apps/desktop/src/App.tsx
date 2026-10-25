@@ -169,11 +169,12 @@ function App() {
       } catch (error) {
         if (
           isApiError(error) &&
-          (error.code === ErrorCodes.passwordRequired || error.code === ErrorCodes.wrongPassword)
+          (ErrorCodes.passwordRequired.includes(error.code) ||
+            ErrorCodes.wrongPassword.includes(error.code))
         ) {
           setPasswordRequest({
             path,
-            wrong: error.code === ErrorCodes.wrongPassword,
+            wrong: ErrorCodes.wrongPassword.includes(error.code),
             folderTried: gameFolder !== undefined,
           });
         } else {

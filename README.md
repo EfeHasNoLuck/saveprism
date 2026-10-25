@@ -56,6 +56,7 @@ SavePrism needs Microsoft Edge WebView2, which Windows 10 and 11 already have; t
 | Flash | `.sol` (AMF0 / AMF3) | values |
 | Pokémon Gen 3 | `.sav` | money, coins, bag, party EXP / IVs / EVs / stats |
 | The Witcher 3 | `.sav` | orens, item quantities |
+| Terraria | player `.plr` (key from the game's own `Terraria.exe`), world `.wld` | name, difficulty, play time, life/mana, inventory; world name, seed, size, ids and flags (tiles and the rest read-only) |
 | Java serialization | object streams | values (read as data, never run) |
 | SQLite | database saves | table values |
 | JSON and text | `.json`, zip- or gzip-packed JSON | values; add and remove entries |
