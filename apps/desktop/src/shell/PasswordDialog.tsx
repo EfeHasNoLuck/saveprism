@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
@@ -34,12 +34,19 @@ export function PasswordDialog({
 }: PasswordDialogProps) {
   const { t } = useTranslation();
   const [password, setPassword] = useState("");
+  const input = useRef<HTMLInputElement>(null);
+
+  // A wrong password or an empty game folder leaves focus on a button: give it back to the field.
+  useEffect(() => {
+    input.current?.focus();
+  }, [wrong, folderTried]);
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
     if (password === "") return;
     onSubmit(password);
     setPassword("");
+    input.current?.focus();
   };
 
   return (
@@ -53,6 +60,7 @@ export function PasswordDialog({
           <label className="flex flex-col gap-1.5 text-[0.8125rem]">
             {t("password.label")}
             <input
+              ref={input}
               type="password"
               autoFocus
               autoComplete="off"

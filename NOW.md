@@ -116,7 +116,9 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
      Merged 2026-10-25 (rust 3/3 + web 3/3): layers by content + XOR auto-break + LZF (`9d50e17`), Odin Serializer
      binary (`73ebf7a`; Easy Save 2 not done: no public byte layout, clean room), text encodings for text saves,
      RPG Maker 2000/2003 and QSP (`9ef817e`), ES3 password found in the game's own files with evidence (`60a36d2`;
-     reviewed twice, no critical/high; visual check of the dialog pending).
+     reviewed twice, no critical/high; password dialog checked in the running app 2026-10-25, dark/light, EN/TR:
+     Pick the game folder, "No password found in that folder.", typed text kept, wrong/right password, Esc; the field
+     now keeps focus after a wrong try or a folder pick, not re-checked in the app).
    - Running on EVREN (2026-10-25 afternoon): `polish` (visual-check gaps, Turkish error messages per code), `vn1`
      (KiriKiri, GameMaker, Pixel Game Maker MV), `console` (PS1/PS2 memory cards, .psu, SharkPort), `terraria`
      (.plr through the key finder, .wld header).
