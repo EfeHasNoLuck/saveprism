@@ -119,9 +119,11 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
      reviewed twice, no critical/high; password dialog checked in the running app 2026-10-25, dark/light, EN/TR:
      Pick the game folder, "No password found in that folder.", typed text kept, wrong/right password, Esc; the field
      now keeps focus after a wrong try or a folder pick, not re-checked in the app).
-   - Running on EVREN (2026-10-25 afternoon): `polish` (visual-check gaps, Turkish error messages per code), `vn1`
-     (KiriKiri, GameMaker, Pixel Game Maker MV), `console` (PS1/PS2 memory cards, .psu, SharkPort), `terraria`
-     (.plr through the key finder, .wld header).
+   - Merged 2026-10-25 afternoon (rust 3/3, web 3/3, cargo deny ok): visual-check polish + translated error messages
+     (`9501734`; not re-checked in the app), KiriKiri TJS2 + GameMaker ds_map/ds_list (`fabf118`; Pixel Game Maker MV
+     saves are plain JSON), PS1/PS2 memory cards, .psu, SharkPort (`033a67b`; unknown game data opens as read-only
+     `format.raw`). Also fixed: two fuzz memory blowups (NRBF null runs, WOLF field-less types) and three dependency
+     advisories (`1cabd55`). Still running: `terraria` (EVREN).
    - Wave 2, first: auto-unlock (user idea, 2026-10-24): every layer tried by content whatever the extension; simple XOR
      obfuscation broken automatically from the expected start of the inner format (`{`, `<?xml`, `PK`...); a key finder
      that reads candidate passwords from the game's own files (Unity `Assembly-CSharp.dll` strings, IL2CPP
