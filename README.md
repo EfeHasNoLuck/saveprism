@@ -50,6 +50,13 @@ SavePrism needs Microsoft Edge WebView2, which Windows 10 and 11 already have; t
 | Java serialization | object streams | values (read as data, never run) |
 | SQLite | database saves | table values |
 | JSON and text | `.json`, zip- or gzip-packed JSON | values; add and remove entries |
+| XML | `.xml` | element text and attribute values (comments, CDATA and declarations stay read-only) |
+| INI / CFG | `.ini`, `.cfg`, `.conf` | section values |
+| Java properties | `.properties` | values (Java escapes and line continuations) |
+| TOML | `.toml` | strings, integers, floats and booleans |
+| YAML | `.yaml`, `.yml` | plain, quoted and literal-block scalars (anchors and tags stay read-only) |
+| CSV | `.csv` | cells (quoting kept) |
+| Property lists | `.plist` (XML and binary) | XML strings, integers, reals and booleans; binary lists open read-only |
 
 A file that does not survive the round-trip check opens read-only with a warning.
 

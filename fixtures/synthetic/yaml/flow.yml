@@ -1,0 +1,3 @@
+---
+flow: {a: 1, b: [true, null]}
+list: [1, 2.5, "x"]

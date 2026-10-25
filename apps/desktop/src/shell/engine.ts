@@ -12,10 +12,16 @@ const EXTENSION_LABELS: Record<string, string> = {
   sav: "SAV",
   sol: "Flash",
   reg: "Registry (.reg)",
-  cfg: "Godot",
   sqlite: "SQLite",
   sqlite3: "SQLite",
   db: "SQLite",
+  xml: "XML",
+  properties: "Properties",
+  toml: "TOML",
+  yaml: "YAML",
+  yml: "YAML",
+  csv: "CSV",
+  plist: "Property list",
 };
 
 const CODEC_LABELS: Record<string, string> = {
@@ -39,6 +45,13 @@ const CODEC_LABELS: Record<string, string> = {
   "format.qsp": "QSP",
   "format.naninovel": "Naninovel",
   "format.witcher3": "The Witcher 3",
+  "format.xml": "XML",
+  "format.ini": "INI",
+  "format.properties": "Properties",
+  "format.toml": "TOML",
+  "format.yaml": "YAML",
+  "format.csv": "CSV",
+  "format.plist": "Property list",
 };
 
 const ENGINE_LABELS: Record<string, string> = {

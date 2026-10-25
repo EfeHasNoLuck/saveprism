@@ -123,3 +123,148 @@ fn random_bytes_match_nothing() {
     let error = detect(&input, &reg, &Limits::default(), &DetectOptions::default()).unwrap_err();
     assert_eq!(error.code(), codes::DET_NO_MATCH);
 }
+
+/// Every fixture under `fixtures/` must still detect as the recipe recorded in
+/// `fixtures/expected/`; a new structured-text sniff must not steal another codec's files.
+#[test]
+fn no_existing_fixture_is_stolen_by_a_new_sniffer() {
+    use std::fs;
+    use std::path::{Path, PathBuf};
+
+    fn collect(dir: &Path, files: &mut Vec<PathBuf>) {
+        let Ok(entries) = fs::read_dir(dir) else {
+            return;
+        };
+        for entry in entries.flatten() {
+            let name = entry.file_name().to_string_lossy().into_owned();
+            if name.starts_with('.') || name.starts_with("README") {
+                continue;
+            }
+            let path = entry.path();
+            match entry.file_type() {
+                Ok(kind) if kind.is_dir() => collect(&path, files),
+                Ok(kind) if kind.is_file() => files.push(path),
+                _ => {}
+            }
+        }
+    }
+
+    fn expected_recipe(path: &Path) -> Option<String> {
+        let text = fs::read_to_string(path).ok()?;
+        text.lines()
+            .find_map(|line| line.trim().strip_prefix("recipe = \""))
+            .and_then(|rest| rest.strip_suffix('"'))
+            .map(str::to_owned)
+    }
+
+    let fixtures = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../fixtures");
+    let reg = registry();
+    let limits = Limits::default();
+    let mut checked = 0usize;
+    for root in ["samples", "synthetic"] {
+        let dir = fixtures.join(root);
+        let mut files = Vec::new();
+        collect(&dir, &mut files);
+        files.sort();
+        for file in files {
+            let rel = file
+                .strip_prefix(&dir)
+                .unwrap_or(&file)
+                .to_string_lossy()
+                .replace('\\', "/");
+            let expected_path = fixtures
+                .join("expected")
+                .join(root)
+                .join(format!("{rel}.toml"));
+            let Some(expected) = expected_recipe(&expected_path) else {
+                continue;
+            };
+            let bytes = fs::read(&file).expect("fixture readable");
+            let name = file
+                .file_name()
+                .map(|name| name.to_string_lossy().into_owned())
+                .unwrap_or_default();
+            let opts = DetectOptions {
+                file_name: Some(name),
+                ..DetectOptions::default()
+            };
+            let Ok(detection) = detect(&bytes, &reg, &limits, &opts) else {
+                panic!("{root}/{rel}: nothing detected");
+            };
+            let found = detection.best.recipe.kinds().join(" > ");
+            assert_eq!(found, expected, "{root}/{rel} changed codec");
+            checked += 1;
+        }
+    }
+    assert!(
+        checked > 50,
+        "expected to check the whole corpus, got {checked}"
+    );
+}
+
+#[test]
+fn structured_text_is_recognised_by_content() {
+    let reg = registry();
+    let cases: &[(&str, &[u8], &str)] = &[
+        (
+            "save.dat",
+            b"<?xml version=\"1.0\"?>\n<save><gold>7</gold></save>\n",
+            "format.xml",
+        ),
+        (
+            "binary.plist",
+            include_bytes!("../../../fixtures/synthetic/plist/binary.plist"),
+            "format.plist",
+        ),
+        (
+            "save",
+            b"# yaml\nplayer:\n  name: Mira\n  level: 4\n",
+            "format.yaml",
+        ),
+        (
+            "save",
+            b"name,class,level\nMira,Ranger,42\nRune,Mage,7\n",
+            "format.csv",
+        ),
+        ("save", b"[Audio]\nvolume = 0.75\nmusic=on\n", "format.ini"),
+        (
+            "save",
+            b"# properties\nplayer.name = Mira\nplayer.level=4\n",
+            "format.properties",
+        ),
+        (
+            "[Player]",
+            b"[Player]\nlevel = 4\nname = \"Mira\"\n",
+            "format.godot-config",
+        ),
+    ];
+    for (name, bytes, expected) in cases {
+        let opts = DetectOptions {
+            file_name: Some((*name).to_owned()),
+            ..DetectOptions::default()
+        };
+        let detection = detect(bytes, &reg, &Limits::default(), &opts)
+            .unwrap_or_else(|error| panic!("{name}: {error:?}"));
+        assert_eq!(
+            detection.best.recipe.kinds(),
+            [*expected],
+            "{name} detected as the wrong codec"
+        );
+    }
+}
+
+#[test]
+fn plain_text_and_json_are_not_taken_by_structured_text() {
+    let reg = registry();
+    for (name, bytes) in [
+        ("save.txt", &b"{\"gold\": 7, \"name\": \"Mira\"}"[..]),
+        ("save.json", &b"[1, 2, 3]"[..]),
+    ] {
+        let opts = DetectOptions {
+            file_name: Some(name.to_owned()),
+            ..DetectOptions::default()
+        };
+        let detection = detect(bytes, &reg, &Limits::default(), &opts).expect("detected");
+        assert_eq!(detection.best.recipe.kinds(), ["format.json"], "{name}");
+    }
+}

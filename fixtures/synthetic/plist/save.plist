@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>name</key><string>Mira &amp; Rune</string>
+  <key>level</key><integer>42</integer>
+  <key>ratio</key><real>1.5</real>
+  <key>active</key><true/>
+  <key>items</key><array><string>a</string><string>b</string></array>
+  <key>born</key><date>2020-01-02T03:04:05Z</date>
+  <key>blob</key><data>AAEC</data>
+</dict>
+</plist>
