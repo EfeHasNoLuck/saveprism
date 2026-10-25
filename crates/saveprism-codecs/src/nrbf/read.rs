@@ -11,6 +11,8 @@ use saveprism_core::{
 
 use super::{HINT_PREFIX, MAX_NESTING, NRBF_BAD_REF, NRBF_PARSE, NRBF_UNSUPPORTED};
 
+/// Nodes any file may have, however small; above it the count is capped by the input size.
+const MIN_NODE_BUDGET: u64 = 65_536;
 const HEADER: u8 = 0;
 const CLASS_WITH_ID: u8 = 1;
 const SYSTEM_CLASS_WITH_MEMBERS: u8 = 2;
@@ -300,6 +302,18 @@ impl<'i> Reader<'i, '_, '_> {
     fn nulls(&mut self, count: usize) -> Result<Vec<NodeId>> {
         if count == 0 {
             return Err(self.parse("an ObjectNullMultiple record covers no member"));
+        }
+        // A five-byte record can stand for billions of nulls, one node each: cap the nodes by the
+        // input size (like a decompression ratio), so a tiny file cannot fill the memory.
+        let budget = len_u64(self.input.len())
+            .saturating_mul(self.ctx.limits().max_ratio)
+            .max(MIN_NODE_BUDGET)
+            .min(self.ctx.limits().max_nodes);
+        if len_u64(self.doc.len().saturating_add(count)) > budget {
+            return Err(Error::new(
+                codes::CORE_LIMIT_NODES,
+                format!("an ObjectNullMultiple record of {count} nulls is too large for this file"),
+            ));
         }
         let mut nodes = Vec::new();
         for _ in 0..count {

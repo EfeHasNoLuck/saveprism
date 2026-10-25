@@ -490,3 +490,12 @@ proptest! {
         prop_assert_eq!(&at(&again.doc, "/name").value, &Value::Str(value));
     }
 }
+
+#[test]
+fn a_huge_run_of_nulls_in_a_tiny_file_is_refused() {
+    // Found by fuzzing: a 1.0 header and one ObjectNullMultiple record of 9,474,609 nulls.
+    let mut bytes = vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0];
+    bytes.extend_from_slice(&[0x0e, 0x31, 0x92, 0x90, 0x00, 0x06]);
+    let error = decode_with(&bytes, &Limits::default()).unwrap_err();
+    assert_eq!(error.code(), codes::CORE_LIMIT_NODES);
+}

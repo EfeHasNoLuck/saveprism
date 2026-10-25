@@ -14,6 +14,10 @@ use super::{
     parse_error,
 };
 
+/// Records a database type without fields may have (each reads no bytes, so the file size does
+/// not bound them; WOLF RPG Editor's own data lists are far smaller).
+const MAX_EMPTY_RECORDS: u32 = 100_000;
+
 /// A bank of numbers and where each number lives in the file.
 struct Bank {
     values: Vec<Number>,
@@ -801,6 +805,13 @@ fn read_variable_db(reader: &mut Reader<'_>) -> Result<Vec<VariableType>> {
             }
         }
         let data_count = reader.u32()?;
+        // A type without fields gives records that read no bytes, so the count alone would
+        // decide how much memory they take.
+        if config.is_empty() && data_count > MAX_EMPTY_RECORDS {
+            return Err(parse_error(
+                "a WOLF RPG database type has more records than its fields allow",
+            ));
+        }
         let mut records = Vec::with_capacity(usize::try_from(data_count).unwrap_or(0).min(256));
         for _ in 0..data_count {
             let mut numbers = Vec::with_capacity(config.len());

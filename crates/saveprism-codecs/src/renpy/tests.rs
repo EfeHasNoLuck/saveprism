@@ -126,7 +126,7 @@ fn key_file() -> (String, SigningKey) {
     let mut scalar = [0_u8; 32];
     scalar[31] = 11;
     let signing = SigningKey::from_slice(&scalar).unwrap();
-    let point = signing.verifying_key().to_encoded_point(false);
+    let point = signing.verifying_key().to_sec1_point(false);
     let sec1 = sign::sec1_der(&signing.to_bytes(), point.as_bytes()).unwrap();
     let spki = sign::spki_from_point(point.as_bytes()).unwrap();
     (
@@ -168,7 +168,7 @@ fn an_edited_save_is_signed_with_the_players_key() {
     // The check `savetoken.verify_data` makes, with the public key the game trusts.
     assert!(sign::verify_data(&log, &text));
     assert!(!sign::verify_data(b"not the log", &text));
-    let point = signing.verifying_key().to_encoded_point(false);
+    let point = signing.verifying_key().to_sec1_point(false);
     let spki = STANDARD.encode(sign::spki_from_point(point.as_bytes()).unwrap());
     assert!(text.contains(&spki));
     // Everything but the log and the signatures is copied byte for byte.

@@ -64,9 +64,9 @@ impl Key {
 
 /// The SPKI DER (91 bytes) of a Pascal P-256 public key, in the layout Ren'Py writes.
 fn spki_der(key: &VerifyingKey) -> Vec<u8> {
-    let point = key.to_encoded_point(false);
+    let point = key.to_sec1_point(false);
     let mut der = SPKI_PREFIX.to_vec();
-    // `to_encoded_point(false)` starts with 0x04, which the prefix already holds.
+    // `to_sec1_point(false)` starts with 0x04, which the prefix already holds.
     der.extend_from_slice(point.as_bytes().get(1..).unwrap_or_default());
     der
 }
@@ -268,7 +268,7 @@ mod tests {
 
     /// A `security_keys.txt` line as `savetoken.create_token` writes it.
     fn key_line(signing: &SigningKey) -> String {
-        let point = signing.verifying_key().to_encoded_point(false);
+        let point = signing.verifying_key().to_sec1_point(false);
         let der = sec1_der(&signing.to_bytes(), point.as_bytes()).unwrap();
         let spki = spki_from_point(point.as_bytes()).unwrap();
         format!(

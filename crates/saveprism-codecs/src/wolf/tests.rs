@@ -155,3 +155,57 @@ proptest! {
         let _ = WolfRpgCodec.decode(&input, &mut ctx);
     }
 }
+
+#[test]
+fn a_database_type_without_fields_cannot_claim_billions_of_records() {
+    // Found by fuzzing: the variable database ends in a type with no fields and a huge record
+    // count, whose records read no bytes; it used to grow past 3 GB.
+    let mut bytes = vec![0_u8; 0x14];
+    bytes[6] = 0x55;
+    bytes.push(0x19);
+    bytes.extend_from_slice(&4_u16.to_le_bytes());
+    bytes.extend_from_slice(b"test");
+    bytes.extend_from_slice(&0x8E_u16.to_le_bytes());
+    let mut data = vec![0_u8; 1310];
+    let set: &[(usize, u8)] = &[
+        (4, 0xa0),
+        (6, 0x70),
+        (20, 0x05),
+        (247, 0x11),
+        (294, 0x78),
+        (353, 0xfe),
+        (496, 0x0a),
+        (636, 0x04),
+        (684, 0xf6),
+        (721, 0x0a),
+        (759, 0xfd),
+        (785, 0xa4),
+        (813, 0x02),
+        (832, 0x01),
+        (843, 0xfe),
+        (989, 0xa4),
+        (1000, 0xc0),
+        (1018, 0x02),
+        (1055, 0x02),
+        (1085, 0xfe),
+        (1140, 0x46),
+        (1141, 0x01),
+    ];
+    for &(at, value) in set {
+        data[at] = value;
+    }
+    for run in [346..353, 836..843, 1078..1085] {
+        data[run].fill(0xff);
+    }
+    data[1162..1262].fill(0xa3);
+    bytes.extend_from_slice(&data);
+    let limits = Limits::default();
+    let mut ctx = DecodeCtx::new(&limits);
+    let error = WolfRpgCodec.decode(&bytes, &mut ctx).unwrap_err();
+    assert_eq!(error.code(), WOLF_PARSE);
+    assert!(
+        error
+            .to_string()
+            .contains("more records than its fields allow")
+    );
+}
