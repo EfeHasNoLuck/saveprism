@@ -4,7 +4,7 @@ use libfuzzer_sys::fuzz_target;
 use saveprism_codecs::register_all;
 use saveprism_core::{DecodeCtx, Limits, Registry};
 
-const LAYERS: [&str; 18] = [
+const LAYERS: [&str; 23] = [
     "encoding.base64",
     "encoding.hex",
     "encoding.percent",
@@ -23,6 +23,11 @@ const LAYERS: [&str; 18] = [
     "container.zip",
     "container.tar",
     "compression.deflate",
+    "container.psx-card",
+    "container.psx-gme",
+    "container.ps2-card",
+    "container.psu",
+    "container.sharkport",
 ];
 
 fuzz_target!(|data: &[u8]| {

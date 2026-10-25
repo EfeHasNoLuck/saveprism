@@ -80,6 +80,7 @@ fn recognised(data: &[u8], name: &[u8], depth: usize, reg: &Registry) -> bool {
         depth,
     };
     reg.codecs()
+        .filter(|codec| codec.id() != "format.raw")
         .any(|codec| codec.sniff(data, &sniff_ctx) > Confidence::NONE)
         || reg
             .layers()

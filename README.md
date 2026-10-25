@@ -58,6 +58,10 @@ SavePrism needs Microsoft Edge WebView2, which Windows 10 and 11 already have; t
 | Compressed saves | bzip2, Zstandard, xz, LZMA-alone, LZ4 frame, Brotli, raw deflate, LZF (raw and `ZV` blocks) — found by content, any extension | the same formats inside any of these layers |
 | XOR-obfuscated saves | single-byte or repeating key up to 32 bytes | the format inside; the key is recovered from the inner format automatically |
 | Tar archives | `.tar` | one payload entry, the rest of the archive kept byte-identical |
+| PS1 memory cards | `.mcr`, `.mcd`, `.mem`, `.gme` | one save file from the card; XOR checksums recomputed and title/icon frames kept |
+| PS2 memory cards | `.ps2` | one save file from the card's FAT tree; ECC recomputed on the pages that change |
+| PS2 save exports | `.psu` | one file from the export; `.max` (LZARI) is not opened |
+| SharkPort GBA snapshots | `.sps`, `.xps` | the raw GBA save; title, date, comment and checksum kept |
 | Pasted hex / percent codes | text | decoded when the text spells a format SavePrism knows |
 | XML | `.xml` | element text and attribute values (comments, CDATA and declarations stay read-only) |
 | INI / CFG | `.ini`, `.cfg`, `.conf` | section values |
