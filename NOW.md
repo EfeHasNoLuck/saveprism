@@ -139,8 +139,6 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
      pass on saveeditor.online.
 
 ## Known gaps
-- Turkish UI: the body of host error toasts stays English (only the title is translated; `shell/errors.ts` shows the
-  host message as is). Needs per-code messages with parameters (visual check, 2026-10-24).
 - A zip save with several JSON entries opens only the largest (Shapez 2: `local-player.json`, not `research.json` or
   `savegame.json`; House Flipper 2: `parcel.json`, not `header.json`).
 - RPG Maker saves re-compress to different bytes: editable, not byte-exact. ES3 dicts with number keys don't open. Palworld PlZ2 world
@@ -154,12 +152,8 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
 - Real saves were pushed once in `bed2ed9` (private repo); ask the user before any history cleanup.
 - Layout (visual check, 2026-10-24): at 1000 px a list header with search, Add, Ask AI and Set all wraps to a second row
   (fits from 1100 px); at 900 px with pending edits in Turkish the bottom bar overflows sideways (945 px).
-- Where is my save? + Compare (visual check 2026-10-25, all themes/languages OK otherwise): clicking an "only here" row
-  for a whole container closes the dialog and shows nothing; Turkish locations still show `<game folder>`, `<game>`,
-  `<company>` (the TR FAQ says `<Oyun>`, `<Şirket>`); the light "only there" badge is 4.45:1 at 10 px; in dark mode the
-  "only here" badge has its row's background; the Twine card has a note but no path row. Fixed the same night: Open
-  folder (now a host command that opens only listed folders; not re-clicked in the app yet), a raw `search.empty` key,
-  random row order (now document order, tested).
+- Not re-checked in the running app after their fixes: Open folder (`7df9b4b`), the visual-check polish and the
+  translated error toasts (`9501734`), the password field focus (`b04c4ac`).
 - Ask AI on the Values card copies only the top-level values (as its search does), not values inside groups.
 - An MCP edit does not reach a SavePrism window with the same file open; that window refuses to save over it
   (SP-APP-023) until the file is opened again.
