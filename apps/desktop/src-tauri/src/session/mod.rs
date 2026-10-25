@@ -32,11 +32,13 @@ use serde::Serialize;
 
 mod backups;
 mod code;
+mod compare;
 mod export;
 mod game;
 mod history;
 mod json_apply;
 mod lcf;
+mod locations;
 mod naninovel;
 mod renpy;
 mod rgss;
@@ -45,6 +47,7 @@ mod sugarcube;
 
 pub use backups::BackupRow;
 pub use code::MAX_PASTED;
+pub use compare::{CompareKind, CompareResult, CompareRow};
 use game::check_bounds_in;
 pub use game::{
     Actor, AddLists, Bonus, Catalog, Entry, Field, FieldKind, GameView, NamedId, NoteKind, RowNote,
@@ -52,6 +55,7 @@ pub use game::{
 };
 use history::{DocStep, History, MAX_VALUES, Mutation, scalar_owned};
 pub use history::{HistoryResult, HistoryState};
+pub use locations::{SaveLocation, SaveLocationPath, save_locations};
 pub use renpy::{NOTICE_SIGNED_PERSISTENT, NOTICE_SIGNED_SAVE};
 pub use sugarcube::SugarCubeView;
 
@@ -128,6 +132,8 @@ pub mod app_codes {
     pub const FILE_CHANGED: &str = "SP-APP-023";
     /// An argument of an MCP tool has a value the tool cannot use.
     pub const MCP_ARGUMENT: &str = "SP-APP-024";
+    /// The file picked to compare with is encrypted, so it cannot be opened without a password.
+    pub const COMPARE_ENCRYPTED: &str = "SP-APP-025";
 }
 
 /// An error as the UI receives it.

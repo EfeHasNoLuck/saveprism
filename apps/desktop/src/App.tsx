@@ -32,6 +32,7 @@ import { BackupsDialog } from "./shell/BackupsDialog";
 import { BottomBar } from "./shell/BottomBar";
 import { copyCodePlace, pastedText, saveAsDefaultPath } from "./shell/code";
 import { CodeTextDialog, PasteCodeDialog, type OpenCodeResult } from "./shell/CodeDialogs";
+import { CompareDialog } from "./shell/CompareDialog";
 import { ConfirmDiscardDialog } from "./shell/ConfirmDiscardDialog";
 import { useNotify, useSettings } from "./shell/context";
 import { baseName, engineLabel, exportFileName } from "./shell/engine";
@@ -43,6 +44,7 @@ import { OpeningOverlay } from "./shell/OpeningOverlay";
 import { gameFolder } from "./shell/names";
 import { PasswordDialog } from "./shell/PasswordDialog";
 import { addRecent, loadRecent, saveRecent, type RecentFile } from "./shell/recent";
+import { SaveLocationsDialog } from "./shell/SaveLocationsDialog";
 import { SettingsDialog } from "./shell/SettingsDialog";
 import { browserStorage } from "./shell/settings";
 import { firstListSearch, isTextEditing, shortcutFor } from "./shell/shortcuts";
@@ -78,6 +80,9 @@ function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [backupsOpen, setBackupsOpen] = useState(false);
+  /** Path of the second save of a comparison, while its dialog is open. */
+  const [comparePath, setComparePath] = useState<string | null>(null);
+  const [locationsOpen, setLocationsOpen] = useState(false);
   /** Name of the file that is taking a while to open (the loading cover), else null. */
   const [opening, setOpening] = useState<string | null>(null);
   const [history, setHistory] = useState<HistoryState>(NO_HISTORY);
@@ -257,6 +262,26 @@ function App() {
       notifyError(t("toast.openFailed"), error);
     }
   }, [busy, notifyError, requestOpen, t]);
+
+  /** Picks the second save of a comparison and opens its read-only dialog. */
+  const chooseCompare = useCallback(async () => {
+    if (!file || busy) return;
+    try {
+      const picked = await openDialog({
+        multiple: false,
+        directory: false,
+        title: t("dialog.compareTitle"),
+      });
+      if (typeof picked === "string") setComparePath(picked);
+    } catch (error) {
+      notifyError(t("compare.failed"), error);
+    }
+  }, [busy, file, notifyError, t]);
+
+  /** Closes the comparison and scrolls the editor to the value the player picked. */
+  const revealCompareRow = useCallback((path: string) => {
+    window.requestAnimationFrame(() => editorRef.current?.reveal(path));
+  }, []);
 
   // Drag and drop of a file onto the window (the host reports real paths).
   const openPathRef = useRef(requestOpen);
@@ -619,6 +644,8 @@ function App() {
         settingsOpen ||
         aboutOpen ||
         backupsOpen ||
+        comparePath !== null ||
+        locationsOpen ||
         jsonOpen ||
         pasteRequest !== null ||
         codeText !== null ||
@@ -746,6 +773,7 @@ function App() {
               onOpenFile={() => void chooseAndOpen()}
               onPasteCode={() => requestPaste()}
               onOpenRecent={requestOpen}
+              onWhereSaves={() => setLocationsOpen(true)}
             />
           )}
           {opening !== null ? <OpeningOverlay name={opening} /> : null}
@@ -767,6 +795,7 @@ function App() {
             onUndoAll={() => void undoAll()}
             onOpenJson={openJson}
             onOpenBackups={() => setBackupsOpen(true)}
+            onCompare={() => void chooseCompare()}
             onSaveAs={() => void saveAsNew()}
             onOverwrite={() => void overwriteOriginal()}
             copyCode={copyCodePlace(file)}
@@ -791,6 +820,17 @@ function App() {
             onClose={() => setBackupsOpen(false)}
             onRestore={restoreFrom}
           />
+        ) : null}
+        {comparePath ? (
+          <CompareDialog
+            path={comparePath}
+            fileName={baseName(comparePath)}
+            onClose={() => setComparePath(null)}
+            onReveal={revealCompareRow}
+          />
+        ) : null}
+        {locationsOpen ? (
+          <SaveLocationsDialog onClose={() => setLocationsOpen(false)} />
         ) : null}
         {jsonOpen ? (
           <JsonDialog

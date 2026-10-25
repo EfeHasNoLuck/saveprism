@@ -10,8 +10,9 @@ use std::path::PathBuf;
 use std::sync::{Mutex, MutexGuard, PoisonError};
 
 use session::{
-    ApiError, BackupRow, Change, Field, FieldKind, GameView, HistoryResult, HistoryState, NodeRow,
-    OpenInfo, Page, SaveResult, Session, app_codes,
+    ApiError, BackupRow, Change, CompareResult, Field, FieldKind, GameView, HistoryResult,
+    HistoryState, NodeRow, OpenInfo, Page, SaveLocation, SaveResult, Session, app_codes,
+    save_locations,
 };
 use tauri::{AppHandle, Manager, State};
 use tauri_plugin_opener::OpenerExt;
@@ -235,6 +236,19 @@ async fn history_state(state: State<'_, AppState>) -> Result<HistoryState, ApiEr
     state.with_session(|session| Ok(session.history_state()))
 }
 
+/// Where saves usually are on Windows, per engine, with the folders that exist on this PC.
+#[tauri::command]
+fn save_location_list() -> Vec<SaveLocation> {
+    save_locations()
+}
+
+/// Compares the open document with another save. The other file is opened read-only (same
+/// detection, no password prompt: encrypted files are refused) and nothing is written.
+#[tauri::command]
+async fn compare_with(state: State<'_, AppState>, path: String) -> Result<CompareResult, ApiError> {
+    state.with_session(|session| session.compare_with(&path))
+}
+
 /// The backups of the open file, newest first.
 #[tauri::command]
 async fn list_backups(state: State<'_, AppState>) -> Result<Vec<BackupRow>, ApiError> {
@@ -341,6 +355,8 @@ pub fn run() {
             undo,
             redo,
             history_state,
+            save_location_list,
+            compare_with,
             list_backups,
             restore_backup,
             notices_available,

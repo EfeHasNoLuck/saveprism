@@ -1,5 +1,6 @@
 import { Pencil } from "lucide-react";
 import {
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -68,7 +69,7 @@ export function EntryList({
 }: EntryListProps) {
   const { t } = useTranslation("editor");
   const format = useFormatNumber();
-  const { pending, fields, readOnly } = useEditorContext();
+  const { pending, fields, readOnly, reveal } = useEditorContext();
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(0);
   const { ref, columns } = useGridColumns();
@@ -116,6 +117,17 @@ export function EntryList({
   }
 
   const size = columns * ROWS_PER_PAGE;
+  // A compare row that is an entry of this list: drop the search and turn to its page.
+  useEffect(() => {
+    if (reveal === null) return;
+    const index = entries.findIndex((entry) => entry.field.path === reveal.path);
+    if (index < 0) return;
+    const handle = window.requestAnimationFrame(() => {
+      setQuery("");
+      setPage(Math.floor(index / size));
+    });
+    return () => window.cancelAnimationFrame(handle);
+  }, [reveal, entries, size]);
   const filtered = useMemo(
     () =>
       filterEntries(entries, query, (entry) =>

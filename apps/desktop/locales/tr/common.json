@@ -43,7 +43,8 @@
     "saveFiles": "Kayıt dosyaları",
     "allFiles": "Tüm dosyalar",
     "exportTitle": "JSON'u dışa aktar",
-    "jsonFiles": "JSON (*.json)"
+    "jsonFiles": "JSON (*.json)",
+    "compareTitle": "Karşılaştırılacak kaydı seç"
   },
   "start": {
     "dropActive": "Açmak için bırak",
@@ -55,7 +56,8 @@
     "faqUnity": "Unity: %USERPROFILE%\\AppData\\LocalLow\\<Şirket>\\<Oyun>",
     "faqUnreal": "Unreal: %LOCALAPPDATA%\\<Oyun>\\Saved\\SaveGames",
     "pasteCode": "Kod yapıştır",
-    "pasteHint": "Tarayıcı oyunu mu? Verdiği kayıt kodunu yapıştır (Ctrl+V)."
+    "pasteHint": "Tarayıcı oyunu mu? Verdiği kayıt kodunu yapıştır (Ctrl+V).",
+    "whereLink": "Kaydım nerede?"
   },
   "banner": {
     "readOnly": "Bu dosya henüz güvenle yazılamıyor. Bakabilirsin ama kaydedemezsin.",
@@ -94,7 +96,8 @@
     "removedTip_one": "{{count}} kaldırılan kayıt",
     "removedTip_other": "{{count}} kaldırılan kayıt",
     "addedTag": "eklendi",
-    "removedTag": "kaldırıldı"
+    "removedTag": "kaldırıldı",
+    "compareItem": "Başka bir kayıtla karşılaştır…"
   },
   "confirm": {
     "discardOpen_one": "{{count}} değişiklik silinsin ve başka bir dosya açılsın mı?",
@@ -156,6 +159,57 @@
     "confirmBody": "{{name}}, {{time}} tarihli yedekle değiştirilecek. Önce şimdiki dosyanın yedeği alınır, böylece bu listeden ona geri dönebilirsin.",
     "confirmLoss_one": "Kaydedilmemiş {{count}} değişikliğin kaybolacak.",
     "confirmLoss_other": "Kaydedilmemiş {{count}} değişikliğin kaybolacak."
+  },
+  "compare": {
+    "title": "{{name}} ile karşılaştır",
+    "description": "Diğer kayıt yalnızca okunur. Hiçbir şey yazılmaz; tıkladığın satır sadece buradaki değere gider.",
+    "failed": "Dosya karşılaştırılamadı.",
+    "count_one": "{{count}} fark",
+    "count_other": "{{count}} fark",
+    "capped": "{{count}} farktan ilk {{shown}} tanesi gösteriliyor",
+    "found_one": "{{count}} eşleşme",
+    "found_other": "{{count}} eşleşme",
+    "empty": "İki kayıtta aynı değerler var.",
+    "search": "Yol ve değerlerde ara",
+    "onlyHere": "yalnızca burada",
+    "onlyThere": "yalnızca orada",
+    "here": "Bu dosya",
+    "there": "Diğer dosya",
+    "goTo": "Bu değeri düzenleyicide göster"
+  },
+  "locations": {
+    "title": "Kaydım nerede?",
+    "description": "SavePrism bilgisayarını taramaz. Bunlar olağan konumlardır; birini açıp oyunun klasörünü bul. <game> ve <company> oyunun kendi klasör adlarının yerini tutar.",
+    "openFolder": "Klasörü aç",
+    "notFound": "Bu bilgisayarda yok",
+    "openFailed": "Klasör açılamadı",
+    "failed": "Kayıt konumları okunamadı.",
+    "engine": {
+      "rpgmaker-mv": "RPG Maker MV / MZ",
+      "rpgmaker-classic": "RPG Maker XP / VX / VX Ace / 2000 / 2003",
+      "wolf-rpg": "Wolf RPG Editor",
+      "unity": "Unity",
+      "unreal": "Unreal Engine",
+      "renpy": "Ren'Py",
+      "godot": "Godot",
+      "twine": "Twine / SugarCube",
+      "flash": "Flash",
+      "witcher3": "The Witcher 3",
+      "palworld": "Palworld"
+    },
+    "note": {
+      "rpgmaker-mv": "MV www/save, MZ save klasörünü kullanır.",
+      "rpgmaker-classic": "Kayıt oyun klasöründe veya Save klasöründe olabilir.",
+      "wolf-rpg": "Kayıtlar oyun klasöründeki Save klasöründe.",
+      "unity": "PlayerPrefs Windows kayıt defterindedir: regedit ile dışa aktar.",
+      "unreal": "Proje adı oyunun klasör adıdır.",
+      "renpy": "Oyun klasöründeki game/saves de olabilir.",
+      "godot": "user:// klasörü.",
+      "twine": "Tarayıcı deposunda: oyunun Save to disk / dışa aktarma seçeneğini kullan.",
+      "flash": "Yerel paylaşılan nesneler.",
+      "witcher3": "Belgeler klasörü OneDrive'a taşınmış olabilir.",
+      "palworld": "Steam kimliği klasörünün altında."
+    }
   },
   "password": {
     "title": "Bu dosya şifreli",

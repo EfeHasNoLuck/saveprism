@@ -1,6 +1,6 @@
 import { Check, ChevronDown } from "lucide-react";
 import { Select } from "radix-ui";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { Actor } from "@/api/commands";
 import { AskAiButton } from "./AskAiButton";
@@ -90,6 +90,15 @@ export function Characters({
   const format = useFormatNumber();
   const ctx = useEditorContext();
   const [selectedId, setSelectedId] = useState<number | null>(actors[0]?.id ?? null);
+  // A compare row that belongs to another character picks that character first.
+  useEffect(() => {
+    if (ctx.reveal === null) return;
+    const found = actors.find((a) => actorPaths(a).includes(ctx.reveal?.path ?? ""));
+    if (found === undefined) return;
+    // In a frame, so a reveal never creates a cascade of renders.
+    const handle = window.requestAnimationFrame(() => setSelectedId(found.id));
+    return () => window.cancelAnimationFrame(handle);
+  }, [actors, ctx.reveal]);
   const actor = actors.find((a) => a.id === selectedId) ?? actors[0];
   const changed = useMemo(
     () => countPending(ctx.pending, actors.flatMap(actorPaths)),

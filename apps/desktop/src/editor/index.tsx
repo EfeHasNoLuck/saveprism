@@ -25,7 +25,12 @@ import {
 } from "@/api/commands";
 import { useNotify } from "@/shell/context";
 import { describeError } from "@/shell/errors";
-import { EditorContext, toApiError, type EditorContextValue } from "./context";
+import {
+  EditorContext,
+  toApiError,
+  type EditorContextValue,
+  type RevealTarget,
+} from "./context";
 import { registerEditorBundles } from "./i18n";
 import { RpgMaker } from "./RpgMaker";
 import { SugarCube } from "./SugarCube";
@@ -37,6 +42,8 @@ export interface EditorHandle {
   applyHistory: (changed: Field[]) => void;
   /** Reads the view again after a step that added or removed entries (scroll and open cards stay). */
   reload: () => void;
+  /** Opens the groups around `path` and scrolls to the value (a picked compare row). */
+  reveal: (path: string) => void;
 }
 
 export interface EditorViewProps {
@@ -77,6 +84,8 @@ export function EditorView({
   const [pending, setPending] = useState<ReadonlySet<string>>(new Set());
   const invalidPaths = useRef<Set<string>>(new Set());
   const lastInvalid = useRef(false);
+  const [reveal, setReveal] = useState<RevealTarget | null>(null);
+  const revealNonce = useRef(0);
 
   // Keep the latest callbacks without re-creating the context functions.
   const changedRef = useRef(onChangesChanged);
@@ -176,9 +185,40 @@ export function EditorView({
       reload: () => {
         void reloadView();
       },
+      reveal: (path) => {
+        revealNonce.current += 1;
+        setReveal({ path, nonce: revealNonce.current });
+      },
     }),
     [refreshCount, reloadView],
   );
+
+  // Scrolls to the value the app asked for. The groups along the way open themselves, so this
+  // waits a few frames for the rows to appear.
+  useEffect(() => {
+    if (reveal === null) return;
+    let frame = 0;
+    let handle = 0;
+    const find = (): HTMLElement | null => {
+      for (const element of document.querySelectorAll<HTMLElement>("[data-field-path]")) {
+        if (element.dataset.fieldPath === reveal.path) return element;
+      }
+      return null;
+    };
+    const tick = () => {
+      const element = find();
+      if (element !== null) {
+        element.scrollIntoView({ block: "center", behavior: "smooth" });
+        const control = element.querySelector<HTMLElement>("input, button");
+        control?.focus({ preventScroll: true });
+        return;
+      }
+      frame += 1;
+      if (frame < 120) handle = window.requestAnimationFrame(tick);
+    };
+    handle = window.requestAnimationFrame(tick);
+    return () => window.cancelAnimationFrame(handle);
+  }, [reveal]);
 
   const reportInvalid = useCallback((path: string, invalid: boolean) => {
     const set = invalidPaths.current;
@@ -238,6 +278,7 @@ export function EditorView({
           return false;
         }
       },
+      reveal,
     }),
     [
       readOnly,
@@ -252,6 +293,7 @@ export function EditorView({
       onEditMany,
       runStructural,
       reportCommandError,
+      reveal,
     ],
   );
 

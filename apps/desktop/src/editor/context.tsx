@@ -9,6 +9,13 @@ import {
 } from "@/api/commands";
 import type { FormatNumber } from "./helpers";
 
+/** A path the app asked the editor to show (a compare row), with a counter so the same path works
+ * again when it is picked twice. */
+export interface RevealTarget {
+  path: string;
+  nonce: number;
+}
+
 export interface EditorContextValue {
   readOnly: boolean;
   /** Name of the open file, as the header shows it. */
@@ -38,6 +45,8 @@ export interface EditorContextValue {
   removeValue: (path: string) => Promise<boolean>;
   /** Reads the names from a game data folder the player picked. */
   setDataFolder: (folder: string) => Promise<boolean>;
+  /** A value to scroll to and focus (a compare row the player picked), else null. */
+  reveal: RevealTarget | null;
 }
 
 export const EditorContext = createContext<EditorContextValue | null>(null);
