@@ -45,6 +45,9 @@ SavePrism needs Microsoft Edge WebView2, which Windows 10 and 11 already have; t
 | TyranoScript | `.sav` | values |
 | Naninovel | save slots | custom variables |
 | QSP | `.sav` | values; Windows-1251 and KOI8-R legacy saves |
+| KiriKiri / KAG | `.ksd`, `.kdt` | dictionary and array values; plain, scrambled (`FE FE` mode 0/1) and zlib-compressed text |
+| GameMaker | INI, JSON, `ds_map_write` hex dumps | INI/JSON values; `ds_map` values (other `ds_map` versions and `ds_list` dumps are not opened) |
+| Pixel Game Maker MV | `play_LOADFILE*.json` | values (plain JSON) |
 | Flash | `.sol` (AMF0 / AMF3) | values |
 | Pokémon Gen 3 | `.sav` | money, coins, bag, party EXP / IVs / EVs / stats |
 | The Witcher 3 | `.sav` | orens, item quantities |

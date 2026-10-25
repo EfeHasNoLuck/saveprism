@@ -311,3 +311,49 @@ fn layers_without_a_magic_are_found_by_content() {
         ["obfuscation.xor", "format.json"]
     );
 }
+
+#[test]
+fn kirikiri_and_gamemaker_flavors_are_recognised() {
+    let reg = registry();
+    let cases: &[(&[u8], &[&str])] = &[
+        (
+            include_bytes!("../../../fixtures/synthetic/kirikiri/save01.ksd"),
+            &["format.tjs2"],
+        ),
+        (
+            include_bytes!("../../../fixtures/synthetic/kirikiri/system.kdt"),
+            &["format.tjs2"],
+        ),
+        (
+            include_bytes!("../../../fixtures/synthetic/kirikiri/scrambled.ksd"),
+            &["obfuscation.kirikiri", "format.tjs2"],
+        ),
+        (
+            include_bytes!("../../../fixtures/synthetic/kirikiri/compressed.ksd"),
+            &["obfuscation.kirikiri", "format.tjs2"],
+        ),
+        (
+            include_bytes!("../../../fixtures/synthetic/gamemaker/save.ini"),
+            &["format.ini"],
+        ),
+        (
+            include_bytes!("../../../fixtures/synthetic/gamemaker/save.json"),
+            &["format.json"],
+        ),
+        (
+            include_bytes!("../../../fixtures/synthetic/gamemaker/save-base64.txt"),
+            &["encoding.base64", "format.json"],
+        ),
+        (
+            include_bytes!("../../../fixtures/synthetic/gamemaker/ds-map.txt"),
+            &["format.gamemaker-ds-map"],
+        ),
+        (
+            include_bytes!("../../../fixtures/synthetic/pixel-game-maker-mv/play_LOADFILE1.json"),
+            &["format.json"],
+        ),
+    ];
+    for (bytes, expected) in cases {
+        check(&reg, bytes, expected);
+    }
+}

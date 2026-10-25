@@ -53,6 +53,8 @@ const CODEC_LABELS: Record<string, string> = {
   "format.sqlite": "SQLite",
   "format.wolf-rpg": "Wolf RPG",
   "format.qsp": "QSP",
+  "format.tjs2": "KiriKiri",
+  "format.gamemaker-ds-map": "GameMaker",
   "format.naninovel": "Naninovel",
   "format.witcher3": "The Witcher 3",
   "format.xml": "XML",
