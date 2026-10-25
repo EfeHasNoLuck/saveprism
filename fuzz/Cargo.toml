@@ -161,3 +161,10 @@ path = "fuzz_targets/nbt.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "structured_text"
+path = "fuzz_targets/structured_text.rs"
+test = false
+doc = false
+bench = false

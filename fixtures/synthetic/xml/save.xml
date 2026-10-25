@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SavePrism synthetic save; invented data -->
+<save version="2" created="2026-10-24T12:00:00Z">
+  <player id="1" name="Mira &amp; Rune">
+    <stats hp="42" mana="7.5"/>
+    <inventory>
+      <item slot="1" kind="sword">Old Blade</item>
+      <item slot="2" kind="shield"><![CDATA[Iron <Guard>]]></item>
+      <item slot="3" kind="potion">Potion &amp; Herb</item>
+    </inventory>
+    <bio>  A line with leading spaces
+and a second line  </bio>
+    <?note keep="me"?>
+    <empty></empty>
+  </player>
+</save>

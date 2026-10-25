@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plist version="1.0">
+<dict>
+  <key>city</key>
+  <string>İstanbul</string>
+  <key>empty</key>
+  <string></string>
+  <key>nested</key>
+  <array><dict><key>k</key><string>v</string></dict></array>
+</dict>
+</plist>

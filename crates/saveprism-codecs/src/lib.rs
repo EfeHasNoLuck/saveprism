@@ -7,10 +7,12 @@ use saveprism_core::Registry;
 
 pub mod bson;
 pub mod cbor;
+pub mod csv_text;
 pub mod es3;
 pub mod gen3;
 pub mod godot;
 pub mod gvas;
+pub mod ini;
 pub mod javaser;
 pub mod json;
 pub mod layers;
@@ -22,14 +24,20 @@ pub mod nbt;
 pub mod nrbf;
 pub mod palworld;
 pub mod pickle;
+pub mod plist;
+pub mod properties;
 pub mod qsp;
 pub mod reg;
 pub mod renpy;
 pub mod rpgmaker;
 pub mod sol;
 pub mod sqlite;
+mod text_common;
+pub mod toml_text;
 pub mod witcher3;
 pub mod wolf;
+pub mod xml;
+pub mod yaml;
 mod zip_common;
 
 /// Registers every layer and codec of this crate into `reg`.
@@ -42,14 +50,18 @@ pub fn register_all(reg: &mut Registry) {
     json::register(reg);
     rpgmaker::register(reg);
     es3::register(reg);
+    csv_text::register(reg);
     gen3::register(reg);
     gvas::register(reg);
+    ini::register(reg);
     palworld::register(reg);
     marshal::register(reg);
     naninovel::register(reg);
     javaser::register(reg);
     lcf::register(reg);
     pickle::register(reg);
+    plist::register(reg);
+    properties::register(reg);
     qsp::register(reg);
     reg::register(reg);
     renpy::register(reg);
@@ -57,8 +69,11 @@ pub fn register_all(reg: &mut Registry) {
     nrbf::register(reg);
     godot::register(reg);
     sqlite::register(reg);
+    toml_text::register(reg);
     wolf::register(reg);
     witcher3::register(reg);
+    yaml::register(reg);
+    xml::register(reg);
 }
 
 #[cfg(test)]

@@ -57,6 +57,13 @@ SavePrism needs Microsoft Edge WebView2, which Windows 10 and 11 already have; t
 | Compressed saves | bzip2, Zstandard, xz, LZMA-alone, LZ4 frame, Brotli (`.br`) | the same formats inside any of these layers |
 | Tar archives | `.tar` | one payload entry, the rest of the archive kept byte-identical |
 | Pasted hex / percent codes | text | decoded when the text spells a format SavePrism knows |
+| XML | `.xml` | element text and attribute values (comments, CDATA and declarations stay read-only) |
+| INI / CFG | `.ini`, `.cfg`, `.conf` | section values |
+| Java properties | `.properties` | values (Java escapes and line continuations) |
+| TOML | `.toml` | strings, integers, floats and booleans |
+| YAML | `.yaml`, `.yml` | plain, quoted and literal-block scalars (anchors and tags stay read-only) |
+| CSV | `.csv` | cells (quoting kept) |
+| Property lists | `.plist` (XML and binary) | XML strings, integers, reals and booleans; binary lists open read-only |
 
 A file that does not survive the round-trip check opens read-only with a warning.
 

@@ -165,8 +165,20 @@ pub(crate) fn inner_is_known(data: &[u8]) -> bool {
         let mut reg = Registry::default();
         crate::register_all(&mut reg);
         let ctx = SniffCtx::default();
+        // Loose text formats accept almost any short ASCII, which a trial decode of random bytes
+        // can produce, so they do not prove that a layer without a magic is really there.
         let known = reg
             .codecs()
+            .filter(|codec| {
+                !matches!(
+                    codec.id(),
+                    "format.csv"
+                        | "format.ini"
+                        | "format.properties"
+                        | "format.toml"
+                        | "format.yaml"
+                )
+            })
             .any(|codec| codec.sniff(data, &ctx) >= Confidence::MEDIUM)
             || reg.layers().any(|layer| {
                 !matches!(layer.id(), "encoding.hex" | "encoding.percent")

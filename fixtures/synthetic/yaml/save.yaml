@@ -1,0 +1,22 @@
+# SavePrism synthetic YAML
+save:
+  version: 2
+  player:
+    name: Mira
+    level: 42
+    ratio: 1.5
+    active: true
+    title: "the hero"
+    quote: 'it''s fine'
+    bio: |
+      line one
+      line two
+  inventory:
+    - {slot: 1, kind: sword, name: Old Blade}
+    - slot: 2
+      kind: shield
+  base: &base
+    x: 1
+  copy: *base
+  tagged: !!str 5
+  empty:
