@@ -113,6 +113,8 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
    - Wave 2 running (EVREN, started 2026-10-25 ~03:50, worktrees `../saveprism-wt/{unlock,keys,unity,enc}`, briefs
      `.motor/w2-*.md`): content-based layers + XOR + LZF; key finder for ES3 passwords from the game's files; Odin + ES2;
      text encodings. Terraria, Adventure Creator, Pixel Crushers and the Gwent view come after.
+     Merged 2026-10-25 (rust 3/3 + web 3/3): layers by content + XOR auto-break + LZF (`9d50e17`), Odin Serializer
+     binary (`73ebf7a`; Easy Save 2 not done: no public byte layout, clean room). Still running: keys, enc.
    - Wave 2, first: auto-unlock (user idea, 2026-10-24): every layer tried by content whatever the extension; simple XOR
      obfuscation broken automatically from the expected start of the inner format (`{`, `<?xml`, `PK`...); a key finder
      that reads candidate passwords from the game's own files (Unity `Assembly-CSharp.dll` strings, IL2CPP

@@ -13,6 +13,7 @@ merge passed `kontrol.sh rust` 3/3 and `web` 3/3. Wave 2 runs on EVREN overnight
   00:44-00:47 UTC; opencode sessions: unlock `ses_e8f7c068effed7iUZ9ENzfl63U`, keys `ses_e8f7b1a6dffeh13gHFaNaon4Vh`,
   unity `ses_e8f7a3221ffeW6dUlWm52vBmKq`, enc `ses_e8f79482affeJ7oo3yToujoMKt` (resume one with `--session <id>`).
   They were left running when Claude stopped at 99% weekly (they cost no Claude quota and never touch main).
+  Already merged: unlock (`9d50e17`), unity (`73ebf7a`). Left: keys, enc.
 - Visual check of Where is my save? + Compare done (NOW.md known gaps); its three real bugs fixed in `7df9b4b`, but
   Open folder was not clicked again in the app.
 
