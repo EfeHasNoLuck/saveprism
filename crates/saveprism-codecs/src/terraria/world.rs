@@ -4,11 +4,16 @@
 //! other part of the file (tiles, chests, signs, NPCs, tile entities, pressure plates, town
 //! manager, bestiary, creative powers and the footer) is exposed as read-only `sections` bytes and
 //! copied back unchanged. Section pointers are recomputed when an edited header changes length.
+//!
+//! The world name, id, size and bounds are read-only: the footer at the end of the sections repeats
+//! the name and id, and the tile section's length depends on width x height, so the game rejects a
+//! file where they disagree with the bytes this codec copies unchanged. The 64-bit flags word of
+//! the Re-Logic header is kept as the read-only parameter `flags`; an edit patches only bit 0.
 
 use saveprism_core::limits::len_u64;
 use saveprism_core::{
-    Codec, Confidence, DecodeCtx, Decoded, Error, FloatWidth, IntWidth, Node, NodeFlags, Params,
-    Path, Result, SaveDoc, SniffCtx, TypeHint, Value,
+    Codec, Confidence, DecodeCtx, Decoded, Error, FloatWidth, IntWidth, Node, NodeFlags,
+    ParamValue, Params, Path, Result, SaveDoc, SniffCtx, TypeHint, Value,
 };
 
 use super::{FILE_TYPE_WORLD, TERRARIA_PARSE, TERRARIA_UNSUPPORTED, TERRARIA_WRITE};
@@ -21,6 +26,8 @@ pub(crate) const MAX_VERSION: u32 = 600;
 const SECTION_COUNT: usize = 11;
 /// Prefix of every hint this codec writes.
 pub const HINT_PREFIX: &str = "Terraria:";
+/// Parameter holding the original 64-bit flags word of the header (8 bytes, little-endian).
+pub const P_FLAGS: &str = "flags";
 
 /// The `format.terraria-world` codec.
 pub(crate) struct TerrariaWorldCodec;
@@ -141,6 +148,7 @@ struct SectionHeader {
     version: u32,
     magic: String,
     revision: u32,
+    flags: u64,
     favorite: bool,
     pointers: Vec<i32>,
     frame_bits: Vec<u8>,
@@ -223,6 +231,7 @@ fn read_section_header(input: &[u8]) -> Result<SectionHeader> {
         version,
         magic,
         revision,
+        flags,
         favorite,
         pointers,
         frame_bits,
@@ -291,8 +300,10 @@ fn read_header(section: &[u8], version: u32) -> Result<Header> {
     let mut reader = Reader::new(section);
     let mut fields: Vec<(&'static str, Field)> = Vec::new();
 
+    // Read-only (name, id, size and bounds): the footer repeats the name and id, and the tile
+    // section's length depends on width x height, so the game rejects a file that changes them.
     let name = reader.dotnet_string()?;
-    fields.push(("name", Field::Text(name, NodeFlags::empty())));
+    fields.push(("name", Field::Text(name, NodeFlags::READ_ONLY)));
     let seed = reader.dotnet_string()?;
     fields.push(("seed", Field::Text(seed, NodeFlags::empty())));
     let world_gen_version = reader.u64()?;
@@ -306,13 +317,9 @@ fn read_header(section: &[u8], version: u32) -> Result<Header> {
     ));
     let guid = reader.take(16)?.to_vec();
     fields.push(("guid", Field::Bytes(guid, NodeFlags::READ_ONLY)));
-    push_int(&mut fields, "id", i128::from(reader.i32()?));
-    push_int(&mut fields, "left", i128::from(reader.i32()?));
-    push_int(&mut fields, "right", i128::from(reader.i32()?));
-    push_int(&mut fields, "top", i128::from(reader.i32()?));
-    push_int(&mut fields, "bottom", i128::from(reader.i32()?));
-    push_int(&mut fields, "height", i128::from(reader.i32()?));
-    push_int(&mut fields, "width", i128::from(reader.i32()?));
+    for key in ["id", "left", "right", "top", "bottom", "height", "width"] {
+        push_read_only_int(&mut fields, key, i128::from(reader.i32()?));
+    }
     push_int(&mut fields, "game_mode", i128::from(reader.i32()?));
 
     for (key, since) in [
@@ -592,7 +599,18 @@ fn dotnet_string_bytes(text: &str) -> Result<Vec<u8>> {
     Ok(out)
 }
 
-fn write_world(doc: &SaveDoc, _params: &Params) -> Result<Vec<u8>> {
+/// The header flags word read from the file, or 0 when the recipe does not carry one.
+fn original_flags(params: &Params) -> Result<u64> {
+    match params.get(P_FLAGS) {
+        None => Ok(0),
+        Some(ParamValue::Bytes(bytes)) => <[u8; 8]>::try_from(bytes.as_slice())
+            .map(u64::from_le_bytes)
+            .map_err(|_| write_error("the saved world flags are not 8 bytes")),
+        Some(_) => Err(write_error("the saved world flags are not a byte string")),
+    }
+}
+
+fn write_world(doc: &SaveDoc, params: &Params) -> Result<Vec<u8>> {
     let version = u32_at(doc, "/version")?;
     if !(MIN_VERSION..=MAX_VERSION).contains(&version) {
         return Err(unsupported(format!(
@@ -633,7 +651,10 @@ fn write_world(doc: &SaveDoc, _params: &Params) -> Result<Vec<u8>> {
     out.extend_from_slice(magic.as_bytes());
     out.push(FILE_TYPE_WORLD);
     out.extend_from_slice(&revision.to_le_bytes());
-    out.extend_from_slice(&u64::from(favorite).to_le_bytes());
+    // Only bit 0 (favorite) is ours; the other bits of the original word survive.
+    let flags = original_flags(params)?;
+    let flags = if favorite { flags | 1 } else { flags & !1 };
+    out.extend_from_slice(&flags.to_le_bytes());
     let count = i16::try_from(SECTION_COUNT).map_err(|_| write_error("section count"))?;
     out.extend_from_slice(&count.to_le_bytes());
     let pointers_offset = out.len();
@@ -864,10 +885,9 @@ impl Codec for TerrariaWorldCodec {
         let header = read_header(section, meta.version)?;
         let doc = build_doc(input, &meta, &header, ctx)?;
         ctx.charge_nodes(len_u64(doc.len()))?;
-        Ok(Decoded {
-            doc,
-            params: Params::new(),
-        })
+        let mut params = Params::new();
+        params.set(P_FLAGS, meta.flags.to_le_bytes().to_vec());
+        Ok(Decoded { doc, params })
     }
 
     fn encode(&self, doc: &SaveDoc, params: &Params) -> Result<Vec<u8>> {

@@ -65,7 +65,8 @@
     "renpySigned": "Ren'Py save: after you save changes, the game asks whether to trust this save. Answer Yes.",
     "renpyKeySigned": "Ren'Py save: changes are signed with your own Ren'Py key.",
     "renpyPersistentKeySigned": "Ren'Py persistent data: changes are signed with your own Ren'Py key.",
-    "renpyPersistentSigned": "This Ren'Py persistent data is signed. The game would throw away an edited copy, so it is open read-only."
+    "renpyPersistentSigned": "This Ren'Py persistent data is signed. The game would throw away an edited copy, so it is open read-only.",
+    "terrariaLayout": "This Terraria file's layout is not recognized for this version of the game, so it is open read-only."
   },
   "bottom": {
     "changes_one": "{{count}} change pending",

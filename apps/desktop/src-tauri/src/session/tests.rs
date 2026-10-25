@@ -3723,3 +3723,81 @@ fn an_mv_item_can_be_removed_undone_and_saved() {
     assert_eq!(reopened.info().guard, GuardLevel::Exact);
     assert_eq!(ids(&rpg_view(&reopened).unwrap().items), [2, 5]);
 }
+
+const TERRARIA_PLAYER: &str = "synthetic/terraria/player-decrypted.plr";
+const TERRARIA_WORLD: &str = "synthetic/terraria/world.wld";
+
+/// Replaces the first occurrence of the little-endian `old` numbers with the `new` ones.
+fn patch_i32s(bytes: &mut [u8], old: &[i32], new: &[i32]) {
+    let find: Vec<u8> = old.iter().flat_map(|value| value.to_le_bytes()).collect();
+    let put: Vec<u8> = new.iter().flat_map(|value| value.to_le_bytes()).collect();
+    let at = bytes
+        .windows(find.len())
+        .position(|window| window == find)
+        .unwrap();
+    bytes[at..at + put.len()].copy_from_slice(&put);
+}
+
+#[test]
+fn a_terraria_file_with_values_no_real_file_has_opens_read_only_with_a_reason() {
+    let env = env();
+    for relative in [TERRARIA_PLAYER, TERRARIA_WORLD] {
+        let path = copy_in(&env, relative);
+        let info = open(&env, &path, None).unwrap().info();
+        assert!(info.editable, "{relative}");
+        assert_eq!(info.notice, None, "{relative}");
+    }
+
+    // Life, max life, mana, max mana are 140, 140, 60, 60; a max life of 5000 is no real value.
+    let path = copy_in(&env, TERRARIA_PLAYER);
+    let mut bytes = fs::read(&path).unwrap();
+    patch_i32s(&mut bytes, &[140, 140, 60, 60], &[140, 5000, 60, 60]);
+    fs::write(&path, &bytes).unwrap();
+    let mut session = open(&env, &path, None).unwrap();
+    let info = session.info();
+    assert!(!info.editable);
+    assert_eq!(info.notice.as_deref(), Some("terraria-layout"));
+    assert!(info.warning.unwrap().contains("not recognized"));
+    let error = session.edit_value("/life", "100").unwrap_err();
+    assert_eq!(error.code, app_codes::READ_ONLY_DOCUMENT);
+    let error = session
+        .save(path.to_str().unwrap(), false, None)
+        .unwrap_err();
+    assert_eq!(error.code, app_codes::READ_ONLY_DOCUMENT);
+
+    // Height 1200 and width 8400: a world with no width is not one.
+    let path = copy_in(&env, TERRARIA_WORLD);
+    let mut bytes = fs::read(&path).unwrap();
+    patch_i32s(&mut bytes, &[1200, 8400], &[1200, 0]);
+    fs::write(&path, &bytes).unwrap();
+    let session = open(&env, &path, None).unwrap();
+    let info = session.info();
+    assert!(!info.editable);
+    assert_eq!(info.notice.as_deref(), Some("terraria-layout"));
+}
+
+#[test]
+fn an_encrypted_player_that_looks_like_another_format_still_opens_as_a_player() {
+    // The ciphertext made with this key reads as XOR-obfuscated Ruby Marshal to the detector (a
+    // weak guess); the Terraria name and shape must win over it.
+    const KEY: &str = "SynthKy8";
+    let env = env();
+    let plain = fs::read(fixture(TERRARIA_PLAYER)).unwrap();
+    let mut params = Params::new();
+    params.set("password", KEY);
+    let encrypted = saveprism_codecs::terraria::aes::TerrariaPlayerLayer
+        .encode(&plain, &params)
+        .unwrap();
+    for name in ["Mira.plr", "Mira.plr.bak"] {
+        let path = env.work.join(name);
+        fs::write(&path, &encrypted).unwrap();
+        let session = open(&env, &path, Some(KEY)).unwrap();
+        let info = session.info();
+        assert_eq!(info.codec, "format.terraria-player", "{name}");
+        assert_eq!(info.guard, GuardLevel::Exact, "{name}");
+        assert!(info.editable, "{name}");
+        // Without the key it asks for one instead of showing the detector's guess.
+        let error = open(&env, &path, None).err().unwrap();
+        assert_eq!(error.code, "SP-TERRARIA-006", "{name}");
+    }
+}

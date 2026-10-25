@@ -30,6 +30,14 @@ pub(crate) const MIN_VERSION: i32 = 135;
 pub(crate) const MAX_VERSION: i32 = 400;
 /// Longest character name the game accepts.
 const MAX_NAME_CHARS: usize = 20;
+/// Highest difficulty byte: 0 Classic, 1 Mediumcore, 2 Hardcore, 3 Journey.
+const MAX_DIFFICULTY: u8 = 3;
+/// Highest item id the writer accepts: a little above the item count of the current release
+/// (Terraria 1.4.4 has about 5450 item ids), so a small game update does not lock out its new
+/// items. An id the game cannot load is refused instead of being written.
+const MAX_ITEM_ID: i32 = 5600;
+/// Lowest item id the writer accepts: the legacy negative "net ids" run from -1 down to -48.
+const MIN_ITEM_ID: i32 = -48;
 /// Prefix of every hint this codec writes.
 pub const HINT_PREFIX: &str = "Terraria:";
 /// Parameter holding the original plaintext of the player file.
@@ -359,6 +367,14 @@ fn read_layout(input: &[u8]) -> Result<Layout> {
     })
 }
 
+/// Offset of the difficulty byte, for tests that patch a fixture.
+#[cfg(test)]
+pub(crate) fn difficulty_offset(input: &[u8]) -> Option<usize> {
+    read_layout(input)
+        .ok()
+        .map(|layout| layout.difficulty_span.start)
+}
+
 fn int(value: i128, width: IntWidth, flags: NodeFlags) -> Node {
     let mut node = Node::new(Value::Int { v: value, width });
     node.flags = flags;
@@ -580,13 +596,19 @@ fn write_player(doc: &SaveDoc, params: &Params) -> Result<Vec<u8>> {
     let original = params.bytes(P_ORIGINAL)?;
     let layout = read_layout(original)?;
 
+    // Only a changed value is checked, so a file that already holds an odd value still saves.
     let name = text_at(doc, "/name")?;
-    if name.chars().count() > MAX_NAME_CHARS {
+    if name != layout.name && name.chars().count() > MAX_NAME_CHARS {
         return Err(write_error(format!(
             "a character name can have at most {MAX_NAME_CHARS} characters"
         )));
     }
     let difficulty = u8_at(doc, "/difficulty")?;
+    if difficulty != layout.difficulty && difficulty > MAX_DIFFICULTY {
+        return Err(write_error(format!(
+            "the difficulty must be 0 (Classic), 1 (Mediumcore), 2 (Hardcore) or {MAX_DIFFICULTY} (Journey), not {difficulty}"
+        )));
+    }
     let play_time = i64_at(doc, "/play_time_ticks")?;
     let life = i32_at(doc, "/life")?;
     let max_life = i32_at(doc, "/max_life")?;
@@ -657,6 +679,11 @@ fn write_player(doc: &SaveDoc, params: &Params) -> Result<Vec<u8>> {
     )?;
     for (index, item) in layout.items.iter().enumerate() {
         let id = i32_at(doc, &format!("/inventory/{index}/id"))?;
+        if id != item.id && !(MIN_ITEM_ID..=MAX_ITEM_ID).contains(&id) {
+            return Err(write_error(format!(
+                "inventory slot {index} cannot hold item id {id}: the game loads ids from {MIN_ITEM_ID} to {MAX_ITEM_ID} (0 is an empty slot)"
+            )));
+        }
         let stack = i32_at(doc, &format!("/inventory/{index}/stack"))?;
         let prefix = u8_at(doc, &format!("/inventory/{index}/prefix"))?;
         push_patch(
@@ -692,11 +719,15 @@ fn write_player(doc: &SaveDoc, params: &Params) -> Result<Vec<u8>> {
         .get(cursor..)
         .ok_or_else(|| write_error("the tail is outside the original file"))?;
     out.extend_from_slice(rest);
-    // The game zero-pads the plaintext to AES blocks; do the same when an edit changed the
-    // encoded length (the original is already a whole number of blocks).
-    let remainder = out.len() % 16;
-    if remainder != 0 {
-        out.resize(out.len().saturating_add(16 - remainder), 0);
+    // The AES layer needs whole blocks, so an edit that changed the encoded length is padded with
+    // zeros (the game's reader stops after the player data and ignores what follows). A plaintext
+    // that was not a whole number of blocks to begin with is not encrypted and stays unpadded, so
+    // an unedited file always reproduces its bytes.
+    if original.len().is_multiple_of(16) {
+        let remainder = out.len() % 16;
+        if remainder != 0 {
+            out.resize(out.len().saturating_add(16 - remainder), 0);
+        }
     }
     Ok(out)
 }

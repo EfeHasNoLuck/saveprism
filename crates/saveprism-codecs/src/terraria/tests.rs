@@ -5,8 +5,8 @@ use std::path::PathBuf;
 use saveprism_core::detect::{DetectOptions, detect};
 use saveprism_core::guard::{Verdict, check_round_trip};
 use saveprism_core::{
-    Codec, DecodeCtx, Decoded, Edit, Layer, Limits, NodeFlags, ParamValue, Params, Path, Registry,
-    SaveDoc, Value, apply_edits,
+    Codec, Confidence, DecodeCtx, Decoded, Edit, IntWidth, Layer, Limits, NodeFlags, OwnedValue,
+    ParamValue, Params, Path, Registry, SaveDoc, SniffCtx, Value, apply_edits, codes,
 };
 
 use super::aes::{TerrariaPlayerLayer, player_password_unlocks_first_block};
@@ -176,6 +176,116 @@ fn a_player_edit_patches_only_its_field_and_keeps_the_padding() {
 }
 
 #[test]
+fn an_unpadded_player_reproduces_its_bytes() {
+    // A plaintext that is not a whole number of AES blocks is never padded when nothing changed.
+    let mut bytes = fixture(PLAYER);
+    bytes.extend_from_slice(&[1, 2, 3]);
+    assert_ne!(bytes.len() % 16, 0);
+    exact(&TerrariaPlayerCodec, &bytes);
+}
+
+#[test]
+fn only_a_difficulty_the_game_knows_is_written() {
+    let bytes = fixture(PLAYER);
+    let mut decoded = decode(&TerrariaPlayerCodec, &bytes);
+    set(&mut decoded.doc, "/difficulty", OwnedValue::Int(4));
+    let error = TerrariaPlayerCodec
+        .encode(&decoded.doc, &decoded.params)
+        .unwrap_err();
+    assert_eq!(error.code(), TERRARIA_WRITE);
+    assert!(
+        error.message().contains("difficulty"),
+        "{}",
+        error.message()
+    );
+
+    set(&mut decoded.doc, "/difficulty", OwnedValue::Int(3));
+    let edited = TerrariaPlayerCodec
+        .encode(&decoded.doc, &decoded.params)
+        .unwrap();
+    let again = decode(&TerrariaPlayerCodec, &edited);
+    assert_eq!(int_at(&again.doc, "/difficulty"), 3);
+}
+
+#[test]
+fn only_an_item_id_the_game_can_load_is_written() {
+    let bytes = fixture(PLAYER);
+    for bad in [99_999, -49, i128::from(i32::MAX)] {
+        let mut decoded = decode(&TerrariaPlayerCodec, &bytes);
+        set(&mut decoded.doc, "/inventory/0/id", OwnedValue::Int(bad));
+        let error = TerrariaPlayerCodec
+            .encode(&decoded.doc, &decoded.params)
+            .unwrap_err();
+        assert_eq!(error.code(), TERRARIA_WRITE, "id {bad}");
+        assert!(error.message().contains("item id"), "{}", error.message());
+    }
+    // An empty slot (0), a legacy negative id and a normal id are fine.
+    for good in [0, -5, 4_000] {
+        let mut decoded = decode(&TerrariaPlayerCodec, &bytes);
+        set(&mut decoded.doc, "/inventory/0/id", OwnedValue::Int(good));
+        let edited = TerrariaPlayerCodec
+            .encode(&decoded.doc, &decoded.params)
+            .unwrap();
+        let again = decode(&TerrariaPlayerCodec, &edited);
+        assert_eq!(int_at(&again.doc, "/inventory/0/id"), good);
+    }
+}
+
+#[test]
+fn a_player_value_the_file_already_holds_still_saves() {
+    // The range checks apply to what was changed; an odd value that was already there is kept.
+    let mut bytes = fixture(PLAYER);
+    let difficulty = super::player::difficulty_offset(&bytes).unwrap();
+    bytes[difficulty] = 9;
+    let decoded = exact(&TerrariaPlayerCodec, &bytes);
+    assert_eq!(int_at(&decoded.doc, "/difficulty"), 9);
+}
+
+#[test]
+fn a_player_name_the_file_already_holds_still_saves() {
+    // A name over the game's 20 characters (a mod, a newer game) is kept when it is not edited.
+    let bytes = fixture(PLAYER);
+    let difficulty = super::player::difficulty_offset(&bytes).unwrap();
+    let name_start = difficulty - "Mira".len() - 1;
+    let long = "x".repeat(25);
+    let mut patched = bytes[..name_start].to_vec();
+    patched.push(25);
+    patched.extend_from_slice(long.as_bytes());
+    patched.extend_from_slice(&bytes[difficulty..]);
+    let mut decoded = exact(&TerrariaPlayerCodec, &patched);
+    assert_eq!(text_at(&decoded.doc, "/name"), long);
+    set(&mut decoded.doc, "/life", OwnedValue::Int(150));
+    let edited = TerrariaPlayerCodec
+        .encode(&decoded.doc, &decoded.params)
+        .unwrap();
+    assert_eq!(
+        int_at(&decode(&TerrariaPlayerCodec, &edited).doc, "/life"),
+        150
+    );
+}
+
+#[test]
+fn an_implausible_layout_is_flagged() {
+    let bytes = fixture(PLAYER);
+    let decoded = decode(&TerrariaPlayerCodec, &bytes);
+    assert!(!layout_looks_wrong(&decoded.doc));
+    for (path, value) in [
+        ("/max_life", 0),
+        ("/max_life", 5_000),
+        ("/max_mana", -1),
+        ("/max_mana", 2_000),
+    ] {
+        let mut decoded = decode(&TerrariaPlayerCodec, &bytes);
+        set(&mut decoded.doc, path, OwnedValue::Int(value));
+        assert!(layout_looks_wrong(&decoded.doc), "{path} = {value}");
+    }
+    // No mana at all is a real state, not a layout problem.
+    let mut decoded = decode(&TerrariaPlayerCodec, &bytes);
+    set(&mut decoded.doc, "/max_mana", OwnedValue::Int(0));
+    assert!(!layout_looks_wrong(&decoded.doc));
+}
+
+#[test]
 fn a_too_long_player_name_is_refused() {
     let bytes = fixture(PLAYER);
     let mut decoded = decode(&TerrariaPlayerCodec, &bytes);
@@ -257,6 +367,70 @@ fn the_layer_decrypts_and_re_encrypts_the_player() {
 }
 
 #[test]
+fn the_games_backup_name_is_a_player_file_too() {
+    assert!(is_player_file_name("Mira.plr"));
+    assert!(is_player_file_name("Mira.PLR"));
+    assert!(is_player_file_name("Mira.plr.bak"));
+    assert!(is_player_file_name("Mira.Plr.BAK"));
+    assert!(!is_player_file_name("Mira.bak"));
+    assert!(!is_player_file_name("Mira.wld.bak"));
+
+    let encrypted = encrypted_player(&fixture(PLAYER));
+    let sniff = |name: &str| {
+        TerrariaPlayerLayer.sniff(
+            &encrypted,
+            &SniffCtx {
+                file_name: Some(name),
+                depth: 0,
+            },
+        )
+    };
+    assert!(sniff("Mira.plr") > Confidence::NONE);
+    assert!(sniff("Mira.plr.bak") > Confidence::NONE);
+    assert_eq!(sniff("Mira.bak"), Confidence::NONE);
+}
+
+#[test]
+fn only_a_key_of_exactly_eight_characters_is_accepted() {
+    let plain = fixture(PLAYER);
+    let encrypted = encrypted_player(&plain);
+    let limits = Limits::default();
+    for key in [
+        "",
+        "short",
+        "sevenCh",
+        "nineChars",
+        "twelveChars1",
+        "sixteenCharsKey!",
+    ] {
+        assert!(
+            !player_password_unlocks_first_block(&encrypted, key),
+            "{key}"
+        );
+        let mut hints = Params::new();
+        hints.set("password", key);
+        let mut ctx = DecodeCtx::new(&limits).with_step(0, hints);
+        let error = TerrariaPlayerLayer
+            .decode(&encrypted, &mut ctx)
+            .unwrap_err();
+        assert_eq!(error.code(), TERRARIA_WRONG_PASSWORD, "{key:?}");
+
+        let mut params = Params::new();
+        params.set("password", key);
+        let error = TerrariaPlayerLayer.encode(&plain, &params).unwrap_err();
+        assert_eq!(error.code(), TERRARIA_WRONG_PASSWORD, "{key:?}");
+    }
+    // The key is checked before the file, so a wrong length is never reported as damaged data.
+    let mut hints = Params::new();
+    hints.set("password", "short");
+    let mut ctx = DecodeCtx::new(&limits).with_step(0, hints);
+    let error = TerrariaPlayerLayer
+        .decode(&encrypted[..20], &mut ctx)
+        .unwrap_err();
+    assert_eq!(error.code(), TERRARIA_WRONG_PASSWORD);
+}
+
+#[test]
 fn the_layer_needs_its_key() {
     let plain = fixture(PLAYER);
     let encrypted = encrypted_player(&plain);
@@ -324,7 +498,7 @@ fn the_world_fixture_round_trips_exactly() {
 }
 
 #[test]
-fn a_longer_world_name_moves_the_section_pointers() {
+fn a_longer_seed_moves_the_section_pointers() {
     let bytes = fixture(WORLD);
     let mut decoded = decode(&TerrariaWorldCodec, &bytes);
     let old_first = int_at(&decoded.doc, "/section_pointers/0");
@@ -332,20 +506,14 @@ fn a_longer_world_name_moves_the_section_pointers() {
     let sections = bytes_at(&decoded.doc, "/sections");
     set(
         &mut decoded.doc,
-        "/header/name",
-        saveprism_core::OwnedValue::Str("Prism Hollow Reborn".into()),
-    );
-    set(
-        &mut decoded.doc,
         "/header/seed",
-        saveprism_core::OwnedValue::Str("777".into()),
+        OwnedValue::Str("482910377777".into()),
     );
     let edited = TerrariaWorldCodec
         .encode(&decoded.doc, &decoded.params)
         .unwrap();
     let again = decode(&TerrariaWorldCodec, &edited);
-    assert_eq!(text_at(&again.doc, "/header/name"), "Prism Hollow Reborn");
-    assert_eq!(text_at(&again.doc, "/header/seed"), "777");
+    assert_eq!(text_at(&again.doc, "/header/seed"), "482910377777");
     assert_eq!(int_at(&again.doc, "/section_pointers/0"), old_first);
     assert!(int_at(&again.doc, "/section_pointers/1") > old_second);
     assert_eq!(bytes_at(&again.doc, "/sections"), sections);
@@ -353,6 +521,87 @@ fn a_longer_world_name_moves_the_section_pointers() {
         .encode(&again.doc, &again.params)
         .unwrap();
     assert_eq!(rebuilt, edited);
+}
+
+#[test]
+fn the_world_name_id_and_size_are_read_only() {
+    // The footer repeats the name and id, and the tile section's length depends on the size.
+    let bytes = fixture(WORLD);
+    for (path, value) in [
+        (
+            "/header/name",
+            OwnedValue::Str("Prism Hollow Reborn".into()),
+        ),
+        ("/header/id", OwnedValue::Int(1)),
+        ("/header/width", OwnedValue::Int(4200)),
+        ("/header/height", OwnedValue::Int(900)),
+        ("/header/left", OwnedValue::Int(0)),
+        ("/header/right", OwnedValue::Int(0)),
+        ("/header/top", OwnedValue::Int(0)),
+        ("/header/bottom", OwnedValue::Int(0)),
+    ] {
+        let mut decoded = decode(&TerrariaWorldCodec, &bytes);
+        assert!(
+            at(&decoded.doc, path).flags.contains(NodeFlags::READ_ONLY),
+            "{path}"
+        );
+        let error = apply_edits(
+            &mut decoded.doc,
+            &[Edit::Set {
+                path: Path::parse(path).unwrap(),
+                value,
+            }],
+            &Limits::default(),
+        )
+        .unwrap_err();
+        assert_eq!(error.code(), codes::CORE_READ_ONLY, "{path}");
+    }
+}
+
+#[test]
+fn the_other_bits_of_the_world_flags_word_survive_a_save() {
+    // Bit 0 is the favorite flag; bits 8 and 63 stand for flags a newer game may set.
+    let mut bytes = fixture(WORLD);
+    let word: u64 = 0x8000_0000_0000_0101;
+    bytes[16..24].copy_from_slice(&word.to_le_bytes());
+    let mut decoded = exact(&TerrariaWorldCodec, &bytes);
+    assert!(bool_at(&decoded.doc, "/favorite"));
+    set(&mut decoded.doc, "/favorite", OwnedValue::Bool(false));
+    let edited = TerrariaWorldCodec
+        .encode(&decoded.doc, &decoded.params)
+        .unwrap();
+    assert_eq!(edited.len(), bytes.len());
+    assert_eq!(edited[16..24], (word & !1).to_le_bytes());
+    assert_eq!(edited[..16], bytes[..16]);
+    assert_eq!(edited[24..], bytes[24..]);
+    let again = decode(&TerrariaWorldCodec, &edited);
+    assert!(!bool_at(&again.doc, "/favorite"));
+}
+
+#[test]
+fn an_implausible_world_size_is_flagged() {
+    let bytes = fixture(WORLD);
+    let decoded = decode(&TerrariaWorldCodec, &bytes);
+    assert!(!layout_looks_wrong(&decoded.doc));
+    for (key, value) in [
+        ("width", 0),
+        ("width", -8400),
+        ("width", 10_001),
+        ("height", 0),
+        ("height", 123_456),
+    ] {
+        let mut decoded = decode(&TerrariaWorldCodec, &bytes);
+        let path = format!("/header/{key}");
+        let id = decoded.doc.resolve(&Path::parse(&path).unwrap()).unwrap();
+        // The size is read-only for users; the check is about what a wrong layout would produce.
+        decoded.doc.set_flags(id, NodeFlags::empty()).unwrap();
+        let value = Value::Int {
+            v: value,
+            width: IntWidth::I32,
+        };
+        decoded.doc.set_value(id, value).unwrap();
+        assert!(layout_looks_wrong(&decoded.doc), "{key}");
+    }
 }
 
 #[test]

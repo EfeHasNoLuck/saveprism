@@ -95,13 +95,15 @@ export interface OpenInfo {
    * A notice to show: "renpy-signed" (the game will ask whether to trust the edited save; the
    * player answers Yes), "renpy-key-signed" (the save is signed with the player's own Ren'Py key),
    * "renpy-persistent-key-signed" (the persistent data is signed with the player's own key) or
-   * "renpy-persistent-signed" (the file is open read-only), else null.
+   * "renpy-persistent-signed" (the file is open read-only) or "terraria-layout" (a Terraria file
+   * whose layout is not recognized for this version; open read-only), else null.
    */
   notice:
     | "renpy-signed"
     | "renpy-key-signed"
     | "renpy-persistent-key-signed"
     | "renpy-persistent-signed"
+    | "terraria-layout"
     | null;
 }
 

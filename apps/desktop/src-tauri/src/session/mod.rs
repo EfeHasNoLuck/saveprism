@@ -87,6 +87,8 @@ const QUOTE_CHARS: usize = 40;
 const ES3_AES_LAYER: &str = "crypto.es3-aes";
 /// The encryption layer of a Terraria player save.
 const TERRARIA_PLR_LAYER: &str = "crypto.terraria-plr";
+/// The notice of a Terraria file whose values look misplaced (the file is open read-only).
+const NOTICE_TERRARIA_LAYOUT: &str = "terraria-layout";
 
 /// The backups to keep: the setting, clamped to 1..=50, or 10 when it is missing.
 pub(crate) fn clamp_keep_backups(value: Option<usize>) -> usize {
@@ -342,7 +344,8 @@ pub struct OpenInfo {
     /// so `copy_code` can give it back as a code.
     pub text_code: bool,
     /// A notice the UI shows in its own words: `renpy-signed` (the game will ask whether to trust
-    /// the edited save: answer Yes) or `renpy-persistent-signed` (open read-only).
+    /// the edited save: answer Yes), `renpy-persistent-signed` (open read-only) or
+    /// `terraria-layout` (a Terraria file whose layout is not recognized; open read-only).
     pub notice: Option<String>,
 }
 
@@ -550,8 +553,13 @@ fn decode_file(
             .map(str::to_owned),
         ..DetectOptions::default()
     };
+    // An encrypted Terraria player is random bytes to the detector, which can match them by
+    // chance (about one file in a few hundred looks like XOR-obfuscated Ruby Marshal). When the
+    // name and shape say Terraria, only a sure detection beats the Terraria key path below.
+    let shape = encrypted_layer(reg, path, bytes);
+    let terraria_shaped = shape == Some(TERRARIA_PLR_LAYER);
     let detect_error = match detect(bytes, reg, limits, &opts) {
-        Ok(detection) => {
+        Ok(detection) if !terraria_shaped || detection.best.confidence >= Confidence::HIGH => {
             let mut recipe = detection.best.recipe;
             // RPG Maker 2000/2003 saves do not carry their text encoding; the game's
             // `RPG_RT.ini` can name it when EasyRPG wrote one.
@@ -567,10 +575,14 @@ fn decode_file(
             return pipeline::decode(bytes, &recipe, reg, limits)
                 .map_err(|e| e.context(format!("while opening {}", path.display())));
         }
+        Ok(_) => Error::new(
+            codes::DET_NO_MATCH,
+            "only a weak guess matched this Terraria-shaped file",
+        ),
         Err(error) => error,
     };
 
-    let Some(encrypted) = encrypted_layer(reg, path, bytes) else {
+    let Some(encrypted) = shape else {
         return Err(detect_error);
     };
     let Some(password) = password else {
@@ -807,7 +819,8 @@ fn same_file(a: &FsPath, b: &FsPath) -> bool {
 
 impl Session {
     /// Opens a file: detect, decode, round-trip guard. `password` is used for encrypted Easy Save 3
-    /// files only. `backup_root` overrides the default backup folder (tests).
+    /// files and Terraria player files only. `backup_root` overrides the default backup folder
+    /// (tests).
     pub fn open(
         path: &str,
         password: Option<String>,
@@ -945,12 +958,28 @@ impl Session {
         if session.renpy_locked() {
             session.editable = false;
         }
+        // A Terraria file whose values no real file has was probably read from the wrong place.
+        if session.terraria_layout_notice().is_some() {
+            session.editable = false;
+        }
         Ok(session)
+    }
+
+    /// The notice key and English text for a Terraria file whose values look misplaced (max life,
+    /// max mana or the world size no real file has): its layout is not the one this version of
+    /// the game writes, so it stays read-only.
+    fn terraria_layout_notice(&self) -> Option<(&'static str, &'static str)> {
+        saveprism_codecs::terraria::layout_looks_wrong(&self.doc).then_some((
+            NOTICE_TERRARIA_LAYOUT,
+            "This Terraria file's layout is not recognized for this version of the game, so it is open read-only.",
+        ))
     }
 
     /// The facts the UI shows after opening.
     pub fn info(&self) -> OpenInfo {
-        let notice = self.renpy_notice();
+        let notice = self
+            .renpy_notice()
+            .or_else(|| self.terraria_layout_notice());
         let guard_warning = match self.guard {
             GuardLevel::Exact => None,
             GuardLevel::Semantic => Some(

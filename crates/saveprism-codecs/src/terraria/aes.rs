@@ -1,14 +1,18 @@
 //! `crypto.terraria-plr`: the AES-CBC encryption of a Terraria player file.
 //!
-//! Format: `AES-CBC(key = utf16le(key text), iv = utf16le(key text), NoPadding)(plaintext)`,
-//! where the plaintext is zero-padded by the game to a whole 16 byte block. The key never
-//! appears in the parameters this layer returns; `decode` reads it from the recipe hint
-//! `password` and `encode` from the parameters it is given, exactly like `crypto.es3-aes`.
+//! Format: `AES-128-CBC(key = utf16le(key text), iv = utf16le(key text), NoPadding)(plaintext)`;
+//! the key text is exactly 8 UTF-16 code units, so the key and the IV are both 16 bytes. The
+//! game's own writer pads with PKCS7 (the .NET default), so a file ends in 1 to 16 padding bytes;
+//! its reader uses no padding and stops after the player data, so bytes behind the data are
+//! ignored. This layer therefore decrypts and encrypts without padding and only needs whole
+//! blocks: the zero padding the player codec adds after an edit is accepted by that reader. The
+//! key never appears in the parameters this layer returns; `decode` reads it from the recipe
+//! hint `password` and `encode` from the parameters it is given, exactly like `crypto.es3-aes`.
 
-use ::aes::{Aes128, Aes192, Aes256};
+use ::aes::Aes128;
 use cbc::cipher::block_padding::NoPadding;
 use cbc::cipher::{BlockModeDecrypt, BlockModeEncrypt, KeyIvInit};
-use saveprism_core::{Confidence, DecodeCtx, Error, Layer, Params, Result, SniffCtx, codes};
+use saveprism_core::{Confidence, DecodeCtx, Error, Layer, Params, Result, SniffCtx};
 
 use super::{TERRARIA_BAD_DATA, TERRARIA_PASSWORD_REQUIRED, TERRARIA_WRONG_PASSWORD};
 
@@ -24,9 +28,11 @@ const MIN_HEADER_VERSION: i32 = 135;
 #[derive(Clone, Copy, Debug, Default)]
 pub struct TerrariaPlayerLayer;
 
-/// The UTF-16LE bytes of the key text, used as both AES key and IV.
-fn key_bytes(password: &str) -> Vec<u8> {
-    password.encode_utf16().flat_map(u16::to_le_bytes).collect()
+/// The UTF-16LE bytes of the key text, used as both AES key and IV. `None` unless the text is
+/// exactly 8 UTF-16 code units (16 bytes), the only length the game uses.
+fn key_bytes(password: &str) -> Option<[u8; BLOCK]> {
+    let bytes: Vec<u8> = password.encode_utf16().flat_map(u16::to_le_bytes).collect();
+    <[u8; BLOCK]>::try_from(bytes.as_slice()).ok()
 }
 
 fn bad_data(message: &str) -> Error {
@@ -35,6 +41,13 @@ fn bad_data(message: &str) -> Error {
         format!(
             "{message}. A Terraria player save is whole 16 byte AES blocks; the file may be cut short."
         ),
+    )
+}
+
+fn wrong_key_length() -> Error {
+    Error::new(
+        TERRARIA_WRONG_PASSWORD,
+        "this key has the wrong length for a Terraria player save (it is exactly 8 characters). The file is encrypted with the key from the game's own Terraria.exe; pick the game folder and try again.",
     )
 }
 
@@ -75,24 +88,17 @@ pub fn player_password_unlocks_first_block(input: &[u8], password: &str) -> bool
         Some(bytes) => bytes,
         None => return false,
     };
-    let key = key_bytes(password);
+    let Some(key) = key_bytes(password) else {
+        return false;
+    };
     let mut block = [0_u8; BLOCK];
     block.copy_from_slice(first);
-    let decrypted = match key.len() {
-        16 => decrypt_block::<Aes128>(&key, &mut block),
-        24 => decrypt_block::<Aes192>(&key, &mut block),
-        32 => decrypt_block::<Aes256>(&key, &mut block),
-        _ => false,
-    };
-    decrypted && plausible_header(&block)
+    decrypt_block(&key, &mut block) && plausible_header(&block)
 }
 
 /// Decrypts one block in place, ignoring padding.
-fn decrypt_block<C>(key: &[u8], block: &mut [u8; BLOCK]) -> bool
-where
-    C: cbc::cipher::BlockCipherDecrypt + cbc::cipher::KeyInit + cbc::cipher::BlockSizeUser,
-{
-    let decryptor = match cbc::Decryptor::<C>::new_from_slices(key, key) {
+fn decrypt_block(key: &[u8; BLOCK], block: &mut [u8; BLOCK]) -> bool {
+    let decryptor = match cbc::Decryptor::<Aes128>::new_from_slices(key, key) {
         Ok(decryptor) => decryptor,
         Err(_) => return false,
     };
@@ -118,9 +124,7 @@ impl Layer for TerrariaPlayerLayer {
     }
 
     fn sniff(&self, input: &[u8], ctx: &SniffCtx<'_>) -> Confidence {
-        let named = ctx
-            .file_name
-            .is_some_and(|name| name.to_ascii_lowercase().ends_with(".plr"));
+        let named = ctx.file_name.is_some_and(super::is_player_file_name);
         let sized = input.len() >= 2 * BLOCK && input.len().is_multiple_of(BLOCK);
         // It cannot be proven without the key, and it must never claim another format's file.
         if named && sized && high_entropy(input) {
@@ -137,24 +141,14 @@ impl Layer for TerrariaPlayerLayer {
                 "this Terraria player save is encrypted and needs the key from the game's own Terraria.exe. Pick the game folder and open the file again.",
             )
         })?;
+        let key = key_bytes(password).ok_or_else(wrong_key_length)?;
         if input.is_empty() || !input.len().is_multiple_of(BLOCK) {
             return Err(bad_data(
                 "the encrypted part is not a whole number of blocks",
             ));
         }
-        let key = key_bytes(password);
         let mut buffer = input.to_vec();
-        let plain = match key.len() {
-            16 => decrypt::<Aes128>(&key, &mut buffer),
-            24 => decrypt::<Aes192>(&key, &mut buffer),
-            32 => decrypt::<Aes256>(&key, &mut buffer),
-            _ => {
-                return Err(Error::new(
-                    TERRARIA_WRONG_PASSWORD,
-                    "this key has the wrong length for a Terraria player save",
-                ));
-            }
-        }?;
+        let plain = decrypt(&key, &mut buffer)?;
         if !plausible_header(&plain) {
             return Err(wrong_password());
         }
@@ -162,44 +156,29 @@ impl Layer for TerrariaPlayerLayer {
     }
 
     fn encode(&self, inner: &[u8], params: &Params) -> Result<Vec<u8>> {
-        let password = params.str("password")?;
+        let key = key_bytes(params.str("password")?).ok_or_else(wrong_key_length)?;
         if inner.is_empty() || !inner.len().is_multiple_of(BLOCK) {
             return Err(bad_data(
                 "the plaintext is not a whole number of 16 byte blocks",
             ));
         }
-        let key = key_bytes(password);
         let mut buffer = inner.to_vec();
-        match key.len() {
-            16 => encrypt::<Aes128>(&key, &mut buffer),
-            24 => encrypt::<Aes192>(&key, &mut buffer),
-            32 => encrypt::<Aes256>(&key, &mut buffer),
-            _ => Err(Error::new(
-                codes::CORE_INVALID_PARAM,
-                "the Terraria key must be 8, 12 or 16 characters (16, 24 or 32 UTF-16LE bytes)",
-            )),
-        }
+        encrypt(&key, &mut buffer)
     }
 }
 
-fn decrypt<C>(key: &[u8], buffer: &mut [u8]) -> Result<Vec<u8>>
-where
-    C: cbc::cipher::BlockCipherDecrypt + cbc::cipher::KeyInit + cbc::cipher::BlockSizeUser,
-{
-    let decryptor = cbc::Decryptor::<C>::new_from_slices(key, key)
-        .map_err(|_| bad_data("the key has the wrong length"))?;
+fn decrypt(key: &[u8; BLOCK], buffer: &mut [u8]) -> Result<Vec<u8>> {
+    let decryptor =
+        cbc::Decryptor::<Aes128>::new_from_slices(key, key).map_err(|_| wrong_key_length())?;
     let plain = decryptor
         .decrypt_padded::<NoPadding>(buffer)
         .map_err(|_| bad_data("the ciphertext is not whole blocks"))?;
     Ok(plain.to_vec())
 }
 
-fn encrypt<C>(key: &[u8], buffer: &mut [u8]) -> Result<Vec<u8>>
-where
-    C: cbc::cipher::BlockCipherEncrypt + cbc::cipher::KeyInit + cbc::cipher::BlockSizeUser,
-{
-    let encryptor = cbc::Encryptor::<C>::new_from_slices(key, key)
-        .map_err(|_| bad_data("the key has the wrong length"))?;
+fn encrypt(key: &[u8; BLOCK], buffer: &mut [u8]) -> Result<Vec<u8>> {
+    let encryptor =
+        cbc::Encryptor::<Aes128>::new_from_slices(key, key).map_err(|_| wrong_key_length())?;
     let cipher_text = encryptor
         .encrypt_padded::<NoPadding>(buffer, buffer.len())
         .map_err(|_| bad_data("the plaintext could not be encrypted"))?;

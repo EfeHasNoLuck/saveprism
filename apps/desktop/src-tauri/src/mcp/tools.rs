@@ -75,10 +75,10 @@ fn definitions() -> Vec<Value> {
         tool(
             "open_save",
             "Open a save file",
-            "Opens a save file and replaces the open document. An optional password is used for encrypted Easy Save 3 files.",
+            "Opens a save file and replaces the open document. An optional password is used for encrypted Easy Save 3 files and for encrypted Terraria player files (.plr).",
             json!({
                 "path": text("Full path of the save file."),
-                "password": text("Password of an encrypted Easy Save 3 file, when the game uses one.")
+                "password": text("Password of an encrypted Easy Save 3 file, or the 8 character key of a Terraria player file, when the game uses one.")
             }),
             json!(["path"]),
             (true, false, true),

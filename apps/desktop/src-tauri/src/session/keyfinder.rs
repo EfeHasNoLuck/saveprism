@@ -68,6 +68,9 @@ const METHOD_STORED: &str = "stored";
 const METHOD_TERRARIA: &str = "terraria-us-heap";
 /// Largest `Terraria.exe` read while looking for its key.
 const MAX_TERRARIA_EXE_BYTES: u64 = 256 * 1024 * 1024;
+/// Length of Terraria's key in UTF-16 code units: it is also the 16 byte IV, so only strings of
+/// exactly this length are candidates.
+const TERRARIA_KEY_UNITS: usize = 8;
 
 /// A key whose `Debug` prints no key material.
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -233,7 +236,10 @@ impl KeyCandidates for TerrariaFiles {
             && let Some(metadata) = dotnet_metadata(&bytes)
             && let Some(heap) = metadata_stream(metadata, b"#US")
         {
-            for text in us_heap_strings(heap, self.collector.room()) {
+            // Only strings of exactly the key length count towards the cap, so a big heap of other
+            // strings cannot push the real key out of the collector's room.
+            let room = self.collector.room();
+            for text in us_heap_strings_of(heap, room, Some(TERRARIA_KEY_UNITS)) {
                 self.collector.add(&text, &self.exe, METHOD_TERRARIA);
             }
         }
@@ -241,11 +247,13 @@ impl KeyCandidates for TerrariaFiles {
     }
 }
 
-/// True when `save` is a Terraria player file (`.plr`) or lives in the game's `Players` folder.
+/// True when `save` is a Terraria player file (`.plr`, or the game's own backup `.plr.bak`) or
+/// lives in the game's `Players` folder.
 fn is_terraria_save(save: &Path) -> bool {
     let plr = save
-        .extension()
-        .is_some_and(|extension| extension.eq_ignore_ascii_case("plr"));
+        .file_name()
+        .and_then(|name| name.to_str())
+        .is_some_and(saveprism_codecs::terraria::is_player_file_name);
     if plr {
         return true;
     }
@@ -1034,6 +1042,12 @@ fn metadata_stream<'a>(root: &'a [u8], name: &[u8]) -> Option<&'a [u8]> {
 /// entry is a compressed length (covering a terminal byte) followed by UTF-16LE code units. The cap
 /// is applied here so a huge heap (up to 256 MB of tiny entries) does not build a huge vector first.
 fn us_heap_strings(heap: &[u8], max: usize) -> Vec<String> {
+    us_heap_strings_of(heap, max, None)
+}
+
+/// Like [`us_heap_strings`], but with `units` set only strings of exactly that many UTF-16 code
+/// units are kept (and counted against `max`).
+fn us_heap_strings_of(heap: &[u8], max: usize, units: Option<usize>) -> Vec<String> {
     let mut out = Vec::new();
     if max == 0 {
         return out;
@@ -1062,6 +1076,7 @@ fn us_heap_strings(heap: &[u8], max: usize) -> Vec<String> {
         // that cannot be a key (empty, too long, control characters) are skipped without decoding
         // more than needed.
         if length % 2 == 1
+            && units.is_none_or(|units| length / 2 == units)
             && let Some(text) = decode_utf16(data.get(..length - 1).unwrap_or_default())
             && valid_candidate(&text)
         {
@@ -1869,5 +1884,67 @@ mod tests {
         // The stored key opens it again without reading the game folder.
         let again = open_with(&save, KeyFinder::for_test(store.clone()), &store).unwrap();
         assert_eq!(again.info().guard, crate::session::GuardLevel::Exact);
+    }
+
+    #[test]
+    fn the_games_own_plr_backup_opens_like_the_plr() {
+        assert!(is_terraria_save(Path::new(r"C:\Saves\Mira.plr")));
+        assert!(is_terraria_save(Path::new(r"C:\Saves\Mira.PLR.BAK")));
+        assert!(!is_terraria_save(Path::new(r"C:\Saves\Mira.bak")));
+        assert!(!is_terraria_save(Path::new(r"C:\Saves\slot1.es3")));
+
+        let root = tempfile::tempdir().unwrap();
+        let steam = root.path().join("Steam");
+        let game = steam.join("steamapps").join("common").join("Terraria");
+        write(
+            &game.join("Terraria.exe"),
+            &assembly_with_user_strings(&["FakeKey1"]),
+        );
+        let plain = fs::read(
+            Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../../../fixtures/synthetic/terraria/player-decrypted.plr"),
+        )
+        .unwrap();
+        let mut params = Params::new();
+        params.set("password", "FakeKey1");
+        let encrypted = TerrariaPlayerLayer.encode(&plain, &params).unwrap();
+        // Outside the game's folders, so only the file name says it is a Terraria player.
+        let save = root.path().join("Backups").join("Mira.plr.bak");
+        write(&save, &encrypted);
+
+        let store = root.path().join("app data").join("keys.json");
+        let finder = KeyFinder::for_test(store.clone()).with_steam_root(steam);
+        let session = open_with(&save, finder, &store).unwrap();
+        assert_eq!(session.info().guard, crate::session::GuardLevel::Exact);
+    }
+
+    #[test]
+    fn the_terraria_key_is_found_behind_more_strings_than_the_cap() {
+        // More other strings than the cap, a decoy of the right length, then the real key.
+        let mut strings: Vec<String> = (0..MAX_CANDIDATES + 100)
+            .map(|index| format!("k{index}"))
+            .collect();
+        strings.push("DecoyKey".to_string());
+        strings.push("RealKey8".to_string());
+        let texts: Vec<&str> = strings.iter().map(String::as_str).collect();
+        let image = assembly_with_user_strings(&texts);
+
+        // Without the length filter the cap is spent on the other strings.
+        let heap = metadata_stream(dotnet_metadata(&image).unwrap(), b"#US").unwrap();
+        assert!(!us_heap_strings(heap, MAX_CANDIDATES).contains(&"RealKey8".to_string()));
+        let keys = us_heap_strings_of(heap, MAX_CANDIDATES, Some(TERRARIA_KEY_UNITS));
+        assert_eq!(keys, ["DecoyKey", "RealKey8"]);
+
+        // The same through the Terraria source: only 8-unit strings are candidates.
+        let root = tempfile::tempdir().unwrap();
+        let exe = root.path().join("Terraria.exe");
+        write(&exe, &image);
+        let mut files = TerrariaFiles::new(root.path().to_path_buf(), exe, MAX_CANDIDATES);
+        let found: Vec<String> = files
+            .candidates()
+            .iter()
+            .map(|candidate| candidate.key().to_string())
+            .collect();
+        assert_eq!(found, ["DecoyKey", "RealKey8"]);
     }
 }

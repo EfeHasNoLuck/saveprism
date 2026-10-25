@@ -65,7 +65,8 @@
     "renpySigned": "Ren'Py kaydı: değişiklikleri kaydettikten sonra oyun bu kayda güvenip güvenmeyeceğini sorar. Evet de.",
     "renpyKeySigned": "Ren'Py kaydı: değişiklikler kendi Ren'Py anahtarınla imzalanır.",
     "renpyPersistentKeySigned": "Ren'Py kalıcı verisi: değişiklikler kendi Ren'Py anahtarınla imzalanır.",
-    "renpyPersistentSigned": "Bu Ren'Py kalıcı verisi imzalı. Oyun düzenlenmiş kopyayı yok sayıp sıfırdan başlar, bu yüzden salt okunur açıldı."
+    "renpyPersistentSigned": "Bu Ren'Py kalıcı verisi imzalı. Oyun düzenlenmiş kopyayı yok sayıp sıfırdan başlar, bu yüzden salt okunur açıldı.",
+    "terrariaLayout": "Bu Terraria dosyasının düzeni oyunun bu sürümü için tanınmadı, bu yüzden salt okunur açıldı."
   },
   "bottom": {
     "changes_one": "{{count}} değişiklik bekliyor",

@@ -5,6 +5,8 @@ use std::fs;
 use std::io::Cursor;
 use std::path::{Path, PathBuf};
 
+use saveprism_codecs::terraria::aes::TerrariaPlayerLayer;
+use saveprism_core::{Layer, Params};
 use serde_json::{Value, json};
 
 use super::serve;
@@ -369,6 +371,50 @@ fn the_password_never_appears_in_any_output_line() {
         .map(|line| serde_json::from_str(line).unwrap())
         .collect();
     assert!(!is_tool_error(reply(&responses, 2)));
+}
+
+#[test]
+fn a_terraria_key_never_appears_in_any_output_line() {
+    // The key found for (or given with) a `.plr` must stay as quiet as an Easy Save 3 password.
+    // Only a key passed in the call can be tested here: the tool offers no way to point the
+    // automatic key search at a fake game folder.
+    const TERRARIA_KEY: &str = "SynthKy8";
+    let env = env();
+    let plain = fs::read(fixture("synthetic/terraria/player-decrypted.plr")).unwrap();
+    let mut params = Params::new();
+    params.set("password", TERRARIA_KEY);
+    let encrypted = TerrariaPlayerLayer.encode(&plain, &params).unwrap();
+    let path = env.work.join("Mira.plr");
+    fs::write(&path, encrypted).unwrap();
+
+    let requests = [
+        request(1, "initialize", json!({})),
+        tool_call(
+            2,
+            "open_save",
+            json!({"path": path.to_str().unwrap(), "password": TERRARIA_KEY}),
+        ),
+        tool_call(3, "list_values", json!({})),
+        tool_call(4, "search_values", json!({"query": "Mira"})),
+        request(5, "tools/list", json!({})),
+    ];
+    let lines: Vec<String> = requests
+        .iter()
+        .map(|request| serde_json::to_string(request).unwrap())
+        .collect();
+    let output = run_raw(&lines, Some(env.backups.clone()));
+    assert!(!output.contains(TERRARIA_KEY));
+    let responses: Vec<Value> = output
+        .lines()
+        .map(|line| serde_json::from_str(line).unwrap())
+        .collect();
+    assert!(!is_tool_error(reply(&responses, 2)));
+    assert_eq!(
+        tool_json(reply(&responses, 2))["codec"],
+        "format.terraria-player"
+    );
+    assert!(!is_tool_error(reply(&responses, 3)));
+    assert!(!is_tool_error(reply(&responses, 4)));
 }
 
 #[test]

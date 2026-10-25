@@ -754,7 +754,9 @@ function App() {
             {t(
               file?.notice === "renpy-persistent-signed"
                 ? "banner.renpyPersistentSigned"
-                : "banner.readOnly",
+                : file?.notice === "terraria-layout"
+                  ? "banner.terrariaLayout"
+                  : "banner.readOnly",
             )}
           </div>
         ) : null}

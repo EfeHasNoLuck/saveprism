@@ -48,7 +48,7 @@ SavePrism program filled in:
 
 | Tool | What it does | Writes files |
 |---|---|---|
-| `open_save` | Opens a save (password for encrypted Easy Save 3 files). Runs the same round-trip check as the app. | no |
+| `open_save` | Opens a save (password for encrypted Easy Save 3 files and Terraria player files). Runs the same round-trip check as the app. | no |
 | `game_view` | The app's view: RPG Maker sections with names (gold, characters, items, variables, switches), the story variables of a Twine save, or the Values list. Filter and page through long lists. | no |
 | `list_values` | The children of one value in the full tree, a page at a time. | no |
 | `search_values` | Finds values by path or value text. | no |

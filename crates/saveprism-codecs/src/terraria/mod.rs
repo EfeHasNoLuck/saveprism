@@ -9,11 +9,13 @@
 //!
 //! # Player
 //!
-//! A `.plr` file is AES-CBC encrypted with the UTF-16LE bytes of an 8 character string constant
-//! from the game's own assembly (`Terraria.exe`) used as both key and IV, with no padding beyond
-//! what the writer adds to reach a whole block. This crate never holds that constant: the
-//! `crypto.terraria-plr` layer takes it from the recipe hint `password`, and the desktop key
-//! finder reads the `#US` heap of the player's own `Terraria.exe` (AGENTS.md rule 7).
+//! A `.plr` file (and the game's own backup, `.plr.bak`) is AES-CBC encrypted with the UTF-16LE
+//! bytes of an 8 character string constant from the game's own assembly (`Terraria.exe`) used as
+//! both key and IV. The game's writer pads with PKCS7 (the default); its reader uses no padding
+//! and stops after the player data, so bytes behind the data are ignored. This crate never holds
+//! that constant: the `crypto.terraria-plr` layer takes it from the recipe hint `password`, and
+//! the desktop key finder reads the `#US` heap of the player's own `Terraria.exe` (AGENTS.md
+//! rule 7).
 //!
 //! After decryption, the player document starts with a little-endian `i32` version. Version 135
 //! and later add a Re-Logic header: `u64` (low 56 bits `0x006369676f6c6572` = the bytes
@@ -35,6 +37,8 @@
 //! and creative powers. Those are exposed as read-only `sections` bytes and kept byte-identical.
 //! The section pointers are rewritten when an edited header changes its encoded length, so the
 //! game still finds every section; no checksum exists in the format (checked against TEdit).
+//! The world name, id, size and bounds are read-only: the footer repeats the name and id and the
+//! tile section's length depends on the size, so editing them would give a file the game rejects.
 //!
 //! # Exact writing
 //!
@@ -49,7 +53,7 @@ pub mod world;
 #[cfg(test)]
 mod tests;
 
-use saveprism_core::{ErrorCode, Registry};
+use saveprism_core::{ErrorCode, Path, Registry, SaveDoc, Value};
 
 /// A `.plr` file's plaintext is shorter than its header or one of its fields does not fit.
 pub const TERRARIA_PARSE: ErrorCode = ErrorCode::new("SP-TERRARIA-001");
@@ -76,6 +80,49 @@ pub fn register(reg: &mut Registry) {
     reg.add_layer(std::sync::Arc::new(aes::TerrariaPlayerLayer));
     reg.add_codec(std::sync::Arc::new(player::TerrariaPlayerCodec));
     reg.add_codec(std::sync::Arc::new(world::TerrariaWorldCodec));
+}
+
+/// True when `file_name` is a Terraria player file: `X.plr`, or the game's own backup `X.plr.bak`.
+pub fn is_player_file_name(file_name: &str) -> bool {
+    let lower = file_name.to_ascii_lowercase();
+    lower.ends_with(".plr") || lower.ends_with(".plr.bak")
+}
+
+/// Highest max life or max mana a real player file holds (the game's own caps are far lower).
+const MAX_PLAUSIBLE_LIFE_OR_MANA: i128 = 1000;
+/// Longest side, in tiles, of a real world (the largest the game makes is 8400 wide).
+const MAX_PLAUSIBLE_WORLD_SIDE: i128 = 10_000;
+
+fn int_at(doc: &SaveDoc, path: &str) -> Option<i128> {
+    let id = doc.resolve(&Path::parse(path).ok()?)?;
+    match doc.get(id)?.value {
+        Value::Int { v, .. } => Some(v),
+        _ => None,
+    }
+}
+
+/// True when a decoded Terraria player or world holds values no real file has (max life outside
+/// 1 to 1000, max mana outside 0 to 1000, or a world side outside 1 to 10000 tiles). The layout is
+/// then probably read from the wrong place in a newer game version, so the caller should open the
+/// file read-only ("layout not recognized for this version") instead of risking a bad write.
+/// Documents of any other format are never flagged.
+pub fn layout_looks_wrong(doc: &SaveDoc) -> bool {
+    let kind = doc
+        .get(doc.root())
+        .and_then(|node| node.type_hint.as_ref())
+        .map(|hint| hint.as_str());
+    match kind {
+        Some("Terraria:player") => {
+            !int_at(doc, "/max_life").is_some_and(|v| (1..=MAX_PLAUSIBLE_LIFE_OR_MANA).contains(&v))
+                || !int_at(doc, "/max_mana")
+                    .is_some_and(|v| (0..=MAX_PLAUSIBLE_LIFE_OR_MANA).contains(&v))
+        }
+        Some("Terraria:world") => ["width", "height"].iter().any(|side| {
+            !int_at(doc, &format!("/header/{side}"))
+                .is_some_and(|v| (1..=MAX_PLAUSIBLE_WORLD_SIDE).contains(&v))
+        }),
+        _ => false,
+    }
 }
 
 /// True when a Re-Logic header carries `magic` (low 56 bits) and `file_type` (top byte).
