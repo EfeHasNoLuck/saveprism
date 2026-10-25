@@ -22,6 +22,7 @@ pub mod msgpack;
 pub mod naninovel;
 pub mod nbt;
 pub mod nrbf;
+pub mod odin;
 pub mod palworld;
 pub mod pickle;
 pub mod plist;
@@ -67,6 +68,7 @@ pub fn register_all(reg: &mut Registry) {
     renpy::register(reg);
     sol::register(reg);
     nrbf::register(reg);
+    odin::register(reg);
     godot::register(reg);
     sqlite::register(reg);
     toml_text::register(reg);

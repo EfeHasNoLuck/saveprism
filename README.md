@@ -34,6 +34,7 @@ SavePrism needs Microsoft Edge WebView2, which Windows 10 and 11 already have; t
 | RPG Maker 2000 / 2003 | `.lsd` | the same sections, names from `RPG_RT.ldb` |
 | Wolf RPG Editor | `.sav` (not encrypted) | switches, variables, the variable database |
 | Unity · Easy Save 3 | `.es3` | plain, GZip and AES (password needed) |
+| Unity · Odin Serializer | Odin binary (`BinaryDataWriter`) saves | primitives, strings and arrays (type tables and references read-only) |
 | Unity · PlayerPrefs | registry export `.reg` | ints, floats, strings |
 | Unity / .NET BinaryFormatter | `.dat`, RAGS `.rsv` | values (read as data, never run) |
 | Unreal Engine | `.sav` (GVAS) | values |
@@ -66,7 +67,8 @@ SavePrism needs Microsoft Edge WebView2, which Windows 10 and 11 already have; t
 | CSV | `.csv` | cells (quoting kept) |
 | Property lists | `.plist` (XML and binary) | XML strings, integers, reals and booleans; binary lists open read-only |
 
-A file that does not survive the round-trip check opens read-only with a warning.
+A file that does not survive the round-trip check opens read-only with a warning. Easy Save 2 files are not opened: Moodkie
+publishes no byte-level layout for them, so SavePrism does not guess.
 
 ## Use it with AI
 

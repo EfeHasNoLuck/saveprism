@@ -175,3 +175,10 @@ path = "fuzz_targets/xor_lzf.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "odin"
+path = "fuzz_targets/odin.rs"
+test = false
+doc = false
+bench = false
