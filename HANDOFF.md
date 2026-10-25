@@ -13,7 +13,13 @@ merge passed `kontrol.sh rust` 3/3 and `web` 3/3. Wave 2 runs on EVREN overnight
   00:44-00:47 UTC; opencode sessions: unlock `ses_e8f7c068effed7iUZ9ENzfl63U`, keys `ses_e8f7b1a6dffeh13gHFaNaon4Vh`,
   unity `ses_e8f7a3221ffeW6dUlWm52vBmKq`, enc `ses_e8f79482affeJ7oo3yToujoMKt` (resume one with `--session <id>`).
   They were left running when Claude stopped at 99% weekly (they cost no Claude quota and never touch main).
-  Already merged: unlock (`9d50e17`), unity (`73ebf7a`). Left: keys, enc.
+  Already merged: unlock (`9d50e17`), unity (`73ebf7a`).
+  - `enc` is finished and committed on `wt/enc` (`38495b0`); its merge into main passed rust 3/3 but was aborted at the
+    99% stop before web ran. Merge again with `git merge --no-ff --no-commit wt/enc`, run rust + web, commit, push.
+  - `keys` had two high review findings (shared directory budget used up by big Steam libraries; uncapped `#US`
+    string list) and five smaller ones. EVREN is fixing them in its session (`.motor/w2-keys-fix.md`, log
+    `.motor/w2-keys-fix.log`, it appends "Review fixes" to its report). Then: a quick Claude re-review, merge, and a
+    visual check of the password dialog's "Pick the game folder…".
 - Visual check of Where is my save? + Compare done (NOW.md known gaps); its three real bugs fixed in `7df9b4b`, but
   Open folder was not clicked again in the app.
 
