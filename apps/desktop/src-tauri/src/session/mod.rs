@@ -20,7 +20,9 @@ use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::{Path as FsPath, PathBuf};
 
-use saveprism_codecs::es3::{ES3_BAD_DATA, ES3_PASSWORD_REQUIRED, ES3_WRONG_PASSWORD};
+use saveprism_codecs::es3::{
+    ES3_BAD_DATA, ES3_PASSWORD_REQUIRED, ES3_WRONG_PASSWORD, password_unlocks_first_block,
+};
 use saveprism_core::detect::{DetectOptions, detect};
 use saveprism_core::guard::{Verdict, check_round_trip};
 use saveprism_core::io::{WriteOptions, default_backup_root, safe_write};
@@ -37,6 +39,7 @@ mod export;
 mod game;
 mod history;
 mod json_apply;
+mod keyfinder;
 mod lcf;
 mod locations;
 mod naninovel;
@@ -55,6 +58,7 @@ pub use game::{
 };
 use history::{DocStep, History, MAX_VALUES, Mutation, scalar_owned};
 pub use history::{HistoryResult, HistoryState};
+use keyfinder::KeyFinder;
 pub use locations::{SaveLocation, SaveLocationPath, save_locations};
 use renpy::RenpyKeySource;
 pub use renpy::{
@@ -457,6 +461,56 @@ fn with_password(recipe: &Recipe, password: Option<&str>) -> Recipe {
     recipe
 }
 
+/// True when `bytes` looks like an encrypted Easy Save 3 file (which is detected by shape alone).
+fn looks_encrypted(reg: &Registry, path: &FsPath, bytes: &[u8]) -> bool {
+    let ctx = SniffCtx {
+        file_name: path.file_name().and_then(|name| name.to_str()),
+        depth: 0,
+    };
+    reg.layer(ES3_AES_LAYER)
+        .is_some_and(|layer| layer.sniff(bytes, &ctx) > Confidence::NONE)
+}
+
+/// Tries the keys the game's own files offer. Each candidate is checked cheaply (the first block
+/// must decrypt to a plausible start), then with a full decode; the first full success wins. The
+/// caller stores the winning candidate only after the round-trip guard accepts the document.
+fn find_key(
+    reg: &Registry,
+    limits: &Limits,
+    path: &FsPath,
+    bytes: &[u8],
+    finder: &KeyFinder,
+) -> Option<(keyfinder::Candidate, DecodeOutput)> {
+    // A key found before is tried first, so no game file is read when it still works.
+    for candidate in finder.stored(path) {
+        if let Some(out) = candidate_opens(reg, limits, path, bytes, &candidate) {
+            return Some((candidate, out));
+        }
+    }
+    // `search` reads game files, so it is only called when the stored keys did not help.
+    for candidate in finder.search(path) {
+        if let Some(out) = candidate_opens(reg, limits, path, bytes, &candidate) {
+            return Some((candidate, out));
+        }
+    }
+    None
+}
+
+/// The decoded document when `candidate` is the password: a cheap first-block check, then a full
+/// decode.
+fn candidate_opens(
+    reg: &Registry,
+    limits: &Limits,
+    path: &FsPath,
+    bytes: &[u8],
+    candidate: &keyfinder::Candidate,
+) -> Option<DecodeOutput> {
+    if !password_unlocks_first_block(bytes, candidate.key()) {
+        return None;
+    }
+    decode_file(reg, limits, path, bytes, Some(candidate.key())).ok()
+}
+
 /// Detects and decodes `bytes`. Encrypted Easy Save 3 files cannot be detected without the
 /// password, so they get a second try with the known layer chains.
 fn decode_file(
@@ -728,6 +782,26 @@ impl Session {
             password,
             backup_root,
             RenpyKeySource::Default,
+            Some(KeyFinder::production()),
+        )
+    }
+
+    /// Opens a file, also trying the game folder the player picked for an encrypted save whose key
+    /// is not found automatically.
+    pub fn open_with_game_folder(
+        path: &str,
+        password: Option<String>,
+        backup_root: Option<PathBuf>,
+        game_folder: PathBuf,
+    ) -> Result<Session, ApiError> {
+        let finder = KeyFinder::production().with_folder(game_folder.clone());
+        finder.remember_folder(&game_folder);
+        Self::open_path(
+            PathBuf::from(path),
+            password,
+            backup_root,
+            RenpyKeySource::Default,
+            Some(finder),
         )
     }
 
@@ -740,7 +814,25 @@ impl Session {
         backup_root: Option<PathBuf>,
         keys: RenpyKeySource,
     ) -> Result<Session, ApiError> {
-        Self::open_path(PathBuf::from(path), password, backup_root, keys)
+        Self::open_path(PathBuf::from(path), password, backup_root, keys, None)
+    }
+
+    /// [`Session::open`] with an explicit key finder (tests use their own folders and evidence
+    /// file, so they never read the real Steam or app data folder).
+    #[cfg(test)]
+    pub(in crate::session) fn open_with_finder(
+        path: &str,
+        password: Option<String>,
+        backup_root: Option<PathBuf>,
+        finder: Option<KeyFinder>,
+    ) -> Result<Session, ApiError> {
+        Self::open_path(
+            PathBuf::from(path),
+            password,
+            backup_root,
+            RenpyKeySource::At(None),
+            finder,
+        )
     }
 
     /// [`Session::open`] with the path already as a file system path.
@@ -749,6 +841,7 @@ impl Session {
         password: Option<String>,
         backup_root: Option<PathBuf>,
         keys: RenpyKeySource,
+        finder: Option<KeyFinder>,
     ) -> Result<Session, ApiError> {
         let mut reg = Registry::default();
         saveprism_codecs::register_all(&mut reg);
@@ -760,14 +853,34 @@ impl Session {
             .map_err(|e| e.context(format!("while reading {}", path.display())))?;
         let bytes = fs::read(&path).map_err(|e| io_error(&path, e))?;
 
-        let password = password.filter(|text| !text.is_empty());
-        let out = decode_file(&reg, &limits, &path, &bytes, password.as_deref())?;
+        let mut password = password.filter(|text| !text.is_empty());
+        let mut found = None;
+        let mut predecoded = None;
+        if password.is_none()
+            && let Some(finder) = finder.as_ref()
+            && looks_encrypted(&reg, &path, &bytes)
+            && let Some((candidate, out)) = find_key(&reg, &limits, &path, &bytes, finder)
+        {
+            password = Some(candidate.key().to_string());
+            found = Some(candidate);
+            predecoded = Some(out);
+        }
+        let out = match predecoded {
+            Some(out) => out,
+            None => decode_file(&reg, &limits, &path, &bytes, password.as_deref())?,
+        };
         let verdict = assess(&reg, &limits, &bytes, &out, password.as_deref());
         let guard = match verdict {
             Verdict::Exact => GuardLevel::Exact,
             Verdict::Semantic => GuardLevel::Semantic,
             Verdict::Different => GuardLevel::Failed,
         };
+        // Evidence is only written for a key whose document the round-trip guard accepts.
+        if matches!(guard, GuardLevel::Exact | GuardLevel::Semantic)
+            && let (Some(finder), Some(candidate)) = (finder.as_ref(), found.as_ref())
+        {
+            finder.remember(&path, candidate);
+        }
         let mut session = Session {
             reg,
             limits,

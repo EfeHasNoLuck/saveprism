@@ -65,8 +65,9 @@ impl Session {
     /// detected and decoded like an opened save, but it is never written and needs no password: an
     /// encrypted file is refused with a clear error. Nothing in the open document changes.
     pub fn compare_with(&self, path: &str) -> Result<CompareResult, ApiError> {
-        let other = Session::open_path(PathBuf::from(path), None, None, self.renpy_keys.clone())
-            .map_err(|error| {
+        let other =
+            Session::open_path(PathBuf::from(path), None, None, self.renpy_keys.clone(), None)
+                .map_err(|error| {
             if error.code == ES3_PASSWORD_REQUIRED.as_str() {
                 ApiError::new(
                     app_codes::COMPARE_ENCRYPTED,

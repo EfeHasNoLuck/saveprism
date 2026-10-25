@@ -218,6 +218,9 @@
     "body": "{{name}} için oyunun kullandığı parolayı gir. Bir kez kullanılır, saklanmaz.",
     "label": "Parola",
     "submit": "Aç",
+    "pickFolder": "Oyun klasörünü seç…",
+    "pickFolderTitle": "Oyunun kurulu olduğu klasörü seç",
+    "folderEmpty": "O klasörde parola bulunamadı.",
     "wrong": "Bu parola dosyayı açmadı. Oyunun Easy Save ayarlarındaki parolayı kontrol edip tekrar dene."
   },
   "codeText": {

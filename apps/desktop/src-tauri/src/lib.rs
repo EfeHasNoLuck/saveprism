@@ -63,6 +63,20 @@ async fn open_file(
     Ok(info)
 }
 
+/// Opens an encrypted file while also trying the game folder the player picked, so a save whose
+/// password is in the game's own files opens without typing it.
+#[tauri::command]
+async fn open_file_with_game_folder(
+    state: State<'_, AppState>,
+    path: String,
+    game_folder: String,
+) -> Result<OpenInfo, ApiError> {
+    let session = Session::open_with_game_folder(&path, None, None, PathBuf::from(game_folder))?;
+    let info = session.info();
+    *state.lock() = Some(session);
+    Ok(info)
+}
+
 /// Opens a pasted save code (replacing the open document). The text is kept as SavePrism's own file
 /// in the app data folder; a code that does not open leaves no file behind.
 #[tauri::command]
@@ -360,6 +374,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             core_version,
             open_file,
+            open_file_with_game_folder,
             open_code,
             copy_code,
             get_children,

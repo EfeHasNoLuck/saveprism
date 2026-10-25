@@ -12,7 +12,7 @@
 mod aes;
 mod plain;
 
-pub use aes::Es3AesLayer;
+pub use aes::{Es3AesLayer, password_unlocks_first_block};
 
 use std::sync::Arc;
 
