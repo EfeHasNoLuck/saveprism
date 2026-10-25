@@ -25,6 +25,10 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
   unchanged data kept), The Witcher 3 (3; fixed: variable table may reach the footer), Ren'Py, RPG Maker XP, Godot
   JSON: all open with an exact round trip. None found for VX/VX Ace, 2000/2003, Wolf RPG, QSP, Naninovel, `.sol`,
   SugarCube.
+- 2026-10-25: Open folder (`7df9b4b`), translated error toasts + Compare/Where-is-my-save polish (`9501734`) and the
+  password field focus (`b04c4ac`) re-checked in the running app over CDP (dark/light, EN/TR): all pass.
+- 2026-10-25: logo pack from the maintainer in `docs/brand/`; app icons regenerated from `SavePrism-icon-navy.svg`;
+  README shows the logo.
 - 65 real saves for local tests in `fixtures/external/` (git-ignored; sources and licenses in `fixtures/external/SOURCES.md`).
 
 ## Todo (in order; widened by the user on 2026-10-23)
@@ -152,8 +156,10 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
 - Real saves were pushed once in `bed2ed9` (private repo); ask the user before any history cleanup.
 - Layout (visual check, 2026-10-24): at 1000 px a list header with search, Add, Ask AI and Set all wraps to a second row
   (fits from 1100 px); at 900 px with pending edits in Turkish the bottom bar overflows sideways (945 px).
-- Not re-checked in the running app after their fixes: Open folder (`7df9b4b`), the visual-check polish and the
-  translated error toasts (`9501734`), the password field focus (`b04c4ac`).
+- Any unknown file whose size is a multiple of 16 bytes opens the "This file is encrypted" password dialog (it could be
+  Easy Save 3 AES); a cut-off copy of a known format says "SavePrism does not know this file yet" (visual check,
+  2026-10-25). After a wrong password the field is emptied.
+- Light theme: the Compare "only here/there" chips barely differ from the row background (text contrast is fine).
 - Ask AI on the Values card copies only the top-level values (as its search does), not values inside groups.
 - An MCP edit does not reach a SavePrism window with the same file open; that window refuses to save over it
   (SP-APP-023) until the file is opened again.

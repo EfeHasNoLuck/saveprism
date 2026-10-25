@@ -1,3 +1,8 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/brand/SavePrism-logo-on-dark.png">
+  <img alt="SavePrism" src="docs/brand/SavePrism-logo-on-light.png" width="320">
+</picture>
+
 # SavePrism
 
 A free, local, MIT-licensed desktop app for editing game save files. Open a save from RPG Maker, Unity, Unreal Engine,
