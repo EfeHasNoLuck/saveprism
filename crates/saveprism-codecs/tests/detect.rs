@@ -268,3 +268,46 @@ fn plain_text_and_json_are_not_taken_by_structured_text() {
         assert_eq!(detection.best.recipe.kinds(), ["format.json"], "{name}");
     }
 }
+
+#[test]
+fn layers_without_a_magic_are_found_by_content() {
+    let reg = registry();
+    let detect_named = |name: &str, bytes: &[u8]| {
+        let opts = DetectOptions {
+            file_name: Some(name.to_owned()),
+            ..DetectOptions::default()
+        };
+        detect(bytes, &reg, &Limits::default(), &opts).expect("detected")
+    };
+
+    // Brotli with a name that says nothing about the format.
+    let brotli = include_bytes!("../../../fixtures/synthetic/layers/save-json-brotli.dat");
+    assert_eq!(
+        detect_named("save.dat", brotli).best.recipe.kinds(),
+        ["compression.brotli", "format.json"]
+    );
+
+    // Raw deflate offered as a plain .dat file (Naninovel only used .nson before).
+    let deflate = make_input(&reg, &["compression.deflate"]);
+    assert_eq!(
+        detect_named("save.dat", &deflate).best.recipe.kinds(),
+        ["compression.deflate", "format.json"]
+    );
+
+    // LZF raw and framed, and a repeating-key XOR around JSON.
+    let lzf = include_bytes!("../../../fixtures/synthetic/lzf/save.json.lzf");
+    assert_eq!(
+        detect_named("save.bin", lzf).best.recipe.kinds(),
+        ["compression.lzf", "format.json"]
+    );
+    let framed = include_bytes!("../../../fixtures/synthetic/lzf/save.json.zv");
+    assert_eq!(
+        detect_named("save.bin", framed).best.recipe.kinds(),
+        ["compression.lzf", "format.json"]
+    );
+    let xor = include_bytes!("../../../fixtures/synthetic/xor/save-json-key1.bin");
+    assert_eq!(
+        detect_named("save.bin", xor).best.recipe.kinds(),
+        ["obfuscation.xor", "format.json"]
+    );
+}

@@ -9,12 +9,28 @@ use std::fs;
 use std::io::Write;
 use std::path::PathBuf;
 
+use saveprism_codecs::layers::LzfLayer;
+use saveprism_core::{Layer, Params};
+
 const JSON: &[u8] = b"{\"player\":{\"name\":\"Ada\",\"level\":12,\"gold\":340},\"day\":3}";
 
 fn fixtures() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("../../fixtures")
         .join("synthetic/layers")
+}
+
+fn synthetic() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../fixtures")
+        .join("synthetic")
+}
+
+fn xor(data: &[u8], key: &[u8]) -> Vec<u8> {
+    data.iter()
+        .zip(key.iter().cycle())
+        .map(|(byte, key_byte)| byte ^ key_byte)
+        .collect()
 }
 
 fn pad_to_block(out: &mut Vec<u8>) {
@@ -149,7 +165,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ..Default::default()
     };
     ::brotli::BrotliCompress(&mut std::io::Cursor::new(JSON), &mut brotli, &params)?;
-    fs::write(out_dir.join("save.json.br"), brotli)?;
+    fs::write(out_dir.join("save.json.br"), &brotli)?;
+    // The same stream with a name that says nothing about Brotli: detection must use the content.
+    fs::write(out_dir.join("save-json-brotli.dat"), &brotli)?;
 
     let mut tar = Vec::new();
     tar_entry(&mut tar, "save.json", JSON);
@@ -161,10 +179,29 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut gzip = flate2::write::GzEncoder::new(Vec::new(), flate2::Compression::best());
     gzip.write_all(JSON)?;
+    let gzip = gzip.finish()?;
+    fs::write(out_dir.join("save.json.pct"), percent_upper(&gzip))?;
+
+    let xor_dir = synthetic().join("xor");
+    fs::create_dir_all(&xor_dir)?;
+    fs::write(xor_dir.join("save-json-key1.bin"), xor(JSON, b"Z"))?;
+    fs::write(xor_dir.join("save-gzip-key4.bin"), xor(&gzip, b"K3y!"))?;
+    let sqlite = fs::read(synthetic().join("sqlite/game.sqlite"))?;
     fs::write(
-        out_dir.join("save.json.pct"),
-        percent_upper(&gzip.finish()?),
+        xor_dir.join("save-sqlite-key13.bin"),
+        xor(&sqlite, b"SavePrismKey!"),
     )?;
+
+    let lzf_dir = synthetic().join("lzf");
+    fs::create_dir_all(&lzf_dir)?;
+    let lzf = LzfLayer;
+    let mut raw = Params::new();
+    raw.set("framed", false);
+    fs::write(lzf_dir.join("save.json.lzf"), lzf.encode(JSON, &raw)?)?;
+    let mut framed = Params::new();
+    framed.set("framed", true);
+    framed.set("block_size", 32_i64);
+    fs::write(lzf_dir.join("save.json.zv"), lzf.encode(JSON, &framed)?)?;
 
     println!("wrote layer fixtures to {}", out_dir.display());
     Ok(())

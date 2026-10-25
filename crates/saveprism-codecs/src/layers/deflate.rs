@@ -6,12 +6,16 @@ use flate2::Compression;
 use flate2::read::DeflateDecoder;
 use flate2::write::DeflateEncoder;
 use saveprism_core::limits::len_u64;
-use saveprism_core::{Confidence, DecodeCtx, Error, ErrorCode, Layer, Params, Result, SniffCtx};
+use saveprism_core::{
+    Confidence, DecodeCtx, Error, ErrorCode, Layer, Limits, Params, Result, SniffCtx,
+};
 
-use super::LAY_ENCODE_FAILED;
+use super::{LAY_ENCODE_FAILED, inner_is_known};
 
 /// Largest inflated size for which the compression level search is attempted.
 pub(crate) const MAX_LEVEL_SEARCH_BYTES: usize = 64 * 1024 * 1024;
+/// Largest output `sniff` accepts while proving a raw stream without an extension hint.
+const MAX_SNIFF_OUTPUT: u64 = 8 * 1024 * 1024;
 
 /// Order in which levels are tried: the common ones first.
 const LEVEL_ORDER: [u32; 10] = [6, 9, 1, 2, 3, 4, 5, 7, 8, 0];
@@ -96,14 +100,28 @@ impl Layer for DeflateLayer {
         "compression.deflate"
     }
 
-    fn sniff(&self, _input: &[u8], ctx: &SniffCtx<'_>) -> Confidence {
+    fn sniff(&self, input: &[u8], ctx: &SniffCtx<'_>) -> Confidence {
         let nson = ctx
             .file_name
             .is_some_and(|name| name.to_ascii_lowercase().ends_with(".nson"));
         if nson {
-            Confidence::new(0.55)
-        } else {
-            Confidence::NONE
+            return Confidence::new(0.55);
+        }
+        // Raw deflate has no header: prove the stream only for inputs small enough to decode
+        // here, and only when the result is a format SavePrism recognises.
+        if input.len() < 4 || len_u64(input.len()) > MAX_SNIFF_OUTPUT {
+            return Confidence::NONE;
+        }
+        let limits = Limits {
+            max_decoded_bytes: MAX_SNIFF_OUTPUT,
+            ratio_floor_bytes: MAX_SNIFF_OUTPUT,
+            max_ratio: u64::MAX,
+            ..Limits::default()
+        };
+        let mut trial = DecodeCtx::new(&limits);
+        match self.decode(input, &mut trial) {
+            Ok((inner, _)) if !inner.is_empty() && inner_is_known(&inner) => Confidence::new(0.42),
+            _ => Confidence::NONE,
         }
     }
 

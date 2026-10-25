@@ -7,11 +7,15 @@
 use std::io::Cursor;
 
 use saveprism_core::limits::len_u64;
-use saveprism_core::{Confidence, DecodeCtx, Error, Layer, Params, Result, SniffCtx};
+use saveprism_core::{Confidence, DecodeCtx, Error, Layer, Limits, Params, Result, SniffCtx};
 
 use super::{
-    LAY_BROTLI_INVALID, LAY_ENCODE_FAILED, invalid_param, keep_source, source_if_unchanged,
+    LAY_BROTLI_INVALID, LAY_ENCODE_FAILED, inner_is_known, invalid_param, keep_source,
+    source_if_unchanged,
 };
+
+/// Largest output `sniff` accepts while proving a stream without an extension hint.
+const MAX_SNIFF_OUTPUT: u64 = 64 * 1024 * 1024;
 
 /// `compression.brotli`.
 ///
@@ -24,14 +28,28 @@ impl Layer for BrotliLayer {
         "compression.brotli"
     }
 
-    fn sniff(&self, _input: &[u8], ctx: &SniffCtx<'_>) -> Confidence {
+    fn sniff(&self, input: &[u8], ctx: &SniffCtx<'_>) -> Confidence {
         let named = ctx
             .file_name
             .is_some_and(|name| name.to_ascii_lowercase().ends_with(".br"));
         if named {
-            Confidence::new(0.55)
-        } else {
-            Confidence::NONE
+            return Confidence::new(0.55);
+        }
+        // Brotli has no magic number: prove the stream only for inputs small enough to decode
+        // here, and only when the result is a format SavePrism recognises.
+        if input.len() < 4 || len_u64(input.len()) > MAX_SNIFF_OUTPUT {
+            return Confidence::NONE;
+        }
+        let limits = Limits {
+            max_decoded_bytes: MAX_SNIFF_OUTPUT,
+            ratio_floor_bytes: MAX_SNIFF_OUTPUT,
+            max_ratio: u64::MAX,
+            ..Limits::default()
+        };
+        let mut trial = DecodeCtx::new(&limits);
+        match self.decode(input, &mut trial) {
+            Ok((inner, _)) if !inner.is_empty() && inner_is_known(&inner) => Confidence::new(0.42),
+            _ => Confidence::NONE,
         }
     }
 

@@ -1,5 +1,6 @@
 //! Byte layers: base64, hex, percent escapes, gzip, zlib, deflate, bzip2, zstd, xz, lzma, lz4,
-//! brotli, LZ-String, the TyranoScript URL escape, the zip container and tar.
+//! brotli, LZ-String, LZF, single/repeating-key XOR, the TyranoScript URL escape, the zip container
+//! and tar.
 //!
 //! Every layer records the parameters it needs to wrap the inner bytes again exactly as they were.
 //! Compression layers also keep the original compressed bytes together with a digest of the
@@ -20,11 +21,13 @@ mod deflate;
 mod gzip;
 mod hex;
 mod lz4;
+mod lzf;
 mod lzma;
 mod lzstring;
 mod percent;
 mod tar;
 mod url_escape;
+mod xor;
 mod xz;
 mod zip;
 mod zlib;
@@ -37,11 +40,13 @@ pub use deflate::DeflateLayer;
 pub use gzip::GzipLayer;
 pub use hex::HexLayer;
 pub use lz4::Lz4Layer;
+pub use lzf::LzfLayer;
 pub use lzma::LzmaLayer;
 pub use lzstring::LzStringLayer;
 pub use percent::PercentLayer;
 pub use tar::{TAR_DAMAGED, TAR_NO_PAYLOAD, TAR_WRITE, TarLayer};
 pub use url_escape::UrlEscapeLayer;
+pub use xor::XorLayer;
 pub use xz::XzLayer;
 pub use zip::{ZIP_DAMAGED, ZIP_NO_PAYLOAD, ZIP_UNSUPPORTED, ZIP_WRITE, ZipLayer};
 pub use zlib::ZlibLayer;
@@ -77,6 +82,10 @@ pub const LAY_LZMA_INVALID: ErrorCode = ErrorCode::new("SP-LAY-00B");
 pub const LAY_LZ4_INVALID: ErrorCode = ErrorCode::new("SP-LAY-00C");
 /// The input is not valid Brotli data.
 pub const LAY_BROTLI_INVALID: ErrorCode = ErrorCode::new("SP-LAY-00D");
+/// The input is not valid LZF data.
+pub const LAY_LZF_INVALID: ErrorCode = ErrorCode::new("SP-LAY-00E");
+/// The input is not simple XOR obfuscation of a known format.
+pub const LAY_XOR_INVALID: ErrorCode = ErrorCode::new("SP-LAY-00F");
 /// The input is not valid hex text.
 pub const LAY_HEX_INVALID: ErrorCode = ErrorCode::new("SP-HEX-001");
 /// The input is not valid percent-encoded text.
@@ -104,6 +113,8 @@ pub fn register(reg: &mut Registry) {
     reg.add_layer(Arc::new(LzmaLayer));
     reg.add_layer(Arc::new(Lz4Layer));
     reg.add_layer(Arc::new(BrotliLayer));
+    reg.add_layer(Arc::new(LzfLayer));
+    reg.add_layer(Arc::new(XorLayer));
     reg.add_layer(Arc::new(LzStringLayer));
     reg.add_layer(Arc::new(UrlEscapeLayer));
     zip::register(reg);
@@ -278,6 +289,8 @@ mod tests {
             "compression.lzma",
             "compression.lz4",
             "compression.brotli",
+            "compression.lzf",
+            "obfuscation.xor",
             "compression.lz-string",
             "encoding.url-escape",
             "container.zip",
@@ -285,7 +298,7 @@ mod tests {
         ] {
             assert!(reg.is_layer(id), "{id} is not registered");
         }
-        assert_eq!(reg.layers().count(), 16);
+        assert_eq!(reg.layers().count(), 18);
     }
 
     #[test]
@@ -303,6 +316,8 @@ mod tests {
         assert_eq!(LAY_LZMA_INVALID.as_str(), "SP-LAY-00B");
         assert_eq!(LAY_LZ4_INVALID.as_str(), "SP-LAY-00C");
         assert_eq!(LAY_BROTLI_INVALID.as_str(), "SP-LAY-00D");
+        assert_eq!(LAY_LZF_INVALID.as_str(), "SP-LAY-00E");
+        assert_eq!(LAY_XOR_INVALID.as_str(), "SP-LAY-00F");
         assert_eq!(LAY_HEX_INVALID.as_str(), "SP-HEX-001");
         assert_eq!(LAY_PERCENT_INVALID.as_str(), "SP-PCT-001");
         assert_eq!(LAY_URL_ESCAPE_INVALID.as_str(), "SP-URL-001");
