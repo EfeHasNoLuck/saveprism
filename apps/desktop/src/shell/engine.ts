@@ -27,6 +27,8 @@ const EXTENSION_LABELS: Record<string, string> = {
   yml: "YAML",
   csv: "CSV",
   plist: "Property list",
+  plr: "Terraria",
+  wld: "Terraria",
 };
 
 const CODEC_LABELS: Record<string, string> = {
@@ -55,6 +57,8 @@ const CODEC_LABELS: Record<string, string> = {
   "format.qsp": "QSP",
   "format.naninovel": "Naninovel",
   "format.witcher3": "The Witcher 3",
+  "format.terraria-player": "Terraria",
+  "format.terraria-world": "Terraria",
   "format.xml": "XML",
   "format.ini": "INI",
   "format.properties": "Properties",

@@ -23,6 +23,8 @@ use std::path::{Path as FsPath, PathBuf};
 use saveprism_codecs::es3::{
     ES3_BAD_DATA, ES3_PASSWORD_REQUIRED, ES3_WRONG_PASSWORD, password_unlocks_first_block,
 };
+use saveprism_codecs::terraria::TERRARIA_PASSWORD_REQUIRED;
+use saveprism_codecs::terraria::aes::player_password_unlocks_first_block;
 use saveprism_core::detect::{DetectOptions, detect};
 use saveprism_core::guard::{Verdict, check_round_trip};
 use saveprism_core::io::{WriteOptions, default_backup_root, safe_write};
@@ -83,6 +85,8 @@ const PREVIEW_CHARS: usize = 120;
 const QUOTE_CHARS: usize = 40;
 /// The encryption layer of Easy Save 3.
 const ES3_AES_LAYER: &str = "crypto.es3-aes";
+/// The encryption layer of a Terraria player save.
+const TERRARIA_PLR_LAYER: &str = "crypto.terraria-plr";
 
 /// The backups to keep: the setting, clamped to 1..=50, or 10 when it is missing.
 pub(crate) fn clamp_keep_backups(value: Option<usize>) -> usize {
@@ -453,7 +457,7 @@ fn with_password(recipe: &Recipe, password: Option<&str>) -> Recipe {
     let mut recipe = recipe.clone();
     if let Some(password) = password {
         for step in &mut recipe.steps {
-            if step.kind == ES3_AES_LAYER {
+            if step.kind == ES3_AES_LAYER || step.kind == TERRARIA_PLR_LAYER {
                 step.params.set("password", password);
             }
         }
@@ -461,14 +465,22 @@ fn with_password(recipe: &Recipe, password: Option<&str>) -> Recipe {
     recipe
 }
 
-/// True when `bytes` looks like an encrypted Easy Save 3 file (which is detected by shape alone).
-fn looks_encrypted(reg: &Registry, path: &FsPath, bytes: &[u8]) -> bool {
+/// The encrypted layer `bytes` looks like, if any. Both are detected by shape alone; a `.plr` name
+/// makes the Terraria layer win, because an Easy Save 3 file never has that extension.
+fn encrypted_layer(reg: &Registry, path: &FsPath, bytes: &[u8]) -> Option<&'static str> {
     let ctx = SniffCtx {
         file_name: path.file_name().and_then(|name| name.to_str()),
         depth: 0,
     };
+    if reg
+        .layer(TERRARIA_PLR_LAYER)
+        .is_some_and(|layer| layer.sniff(bytes, &ctx) > Confidence::NONE)
+    {
+        return Some(TERRARIA_PLR_LAYER);
+    }
     reg.layer(ES3_AES_LAYER)
         .is_some_and(|layer| layer.sniff(bytes, &ctx) > Confidence::NONE)
+        .then_some(ES3_AES_LAYER)
 }
 
 /// Tries the keys the game's own files offer. Each candidate is checked cheaply (the first block
@@ -480,16 +492,17 @@ fn find_key(
     path: &FsPath,
     bytes: &[u8],
     finder: &KeyFinder,
+    encrypted: &'static str,
 ) -> Option<(keyfinder::Candidate, DecodeOutput)> {
     // A key found before is tried first, so no game file is read when it still works.
     for candidate in finder.stored(path) {
-        if let Some(out) = candidate_opens(reg, limits, path, bytes, &candidate) {
+        if let Some(out) = candidate_opens(reg, limits, path, bytes, &candidate, encrypted) {
             return Some((candidate, out));
         }
     }
     // `search` reads game files, so it is only called when the stored keys did not help.
     for candidate in finder.search(path) {
-        if let Some(out) = candidate_opens(reg, limits, path, bytes, &candidate) {
+        if let Some(out) = candidate_opens(reg, limits, path, bytes, &candidate, encrypted) {
             return Some((candidate, out));
         }
     }
@@ -504,8 +517,18 @@ fn candidate_opens(
     path: &FsPath,
     bytes: &[u8],
     candidate: &keyfinder::Candidate,
+    encrypted: &'static str,
 ) -> Option<DecodeOutput> {
-    if !password_unlocks_first_block(bytes, candidate.key()) {
+    let terraria = encrypted == TERRARIA_PLR_LAYER;
+    if candidate.is_terraria() != terraria {
+        return None;
+    }
+    let first_block_ok = if terraria {
+        player_password_unlocks_first_block(bytes, candidate.key())
+    } else {
+        password_unlocks_first_block(bytes, candidate.key())
+    };
+    if !first_block_ok {
         return None;
     }
     decode_file(reg, limits, path, bytes, Some(candidate.key())).ok()
@@ -547,24 +570,33 @@ fn decode_file(
         Err(error) => error,
     };
 
-    let sniff_ctx = SniffCtx {
-        file_name: opts.file_name.as_deref(),
-        depth: 0,
-    };
-    let looks_encrypted = reg
-        .layer(ES3_AES_LAYER)
-        .is_some_and(|layer| layer.sniff(bytes, &sniff_ctx) > Confidence::NONE);
-    if !looks_encrypted {
+    let Some(encrypted) = encrypted_layer(reg, path, bytes) else {
         return Err(detect_error);
-    }
+    };
     let Some(password) = password else {
-        return Err(Error::new(
-            ES3_PASSWORD_REQUIRED,
-            "this file is Easy Save 3 encrypted and needs a password",
-        ));
+        return Err(if encrypted == TERRARIA_PLR_LAYER {
+            Error::new(
+                TERRARIA_PASSWORD_REQUIRED,
+                "this Terraria player save is encrypted and needs the key from the game's own Terraria.exe",
+            )
+        } else {
+            Error::new(
+                ES3_PASSWORD_REQUIRED,
+                "this file is Easy Save 3 encrypted and needs a password",
+            )
+        });
     };
 
     let mut last = detect_error;
+    if encrypted == TERRARIA_PLR_LAYER {
+        let mut layer = Params::new();
+        layer.set("password", password);
+        let steps = vec![
+            Step::new(TERRARIA_PLR_LAYER, layer),
+            Step::bare("format.terraria-player"),
+        ];
+        return pipeline::decode(bytes, &Recipe::new(steps), reg, limits);
+    }
     let tails: [&[&str]; 2] = [&["format.es3"], &["compression.gzip", "format.es3"]];
     for tail in tails {
         let mut aes = Params::new();
@@ -594,7 +626,11 @@ fn assess(
     out: &DecodeOutput,
     password: Option<&str>,
 ) -> Verdict {
-    let encrypted = out.recipe.steps.iter().any(|s| s.kind == ES3_AES_LAYER);
+    let encrypted = out
+        .recipe
+        .steps
+        .iter()
+        .any(|s| s.kind == ES3_AES_LAYER || s.kind == TERRARIA_PLR_LAYER);
     if !encrypted {
         return check_round_trip(bytes, &out.recipe, reg, limits)
             .map(|report| report.overall)
@@ -858,8 +894,9 @@ impl Session {
         let mut predecoded = None;
         if password.is_none()
             && let Some(finder) = finder.as_ref()
-            && looks_encrypted(&reg, &path, &bytes)
-            && let Some((candidate, out)) = find_key(&reg, &limits, &path, &bytes, finder)
+            && let Some(encrypted) = encrypted_layer(&reg, &path, &bytes)
+            && let Some((candidate, out)) =
+                find_key(&reg, &limits, &path, &bytes, finder, encrypted)
         {
             password = Some(candidate.key().to_string());
             found = Some(candidate);

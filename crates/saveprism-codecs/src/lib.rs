@@ -33,6 +33,7 @@ pub mod renpy;
 pub mod rpgmaker;
 pub mod sol;
 pub mod sqlite;
+pub mod terraria;
 mod text_common;
 mod text_encoding;
 pub mod toml_text;
@@ -73,6 +74,7 @@ pub fn register_all(reg: &mut Registry) {
     qsp::register(reg);
     reg::register(reg);
     renpy::register(reg);
+    terraria::register(reg);
     sol::register(reg);
     nrbf::register(reg);
     odin::register(reg);

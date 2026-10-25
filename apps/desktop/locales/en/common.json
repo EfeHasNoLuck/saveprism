@@ -197,7 +197,8 @@
       "twine": "Twine / SugarCube",
       "flash": "Flash",
       "witcher3": "The Witcher 3",
-      "palworld": "Palworld"
+      "palworld": "Palworld",
+      "terraria": "Terraria"
     },
     "note": {
       "rpgmaker-mv": "MV uses www/save; MZ uses save.",
@@ -210,18 +211,19 @@
       "twine": "Browser storage: use the game's Save to disk / export option.",
       "flash": "Local shared objects.",
       "witcher3": "The Documents folder may be moved to OneDrive.",
-      "palworld": "Under the Steam ID folder."
+      "palworld": "Under the Steam ID folder.",
+      "terraria": "Players holds the characters; Worlds holds the worlds. The Documents folder may be moved to OneDrive."
     }
   },
   "password": {
     "title": "This file is encrypted",
-    "body": "Enter the password the game uses for {{name}}. It is used once and never stored.",
+    "body": "Enter the password or game key used for {{name}}. It is used once and never stored.",
     "label": "Password",
     "submit": "Open",
     "pickFolder": "Pick the game folder…",
     "pickFolderTitle": "Pick the folder where the game is installed",
     "folderEmpty": "No password found in that folder.",
-    "wrong": "That password did not open the file. Check the password in the game's Easy Save settings and try again."
+    "wrong": "That password did not open the file. Check it, or pick the game folder so its own files can be searched."
   },
   "codeText": {
     "title": "Your save code",
