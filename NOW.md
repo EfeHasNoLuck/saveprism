@@ -99,13 +99,20 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
      signed with the player's own key; BZip2/Zstd/XZ/LZMA/LZ4/Brotli/TAR layers + hex/URL-encoded codes;
      XML/INI/properties/TOML/YAML/CSV/plist kept byte-exact; pickle files, MessagePack, CBOR, BSON, NBT;
      "Where is my save?" help and "Compare with another save".
-     Merged: Ren'Py signing with the player's key (`13505dc`; reviewed, Ren'Py's own `ecsign.py` verified our
-     signatures; follow-ups in `wt/renpyfix`), MessagePack/CBOR/BSON/NBT (`095ce2e`), BZip2/Zstd/XZ/LZMA/LZ4/Brotli/TAR
-     layers + hex/percent codes (`fe4f891`, rust 3/3). Stopped at EVREN's daily token limit on 2026-10-24 23:4x (still
-     limited 00:31) with partial work in their worktrees: text, ui, renpyfix; resume (HANDOFF.md) with
-     `opencode run --continue` in each worktree.
+     All merged 2026-10-25, rust 3/3 + web 3/3 after each: Ren'Py signing with the player's key (`13505dc`; Ren'Py's
+     own `ecsign.py` verified our signatures) and its review follow-ups (`12dfc08`: unchanged signed persistent keeps
+     its signature, unsigned files never signed, key read only for signed Ren'Py files, 64 KiB cap, regular files only,
+     redacted key text, Ren'Py's own key folder order; reviewed, no critical/high), MessagePack/CBOR/BSON/NBT
+     (`095ce2e`), BZip2/Zstd/XZ/LZMA/LZ4/Brotli/TAR layers + hex/percent codes (`fe4f891`), "Where is my save?" and
+     "Compare with another save" (`752ae91`), XML/INI/properties/TOML/YAML/CSV/plist byte-exact (`bede97c`; notices
+     regenerated). Not yet: a real Ren'Py game test; pickle files outside Ren'Py (check whether wave 1 covered them).
+     Review lows left (renpyfix): an unchanged signed *save* (not persistent) is re-signed on write; any `Ren'Py Data`
+     ancestor folder is trusted for keys; key buffer not zeroized.
    - No value finder / memory-scanner for unknown binaries (user, 2026-10-25: Cheat Engine already does that; it would
      widen the scope).
+   - Wave 2 running (EVREN, started 2026-10-25 ~03:50, worktrees `../saveprism-wt/{unlock,keys,unity,enc}`, briefs
+     `.motor/w2-*.md`): content-based layers + XOR + LZF; key finder for ES3 passwords from the game's files; Odin + ES2;
+     text encodings. Terraria, Adventure Creator, Pixel Crushers and the Gwent view come after.
    - Wave 2, first: auto-unlock (user idea, 2026-10-24): every layer tried by content whatever the extension; simple XOR
      obfuscation broken automatically from the expected start of the inner format (`{`, `<?xml`, `PK`...); a key finder
      that reads candidate passwords from the game's own files (Unity `Assembly-CSharp.dll` strings, IL2CPP
