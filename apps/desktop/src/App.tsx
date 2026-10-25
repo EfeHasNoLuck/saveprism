@@ -708,7 +708,8 @@ function App() {
         ) : null}
 
         {file?.notice === "renpy-signed" ||
-        file?.notice === "renpy-key-signed" ? (
+        file?.notice === "renpy-key-signed" ||
+        file?.notice === "renpy-persistent-key-signed" ? (
           <div
             role="status"
             className="relative z-10 flex h-8 shrink-0 items-center gap-2 border-b border-border bg-chrome px-3 text-xs font-medium text-muted-foreground"
@@ -717,7 +718,9 @@ function App() {
             {t(
               file?.notice === "renpy-key-signed"
                 ? "banner.renpyKeySigned"
-                : "banner.renpySigned",
+                : file?.notice === "renpy-persistent-key-signed"
+                  ? "banner.renpyPersistentKeySigned"
+                  : "banner.renpySigned",
             )}
           </div>
         ) : null}

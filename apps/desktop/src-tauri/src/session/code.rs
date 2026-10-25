@@ -176,6 +176,16 @@ impl Session {
     /// there. A code that does not open is removed again and the open error comes back with a hint
     /// for pasted codes. Only the newest [`MAX_PASTED`] codes are kept.
     pub fn open_code(text: &str, backup_root: Option<PathBuf>) -> Result<Session, ApiError> {
+        Session::open_code_with_source(text, backup_root, super::RenpyKeySource::Default)
+    }
+
+    /// [`Session::open_code`] with an explicit Ren'Py key source, so tests never read the player's
+    /// real `security_keys.txt`.
+    pub(super) fn open_code_with_source(
+        text: &str,
+        backup_root: Option<PathBuf>,
+        keys: super::RenpyKeySource,
+    ) -> Result<Session, ApiError> {
         let code = text.trim();
         if code.is_empty() {
             return Err(ApiError::new(
@@ -198,12 +208,7 @@ impl Session {
             })?;
         let dir = pasted_dir(&root)?;
         let path = write_new_code(&dir, code.as_bytes())?;
-        match Session::open_path(
-            path.clone(),
-            None,
-            backup_root,
-            super::RenpyKeySource::Default,
-        ) {
+        match Session::open_path(path.clone(), None, backup_root, keys) {
             Ok(mut session) => {
                 session.pasted = true;
                 prune_codes(&dir, &path);

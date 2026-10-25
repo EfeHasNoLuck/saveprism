@@ -61,8 +61,9 @@
     "readOnly": "Bu dosya henüz güvenle yazılamıyor. Bakabilirsin ama kaydedemezsin.",
     "semantic": "Dosya biraz farklı bir düzenle yazılacak. İçerik aynı kalır.",
     "renpySigned": "Ren'Py kaydı: değişiklikleri kaydettikten sonra oyun bu kayda güvenip güvenmeyeceğini sorar. Evet de.",
-    "renpyKeySigned": "Ren'Py kaydı: değişiklikler kendi Ren'Py anahtarınla imzalanır, oyun kaydı sormadan açar.",
-    "renpyPersistentSigned": "Bu Ren'Py persistent dosyası imzalı. Oyun düzenlenmiş kopyayı yok sayıp sıfırdan başlar, bu yüzden salt okunur açıldı."
+    "renpyKeySigned": "Ren'Py kaydı: değişiklikler kendi Ren'Py anahtarınla imzalanır.",
+    "renpyPersistentKeySigned": "Ren'Py kalıcı verisi: değişiklikler kendi Ren'Py anahtarınla imzalanır.",
+    "renpyPersistentSigned": "Bu Ren'Py kalıcı verisi imzalı. Oyun düzenlenmiş kopyayı yok sayıp sıfırdan başlar, bu yüzden salt okunur açıldı."
   },
   "bottom": {
     "changes_one": "{{count}} değişiklik bekliyor",
