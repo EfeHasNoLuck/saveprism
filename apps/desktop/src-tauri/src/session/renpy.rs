@@ -175,8 +175,11 @@ fn token_dir(
     }
 }
 
-/// Reads a key file, at most [`MAX_KEY_FILE_BYTES`]; a bigger or unreadable file is no key file.
+/// Reads a key file, at most [`MAX_KEY_FILE_BYTES`]; a bigger, unreadable or non-regular file is no key file.
 fn read_key_file(path: &FsPath) -> Option<KeyText> {
+    if !fs::metadata(path).ok()?.is_file() {
+        return None;
+    }
     let file = fs::File::open(path).ok()?;
     let mut bytes = Vec::new();
     file.take(MAX_KEY_FILE_BYTES.saturating_add(1))
