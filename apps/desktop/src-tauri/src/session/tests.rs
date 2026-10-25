@@ -2,6 +2,8 @@
 
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 use saveprism_codecs::es3::{ES3_PASSWORD_REQUIRED, ES3_WRONG_PASSWORD};
 use saveprism_codecs::layers::ZlibLayer;
@@ -1898,7 +1900,7 @@ fn pasted_folder(env: &Env) -> PathBuf {
 }
 
 fn paste(env: &Env, text: &str) -> Result<Session, ApiError> {
-    Session::open_code(text, Some(env.backups.clone()))
+    Session::open_code_with_source(text, Some(env.backups.clone()), RenpyKeySource::At(None))
 }
 
 fn fixture_text(relative: &str) -> String {
@@ -2930,7 +2932,8 @@ fn a_signed_renpy_persistent_with_the_players_key_is_editable_and_signed() {
     let path = copy_in(&env, RENPY_PERSISTENT_SIGNED);
     let mut session = open_with_key(&env, &path, &key).unwrap();
     let info = session.info();
-    assert_eq!(info.notice.as_deref(), Some(NOTICE_KEY_SIGNED));
+    assert_eq!(info.notice.as_deref(), Some(NOTICE_KEY_SIGNED_PERSISTENT));
+    assert!(info.warning.unwrap().contains("persistent data"));
     assert!(info.editable);
     session.edit_value("/play_count", "9").unwrap();
     session.save(path.to_str().unwrap(), false, None).unwrap();
@@ -2947,8 +2950,192 @@ fn a_signed_renpy_persistent_with_the_players_key_is_editable_and_signed() {
     assert!(sign::verify_data(&data, signatures));
 
     let reopened = open_with_key(&env, &path, &key).unwrap();
-    assert_eq!(reopened.info().notice.as_deref(), Some(NOTICE_KEY_SIGNED));
+    assert_eq!(
+        reopened.info().notice.as_deref(),
+        Some(NOTICE_KEY_SIGNED_PERSISTENT)
+    );
     assert_eq!(reopened.field_info("/play_count").unwrap().value, "9");
+}
+
+/// A key source that counts how often it is asked, and the counter.
+fn recording(key: Option<&Path>) -> (RenpyKeySource, Arc<AtomicUsize>) {
+    let calls = Arc::new(AtomicUsize::new(0));
+    let source = RenpyKeySource::Recording {
+        calls: Arc::clone(&calls),
+        path: key.map(Path::to_path_buf),
+    };
+    (source, calls)
+}
+
+fn asked(calls: &Arc<AtomicUsize>) -> usize {
+    calls.load(Ordering::SeqCst)
+}
+
+fn open_recorded(env: &Env, path: &Path, source: &RenpyKeySource) -> Result<Session, ApiError> {
+    Session::open_with_keys(
+        path.to_str().unwrap(),
+        None,
+        Some(env.backups.clone()),
+        source.clone(),
+    )
+}
+
+/// The `trailing` bytes after the zlib stream of a `persistent` file.
+fn persistent_signature(bytes: &[u8]) -> Vec<u8> {
+    let limits = Limits::default();
+    let mut ctx = DecodeCtx::new(&limits);
+    let (_, params) = ZlibLayer.decode(bytes, &mut ctx).unwrap();
+    params
+        .opt_bytes("trailing")
+        .unwrap()
+        .unwrap_or_default()
+        .to_vec()
+}
+
+#[test]
+fn only_a_signed_renpy_file_asks_for_the_key_file() {
+    let env = env();
+    let key = key_file(&env);
+    let (source, calls) = recording(Some(&key));
+    // Other formats, and Ren'Py files that carry no signature, never touch the key source.
+    for relative in [
+        "synthetic/json/compact.json",
+        "synthetic/rpgmaker-mv/file1.rpgsave",
+        "synthetic/es3/settings.es3",
+        RENPY_SAVE,
+        RENPY_7,
+        RENPY_PERSISTENT,
+    ] {
+        let path = copy_in(&env, relative);
+        open_recorded(&env, &path, &source).unwrap();
+        assert_eq!(asked(&calls), 0, "{relative}");
+    }
+    // So does a pasted code.
+    let code = fixture_text("synthetic/json/compact.json");
+    Session::open_code_with_source(&code, Some(env.backups.clone()), source.clone()).unwrap();
+    assert_eq!(asked(&calls), 0);
+    // A signed Ren'Py save or persistent file asks, once.
+    for (index, relative) in [RENPY_SIGNED, RENPY_PERSISTENT_SIGNED]
+        .into_iter()
+        .enumerate()
+    {
+        let path = copy_in(&env, relative);
+        let session = open_recorded(&env, &path, &source).unwrap();
+        assert_eq!(asked(&calls), index + 1, "{relative}");
+        assert!(session.renpy_key.is_some(), "{relative}");
+    }
+}
+
+#[test]
+fn a_restored_backup_keeps_the_key_source_of_the_session() {
+    let env = env();
+    let key = key_file(&env);
+    let (source, calls) = recording(Some(&key));
+    let path = copy_in(&env, RENPY_PERSISTENT_SIGNED);
+    let mut session = open_recorded(&env, &path, &source).unwrap();
+    session.edit_value("/play_count", "9").unwrap();
+    session.save(path.to_str().unwrap(), false, None).unwrap();
+    let backup = session.backups().unwrap().remove(0);
+    let restored = session.restore_backup(&backup.name, None).unwrap();
+    // The restored file went through the session's own source, not the real one.
+    assert_eq!(asked(&calls), 2);
+    assert_eq!(
+        restored.info().notice.as_deref(),
+        Some(NOTICE_KEY_SIGNED_PERSISTENT)
+    );
+}
+
+#[test]
+fn a_signed_persistent_nobody_changed_keeps_its_signature_bytes() {
+    let env = env();
+    let key = key_file(&env);
+    let path = copy_in(&env, RENPY_PERSISTENT_SIGNED);
+    let original = fs::read(&path).unwrap();
+    let target = path.to_str().unwrap();
+    let mut session = open_with_key(&env, &path, &key).unwrap();
+
+    // Saved with no edit: the signature text the file had stays as it was (the deflate bytes of this
+    // fixture are not reproduced exactly, so the whole file is not compared).
+    let signature = persistent_signature(&original);
+    assert!(!signature.is_empty());
+    session.save(target, false, None).unwrap();
+    assert_eq!(persistent_signature(&fs::read(&path).unwrap()), signature);
+    // An edit that is taken back leaves the data as it was.
+    let before = session.field_info("/play_count").unwrap().value;
+    session.edit_value("/play_count", "9").unwrap();
+    session.edit_value("/play_count", &before).unwrap();
+    session.save(target, false, None).unwrap();
+    assert_eq!(persistent_signature(&fs::read(&path).unwrap()), signature);
+
+    // A real edit is signed with the player's key.
+    session.edit_value("/play_count", "9").unwrap();
+    session.save(target, false, None).unwrap();
+    let edited = fs::read(&path).unwrap();
+    let edited_signature = persistent_signature(&edited);
+    assert!(!edited_signature.is_empty());
+    assert_ne!(edited_signature, signature);
+    // Saving again with no edit keeps what the file holds now, not the signature it was opened with.
+    session.save(target, false, None).unwrap();
+    assert_eq!(fs::read(&path).unwrap(), edited);
+}
+
+#[test]
+fn an_unsigned_renpy_persistent_is_not_signed_even_with_the_players_key() {
+    let env = env();
+    let key = key_file(&env);
+    let path = copy_in(&env, RENPY_PERSISTENT);
+    let mut session = open_with_key(&env, &path, &key).unwrap();
+    assert_eq!(session.info().notice, None);
+    session.edit_value("/play_count", "9").unwrap();
+    session.save(path.to_str().unwrap(), false, None).unwrap();
+    assert!(persistent_signature(&fs::read(&path).unwrap()).is_empty());
+
+    // Even a session that holds the key for it (it does not look one up) writes it unsigned.
+    let mut forced = open(&env, &path, None).unwrap();
+    forced.renpy_key = Some(key);
+    forced.edit_value("/play_count", "10").unwrap();
+    forced.save(path.to_str().unwrap(), false, None).unwrap();
+    assert!(persistent_signature(&fs::read(&path).unwrap()).is_empty());
+    let reopened = open(&env, &path, None).unwrap();
+    assert_eq!(reopened.info().notice, None);
+    assert_eq!(reopened.field_info("/play_count").unwrap().value, "10");
+}
+
+#[test]
+fn the_key_text_never_enters_the_recipe_of_a_write() {
+    let env = env();
+    let key = key_file(&env);
+    let mut session = open_with_key(&env, &copy_in(&env, RENPY_SIGNED), &key).unwrap();
+    session.edit_value("/0/store.money", "5").unwrap();
+    let recipe = session.renpy_recipe(&session.recipe).unwrap();
+    let printed = format!("{recipe:?}");
+    // The private half of the key is the start of the SEC1 DER; none of it may show up.
+    assert!(printed.contains("signature"));
+    for secret in [
+        "MHcCAQEEIHYeYqUSRQdn",
+        "HYeYqUSRQdnOtTkdbq1IB",
+        "signing-key",
+    ] {
+        assert!(!printed.contains(secret), "{secret}");
+    }
+}
+
+#[test]
+fn a_key_file_over_64_kib_is_treated_as_no_key() {
+    let env = env();
+    let big = env.work.join("big_security_keys.txt");
+    fs::write(&big, format!("{RENPY_KEY_TEXT}{}", "#".repeat(64 * 1024))).unwrap();
+    let path = copy_in(&env, RENPY_PERSISTENT_SIGNED);
+    let session = open_with_key(&env, &path, &big).unwrap();
+    assert_eq!(
+        session.info().notice.as_deref(),
+        Some(NOTICE_SIGNED_PERSISTENT)
+    );
+    assert!(!session.info().editable);
+    let path = copy_in(&env, RENPY_SIGNED);
+    let session = open_with_key(&env, &path, &big).unwrap();
+    assert_eq!(session.info().notice.as_deref(), Some(NOTICE_SIGNED_SAVE));
+    assert!(session.renpy_key.is_none());
 }
 
 // Naninovel save slots.

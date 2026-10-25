@@ -13,8 +13,10 @@
 //!   (SEC1, 121 bytes), `VerifyingKey.to_der` (SPKI, 91 bytes) and the 64-byte `r || s` signature.
 //! - `renpy/persistent.py`: `load` decompresses and calls `check_persistent(s, unused_data)`;
 //!   `save_task` writes `zlib.compress(data) + sign_data(data)`.
-//! - `renpy.py`: `path_to_saves` puts the token folder under `%APPDATA%/RenPy/tokens` on Windows,
-//!   `~/.renpy/tokens` on Linux and `~/Library/RenPy/tokens` on macOS.
+//! - `renpy.py`: `path_to_saves(gamedir, "tokens")` names the token folder (see the desktop
+//!   session's `renpy` module for the lookup order).
+//! - `renpy/savetoken.py`: `decode_line` splits a line with `split(None, 2)` and decodes the second
+//!   and third field with `base64.b64decode`; a line with a field that does not decode is skipped.
 //!
 //! The key material never leaves the process: [`parse_key_file`] takes the text of the player's
 //! `security_keys.txt`, [`sign_data`] builds the `signatures` text in memory, and no function here
@@ -47,6 +49,12 @@ pub struct Key {
     signing: SigningKey,
 }
 
+impl std::fmt::Debug for Key {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("Key(<redacted>)")
+    }
+}
+
 impl Key {
     /// The SPKI DER of this key's public half, the first field of a `signature` line.
     fn public_der(&self) -> Vec<u8> {
@@ -63,39 +71,109 @@ fn spki_der(key: &VerifyingKey) -> Vec<u8> {
     der
 }
 
-/// Decodes one base64 field the way Ren'Py's `decode_line` does: the standard decoder discards
-/// characters outside the base64 alphabet (`base64.b64decode` without validation). `None` when the
-/// padding is not valid.
-fn decode_field(text: &str) -> Option<Vec<u8>> {
-    let cleaned: String = text
-        .chars()
-        .filter(|c| c.is_ascii_alphanumeric() || matches!(c, '+' | '/' | '='))
-        .collect();
-    STANDARD.decode(cleaned).ok()
+/// The value of one base64 character, `None` for anything outside the standard alphabet.
+fn sextet(byte: u8) -> Option<u32> {
+    match byte {
+        b'A'..=b'Z' => Some(u32::from(byte - b'A')),
+        b'a'..=b'z' => Some(u32::from(byte - b'a') + 26),
+        b'0'..=b'9' => Some(u32::from(byte - b'0') + 52),
+        b'+' => Some(62),
+        b'/' => Some(63),
+        _ => None,
+    }
+}
+
+/// The low byte of `value`.
+fn low_byte(value: u32) -> u8 {
+    u8::try_from(value & 0xff).unwrap_or_default()
+}
+
+/// Decodes base64 the way Python's `base64.b64decode(text)` does, which is what Ren'Py's
+/// `decode_line` calls: text with a non-ASCII character is refused; other characters outside the
+/// alphabet (spaces, line breaks, stray symbols) are skipped; a `=` before the second character of
+/// a group is skipped; the padding that completes a group ends the data (the rest is ignored);
+/// leftover bits are dropped. `None` when the characters do not fill the last group and no padding
+/// completes it (Python's "incorrect padding").
+fn decode_lenient(text: &str) -> Option<Vec<u8>> {
+    if !text.is_ascii() {
+        return None;
+    }
+    let mut out = Vec::new();
+    let mut bits: u32 = 0;
+    let mut count: u32 = 0;
+    let mut pads: u32 = 0;
+    for byte in text.bytes() {
+        if byte == b'=' {
+            if count < 2 {
+                continue;
+            }
+            pads += 1;
+            if count + pads >= 4 {
+                match count {
+                    2 => out.push(low_byte(bits >> 4)),
+                    _ => {
+                        out.push(low_byte(bits >> 10));
+                        out.push(low_byte(bits >> 2));
+                    }
+                }
+                return Some(out);
+            }
+            continue;
+        }
+        let Some(value) = sextet(byte) else {
+            continue;
+        };
+        pads = 0;
+        bits = (bits << 6) | value;
+        count += 1;
+        if count == 4 {
+            out.push(low_byte(bits >> 16));
+            out.push(low_byte(bits >> 8));
+            out.push(low_byte(bits));
+            bits = 0;
+            count = 0;
+        }
+    }
+    (count == 0).then_some(out)
+}
+
+/// Splits a key file line the way `decode_line` does: strip it, then `split(None, 2)`. Gives the
+/// kind, the second field and, when there is one, the rest of the line as the third field. `None`
+/// for a line that is empty, a comment, or has a single word.
+fn split_fields(line: &str) -> Option<(&str, &str, Option<&str>)> {
+    let line = line.trim();
+    if line.starts_with('#') {
+        return None;
+    }
+    let (kind, rest) = line.split_once(char::is_whitespace)?;
+    let rest = rest.trim_start();
+    Some(match rest.split_once(char::is_whitespace) {
+        Some((second, third)) => (kind, second, Some(third.trim_start())),
+        None => (kind, rest, None),
+    })
 }
 
 /// Reads the `signing-key` lines of a `security_keys.txt`; malformed and `verifying-key` lines are
 /// skipped, as Ren'Py's `load_tokens` does. Each line is split and base64-decoded like
-/// `savetoken.decode_line`: the third field is decoded too, and a line with an unusable field is
-/// skipped. Never fails: an unreadable line is simply not a key.
+/// `savetoken.decode_line`: the third field is decoded too, and a line whose field does not decode
+/// is skipped. Never fails: an unreadable line is simply not a key.
 pub fn parse_key_file(text: &str) -> Vec<Key> {
     let mut keys = Vec::new();
-    for line in text.lines() {
+    // Python reads the file with universal newlines, so a lone carriage return ends a line too.
+    for line in text.split(['\n', '\r']) {
         if keys.len() >= MAX_KEYS {
             break;
         }
-        let mut parts = line.split_whitespace();
-        if parts.next() != Some("signing-key") {
+        let Some((kind, second, third)) = split_fields(line) else {
+            continue;
+        };
+        if kind != "signing-key" {
             continue;
         }
-        let Some(encoded) = parts.next() else {
+        let Some(der) = decode_lenient(second) else {
             continue;
         };
-        let rest: String = parts.collect::<Vec<_>>().concat();
-        let Some(der) = decode_field(encoded) else {
-            continue;
-        };
-        if !rest.is_empty() && decode_field(&rest).is_none() {
+        if third.is_some_and(|third| decode_lenient(third).is_none()) {
             continue;
         }
         let Ok(secret) = p256::SecretKey::from_sec1_der(&der) else {
@@ -245,19 +323,51 @@ mod tests {
     }
 
     #[test]
-    fn base64_fields_are_decoded_as_leniently_as_renpy_does() {
+    fn base64_is_decoded_as_leniently_as_python_does() {
+        let ok = |text: &str| decode_lenient(text);
+        assert_eq!(ok(""), Some(Vec::new()));
+        assert_eq!(ok("QUJD"), Some(b"ABC".to_vec()));
+        assert_eq!(ok("QUI="), Some(b"AB".to_vec()));
+        assert_eq!(ok("QQ=="), Some(b"A".to_vec()));
+        // Spaces, line breaks and stray symbols are skipped.
+        assert_eq!(ok(" QU\tJD\r\n"), Some(b"ABC".to_vec()));
+        assert_eq!(ok("Q*UJ-D"), Some(b"ABC".to_vec()));
+        // A `=` before the second character of a group is skipped.
+        assert_eq!(ok("=QQ=="), Some(b"A".to_vec()));
+        // Padding that completes a group ends the data; leftover bits need not be zero.
+        assert_eq!(ok("QQ==QUJD"), Some(b"A".to_vec()));
+        assert_eq!(ok("QR=="), Some(b"A".to_vec()));
+        // Missing padding, or one character too many, is Python's "incorrect padding".
+        assert_eq!(ok("QQ"), None);
+        assert_eq!(ok("QUI"), None);
+        assert_eq!(ok("QUJDQ"), None);
+        // `b64decode` refuses a str with a non-ASCII character.
+        assert_eq!(ok("QUJD\u{e9}"), None);
+    }
+
+    #[test]
+    fn key_lines_are_split_and_decoded_like_decode_line() {
         let signing = signing_key(5);
         let line = key_line(&signing);
-        // A character outside the base64 alphabet is ignored, as `base64.b64decode` does.
-        let noisy = line.replacen("signing-key ", "signing-key *", 1);
-        assert_eq!(parse_key_file(&noisy).len(), 1);
-        // The third field is decoded too; a broken one drops the line.
         let fields: Vec<&str> = line.split_whitespace().collect();
-        let broken = format!(
-            "signing-key {} {}***=\n",
-            fields.get(1).unwrap(),
-            fields.get(2).unwrap()
-        );
-        assert!(parse_key_file(&broken).is_empty());
+        let (der, spki) = (fields.get(1).unwrap(), fields.get(2).unwrap());
+        let parse = |text: &str| parse_key_file(text).len();
+
+        // A stray symbol inside the key is ignored, as `base64.b64decode` does.
+        assert_eq!(parse(&format!("signing-key *{der} {spki}\n")), 1);
+        // The third field is the rest of the line; its spaces are skipped like any other.
+        let (left, right) = spki.split_at(8);
+        assert_eq!(parse(&format!("signing-key {der} {left} {right}\n")), 1);
+        // The third field is optional, but when it is there it must decode.
+        assert_eq!(parse(&format!("signing-key {der}\n")), 1);
+        assert_eq!(parse(&format!("signing-key {der} QUJDQ\n")), 0);
+        assert_eq!(parse(&format!("signing-key {der} {spki}\u{e9}\n")), 0);
+        // A key that does not decode, a one-word line and a comment are skipped.
+        assert_eq!(parse(&format!("signing-key QUJDQ {spki}\n")), 0);
+        assert_eq!(parse("signing-key\n"), 0);
+        assert_eq!(parse(&format!("# signing-key {der} {spki}\n")), 0);
+        // A lone carriage return ends a line, as it does when Python reads the file.
+        let two = format!("{}\r{}", line.trim_end(), key_line(&signing_key(6)));
+        assert_eq!(parse(&two), 2);
     }
 }
