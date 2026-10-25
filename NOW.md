@@ -114,8 +114,12 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
      `.motor/w2-*.md`): content-based layers + XOR + LZF; key finder for ES3 passwords from the game's files; Odin + ES2;
      text encodings. Terraria, Adventure Creator, Pixel Crushers and the Gwent view come after.
      Merged 2026-10-25 (rust 3/3 + web 3/3): layers by content + XOR auto-break + LZF (`9d50e17`), Odin Serializer
-     binary (`73ebf7a`; Easy Save 2 not done: no public byte layout, clean room). Text encodings ready on `wt/enc`
-     (not merged yet); key finder fixing review findings (HANDOFF.md).
+     binary (`73ebf7a`; Easy Save 2 not done: no public byte layout, clean room), text encodings for text saves,
+     RPG Maker 2000/2003 and QSP (`9ef817e`), ES3 password found in the game's own files with evidence (`60a36d2`;
+     reviewed twice, no critical/high; visual check of the dialog pending).
+   - Running on EVREN (2026-10-25 afternoon): `polish` (visual-check gaps, Turkish error messages per code), `vn1`
+     (KiriKiri, GameMaker, Pixel Game Maker MV), `console` (PS1/PS2 memory cards, .psu, SharkPort), `terraria`
+     (.plr through the key finder, .wld header).
    - Wave 2, first: auto-unlock (user idea, 2026-10-24): every layer tried by content whatever the extension; simple XOR
      obfuscation broken automatically from the expected start of the inner format (`{`, `<?xml`, `PK`...); a key finder
      that reads candidate passwords from the game's own files (Unity `Assembly-CSharp.dll` strings, IL2CPP
