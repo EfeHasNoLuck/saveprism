@@ -10,7 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { filterCompareRows } from "./compare";
+import { filterCompareRows, kindBadgeClasses } from "./compare";
 import { describeError } from "./errors";
 
 type CompareState =
@@ -31,14 +31,13 @@ interface CompareDialogProps {
 /** Tiny one-sided badge ("only here" / "only there"). */
 function KindBadge({ row }: { row: CompareRow }) {
   const { t } = useTranslation();
-  if (row.kind === "different") return null;
+  const tones = kindBadgeClasses(row.kind);
+  if (tones === null) return null;
   return (
     <span
       className={cn(
         "shrink-0 rounded-sm px-1 text-[0.625rem] font-semibold tracking-wide uppercase",
-        row.kind === "onlyHere"
-          ? "bg-surface-high text-muted-foreground"
-          : "bg-changed-chip text-changed-foreground",
+        tones,
       )}
     >
       {t(row.kind === "onlyHere" ? "compare.onlyHere" : "compare.onlyThere")}
@@ -73,7 +72,7 @@ export function CompareDialog({ path, fileName, onClose, onReveal }: CompareDial
       .then((result) => !cancelled && setState({ status: "ready", result }))
       .catch((error: unknown) => {
         if (cancelled) return;
-        const { reason, fix } = describeError(error);
+        const { reason, fix } = describeError(error, t);
         setState({
           status: "error",
           message: `${t("compare.failed")} ${t("toast.errorDetail", { reason, fix })}`.trim(),

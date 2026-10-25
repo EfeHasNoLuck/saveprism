@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type { CompareRow } from "@/api/commands";
-import { filterCompareRows, rowIsHere, valueCell } from "./compare";
+import {
+  filterCompareRows,
+  kindBadgeClasses,
+  pathAncestors,
+  pickRevealTarget,
+  rowIsHere,
+  valueCell,
+} from "./compare";
 
 const ROWS: CompareRow[] = [
   { path: "/level", here: "7", there: "8", kind: "different" },
@@ -36,5 +43,42 @@ describe("row helpers", () => {
   it("shows an empty cell for the missing side", () => {
     expect(valueCell(null)).toBe("");
     expect(valueCell("8")).toBe("8");
+  });
+
+  it("gives each one-sided badge its own chip tones", () => {
+    expect(kindBadgeClasses("different")).toBeNull();
+    expect(kindBadgeClasses("onlyHere")).toContain("bg-surface-highest");
+    expect(kindBadgeClasses("onlyThere")).toContain("bg-changed-tag");
+    expect(kindBadgeClasses("onlyHere")).not.toBe(kindBadgeClasses("onlyThere"));
+  });
+});
+
+describe("reveal helpers", () => {
+  it("lists the shown ancestors nearest first", () => {
+    expect(pathAncestors("/actors/0/name")).toEqual(["/actors/0", "/actors"]);
+    expect(pathAncestors("/actors")).toEqual([]);
+    expect(pathAncestors("/")).toEqual([]);
+    expect(pathAncestors("")).toEqual([]);
+  });
+
+  it("keeps an exact row when it is shown", () => {
+    expect(pickRevealTarget("/actors", ["/actors"])).toBe("/actors");
+  });
+
+  it("falls back to the nearest shown ancestor of a whole container", () => {
+    expect(pickRevealTarget("/actors/0/name", ["/actors", "/actors/1"])).toBe("/actors");
+    expect(pickRevealTarget("/actors/0/name", ["/actors/0", "/actors"])).toBe("/actors/0");
+  });
+
+  it("falls back to the first shown descendant when no ancestor is shown", () => {
+    expect(pickRevealTarget("/actors", ["/actors/1/name", "/actors/0/name"])).toBe(
+      "/actors/1/name",
+    );
+    expect(pickRevealTarget("/actors", ["/other", "/actors/2/level"])).toBe("/actors/2/level");
+  });
+
+  it("returns null when nothing on the way is shown yet", () => {
+    expect(pickRevealTarget("/actors", ["/gold"])).toBeNull();
+    expect(pickRevealTarget("/actor", ["/actors"])).toBeNull();
   });
 });

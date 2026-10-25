@@ -420,7 +420,7 @@ export function JsonDialog({
       </button>
     );
   } else if (shownRefusal !== null) {
-    const { reason, fix } = describeError(shownRefusal.error);
+    const { reason, fix } = describeError(shownRefusal.error, t);
     statusLine = (
       <span role="alert" className="text-destructive">
         {`${t("json.notApplied")} ${reason} ${fix}`.trim()}

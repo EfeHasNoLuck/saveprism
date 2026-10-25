@@ -55,7 +55,7 @@ export function BackupsDialog({
       .then((rows) => !cancelled && setList({ status: "ready", rows, now: Date.now() }))
       .catch((error: unknown) => {
         if (cancelled) return;
-        const { reason, fix } = describeError(error);
+        const { reason, fix } = describeError(error, t);
         setList({
           status: "error",
           message: `${t("backups.failed")} ${t("toast.errorDetail", { reason, fix })}`.trim(),
