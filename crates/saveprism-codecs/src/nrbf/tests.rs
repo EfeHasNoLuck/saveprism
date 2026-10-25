@@ -499,3 +499,12 @@ fn a_huge_run_of_nulls_in_a_tiny_file_is_refused() {
     let error = decode_with(&bytes, &Limits::default()).unwrap_err();
     assert_eq!(error.code(), codes::CORE_LIMIT_NODES);
 }
+
+#[test]
+fn an_array_of_null_primitives_is_refused() {
+    // Found by fuzzing: an ArraySinglePrimitive of 33,686,018 elements of primitive type Null,
+    // which take no bytes each.
+    let mut bytes = vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0];
+    bytes.extend_from_slice(&[0x0f, 0x00, 0x05, 0x30, 0xe0, 0x02, 0x02, 0x02, 0x02, 0x11]);
+    assert!(decode_with(&bytes, &Limits::default()).is_err());
+}

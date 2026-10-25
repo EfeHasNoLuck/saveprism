@@ -830,10 +830,23 @@ impl<'i> Reader<'i, '_, '_> {
         }
     }
 
+    /// An array's element type: MS-NRBF forbids Null (17) and String (18) here, and a Null
+    /// element takes no bytes, so a tiny file could ask for millions of nodes.
+    fn array_primitive_type(&mut self) -> Result<u8> {
+        let at = self.pos;
+        let ptype = self.primitive_type()?;
+        if matches!(ptype, 17 | 18) {
+            return Err(self
+                .parse(format!("an array of primitive type {ptype}"))
+                .with_offset(len_u64(at)));
+        }
+        Ok(ptype)
+    }
+
     fn read_array_single_primitive(&mut self) -> Result<NodeId> {
         let object_id = self.i32()?;
         let length = self.count("array length")?;
-        let ptype = self.primitive_type()?;
+        let ptype = self.array_primitive_type()?;
         let node = self.reserve_object(object_id)?;
         let mut children = Vec::new();
         for _ in 0..length {
@@ -896,7 +909,7 @@ impl<'i> Reader<'i, '_, '_> {
         }
         let binary_type = self.byte()?;
         let primitive = match binary_type {
-            0 => Some(self.primitive_type()?),
+            0 => Some(self.array_primitive_type()?),
             7 => {
                 self.primitive_type()?;
                 None
