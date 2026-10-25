@@ -9,7 +9,7 @@
 //! re-encoding byte-exact.
 
 use ::aes::Aes128;
-use cbc::cipher::block_padding::Pkcs7;
+use cbc::cipher::block_padding::{NoPadding, Pkcs7};
 use cbc::cipher::{BlockModeDecrypt, BlockModeEncrypt, KeyIvInit};
 use saveprism_core::{Confidence, DecodeCtx, Error, Layer, Params, Result, SniffCtx, codes};
 
@@ -48,6 +48,27 @@ fn wrong_password() -> Error {
         ES3_WRONG_PASSWORD,
         "wrong password, or the file is not Easy Save 3 encrypted. Check the password in the game's Easy Save settings and try again.",
     )
+}
+
+/// True when `password` decrypts the first block of `input` into bytes that could start Easy Save 3
+/// content. It is a cheap pre-check for trying many candidate passwords before a full decode; a
+/// `true` here is not proof that the password is right.
+pub fn password_unlocks_first_block(input: &[u8], password: &str) -> bool {
+    let Some((iv, cipher_text)) = input.split_at_checked(IV_LEN) else {
+        return false;
+    };
+    let Some(first) = cipher_text.get(..BLOCK) else {
+        return false;
+    };
+    let key = derive_key(password, iv);
+    let Ok(decryptor) = cbc::Decryptor::<Aes128>::new_from_slices(&key, iv) else {
+        return false;
+    };
+    let mut block = [0_u8; BLOCK];
+    block.copy_from_slice(first);
+    decryptor
+        .decrypt_padded::<NoPadding>(&mut block)
+        .is_ok_and(plausible)
 }
 
 /// True when the decrypted payload looks like Easy Save 3 content: JSON text or a gzip stream.
@@ -163,5 +184,26 @@ impl Layer for Es3AesLayer {
         out.extend_from_slice(iv);
         out.extend_from_slice(cipher_text);
         Ok(out)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_cheap_check_tells_the_right_password_from_a_wrong_one() {
+        let mut params = Params::new();
+        params.set("password", "GameSecret42");
+        params.set("iv", vec![7_u8; 16]);
+        let plain = br#"{"slot":{"__type":"int","value":3}}"#;
+        let encrypted = Es3AesLayer.encode(plain, &params).unwrap();
+        assert!(password_unlocks_first_block(&encrypted, "GameSecret42"));
+        assert!(!password_unlocks_first_block(&encrypted, "not-the-key"));
+        // Too short to hold an IV and a block.
+        assert!(!password_unlocks_first_block(
+            &encrypted[..20],
+            "GameSecret42"
+        ));
     }
 }

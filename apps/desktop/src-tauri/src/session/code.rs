@@ -208,7 +208,7 @@ impl Session {
             })?;
         let dir = pasted_dir(&root)?;
         let path = write_new_code(&dir, code.as_bytes())?;
-        match Session::open_path(path.clone(), None, backup_root, keys) {
+        match Session::open_path(path.clone(), None, backup_root, keys, None) {
             Ok(mut session) => {
                 session.pasted = true;
                 prune_codes(&dir, &path);

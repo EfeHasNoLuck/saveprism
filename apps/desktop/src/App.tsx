@@ -13,6 +13,7 @@ import {
   isApiError,
   openCode,
   openFile,
+  openFileWithGameFolder,
   pendingChanges,
   redo,
   restoreBackup,
@@ -60,6 +61,8 @@ const NO_CHANGE_KINDS = { added: 0, removed: 0 };
 interface PasswordRequest {
   path: string;
   wrong: boolean;
+  /** The last try searched a folder the player picked and found no key there. */
+  folderTried: boolean;
 }
 
 function App() {
@@ -143,11 +146,13 @@ function App() {
   );
 
   const openPath = useCallback(
-    async (path: string, password?: string) => {
+    async (path: string, password?: string, gameFolder?: string) => {
       setBusy(true);
       const cover = window.setTimeout(() => setOpening(baseName(path)), OPEN_COVER_DELAY_MS);
       try {
-        const info = await openFile(path, password);
+        const info = gameFolder
+          ? await openFileWithGameFolder(path, gameFolder)
+          : await openFile(path, password);
         setFile(info);
         resetChanges();
         setHistory(NO_HISTORY);
@@ -166,7 +171,11 @@ function App() {
           isApiError(error) &&
           (error.code === ErrorCodes.passwordRequired || error.code === ErrorCodes.wrongPassword)
         ) {
-          setPasswordRequest({ path, wrong: error.code === ErrorCodes.wrongPassword });
+          setPasswordRequest({
+            path,
+            wrong: error.code === ErrorCodes.wrongPassword,
+            folderTried: gameFolder !== undefined,
+          });
         } else {
           setPasswordRequest(null);
           notifyError(t("toast.openFailed"), error);
@@ -179,6 +188,21 @@ function App() {
     },
     [notify, notifyError, rememberRecent, resetChanges, t],
   );
+
+  /**
+   * Lets the player pick the game's install folder; the host then searches its own files for the
+   * password and tries the file again. A failure leaves the password dialog open.
+   */
+  const pickGameFolder = useCallback(async () => {
+    if (!passwordRequest) return;
+    const folder = await openDialog({
+      directory: true,
+      multiple: false,
+      title: t("password.pickFolderTitle"),
+    });
+    if (typeof folder !== "string") return;
+    await openPath(passwordRequest.path, undefined, folder);
+  }, [openPath, passwordRequest, t]);
 
   /**
    * Opens `path`; with unsaved changes it asks first. Ignored while another action runs or the
@@ -866,7 +890,9 @@ function App() {
           <PasswordDialog
             name={baseName(passwordRequest.path)}
             wrong={passwordRequest.wrong}
+            folderTried={passwordRequest.folderTried}
             onSubmit={(password) => void openPath(passwordRequest.path, password)}
+            onPickFolder={() => void pickGameFolder()}
             onCancel={() => setPasswordRequest(null)}
           />
         ) : null}

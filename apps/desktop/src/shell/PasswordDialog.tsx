@@ -15,12 +15,23 @@ interface PasswordDialogProps {
   name: string;
   /** True when the last password did not open the file. */
   wrong: boolean;
+  /** True when the last try searched a picked game folder and found no key there. */
+  folderTried: boolean;
   onSubmit: (password: string) => void;
+  /** Let the player pick the game's install folder so its own files can be searched. */
+  onPickFolder: () => void;
   onCancel: () => void;
 }
 
 /** Asks for the password of an encrypted file. The password lives in this component only. */
-export function PasswordDialog({ name, wrong, onSubmit, onCancel }: PasswordDialogProps) {
+export function PasswordDialog({
+  name,
+  wrong,
+  folderTried,
+  onSubmit,
+  onPickFolder,
+  onCancel,
+}: PasswordDialogProps) {
   const { t } = useTranslation();
   const [password, setPassword] = useState("");
 
@@ -56,7 +67,15 @@ export function PasswordDialog({ name, wrong, onSubmit, onCancel }: PasswordDial
               {t("password.wrong")}
             </p>
           ) : null}
+          {folderTried && !wrong ? (
+            <p role="status" className="text-[0.8125rem] text-muted-foreground">
+              {t("password.folderEmpty")}
+            </p>
+          ) : null}
           <DialogFooter>
+            <Button type="button" variant="outline" onClick={onPickFolder}>
+              {t("password.pickFolder")}
+            </Button>
             <Button type="button" variant="ghost" onClick={onCancel}>
               {t("common.cancel")}
             </Button>

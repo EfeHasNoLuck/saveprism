@@ -181,6 +181,17 @@ export function openFile(path: string, password?: string): Promise<OpenInfo> {
 }
 
 /**
+ * Opens a file while also looking for the password in the game folder the player picked.
+ * Used by the password dialog's "Pick the game folder…" button.
+ */
+export function openFileWithGameFolder(
+  path: string,
+  gameFolder: string,
+): Promise<OpenInfo> {
+  return invoke<OpenInfo>("open_file_with_game_folder", { path, gameFolder });
+}
+
+/**
  * Opens a pasted save code (surrounding whitespace is fine). The host keeps the text as its own file
  * in the app data folder; a code that does not open leaves no file behind and its error has a hint
  * for pasted codes. Empty text fails with `ErrorCodes.emptyCode`.

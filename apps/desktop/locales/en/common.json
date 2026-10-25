@@ -218,6 +218,9 @@
     "body": "Enter the password the game uses for {{name}}. It is used once and never stored.",
     "label": "Password",
     "submit": "Open",
+    "pickFolder": "Pick the game folder…",
+    "pickFolderTitle": "Pick the folder where the game is installed",
+    "folderEmpty": "No password found in that folder.",
     "wrong": "That password did not open the file. Check the password in the game's Easy Save settings and try again."
   },
   "codeText": {

@@ -99,6 +99,7 @@ impl Session {
             self.password.clone(),
             self.backup_root.clone(),
             self.renpy_keys.clone(),
+            None,
         )?;
         restored.pasted = self.pasted;
         Ok(restored)
