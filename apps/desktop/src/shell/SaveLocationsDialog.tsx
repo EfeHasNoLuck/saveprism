@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
-import { openPath } from "@tauri-apps/plugin-opener";
 import { FolderOpen } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { saveLocations, type SaveLocation } from "@/api/commands";
+import { openSaveLocation, saveLocations, type SaveLocation } from "@/api/commands";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -36,7 +35,7 @@ export function SaveLocationsDialog({ onClose }: SaveLocationsDialogProps) {
   /** Opens a folder in Explorer; a refusal is reported as a toast. */
   function openFolder(folder: string) {
     if (folder === "") return;
-    void openPath(folder).catch((error: unknown) => {
+    void openSaveLocation(folder).catch((error: unknown) => {
       const { reason, fix } = describeError(error);
       notify({
         kind: "error",

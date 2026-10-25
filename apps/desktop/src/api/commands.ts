@@ -502,6 +502,11 @@ export function saveLocations(): Promise<SaveLocation[]> {
   return invoke<SaveLocation[]>("save_location_list");
 }
 
+/** Opens a folder from {@link saveLocations} in File Explorer; the host refuses any other path. */
+export function openSaveLocation(folder: string): Promise<void> {
+  return invoke<void>("open_save_location", { folder });
+}
+
 /**
  * Compares the open document (pending edits included) with the file at `path`. The other file is
  * opened read-only with the same detection; encrypted files are refused. Nothing is written.

@@ -142,14 +142,17 @@ fn children(doc: &SaveDoc, id: NodeId) -> Vec<(String, NodeId)> {
 }
 
 /// The first child of each key, so a repeated key compares like the path resolves it.
-fn object_children(doc: &SaveDoc, id: NodeId) -> HashMap<String, NodeId> {
-    let mut map = HashMap::new();
+fn object_children(doc: &SaveDoc, id: NodeId) -> Vec<(String, NodeId)> {
+    let mut seen = HashSet::new();
+    let mut ordered = Vec::new();
     if let Some(Value::Object(entries)) = doc.get(id).map(|node| &node.value) {
         for (key, child) in entries {
-            map.entry(key.clone()).or_insert(*child);
+            if seen.insert(key.as_str()) {
+                ordered.push((key.clone(), *child));
+            }
         }
     }
-    map
+    ordered
 }
 
 /// The visit budget and the collected rows of one comparison.
@@ -233,17 +236,26 @@ fn compare_docs(here: &SaveDoc, there: &SaveDoc) -> (Vec<CompareRow>, usize, boo
             (Value::Object(_), Value::Object(_)) => {
                 let left_children = object_children(here, left);
                 let right_children = object_children(there, right);
+                let right_index: HashMap<&str, NodeId> = right_children
+                    .iter()
+                    .map(|(key, child)| (key.as_str(), *child))
+                    .collect();
+                let left_keys: HashSet<&str> =
+                    left_children.iter().map(|(key, _)| key.as_str()).collect();
+                let mut pairs = Vec::new();
                 for (key, child) in &left_children {
                     let mut child_path = path.clone();
                     child_path.push(key.clone());
-                    if let Some(other) = right_children.get(key) {
-                        stack.push((*child, *other, child_path));
+                    if let Some(other) = right_index.get(key.as_str()) {
+                        pairs.push((*child, *other, child_path));
                     } else if let Some(node) = here.get(*child) {
                         walk.push(&child_path, Some(node), None);
                     }
                 }
+                // The stack pops the last push first: push in reverse to walk in document order.
+                stack.extend(pairs.into_iter().rev());
                 for (key, child) in &right_children {
-                    if left_children.contains_key(key) {
+                    if left_keys.contains(key.as_str()) {
                         continue;
                     }
                     let mut child_path = path.clone();
@@ -381,6 +393,24 @@ mod tests {
         assert_eq!(row.kind, CompareKind::Different);
         assert_eq!(row.here.as_deref(), Some(old.to_string().as_str()));
         assert_eq!(row.there.as_deref(), Some((old + 1).to_string().as_str()));
+    }
+
+    #[test]
+    fn rows_follow_the_document_order() {
+        let (_root, work) = env();
+        let first = work.join("order-one.json");
+        let second = work.join("order-two.json");
+        write(&first, r#"{"z":1,"a":{"q":1,"b":1},"m":1,"gone":1,"k":1}"#);
+        write(
+            &second,
+            r#"{"z":2,"a":{"q":2,"b":2},"m":2,"k":2,"added":1}"#,
+        );
+        let session = open(&first);
+        for _ in 0..5 {
+            let result = session.compare_with(second.to_str().unwrap()).unwrap();
+            let paths: Vec<&str> = result.rows.iter().map(|row| row.path.as_str()).collect();
+            assert_eq!(paths, ["/gone", "/added", "/z", "/a/q", "/a/b", "/m", "/k"]);
+        }
     }
 
     #[test]

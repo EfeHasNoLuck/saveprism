@@ -137,6 +137,8 @@ pub mod app_codes {
     pub const MCP_ARGUMENT: &str = "SP-APP-024";
     /// The file picked to compare with is encrypted, so it cannot be opened without a password.
     pub const COMPARE_ENCRYPTED: &str = "SP-APP-025";
+    /// A save folder from the "Where is my save?" list could not be opened.
+    pub const LOCATION_OPEN: &str = "SP-APP-026";
 }
 
 /// An error as the UI receives it.

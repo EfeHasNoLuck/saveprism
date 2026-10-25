@@ -242,6 +242,32 @@ fn save_location_list() -> Vec<SaveLocation> {
     save_locations()
 }
 
+/// Opens one folder of the save location list in the file manager. Only a folder the list itself
+/// found on this PC is opened, so the page cannot ask for any other path.
+#[tauri::command]
+fn open_save_location(app: AppHandle, folder: String) -> Result<(), ApiError> {
+    let listed = save_locations()
+        .into_iter()
+        .flat_map(|location| location.paths)
+        .any(|path| path.exists && path.folder.as_deref() == Some(folder.as_str()));
+    if !listed {
+        return Err(ApiError::new(
+            app_codes::LOCATION_OPEN,
+            "this folder is not one of the save folders found on this PC",
+            "Open the dialog again; the folder may have been moved.",
+        ));
+    }
+    app.opener()
+        .open_path(folder.as_str(), None::<&str>)
+        .map_err(|error| {
+            ApiError::new(
+                app_codes::LOCATION_OPEN,
+                format!("the folder could not be opened: {error}"),
+                "Open it by hand in File Explorer.",
+            )
+        })
+}
+
 /// Compares the open document with another save. The other file is opened read-only (same
 /// detection, no password prompt: encrypted files are refused) and nothing is written.
 #[tauri::command]
@@ -356,6 +382,7 @@ pub fn run() {
             redo,
             history_state,
             save_location_list,
+            open_save_location,
             compare_with,
             list_backups,
             restore_backup,

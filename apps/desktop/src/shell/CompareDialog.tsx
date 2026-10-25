@@ -138,7 +138,7 @@ export function CompareDialog({ path, fileName, onClose, onReveal }: CompareDial
               </p>
             ) : rows.length === 0 ? (
               <p className="rounded-sm bg-surface-high px-3 py-4 text-center text-[0.8125rem] text-muted-foreground">
-                {t("search.empty")}
+                {t("json.noMatches")}
               </p>
             ) : (
               <ul className="dense-scroll -mx-1 flex max-h-[55vh] flex-col gap-1 overflow-y-auto px-1">
