@@ -9,8 +9,12 @@ merge passed `kontrol.sh rust` 3/3 and `web` 3/3. Wave 2 runs on EVREN overnight
 - EVREN (deepseek-v4.1-flash), one worktree each, briefs `.motor/w2-common.md` + `.motor/w2-<name>.md`, logs
   `.motor/w2-<name>.log`, reports `../saveprism-wt/<name>/.motor/w2-<name>-report.md`:
   `unlock` (layers by content, XOR auto-break, LZF), `keys` (ES3 password from the game's own files; touches keys →
-  Claude review before merge), `unity` (Odin, Easy Save 2), `enc` (Shift-JIS/GB18030/CP949/UTF-16/32).
-- A Claude visual check of Where is my save? + Compare (dark/light, EN/TR). If its result is not in NOW.md, run it again.
+  Claude review before merge), `unity` (Odin, Easy Save 2), `enc` (Shift-JIS/GB18030/CP949/UTF-16/32). Started
+  00:44-00:47 UTC; opencode sessions: unlock `ses_e8f7c068effed7iUZ9ENzfl63U`, keys `ses_e8f7b1a6dffeh13gHFaNaon4Vh`,
+  unity `ses_e8f7a3221ffeW6dUlWm52vBmKq`, enc `ses_e8f79482affeJ7oo3yToujoMKt` (resume one with `--session <id>`).
+  They were left running when Claude stopped at 99% weekly (they cost no Claude quota and never touch main).
+- Visual check of Where is my save? + Compare done (NOW.md known gaps); its three real bugs fixed in `7df9b4b`, but
+  Open folder was not clicked again in the app.
 
 **How to merge a wave 2 job:** report present → `python -I .motor/merge_wt.py <name> "<subject>"` → check union hunks
 (`git diff --cached`; the union can duplicate `pub use` lines) → `bash .claude/araclar/kontrol.sh rust` then `web` (separate
