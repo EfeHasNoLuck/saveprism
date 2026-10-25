@@ -1,0 +1,20 @@
+{
+  "$id": 0,
+  "$type": "Game.SaveData, Assembly-CSharp",
+  "gold": 120,
+  "name": "Rin",
+  "inventory": {
+    "$id": 1,
+    "$type": "Game.Inventory, Assembly-CSharp",
+    "owner": {
+      "$ref": 0
+    },
+    "items": [
+      "sword",
+      "shield",
+      "potion"
+    ]
+  },
+  "alive": true,
+  "rate": 0.5
+}
