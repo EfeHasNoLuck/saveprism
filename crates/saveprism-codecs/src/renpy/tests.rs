@@ -144,13 +144,15 @@ fn an_edited_save_is_signed_with_the_players_key() {
     let input = fixture(SIGNED);
     let (mut log, params) = decode(&input);
     let (text, signing) = key_file();
-    // The unchanged log still comes back byte for byte, key or no key (the round-trip guard).
+    let keys = sign::parse_key_file(&text);
+    // The unchanged log still comes back byte for byte (the round-trip guard).
     let mut with_key = params.clone();
-    with_key.set(SIGN_KEY_PARAM, text.clone());
+    with_key.set(SIGNATURES_PARAM, sign::sign_data(&log, &keys));
     assert_eq!(RenpySaveLayer.encode(&log, &with_key).unwrap(), input);
 
     log.insert(log.len() - 1, b'N');
     log.insert(log.len() - 1, b'0');
+    with_key.set(SIGNATURES_PARAM, sign::sign_data(&log, &keys));
     let written = RenpySaveLayer.encode(&log, &with_key).unwrap();
 
     let before = entries(&input);
@@ -185,14 +187,28 @@ fn an_edited_save_is_signed_with_the_players_key() {
 }
 
 #[test]
-fn a_key_file_without_a_signing_key_is_an_error() {
+fn the_signatures_text_is_written_as_given() {
     let input = fixture(SIGNED);
     let (mut log, mut params) = decode(&input);
     log.insert(log.len() - 1, b'N');
     log.insert(log.len() - 1, b'0');
-    params.set(SIGN_KEY_PARAM, "# only a comment\n");
-    let error = RenpySaveLayer.encode(&log, &params).unwrap_err();
-    assert_eq!(error.code(), RENPY_KEY);
+    // The text is public key material and signatures; the layer writes it unchanged.
+    params.set(SIGNATURES_PARAM, "signature AAAA BBBB\n");
+    let written = RenpySaveLayer.encode(&log, &params).unwrap();
+    let signatures = entries(&written)
+        .into_iter()
+        .find(|(name, _, _)| name == SIGNATURES_ENTRY)
+        .map(|(_, _, data)| data)
+        .unwrap();
+    assert_eq!(signatures, b"signature AAAA BBBB\n");
+    // Without the parameter the entry stays empty.
+    let written = RenpySaveLayer.encode(&log, &decode(&input).1).unwrap();
+    let signatures = entries(&written)
+        .into_iter()
+        .find(|(name, _, _)| name == SIGNATURES_ENTRY)
+        .map(|(_, _, data)| data)
+        .unwrap();
+    assert!(signatures.is_empty());
 }
 
 #[test]

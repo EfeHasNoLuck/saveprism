@@ -61,8 +61,9 @@
     "readOnly": "This file can't be written safely yet. You can look, but not save.",
     "semantic": "The file will be written with a slightly different layout. The content stays the same.",
     "renpySigned": "Ren'Py save: after you save changes, the game asks whether to trust this save. Answer Yes.",
-    "renpyKeySigned": "Ren'Py save: changes are signed with your own Ren'Py key, so the game opens the save without asking.",
-    "renpyPersistentSigned": "This Ren'Py persistent file is signed. The game would throw away an edited copy, so it is open read-only."
+    "renpyKeySigned": "Ren'Py save: changes are signed with your own Ren'Py key.",
+    "renpyPersistentKeySigned": "Ren'Py persistent data: changes are signed with your own Ren'Py key.",
+    "renpyPersistentSigned": "This Ren'Py persistent data is signed. The game would throw away an edited copy, so it is open read-only."
   },
   "bottom": {
     "changes_one": "{{count}} change pending",

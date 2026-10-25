@@ -63,8 +63,21 @@ fn spki_der(key: &VerifyingKey) -> Vec<u8> {
     der
 }
 
+/// Decodes one base64 field the way Ren'Py's `decode_line` does: the standard decoder discards
+/// characters outside the base64 alphabet (`base64.b64decode` without validation). `None` when the
+/// padding is not valid.
+fn decode_field(text: &str) -> Option<Vec<u8>> {
+    let cleaned: String = text
+        .chars()
+        .filter(|c| c.is_ascii_alphanumeric() || matches!(c, '+' | '/' | '='))
+        .collect();
+    STANDARD.decode(cleaned).ok()
+}
+
 /// Reads the `signing-key` lines of a `security_keys.txt`; malformed and `verifying-key` lines are
-/// skipped, as Ren'Py's `load_tokens` does. Never fails: an unreadable line is simply not a key.
+/// skipped, as Ren'Py's `load_tokens` does. Each line is split and base64-decoded like
+/// `savetoken.decode_line`: the third field is decoded too, and a line with an unusable field is
+/// skipped. Never fails: an unreadable line is simply not a key.
 pub fn parse_key_file(text: &str) -> Vec<Key> {
     let mut keys = Vec::new();
     for line in text.lines() {
@@ -78,9 +91,13 @@ pub fn parse_key_file(text: &str) -> Vec<Key> {
         let Some(encoded) = parts.next() else {
             continue;
         };
-        let Ok(der) = STANDARD.decode(encoded) else {
+        let rest: String = parts.collect::<Vec<_>>().concat();
+        let Some(der) = decode_field(encoded) else {
             continue;
         };
+        if !rest.is_empty() && decode_field(&rest).is_none() {
+            continue;
+        }
         let Ok(secret) = p256::SecretKey::from_sec1_der(&der) else {
             continue;
         };
@@ -225,5 +242,22 @@ mod tests {
     fn an_empty_file_has_no_keys() {
         assert!(parse_key_file("").is_empty());
         assert!(parse_key_file("# only comments\n").is_empty());
+    }
+
+    #[test]
+    fn base64_fields_are_decoded_as_leniently_as_renpy_does() {
+        let signing = signing_key(5);
+        let line = key_line(&signing);
+        // A character outside the base64 alphabet is ignored, as `base64.b64decode` does.
+        let noisy = line.replacen("signing-key ", "signing-key *", 1);
+        assert_eq!(parse_key_file(&noisy).len(), 1);
+        // The third field is decoded too; a broken one drops the line.
+        let fields: Vec<&str> = line.split_whitespace().collect();
+        let broken = format!(
+            "signing-key {} {}***=\n",
+            fields.get(1).unwrap(),
+            fields.get(2).unwrap()
+        );
+        assert!(parse_key_file(&broken).is_empty());
     }
 }
