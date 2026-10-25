@@ -107,6 +107,7 @@ function LeafCell({ node }: { node: ValueNode }) {
     const { text, tip } = noteText(node.note, t, format, i18n.resolvedLanguage ?? "en");
     return (
       <div
+        data-field-path={node.path}
         className="flex h-7 min-w-0 items-center gap-1.5 rounded-sm pr-2 pl-2 text-xs"
         title={`${node.name} · ${tip}`}
       >
@@ -138,7 +139,10 @@ function LeafCell({ node }: { node: ValueNode }) {
     );
   }
   return (
-    <div className="flex h-7 min-w-0 items-center gap-1.5 rounded-sm pr-2 pl-2 text-xs">
+    <div
+      data-field-path={node.path}
+      className="flex h-7 min-w-0 items-center gap-1.5 rounded-sm pr-2 pl-2 text-xs"
+    >
       <span className="min-w-0 truncate" title={node.name}>
         {node.name}
       </span>
@@ -174,6 +178,7 @@ function LeafGrid({ nodes }: { nodes: ValueNode[] }) {
  */
 function GroupChildren({ path, query }: { path: string; query: string }) {
   const { t } = useTranslation("editor");
+  const { reveal } = useEditorContext();
   const [nodes, setNodes] = useState<ValueNode[] | null>(null);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -190,6 +195,33 @@ function GroupChildren({ path, query }: { path: string; query: string }) {
       cancelled = true;
     };
   }, [path]);
+
+  // A compare row deep in a long group: load pages until the row (or the group on its way) is in.
+  const wanted =
+    reveal !== null && reveal.path.startsWith(`${path}/`) ? reveal.path : null;
+  useEffect(() => {
+    if (wanted === null || nodes === null || loading || nodes.length >= total) return;
+    const found = nodes.some(
+      (node) => wanted === node.path || wanted.startsWith(`${node.path}/`),
+    );
+    if (found) return;
+    let cancelled = false;
+    const handle = window.requestAnimationFrame(() => {
+      setLoading(true);
+      void fetchChildren(path, nodes.length).then((result) => {
+        if (cancelled) return;
+        if (result !== null) {
+          setNodes((prev) => [...(prev ?? []), ...result.described]);
+          setTotal(result.total);
+        }
+        setLoading(false);
+      });
+    });
+    return () => {
+      cancelled = true;
+      window.cancelAnimationFrame(handle);
+    };
+  }, [wanted, path, nodes, total, loading]);
 
   function loadMore() {
     if (nodes === null) return;
@@ -241,10 +273,17 @@ function GroupBlock({
 }) {
   const { t } = useTranslation("editor");
   const format = useFormatNumber();
-  const { pending } = useEditorContext();
+  const { pending, reveal } = useEditorContext();
   const [open, setOpen] = useState(defaultOpen);
   const changed = countPendingUnder(pending, node.path);
   const q = query.trim().toLowerCase();
+  const wanted =
+    reveal !== null && reveal.path.startsWith(`${node.path}/`) ? reveal.nonce : null;
+  useEffect(() => {
+    if (wanted === null) return;
+    const handle = window.requestAnimationFrame(() => setOpen(true));
+    return () => window.cancelAnimationFrame(handle);
+  }, [wanted]);
   if (!open && q !== "" && !node.name.toLowerCase().includes(q)) return null;
 
   return (
@@ -308,7 +347,7 @@ export function ValuesCard({
 }) {
   const { t } = useTranslation("editor");
   const format = useFormatNumber();
-  const { pending, fields } = useEditorContext();
+  const { pending, fields, reveal } = useEditorContext();
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(0);
   const { ref, columns } = useGridColumns();
@@ -339,6 +378,17 @@ export function ValuesCard({
     [fields, filtered],
   );
   const size = columns * ROWS_PER_PAGE;
+  // A one-sided value from a compare row: drop the card's own search and turn to its page, so
+  // the row and every group on the way are on screen. Groups open themselves.
+  useEffect(() => {
+    if (reveal === null) return;
+    const index = leaves.findIndex((node) => node.path === reveal.path);
+    const handle = window.requestAnimationFrame(() => {
+      setQuery("");
+      if (index >= 0) setPage(Math.floor(index / size));
+    });
+    return () => window.cancelAnimationFrame(handle);
+  }, [reveal, leaves, size]);
   const shown = pageItems(filtered, page, size);
   // A file with one group and nothing else opens it right away.
   const openFirst = leaves.length === 0 && groups.length === 1;

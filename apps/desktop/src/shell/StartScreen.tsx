@@ -1,5 +1,12 @@
 import { useState } from "react";
-import { ChevronDown, ClipboardPaste, FileText, FolderOpen, Upload } from "lucide-react";
+import {
+  ChevronDown,
+  ClipboardPaste,
+  FileText,
+  FolderOpen,
+  FolderSearch,
+  Upload,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -13,6 +20,8 @@ interface StartScreenProps {
   /** Opens the dialog that takes a pasted save code. */
   onPasteCode: () => void;
   onOpenRecent: (path: string) => void;
+  /** Opens the dialog that lists the usual save folders of each engine. */
+  onWhereSaves: () => void;
 }
 
 export function StartScreen({
@@ -21,6 +30,7 @@ export function StartScreen({
   onOpenFile,
   onPasteCode,
   onOpenRecent,
+  onWhereSaves,
 }: StartScreenProps) {
   const { t } = useTranslation();
   const { settings } = useSettings();
@@ -88,16 +98,26 @@ export function StartScreen({
         ) : null}
       </div>
 
-      <div className="mt-6 w-full max-w-xl text-[0.8125rem]">
-        <button
-          type="button"
-          aria-expanded={faqOpen}
-          onClick={() => setFaqOpen((open) => !open)}
-          className="inline-flex items-center gap-1 rounded-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60"
-        >
-          {t("start.faqLink")}
-          <ChevronDown className={cn("size-4 transition-transform", faqOpen && "rotate-180")} />
-        </button>
+      <div className="mt-6 flex w-full max-w-xl flex-col gap-1 text-[0.8125rem]">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+          <button
+            type="button"
+            onClick={onWhereSaves}
+            className="inline-flex items-center gap-1.5 rounded-sm font-medium text-primary outline-none hover:text-primary/80 focus-visible:ring-2 focus-visible:ring-ring/60"
+          >
+            <FolderSearch className="size-4" aria-hidden="true" />
+            {t("start.whereLink")}
+          </button>
+          <button
+            type="button"
+            aria-expanded={faqOpen}
+            onClick={() => setFaqOpen((open) => !open)}
+            className="inline-flex items-center gap-1 rounded-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60"
+          >
+            {t("start.faqLink")}
+            <ChevronDown className={cn("size-4 transition-transform", faqOpen && "rotate-180")} />
+          </button>
+        </div>
         {/* Always laid out (hidden while closed), so opening it does not move the card above. */}
         <ul
           className={cn(

@@ -27,6 +27,7 @@ function Gold({ field }: { field: Field }) {
     <Section title={t("sections.gold")} info={t("info.gold")}>
       <div className="flex flex-col gap-1">
         <div
+          data-field-path={field.path}
           className={cn(
             "relative flex h-7 min-w-0 items-center gap-1 rounded-sm pr-0.5 pl-2",
             stateTone(state),

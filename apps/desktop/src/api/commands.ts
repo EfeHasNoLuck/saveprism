@@ -445,6 +445,49 @@ export function editValues(paths: string[], text: string): Promise<HistoryResult
   return invoke<HistoryResult>("edit_values", { paths, text });
 }
 
+/** Which side of a comparison a row describes. */
+export type CompareKind = "different" | "onlyHere" | "onlyThere";
+
+/** One difference between the open document and another save. */
+export interface CompareRow {
+  /** JSON Pointer of the value. */
+  path: string;
+  /** Value in the open document, or null when only the other file has it. */
+  here: string | null;
+  /** Value in the other file, or null when only the open document has it. */
+  there: string | null;
+  kind: CompareKind;
+}
+
+/** The differences between the open document and another save. */
+export interface CompareResult {
+  /** The rows to show, at most 5,000. */
+  rows: CompareRow[];
+  /** Every difference found, including rows left out by the cap. */
+  total: number;
+  /** True when the cap left differences out. */
+  truncated: boolean;
+  /** File name of the other save. */
+  otherFileName: string;
+}
+
+/** One usual save folder of an engine. */
+export interface SaveLocationPath {
+  /** Path with environment variables expanded; `<game>` / `<company>` stay as placeholders. */
+  shown: string;
+  /** Folder to open, when it exists on this PC. */
+  folder: string | null;
+  /** True when `folder` exists. */
+  exists: boolean;
+}
+
+/** The usual save folders of one engine. */
+export interface SaveLocation {
+  /** Stable engine id; translate with `locations.engine.<id>`. */
+  engine: string;
+  paths: SaveLocationPath[];
+}
+
 /** One backup of the open file. */
 export interface BackupRow {
   /** File name of the backup; pass it to `restoreBackup`. */
@@ -452,6 +495,19 @@ export interface BackupRow {
   /** When the backup was made, in milliseconds since the Unix epoch. */
   createdMs: number;
   byteSize: number;
+}
+
+/** Usual save folders per engine, with the folders that exist on this PC. Nothing is searched. */
+export function saveLocations(): Promise<SaveLocation[]> {
+  return invoke<SaveLocation[]>("save_location_list");
+}
+
+/**
+ * Compares the open document (pending edits included) with the file at `path`. The other file is
+ * opened read-only with the same detection; encrypted files are refused. Nothing is written.
+ */
+export function compareWith(path: string): Promise<CompareResult> {
+  return invoke<CompareResult>("compare_with", { path });
 }
 
 /** The backups of the open file, newest first (empty when it was never saved over). */

@@ -43,7 +43,8 @@
     "saveFiles": "Save files",
     "allFiles": "All files",
     "exportTitle": "Export JSON",
-    "jsonFiles": "JSON (*.json)"
+    "jsonFiles": "JSON (*.json)",
+    "compareTitle": "Choose a save to compare with"
   },
   "start": {
     "dropActive": "Release to open",
@@ -55,7 +56,8 @@
     "faqUnity": "Unity: %USERPROFILE%\\AppData\\LocalLow\\<Company>\\<Game>",
     "faqUnreal": "Unreal: %LOCALAPPDATA%\\<Game>\\Saved\\SaveGames",
     "pasteCode": "Paste code",
-    "pasteHint": "Browser game? Paste the save code it gave you (Ctrl+V)."
+    "pasteHint": "Browser game? Paste the save code it gave you (Ctrl+V).",
+    "whereLink": "Where is my save?"
   },
   "banner": {
     "readOnly": "This file can't be written safely yet. You can look, but not save.",
@@ -96,7 +98,8 @@
     "removedTip_one": "{{count}} removed entry",
     "removedTip_other": "{{count}} removed entries",
     "addedTag": "added",
-    "removedTag": "removed"
+    "removedTag": "removed",
+    "compareItem": "Compare with another save…"
   },
   "confirm": {
     "discardOpen_one": "Discard {{count}} change and open another file?",
@@ -158,6 +161,57 @@
     "confirmBody": "{{name}} will be replaced by the backup from {{time}}. The current file is backed up first, so you can go back to it from this list.",
     "confirmLoss_one": "Your {{count}} unsaved change will be lost.",
     "confirmLoss_other": "Your {{count}} unsaved changes will be lost."
+  },
+  "compare": {
+    "title": "Compare with {{name}}",
+    "description": "The other save is opened read-only. Nothing is written; a row you click only jumps to that value here.",
+    "failed": "The file could not be compared.",
+    "count_one": "{{count}} difference",
+    "count_other": "{{count}} differences",
+    "capped": "Showing the first {{shown}} of {{count}} differences",
+    "found_one": "{{count}} match",
+    "found_other": "{{count}} matches",
+    "empty": "The two saves have the same values.",
+    "search": "Search paths and values",
+    "onlyHere": "only here",
+    "onlyThere": "only there",
+    "here": "This file",
+    "there": "Other file",
+    "goTo": "Show this value in the editor"
+  },
+  "locations": {
+    "title": "Where is my save?",
+    "description": "SavePrism does not scan your PC. These are the usual places; open one and look for the game's folder. <game> and <company> stand for the game's own folder names.",
+    "openFolder": "Open folder",
+    "notFound": "Not found on this PC",
+    "openFailed": "The folder could not be opened",
+    "failed": "The save locations could not be read.",
+    "engine": {
+      "rpgmaker-mv": "RPG Maker MV / MZ",
+      "rpgmaker-classic": "RPG Maker XP / VX / VX Ace / 2000 / 2003",
+      "wolf-rpg": "Wolf RPG Editor",
+      "unity": "Unity",
+      "unreal": "Unreal Engine",
+      "renpy": "Ren'Py",
+      "godot": "Godot",
+      "twine": "Twine / SugarCube",
+      "flash": "Flash",
+      "witcher3": "The Witcher 3",
+      "palworld": "Palworld"
+    },
+    "note": {
+      "rpgmaker-mv": "MV uses www/save; MZ uses save.",
+      "rpgmaker-classic": "The save can be in the game's folder or in its Save folder.",
+      "wolf-rpg": "Saves are in the Save folder inside the game's folder.",
+      "unity": "PlayerPrefs live in the Windows registry: export them with regedit.",
+      "unreal": "The project name is the game's folder name.",
+      "renpy": "Saves can also be in game/saves inside the game's folder.",
+      "godot": "The user:// folder.",
+      "twine": "Browser storage: use the game's Save to disk / export option.",
+      "flash": "Local shared objects.",
+      "witcher3": "The Documents folder may be moved to OneDrive.",
+      "palworld": "Under the Steam ID folder."
+    }
   },
   "password": {
     "title": "This file is encrypted",

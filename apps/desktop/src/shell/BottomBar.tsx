@@ -46,6 +46,8 @@ interface BottomBarProps {
   onOpenJson: () => void;
   /** Opens the list of backups of the open file. */
   onOpenBackups: () => void;
+  /** Picks a second save and compares it with the open one (read-only). */
+  onCompare: () => void;
   onSaveAs: () => void;
   onOverwrite: () => void;
   /**
@@ -71,6 +73,7 @@ export function BottomBar({
   onUndoAll,
   onOpenJson,
   onOpenBackups,
+  onCompare,
   onSaveAs,
   onOverwrite,
   copyCode,
@@ -247,7 +250,7 @@ export function BottomBar({
             <DropdownMenuTrigger asChild>
               <Button
                 size="sm"
-                disabled={cannotSave}
+                disabled={busy}
                 aria-label={t("bottom.saveOptions")}
                 className="rounded-l-none border-l-primary-foreground/30 px-1.5 disabled:border-l-border"
               >
@@ -255,14 +258,24 @@ export function BottomBar({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" style={{ width: "auto", minWidth: "16rem" }}>
-              <DropdownMenuItem onSelect={onSaveAs}>{t("bottom.saveAsItem")}</DropdownMenuItem>
-              <DropdownMenuItem onSelect={onOverwrite}>{t("bottom.overwriteItem")}</DropdownMenuItem>
+              <DropdownMenuItem disabled={cannotSave} onSelect={onSaveAs}>
+                {t("bottom.saveAsItem")}
+              </DropdownMenuItem>
+              <DropdownMenuItem disabled={cannotSave} onSelect={onOverwrite}>
+                {t("bottom.overwriteItem")}
+              </DropdownMenuItem>
               {copyCode === "menu" ? (
                 <>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onSelect={onCopyCode}>{t("bottom.copyCodeItem")}</DropdownMenuItem>
+                  <DropdownMenuItem disabled={cannotSave} onSelect={onCopyCode}>
+                    {t("bottom.copyCodeItem")}
+                  </DropdownMenuItem>
                 </>
               ) : null}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem disabled={busy} onSelect={onCompare}>
+                {t("bottom.compareItem")}
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

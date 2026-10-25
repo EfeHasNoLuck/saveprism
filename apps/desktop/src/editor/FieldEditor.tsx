@@ -217,6 +217,7 @@ export function FieldCell({
     <Tooltip open={floating !== null}>
       <TooltipTrigger asChild>
         <div
+          data-field-path={field.path}
           className={cn(
             "group relative flex h-7 min-w-0 items-center gap-1 rounded-sm pr-0.5 pl-2 text-xs",
             stateTone(state),
