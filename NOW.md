@@ -127,7 +127,15 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
      (`9501734`; not re-checked in the app), KiriKiri TJS2 + GameMaker ds_map/ds_list (`fabf118`; Pixel Game Maker MV
      saves are plain JSON), PS1/PS2 memory cards, .psu, SharkPort (`033a67b`; unknown game data opens as read-only
      `format.raw`). Also fixed: two fuzz memory blowups (NRBF null runs, WOLF field-less types) and three dependency
-     advisories (`1cabd55`). Still running: `terraria` (EVREN).
+     advisories (`1cabd55`).
+   - Terraria merged 2026-10-25 (`e770de5`, review fixes `2d08633`; rust 3/3, web 3/3, cargo deny ok): `.plr` AES key
+     found in the player's own `Terraria.exe` (8-character `#US` strings only, stored with evidence), player values and
+     inventory; `.wld` header flags and seed editable, name/id/size read-only (footer and tiles depend on them);
+     implausible values open read-only. Synthetic files only: no real `.plr`/`.wld` tested yet, item id cap 5600 is a
+     guess above 1.4.4's count.
+   - Running (EVREN, resumed by `.motor/resume_job.sh` at 03:05 TR after the daily limit): `unity2` (Adventure Creator,
+     Pixel Crushers), `vn2` (AGS, NScripter, Emuera), `bioware` (GFF, ERF). Next briefs ready: `w3-archives`,
+     `w3-kvdb`, `w3-ser`.
    - Wave 2, first: auto-unlock (user idea, 2026-10-24): every layer tried by content whatever the extension; simple XOR
      obfuscation broken automatically from the expected start of the inner format (`{`, `<?xml`, `PK`...); a key finder
      that reads candidate passwords from the game's own files (Unity `Assembly-CSharp.dll` strings, IL2CPP
