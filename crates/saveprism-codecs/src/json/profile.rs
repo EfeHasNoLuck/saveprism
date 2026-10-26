@@ -40,6 +40,9 @@ pub(crate) struct Profile {
     pub before_colon_space: bool,
     /// Empty containers are written `[ ]` / `{ }` instead of `[]` / `{}`.
     pub empty_spaced: bool,
+    /// Easy Save 3 text may hold a dictionary whose keys are objects or arrays (`Value::Map`);
+    /// the writer emits them as keys. Strict JSON never sets this.
+    pub es3_object_keys: bool,
     pub trailing_newline: bool,
     /// The file starts with the BOM of `text_encoding`.
     pub bom: bool,
@@ -57,6 +60,7 @@ impl Default for Profile {
             colon_space_bare: false,
             before_colon_space: false,
             empty_spaced: false,
+            es3_object_keys: false,
             trailing_newline: false,
             bom: false,
             text_encoding: TextEncoding::Utf8,
@@ -165,6 +169,9 @@ impl Profile {
         params.set("bom", self.bom);
         params.set(super::P_TEXT_ENCODING, self.text_encoding.name());
         params.set("regular", regular);
+        if self.es3_object_keys {
+            params.set("es3_object_keys", true);
+        }
         params
     }
 
@@ -218,6 +225,7 @@ impl Profile {
             colon_space_bare,
             before_colon_space: params.opt_bool("key_pad")?.unwrap_or(false),
             empty_spaced,
+            es3_object_keys: params.opt_bool("es3_object_keys")?.unwrap_or(false),
             trailing_newline: params.opt_bool("trailing_newline")?.unwrap_or(false),
             bom: params.opt_bool("bom")?.unwrap_or(false),
             text_encoding,

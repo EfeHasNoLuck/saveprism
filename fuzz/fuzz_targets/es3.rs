@@ -16,8 +16,11 @@ fuzz_target!(|data: &[u8]| {
     let Ok(out) = pipeline::decode(data, &recipe, &reg, &limits) else {
         return;
     };
-    // A decoded document must be writable again and the written bytes must decode too.
+    // A decoded document must be writable again and the written bytes must decode to the same
+    // tree (object-key dictionaries included).
     if let Ok(bytes) = pipeline::encode(&out.doc, &out.recipe, &reg) {
-        let _ = pipeline::decode(&bytes, &out.recipe, &reg, &limits);
+        if let Ok(again) = pipeline::decode(&bytes, &out.recipe, &reg, &limits) {
+            assert!(again.doc.tree_eq(&out.doc));
+        }
     }
 });

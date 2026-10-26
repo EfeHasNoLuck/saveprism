@@ -20,7 +20,9 @@
 //!
 //! Easy Save 3 text may write a dictionary key that is not a string without quotes (`{0 : 159}`).
 //! [`decode_es3`] accepts those keys, records them in the object node's lexeme (`es3-bare-keys:…`)
-//! and the writer emits them bare again; strict `format.json` never accepts them.
+//! and the writer emits them bare again; strict `format.json` never accepts them. A key that is
+//! itself an object or array (a struct-keyed ES3 dictionary) becomes a `Value::Map`, which the
+//! writer emits as an object key when the profile allows it (`es3_object_keys`).
 
 pub(crate) mod parse;
 pub(crate) mod profile;
@@ -104,6 +106,7 @@ fn decode_text(input: &[u8], ctx: &mut DecodeCtx<'_>, style: parse::KeyStyle) ->
 
     let mut profile = Profile::infer(text, &parsed.observed, decoded.bom_len > 0);
     profile.text_encoding = decoded.encoding;
+    profile.es3_object_keys = style == parse::KeyStyle::Bare;
     let regular = write::write_document(&parsed.doc, &profile).is_ok_and(|written| {
         std::str::from_utf8(&written).is_ok_and(|written| {
             crate::text_encoding::encode_with(written, decoded.encoding, decoded.bom_len > 0)

@@ -1,0 +1,27 @@
+{
+    "LocalPlayerOutfit" : {
+        "__type" : "PlayerOutfit,Assembly-CSharp",
+        "value" : {
+            "Items" : {
+                {
+                    "low" : 16,
+                    "high" : 0
+                } : {
+                    "guid" : {
+                        "value" : "00000000-0000-0000-0000-000000000001"
+                    },
+                    "materialOption" : 0
+                },
+                {
+                    "low" : 8,
+                    "high" : 0
+                } : {
+                    "guid" : {
+                        "value" : "00000000-0000-0000-0000-000000000002"
+                    },
+                    "materialOption" : 1
+                }
+            }
+        }
+    }
+}

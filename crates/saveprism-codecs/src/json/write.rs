@@ -50,6 +50,14 @@ enum Frame<'a> {
         bare: Vec<usize>,
         next: usize,
     },
+    /// An Easy Save 3 dictionary whose keys are themselves objects or arrays.
+    Map {
+        id: NodeId,
+        entries: &'a [(NodeId, NodeId)],
+        next: usize,
+        /// The key of entry `next` has been written; its value comes next.
+        key_done: bool,
+    },
 }
 
 /// The bare-key entry indices recorded in an object node's lexeme, if any.
@@ -109,6 +117,23 @@ fn write_tree(doc: &SaveDoc, root: NodeId, profile: &Profile, out: &mut Vec<u8>)
                         });
                     }
                 }
+                Value::Map(entries) => {
+                    if !profile.es3_object_keys {
+                        return Err(unwritable("JSON cannot hold a map with non-text keys"));
+                    }
+                    if entries.is_empty() {
+                        write_empty(profile, out, b'{', b'}');
+                    } else {
+                        enter(&mut open, id)?;
+                        out.push(b'{');
+                        stack.push(Frame::Map {
+                            id,
+                            entries: entries.as_slice(),
+                            next: 0,
+                            key_done: false,
+                        });
+                    }
+                }
                 _ => write_scalar(node, out)?,
             }
         }
@@ -156,6 +181,36 @@ fn write_tree(doc: &SaveDoc, root: NodeId, profile: &Profile, out: &mut Vec<u8>)
                     }
                     *next += 1;
                     pending = Some(*child);
+                } else {
+                    let id = *id;
+                    stack.pop();
+                    open.remove(&id);
+                    close(profile, out, stack.len(), b'}')?;
+                }
+            }
+            Some(Frame::Map {
+                id,
+                entries,
+                next,
+                key_done,
+            }) => {
+                if let Some((key, child)) = entries.get(*next).copied() {
+                    if *key_done {
+                        if profile.before_colon_space {
+                            out.push(b' ');
+                        }
+                        out.push(b':');
+                        if profile.colon_space_bare {
+                            out.push(b' ');
+                        }
+                        *key_done = false;
+                        *next += 1;
+                        pending = Some(child);
+                    } else {
+                        separator(profile, out, *next == 0, level)?;
+                        *key_done = true;
+                        pending = Some(key);
+                    }
                 } else {
                     let id = *id;
                     stack.pop();
