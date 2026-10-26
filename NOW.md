@@ -143,7 +143,7 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
      (stored entries editable; compressed read-only), Brickadia `.brz` + `.brs` (same-length stored blobs; `blake3`,
      CC0-1.0 OR Apache-2.0). Synthetic files only.
    - GitHub Actions minutes ran out 2026-10-26: commits stay local until next month (last pushed `4214786`).
-   - Running (EVREN, at most 2 at once): `kvdb` (LevelDB, RocksDB, LiteDB). Next brief ready: `w3-ser`; then vn3
+   - Running (EVREN, at most 2 at once): `kvdb` (LevelDB, RocksDB, LiteDB), `ser` (protobuf, Bitser, SCS .sii, LZip, emulator states). Then vn3
      and the Gwent view.
    - Wave 2, first: auto-unlock (user idea, 2026-10-24): every layer tried by content whatever the extension; simple XOR
      obfuscation broken automatically from the expected start of the inner format (`{`, `<?xml`, `PK`...); a key finder
