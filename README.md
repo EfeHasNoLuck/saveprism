@@ -69,10 +69,13 @@ SavePrism needs Microsoft Edge WebView2, which Windows 10 and 11 already have; t
 | SQLite | database saves | table values |
 | JSON and text | `.json`, zip- or gzip-packed JSON | values; add and remove entries |
 | MessagePack | `.msgpack`, `.msgp` | values (extension payloads are read-only) |
+| Protocol Buffers | `.pb`, `.pbf`, `.protobuf`, `.protobin`, `.bytes` | field numbers, varints, fixed values and strings; nested message lengths are recomputed (groups read-only) |
+| Bitser (LÖVE) | `.dat`, `.save`, `.bin` by content | numbers, booleans and strings; tables, references, resources and class data stay read-only |
+| SCS `.sii` (ETS2 / ATS) | `.sii`, `game.sii`, `info.sii`, `profile.sii` | unit attributes as text; binary `BSII` is read-only; encrypted `ScsC` opens with the `g_save_format` hint |
 | CBOR | `.cbor` | values (tags stay as read-only wrappers) |
 | BSON | `.bson` | doubles, strings, ints and booleans (other types read-only) |
 | Minecraft NBT | `.dat`, `.nbt` (Java big-endian, Bedrock little-endian, gzip) | values and numeric array elements |
-| Compressed saves | bzip2, Zstandard, xz, LZMA-alone, LZ4 frame, Brotli, raw deflate, LZF (raw and `ZV` blocks) — found by content, any extension | the same formats inside any of these layers |
+| Compressed saves | bzip2, Zstandard, xz, LZMA-alone, LZip, LZ4 frame, Brotli, raw deflate, LZF (raw and `ZV` blocks) — found by content, any extension | the same formats inside any of these layers |
 | XOR-obfuscated saves | single-byte or repeating key up to 32 bytes | the format inside; the key is recovered from the inner format automatically |
 | Tar archives | `.tar` | one payload entry, the rest of the archive kept byte-identical |
 | PS1 memory cards | `.mcr`, `.mcd`, `.mem`, `.gme` | one save file from the card; XOR checksums recomputed and title/icon frames kept |
@@ -83,7 +86,7 @@ SavePrism needs Microsoft Edge WebView2, which Windows 10 and 11 already have; t
 | Blizzard MPQ archives | `.mpq`, `.SC2Save`, `.w3z` | one entry (zlib/bzip2 sectors are decompressed); uncompressed entries are editable, compressed or encrypted ones read-only |
 | Brickadia `.brz` archives | `.brz` | one file from the archive; stored files are editable when no other file shares them |
 | Brickadia saves | `.brs` | the map name, author and description; brick data stays read-only |
-| Pasted hex / percent codes | text | decoded when the text spells a format SavePrism knows |
+| Pasted hex / percent / Base64 codes | text | decoded when the text spells a format SavePrism knows; the Base64URL alphabet and optional padding are kept |
 | XML | `.xml` | element text and attribute values (comments, CDATA and declarations stay read-only) |
 | INI / CFG | `.ini`, `.cfg`, `.conf` | section values |
 | Java properties | `.properties` | values (Java escapes and line continuations) |
@@ -92,6 +95,9 @@ SavePrism needs Microsoft Edge WebView2, which Windows 10 and 11 already have; t
 | CSV | `.csv` | cells (quoting kept) |
 | Text encodings | every text format above | UTF-8/16/32 (with or without BOM), Shift-JIS, GB18030, CP949, Windows-1252; an edit the encoding cannot hold is refused |
 | Property lists | `.plist` (XML and binary) | XML strings, integers, reals and booleans; binary lists open read-only |
+| Snes9x snapshots | `.000`-`.009`, `.frz` (plain or gzip) | the save-RAM (`SRA`) block as raw bytes; every other block is read-only |
+| RetroArch save states | `.state`, `.state1` ... (uncompressed `RASTATE`) | blocks shown read-only; RZIP-compressed states open with a hint to turn off state compression |
+| RetroArch battery saves | `.srm` | raw save RAM (fixed size) |
 
 A file that does not survive the round-trip check opens read-only with a warning. Easy Save 2 files are not opened: Moodkie
 publishes no byte-level layout for them, so SavePrism does not guess.

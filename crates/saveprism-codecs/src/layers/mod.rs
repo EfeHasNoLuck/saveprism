@@ -29,6 +29,7 @@ mod hex;
 mod kirikiri;
 mod lz4;
 mod lzf;
+mod lzip;
 mod lzma;
 mod lzstring;
 mod mpq;
@@ -57,6 +58,7 @@ pub use hex::HexLayer;
 pub use kirikiri::KirikiriLayer;
 pub use lz4::Lz4Layer;
 pub use lzf::LzfLayer;
+pub use lzip::LzipLayer;
 pub use lzma::LzmaLayer;
 pub use lzstring::LzStringLayer;
 pub use mpq::{MPQ_DAMAGED, MPQ_NO_PAYLOAD, MPQ_UNSUPPORTED, MPQ_WRITE, MpqLayer};
@@ -99,6 +101,8 @@ pub const LAY_BZIP2_INVALID: ErrorCode = ErrorCode::new("SP-LAY-008");
 pub const LAY_ZSTD_INVALID: ErrorCode = ErrorCode::new("SP-LAY-009");
 /// The input is not a valid xz stream.
 pub const LAY_XZ_INVALID: ErrorCode = ErrorCode::new("SP-LAY-00A");
+/// The input is not a valid lzip member.
+pub const LZIP_INVALID: ErrorCode = ErrorCode::new("SP-LAY-010");
 /// The input is not a valid LZMA-alone stream.
 pub const LAY_LZMA_INVALID: ErrorCode = ErrorCode::new("SP-LAY-00B");
 /// The input is not a valid LZ4 frame.
@@ -135,6 +139,7 @@ pub fn register(reg: &mut Registry) {
     reg.add_layer(Arc::new(ZstdLayer));
     reg.add_layer(Arc::new(XzLayer));
     reg.add_layer(Arc::new(LzmaLayer));
+    reg.add_layer(Arc::new(LzipLayer));
     reg.add_layer(Arc::new(Lz4Layer));
     reg.add_layer(Arc::new(BrotliLayer));
     reg.add_layer(Arc::new(LzfLayer));
@@ -319,6 +324,7 @@ mod tests {
             "compression.zstd",
             "compression.xz",
             "compression.lzma",
+            "compression.lzip",
             "compression.lz4",
             "compression.brotli",
             "compression.lzf",
@@ -335,7 +341,7 @@ mod tests {
         ] {
             assert!(reg.is_layer(id), "{id} is not registered");
         }
-        assert_eq!(reg.layers().count(), 28);
+        assert_eq!(reg.layers().count(), 29);
     }
 
     #[test]
@@ -351,6 +357,7 @@ mod tests {
         assert_eq!(LAY_ZSTD_INVALID.as_str(), "SP-LAY-009");
         assert_eq!(LAY_XZ_INVALID.as_str(), "SP-LAY-00A");
         assert_eq!(LAY_LZMA_INVALID.as_str(), "SP-LAY-00B");
+        assert_eq!(LZIP_INVALID.as_str(), "SP-LAY-010");
         assert_eq!(LAY_LZ4_INVALID.as_str(), "SP-LAY-00C");
         assert_eq!(LAY_BROTLI_INVALID.as_str(), "SP-LAY-00D");
         assert_eq!(LAY_LZF_INVALID.as_str(), "SP-LAY-00E");
