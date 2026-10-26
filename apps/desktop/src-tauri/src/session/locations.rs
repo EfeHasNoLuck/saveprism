@@ -99,6 +99,8 @@ const CATALOG: &[(&str, &[&str])] = &[
             "%USERPROFILE%\\Documents\\Knights of the Old Republic\\saves",
         ],
     ),
+    ("elden-ring", &["%APPDATA%\\EldenRing"]),
+    ("dark-souls-3", &["%APPDATA%\\DarkSoulsIII"]),
 ];
 
 /// The usual save folders of every engine the dialog names.

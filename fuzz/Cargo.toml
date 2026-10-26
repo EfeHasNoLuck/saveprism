@@ -184,6 +184,13 @@ doc = false
 bench = false
 
 [[bin]]
+name = "archives"
+path = "fuzz_targets/archives.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "odin"
 path = "fuzz_targets/odin.rs"
 test = false

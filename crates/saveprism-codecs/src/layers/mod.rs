@@ -2,7 +2,8 @@
 //! brotli, LZ-String, LZF, single/repeating-key XOR, the KiriKiri text-stream wrapper, the
 //! TyranoScript URL escape, the zip container and tar.
 //! brotli, LZ-String, LZF, single/repeating-key XOR, the TyranoScript URL escape, the zip and tar
-//! containers, PS1/PS2 memory cards, PS2 `.psu` exports and SharkPort GBA snapshots.
+//! containers, PS1/PS2 memory cards, PS2 `.psu` exports, SharkPort GBA snapshots, FromSoftware
+//! BND4 binders, Blizzard MPQ archives and Brickadia BRZ archives.
 //!
 //! Every layer records the parameters it needs to wrap the inner bytes again exactly as they were.
 //! Compression layers also keep the original compressed bytes together with a digest of the
@@ -17,7 +18,9 @@ use saveprism_core::codes;
 use saveprism_core::{Confidence, Error, ErrorCode, Params, Registry, Result, SniffCtx};
 
 mod base64;
+mod bnd4;
 mod brotli;
+mod brz;
 mod bzip2;
 mod deflate;
 mod erf;
@@ -28,6 +31,7 @@ mod lz4;
 mod lzf;
 mod lzma;
 mod lzstring;
+mod mpq;
 mod percent;
 mod ps2;
 mod psu;
@@ -42,7 +46,9 @@ mod zlib;
 mod zstd;
 
 pub use base64::Base64Layer;
+pub use bnd4::{BND4_DAMAGED, BND4_NO_PAYLOAD, BND4_WRITE, Bnd4Layer};
 pub use brotli::BrotliLayer;
+pub use brz::{BRZ_DAMAGED, BRZ_NO_PAYLOAD, BRZ_WRITE, BrzLayer};
 pub use bzip2::Bzip2Layer;
 pub use deflate::DeflateLayer;
 pub use erf::{ERF_DAMAGED, ERF_NO_PAYLOAD, ERF_WRITE, ErfLayer};
@@ -53,6 +59,7 @@ pub use lz4::Lz4Layer;
 pub use lzf::LzfLayer;
 pub use lzma::LzmaLayer;
 pub use lzstring::LzStringLayer;
+pub use mpq::{MPQ_DAMAGED, MPQ_NO_PAYLOAD, MPQ_UNSUPPORTED, MPQ_WRITE, MpqLayer};
 pub use percent::PercentLayer;
 pub use ps2::{PS2_DAMAGED, PS2_NO_PAYLOAD, PS2_WRITE, Ps2CardLayer};
 pub use psu::{PSU_DAMAGED, PSU_NO_PAYLOAD, PSU_WRITE, PsuLayer};
@@ -137,6 +144,9 @@ pub fn register(reg: &mut Registry) {
     zip::register(reg);
     tar::register(reg);
     erf::register(reg);
+    bnd4::register(reg);
+    mpq::register(reg);
+    brz::register(reg);
     psx::register(reg);
     ps2::register(reg);
     psu::register(reg);
@@ -319,10 +329,13 @@ mod tests {
             "container.zip",
             "container.tar",
             "container.erf",
+            "container.bnd4",
+            "container.mpq",
+            "container.brz",
         ] {
             assert!(reg.is_layer(id), "{id} is not registered");
         }
-        assert_eq!(reg.layers().count(), 25);
+        assert_eq!(reg.layers().count(), 28);
     }
 
     #[test]
@@ -370,6 +383,16 @@ mod tests {
         assert_eq!(SPS_DAMAGED.as_str(), "SP-SPS-001");
         assert_eq!(SPS_UNSUPPORTED.as_str(), "SP-SPS-002");
         assert_eq!(SPS_WRITE.as_str(), "SP-SPS-003");
+        assert_eq!(BND4_DAMAGED.as_str(), "SP-BND-001");
+        assert_eq!(BND4_NO_PAYLOAD.as_str(), "SP-BND-002");
+        assert_eq!(BND4_WRITE.as_str(), "SP-BND-003");
+        assert_eq!(MPQ_DAMAGED.as_str(), "SP-MPQ-001");
+        assert_eq!(MPQ_NO_PAYLOAD.as_str(), "SP-MPQ-002");
+        assert_eq!(MPQ_WRITE.as_str(), "SP-MPQ-003");
+        assert_eq!(MPQ_UNSUPPORTED.as_str(), "SP-MPQ-004");
+        assert_eq!(BRZ_DAMAGED.as_str(), "SP-BRZ-001");
+        assert_eq!(BRZ_NO_PAYLOAD.as_str(), "SP-BRZ-002");
+        assert_eq!(BRZ_WRITE.as_str(), "SP-BRZ-003");
     }
 
     #[test]
@@ -395,7 +418,7 @@ mod tests {
             std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../fixtures/synthetic");
         let mut paths = Vec::new();
         files(&root, &mut paths);
-        let new_layers: [&dyn Layer; 15] = [
+        let new_layers: [&dyn Layer; 18] = [
             &Bzip2Layer,
             &ZstdLayer,
             &XzLayer,
@@ -411,6 +434,9 @@ mod tests {
             &PsuLayer,
             &SharkPortLayer,
             &ErfLayer,
+            &Bnd4Layer,
+            &MpqLayer,
+            &BrzLayer,
         ];
         let ctx = SniffCtx::default();
         let mut failures = Vec::new();
@@ -423,6 +449,7 @@ mod tests {
             if relative.starts_with("layers/")
                 || relative.starts_with("console/")
                 || relative.starts_with("bioware/")
+                || relative.starts_with("archives/")
             {
                 continue;
             }

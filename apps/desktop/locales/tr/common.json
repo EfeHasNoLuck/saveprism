@@ -207,7 +207,9 @@
       "palworld": "Palworld",
       "terraria": "Terraria",
       "neverwinter-nights": "Neverwinter Nights",
-      "kotor": "Knights of the Old Republic"
+      "kotor": "Knights of the Old Republic",
+      "elden-ring": "Elden Ring",
+      "dark-souls-3": "Dark Souls III"
     },
     "note": {
       "rpgmaker-mv": "MV www/save, MZ save klasörünü kullanır.",
@@ -223,7 +225,9 @@
       "palworld": "Steam kimliği klasörünün altında.",
       "terraria": "Players karakterleri, Worlds dünyaları tutar. Belgeler klasörü OneDrive'a taşınmış olabilir.",
       "neverwinter-nights": "Enhanced Edition kayıtları Belgeler klasöründe tutar; klasik oyun kendi klasöründeki saves klasörünü kullanır.",
-      "kotor": "Kayıtlar oyun klasöründeki .sav dosyalarıdır, her slot bir klasördür."
+      "kotor": "Kayıtlar oyun klasöründeki .sav dosyalarıdır, her slot bir klasördür.",
+      "elden-ring": "Steam kimliğinizin altındaki klasörde ER0000.sl2 bulunur.",
+      "dark-souls-3": "Steam kimliğinizin altındaki klasörde DS30000.sl2 bulunur."
     }
   },
   "password": {

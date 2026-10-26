@@ -30,6 +30,10 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
 - 2026-10-25: logo pack from the maintainer in `docs/brand/`; app icons regenerated from `SavePrism-icon-navy.svg`;
   README shows the logo.
 - 65 real saves for local tests in `fixtures/external/` (git-ignored; sources and licenses in `fixtures/external/SOURCES.md`).
+- 2026-10-26 (`w3-archives`): FromSoftware BND4 (`.sl2`/`.bnd`, raw and DCX-zlib entries), Blizzard MPQ
+  (`.mpq`/`.SC2Save`/`.w3z`, encrypted tables, zlib/bzip2 sectors) and Brickadia `.brz` containers, plus a `.brs`
+  save codec; synthetic fixtures, golden expectations, fuzz target, README rows, engine labels and Elden Ring /
+  Dark Souls III save locations. Rust 3/3, web 3/3.
 
 ## Todo (in order; widened by the user on 2026-10-23)
 1. Polish: done 2026-10-23. Undo/redo, shortcuts, opening overlay, About (`f6b9fc5`); Backups dialog in the bottom bar (list
