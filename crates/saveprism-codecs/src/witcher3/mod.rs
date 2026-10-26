@@ -4,9 +4,12 @@
 //! code, tables or regexes were copied:
 //!
 //! - `Atvaark/W3SavegameEditor` (`ChunkedLz4/*.cs`, `Savegame/SavegameFile.cs`,
-//!   `VariableParsers/*.cs`): the `SNFHFZLC` chunk table, the `SAV3` stream header, the footer
-//!   with the variable table and the `NM`/`RB` section offsets, and the `BS`/`VL`/`OP`/`AVAL`/
-//!   `PORP`/`BLCL` record tags.
+//!   `VariableParsers/*.cs`, `Values/Gwint/*.cs`): the `SNFHFZLC` chunk table, the `SAV3`
+//!   stream header, the footer with the variable table and the `NM`/`RB` section offsets, the
+//!   `BS`/`VL`/`OP`/`AVAL`/`PORP`/`BLCK` record tags, and the Gwent record names and fields
+//!   (`CR4GwintManager`, `SBCollectionCardSize`, `SBCollectionCard`, `SBLeaderCollectionCardSize`,
+//!   `SBLeaderCollectionCard`, `SBSelectedDeckIndex`, `GwintDecks`, `GwintDeck`, `GwintDeckCard`,
+//!   `eGwintFaction`).
 //! - `dodojesuslol/w3-quest-tracker` (`docs/save-format.md`, `src/w3qt/savefile.py`): the
 //!   decompressed stream excludes the container prefix while every stored offset includes it,
 //!   the end footer triplet, the REDengine length-prefixed string, and the record tree built
@@ -34,6 +37,23 @@
 //! cannot be rewritten without understanding the game schema. The `MANU` name table accepts both
 //! the single-byte and the extended low-6-bit length form, because public parsers disagree on
 //! which one older and next-gen saves use.
+//!
+//! # Gwent
+//!
+//! The Gwent state lives in the `Variables/CR4GwintManager` record (older saves may spell it
+//! `GwintManager`). Its collection blocks (`SBCollectionCardSize`, `SBLeaderCollectionCardSize`)
+//! are hinted `W3:gwent-collection`, `GwintDecks` is `W3:gwent-decks`, every `GwintDeck` is
+//! `W3:gwent-deck`, and the selected faction (`SBSelectedDeckIndex/deckIndex`) is
+//! `W3:gwent-selected-deck`. Each card record (`SBCollectionCard`, `SBLeaderCollectionCard`,
+//! `GwintDeckCard`) is hinted `W3:gwent-card:<cardIndex>` so a UI can list owned and missing
+//! cards without a name table.
+//!
+//! Only `numCopies` (the per-card count inside a collection) stays editable: it has the same
+//! width, so it can be patched in place. The collection `Size`, `DeckCount`, `CardCount`,
+//! `LeaderIndex`, `DeckUnlocked`, every `cardIndex` and the selected faction stay read-only:
+//! changing them alone would change a length, rewrite deck membership or leave the structure
+//! inconsistent. Card names and factions are not embedded in the save; see the wave report for
+//! where the game keeps its card definitions.
 //!
 //! # Exact writing
 //!
