@@ -6,9 +6,11 @@
 use saveprism_core::Registry;
 
 pub mod adventure_creator;
+pub mod ags;
 pub mod bson;
 pub mod cbor;
 pub mod csv_text;
+pub mod emuera;
 pub mod es3;
 pub mod gamemaker;
 pub mod gen3;
@@ -27,6 +29,7 @@ pub mod naninovel;
 pub mod nbt;
 pub mod nrbf;
 pub mod odin;
+pub mod onscripter;
 pub mod palworld;
 pub mod pickle;
 pub mod pixelcrushers;
@@ -59,6 +62,9 @@ pub fn resolve_text_encoding(label: &str) -> Option<&'static str> {
 /// Registers every layer and codec of this crate into `reg`.
 pub fn register_all(reg: &mut Registry) {
     layers::register(reg);
+    ags::register(reg);
+    emuera::register(reg);
+    onscripter::register(reg);
     raw::register(reg);
     adventure_creator::register(reg);
     pixelcrushers::register(reg);
