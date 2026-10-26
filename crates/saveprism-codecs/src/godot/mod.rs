@@ -40,6 +40,9 @@
 //! bits are never rewritten.
 
 pub mod config;
+pub mod resource_binary;
+pub mod resource_text;
+mod variant_text;
 
 use std::sync::Arc;
 
@@ -65,10 +68,12 @@ const MAX_NESTING: usize = 4096;
 /// 64-bit flag for integers, floats and (in 4.x) double-precision math types.
 const FLAG_64: u32 = 1 << 16;
 
-/// Registers the binary Godot Variant codec and the ConfigFile codec.
+/// Registers the binary Godot Variant codec, the ConfigFile codec and the resource codecs.
 pub fn register(reg: &mut Registry) {
     reg.add_codec(Arc::new(GodotCodec));
     config::register(reg);
+    resource_text::register(reg);
+    resource_binary::register(reg);
 }
 
 /// The `format.godot-variant` codec.

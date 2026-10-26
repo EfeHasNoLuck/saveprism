@@ -1,0 +1,20 @@
+; Invented Godot 4 text resource.
+[gd_resource type="Resource" script_class="PlayerData" load_steps=3 format=3 uid="uid://invented1"]
+
+[ext_resource type="Script" path="res://player.gd" id="1_script"]
+
+[sub_resource type="Resource" id="Resource_stats"]
+script = ExtResource("1_script")
+gold = 100
+ratio = 1.5
+
+[resource]
+script = ExtResource("1_script")
+name = "Mira"
+level = 42
+position = Vector2(12.5, -4)
+stats = SubResource("Resource_stats")
+tags = Array[String](["north", "south"])
+colors = Dictionary[String, int]({"a": 1})
+inventory = ["potion", 3]
+options = {"hard": false}

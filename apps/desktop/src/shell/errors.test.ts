@@ -135,6 +135,8 @@ describe("engine helpers", () => {
     expect(engineLabel("data.bin", "format.java-serialization")).toBe("Java");
     expect(engineLabel("player.save", "format.godot-variant")).toBe("Godot");
     expect(engineLabel("settings.cfg", "format.godot-config")).toBe("Godot");
+    expect(engineLabel("player.tres", "format.godot-resource-text")).toBe("Godot");
+    expect(engineLabel("player.res", "format.godot-resource")).toBe("Godot");
     expect(engineLabel("data.bin", "format.json")).toBe("JSON");
     expect(engineLabel("save.zip", "format.json")).toBe("JSON");
     expect(engineLabel("save.zip", "format.ruby-marshal")).toBe("Ruby Marshal");

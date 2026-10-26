@@ -14,6 +14,18 @@ fuzz_target!(|data: &[u8]| {
         let again = pipeline::decode(&encoded, &decoded.recipe, &registry, &limits).expect("encoded Godot tree decodes");
         assert!(decoded.doc.tree_eq(&again.doc));
     }
+    let resource_text_recipe = Recipe::new(vec![Step::bare("format.godot-resource-text")]);
+    if let Ok(decoded) = pipeline::decode(data, &resource_text_recipe, &registry, &limits) {
+        let encoded = pipeline::encode(&decoded.doc, &decoded.recipe, &registry).expect("decoded Godot text resource re-encodes");
+        let again = pipeline::decode(&encoded, &decoded.recipe, &registry, &limits).expect("encoded Godot text resource decodes");
+        assert!(decoded.doc.tree_eq(&again.doc));
+    }
+    let resource_recipe = Recipe::new(vec![Step::bare("format.godot-resource")]);
+    if let Ok(decoded) = pipeline::decode(data, &resource_recipe, &registry, &limits) {
+        let encoded = pipeline::encode(&decoded.doc, &decoded.recipe, &registry).expect("decoded Godot resource re-encodes");
+        let again = pipeline::decode(&encoded, &decoded.recipe, &registry, &limits).expect("encoded Godot resource decodes");
+        assert!(decoded.doc.tree_eq(&again.doc));
+    }
     let config_recipe = Recipe::new(vec![Step::bare("format.godot-config")]);
     if let Ok(decoded) = pipeline::decode(data, &config_recipe, &registry, &limits) {
         let encoded = pipeline::encode(&decoded.doc, &decoded.recipe, &registry).expect("decoded ConfigFile tree re-encodes");
