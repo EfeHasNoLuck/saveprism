@@ -1,0 +1,1 @@
+{"settings": {"__type": "dict[int, int]", "value": {5:10, 6:20}}, "scores": {"__type": "dict[int, str]", "values": {1:"2", 3:"4"}}}

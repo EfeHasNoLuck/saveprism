@@ -16,6 +16,16 @@ pub(crate) struct Parsed {
     pub observed: Observed,
 }
 
+/// Which object keys the parser accepts.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum KeyStyle {
+    /// Strict JSON: a key is always a quoted string.
+    Strict,
+    /// Easy Save 3: a key may also be a bare number or `true`/`false` (dictionaries whose key
+    /// type is not a string).
+    Bare,
+}
+
 /// An open container while its children are being read.
 enum Frame {
     Array {
@@ -24,6 +34,8 @@ enum Frame {
     },
     Object {
         entries: Vec<(String, NodeId)>,
+        /// For every entry, whether its key was written bare.
+        bare: Vec<bool>,
         /// Key of the value being read.
         key: String,
         start: usize,
@@ -44,18 +56,20 @@ struct Parser<'a, 'c> {
     /// Offset of `text` in the original input (the BOM length).
     base: u64,
     ctx: &'a DecodeCtx<'c>,
+    style: KeyStyle,
     doc: SaveDoc,
     obs: Observed,
 }
 
 /// Parses `text` (BOM already removed; `base` is the BOM length for offsets).
-pub(crate) fn parse(text: &str, base: u64, ctx: &DecodeCtx<'_>) -> Result<Parsed> {
+pub(crate) fn parse(text: &str, base: u64, ctx: &DecodeCtx<'_>, style: KeyStyle) -> Result<Parsed> {
     let mut parser = Parser {
         text,
         bytes: text.as_bytes(),
         pos: 0,
         base,
         ctx,
+        style,
         doc: ctx.new_doc(),
         obs: Observed::default(),
     };
@@ -187,9 +201,10 @@ impl Parser<'_, '_> {
                         self.push(Node::new(Value::Object(Vec::new())), start)?
                     } else {
                         self.note_open(ws);
-                        let key = self.parse_key()?;
+                        let (key, bare) = self.parse_key()?;
                         stack.push(Frame::Object {
                             entries: Vec::new(),
+                            bare: vec![bare],
                             key,
                             start,
                         });
@@ -226,6 +241,7 @@ impl Parser<'_, '_> {
                     }
                     Some(Frame::Object {
                         entries,
+                        bare,
                         key,
                         start,
                     }) => {
@@ -236,15 +252,20 @@ impl Parser<'_, '_> {
                                 self.pos += 1;
                                 let ws = self.skip_ws();
                                 self.note_comma(ws);
-                                *key = self.parse_key()?;
+                                let (next_key, next_bare) = self.parse_key()?;
+                                *key = next_key;
+                                bare.push(next_bare);
                                 break;
                             }
                             Some(b'}') => {
                                 self.pos += 1;
                                 let entries = std::mem::take(entries);
+                                let bare = std::mem::take(bare);
                                 let start = *start;
                                 stack.pop();
-                                done = self.push(Node::new(Value::Object(entries)), start)?;
+                                let mut node = Node::new(Value::Object(entries));
+                                node.lexeme = super::bare_key_lexeme(&bare);
+                                done = self.push(node, start)?;
                             }
                             _ => return Err(self.unexpected()),
                         }
@@ -254,30 +275,62 @@ impl Parser<'_, '_> {
         }
     }
 
-    /// Reads `"key"`, optional whitespace and the colon, then the whitespace after the colon.
-    fn parse_key(&mut self) -> Result<String> {
-        if self.peek() != Some(b'"') {
+    /// Reads a key (a quoted string, or in [`KeyStyle::Bare`] a number or `true`/`false`), the
+    /// optional whitespace and the colon, then the whitespace after the colon. Returns the key
+    /// text and whether it was written bare.
+    fn parse_key(&mut self) -> Result<(String, bool)> {
+        let (value, bare) = if self.peek() == Some(b'"') {
+            let start = self.pos;
+            let token = self.parse_string()?;
+            if token.lone_surrogate {
+                return Err(Error::new(
+                    JSON_LONE_SURROGATE,
+                    "an object key contains an unpaired surrogate escape; the key cannot be kept without loss",
+                )
+                .with_offset(self.abs(start)));
+            }
+            (token.value, false)
+        } else if self.style == KeyStyle::Bare {
+            self.parse_bare_key()?
+        } else {
             return Err(self.unexpected());
+        };
+        let before = self.skip_ws();
+        if self.obs.before_colon.is_none() {
+            self.obs.before_colon = Some(before);
         }
-        let start = self.pos;
-        let token = self.parse_string()?;
-        if token.lone_surrogate {
-            return Err(Error::new(
-                JSON_LONE_SURROGATE,
-                "an object key contains an unpaired surrogate escape; the key cannot be kept without loss",
-            )
-            .with_offset(self.abs(start)));
-        }
-        self.skip_ws();
         if self.peek() != Some(b':') {
             return Err(self.unexpected());
         }
         self.pos += 1;
         let ws = self.skip_ws();
-        if self.obs.after_colon.is_none() {
-            self.obs.after_colon = Some(ws);
+        let observed = if bare {
+            &mut self.obs.after_colon_bare
+        } else {
+            &mut self.obs.after_colon
+        };
+        if observed.is_none() {
+            *observed = Some(ws);
         }
-        Ok(token.value)
+        Ok((value, bare))
+    }
+
+    /// Reads a bare dictionary key: a JSON number token or `true`/`false`, keeping its exact text.
+    fn parse_bare_key(&mut self) -> Result<(String, bool)> {
+        let start = self.pos;
+        match self.peek() {
+            Some(b'-' | b'0'..=b'9') => {
+                self.scan_number()?;
+            }
+            Some(b't') => self.literal("true")?,
+            Some(b'f') => self.literal("false")?,
+            _ => return Err(self.unexpected()),
+        }
+        let text = self
+            .text
+            .get(start..self.pos)
+            .ok_or_else(|| self.syntax(start, "invalid dictionary key"))?;
+        Ok((text.to_string(), true))
     }
 
     fn parse_scalar(&mut self) -> Result<NodeId> {
@@ -332,8 +385,9 @@ impl Parser<'_, '_> {
         self.pos > start
     }
 
-    fn parse_number(&mut self) -> Result<NodeId> {
-        let start = self.pos;
+    /// Advances over a JSON number token at the current position and reports whether it is whole
+    /// (no fraction and no exponent).
+    fn scan_number(&mut self) -> Result<bool> {
         let mut whole = true;
         if self.peek() == Some(b'-') {
             self.pos += 1;
@@ -363,6 +417,12 @@ impl Parser<'_, '_> {
                 return Err(self.unexpected());
             }
         }
+        Ok(whole)
+    }
+
+    fn parse_number(&mut self) -> Result<NodeId> {
+        let start = self.pos;
+        let whole = self.scan_number()?;
         let token = self
             .text
             .get(start..self.pos)

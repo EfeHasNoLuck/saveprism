@@ -185,3 +185,21 @@ fn encode_without_password_is_an_error() {
     .unwrap();
     assert!(pipeline::encode(&out.doc, &out.recipe, &reg).is_err());
 }
+
+#[test]
+fn encrypted_bare_dictionary_keys_round_trip() {
+    let path = FsPath::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../fixtures/keyed/es3-aes/dict-int-aes.es3");
+    let input = std::fs::read(path).unwrap();
+    let reg = registry();
+    let out = pipeline::decode(&input, &plain_recipe(PASSWORD), &reg, &Limits::default()).unwrap();
+    let text = String::from_utf8(out.frames.last().unwrap().clone()).unwrap();
+    assert!(text.contains("{5:10, 6:20}"), "{text}");
+    let again = pipeline::encode(
+        &out.doc,
+        &with_password(&out.recipe, PASSWORD).unwrap(),
+        &reg,
+    )
+    .unwrap();
+    assert_eq!(again, input);
+}
