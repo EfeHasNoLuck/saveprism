@@ -2,8 +2,8 @@
 
 use saveprism_core::limits::len_u64;
 use saveprism_core::{
-    Error, FloatWidth, IntWidth, Limits, Node, NodeFlags, NodeId, Params, Result, SaveDoc,
-    TypeHint, Value, codes,
+    ByteSpan, Error, FloatWidth, IntWidth, Limits, Node, NodeFlags, NodeId, Params, Result,
+    SaveDoc, TypeHint, Value, codes,
 };
 
 use super::{BSON_PARSE, HINT_PREFIX};
@@ -22,6 +22,7 @@ pub(super) fn decode(input: &[u8], limits: &Limits) -> Result<(SaveDoc, Params)>
         pos: 0,
         limits,
         doc: SaveDoc::with_node_limit(limits.max_nodes),
+        base: None,
     };
     let root = parser.document(0, false)?;
     if parser.pos != input.len() {
@@ -50,6 +51,30 @@ struct Parser<'a> {
     pos: usize,
     limits: &'a Limits,
     doc: SaveDoc,
+    /// Absolute offset of `input[0]` when the parser reads an embedded document.
+    base: Option<u64>,
+}
+
+/// Parses one embedded BSON document at `at` (for example a LiteDB data block).
+///
+/// `base` is the absolute file offset of `input[0]`, so fixed-size scalar spans are absolute; pass
+/// `None` when the bytes were assembled and positions no longer map to the file.
+pub(crate) fn parse_embedded(
+    input: &[u8],
+    at: usize,
+    limits: &Limits,
+    base: Option<u64>,
+) -> Result<SaveDoc> {
+    let mut parser = Parser {
+        input,
+        pos: at,
+        limits,
+        doc: SaveDoc::with_node_limit(limits.max_nodes),
+        base,
+    };
+    let root = parser.document(0, false)?;
+    parser.doc.set_root(root);
+    Ok(parser.doc)
 }
 
 impl Parser<'_> {
@@ -109,6 +134,18 @@ impl Parser<'_> {
         node.type_hint = Some(hint(kind));
         if read_only {
             node.flags.insert(NodeFlags::READ_ONLY);
+        }
+        self.doc.push(node)
+    }
+
+    fn push_spanned(&mut self, value: Value, kind: &str, start: usize) -> Result<NodeId> {
+        let mut node = Node::new(value);
+        node.type_hint = Some(hint(kind));
+        if let Some(base) = self.base {
+            node.span = Some(ByteSpan {
+                start: base.saturating_add(u64::try_from(start).unwrap_or(u64::MAX)),
+                end: base.saturating_add(u64::try_from(self.pos).unwrap_or(u64::MAX)),
+            });
         }
         self.doc.push(node)
     }
@@ -209,14 +246,15 @@ impl Parser<'_> {
     fn value(&mut self, kind: u8, depth: usize) -> Result<NodeId> {
         match kind {
             0x01 => {
+                let start = self.pos;
                 let bits = self.le_u64("double")?;
-                self.push(
+                self.push_spanned(
                     Value::Float {
                         v: f64::from_bits(bits),
                         width: FloatWidth::F64,
                     },
                     "double",
-                    false,
+                    start,
                 )
             }
             0x02 => {
@@ -242,10 +280,11 @@ impl Parser<'_> {
                 self.push(Value::Bytes(data), "objectid", true)
             }
             0x08 => {
+                let start = self.pos;
                 let value = self.byte("boolean")?;
                 match value {
-                    0 => self.push(Value::Bool(false), "bool", false),
-                    1 => self.push(Value::Bool(true), "bool", false),
+                    0 => self.push_spanned(Value::Bool(false), "bool", start),
+                    1 => self.push_spanned(Value::Bool(true), "bool", start),
                     _ => Err(parse_error("a boolean is neither 0 nor 1", self.pos - 1)),
                 }
             }
@@ -313,14 +352,15 @@ impl Parser<'_> {
                 self.push(Value::Bytes(raw), "code-w-scope", true)
             }
             0x10 => {
+                let start = self.pos;
                 let value = self.le_i32("int32")?;
-                self.push(
+                self.push_spanned(
                     Value::Int {
                         v: i128::from(value),
                         width: IntWidth::I32,
                     },
                     "int32",
-                    false,
+                    start,
                 )
             }
             0x11 => {
@@ -334,14 +374,15 @@ impl Parser<'_> {
                 self.doc.push(node)
             }
             0x12 => {
+                let start = self.pos;
                 let value = self.le_i64("int64")?;
-                self.push(
+                self.push_spanned(
                     Value::Int {
                         v: i128::from(value),
                         width: IntWidth::I64,
                     },
                     "int64",
-                    false,
+                    start,
                 )
             }
             0x13 => {

@@ -32,7 +32,7 @@
 //! and string lengths are recomputed. BSON has one canonical representation for these values, so
 //! an unchanged document gives the original bytes.
 
-mod read;
+pub(crate) mod read;
 mod write;
 
 #[cfg(test)]

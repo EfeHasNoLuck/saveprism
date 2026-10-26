@@ -156,6 +156,13 @@ doc = false
 bench = false
 
 [[bin]]
+name = "kvdb"
+path = "fuzz_targets/kvdb.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "msgpack"
 path = "fuzz_targets/msgpack.rs"
 test = false
