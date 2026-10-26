@@ -79,6 +79,10 @@ SavePrism needs Microsoft Edge WebView2, which Windows 10 and 11 already have; t
 | PS2 memory cards | `.ps2` | one save file from the card's FAT tree; ECC recomputed on the pages that change |
 | PS2 save exports | `.psu` | one file from the export; `.max` (LZARI) is not opened |
 | SharkPort GBA snapshots | `.sps`, `.xps` | the raw GBA save; title, date, comment and checksum kept |
+| FromSoftware BND4 containers | `.sl2`, `.bnd` (Dark Souls II/III, Sekiro, Elden Ring) | one entry inside (raw or DCX zlib); the other entries stay byte-identical; encrypted files are not opened |
+| Blizzard MPQ archives | `.mpq`, `.SC2Save`, `.w3z` | one entry (zlib/bzip2 sectors are decompressed); uncompressed entries are editable, compressed or encrypted ones read-only |
+| Brickadia `.brz` archives | `.brz` | one file from the archive; stored files are editable when no other file shares them |
+| Brickadia saves | `.brs` | the map name, author and description; brick data stays read-only |
 | Pasted hex / percent codes | text | decoded when the text spells a format SavePrism knows |
 | XML | `.xml` | element text and attribute values (comments, CDATA and declarations stay read-only) |
 | INI / CFG | `.ini`, `.cfg`, `.conf` | section values |

@@ -7,6 +7,7 @@ use saveprism_core::Registry;
 
 pub mod adventure_creator;
 pub mod ags;
+pub mod brickadia;
 pub mod bson;
 pub mod cbor;
 pub mod csv_text;
@@ -68,6 +69,7 @@ pub fn register_all(reg: &mut Registry) {
     raw::register(reg);
     adventure_creator::register(reg);
     pixelcrushers::register(reg);
+    brickadia::register(reg);
     msgpack::register(reg);
     cbor::register(reg);
     bson::register(reg);

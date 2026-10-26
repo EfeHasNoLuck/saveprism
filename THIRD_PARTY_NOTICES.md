@@ -9,9 +9,9 @@ The desktop binary links these crates. Licenses used:
 
 - MIT License: 252 crate(s)
 - Unicode License v3: 19 crate(s)
-- BSD 3-Clause "New" or "Revised" License: 10 crate(s)
+- BSD 3-Clause "New" or "Revised" License: 11 crate(s)
+- Apache License 2.0: 5 crate(s)
 - Mozilla Public License 2.0: 5 crate(s)
-- Apache License 2.0: 3 crate(s)
 - zlib License: 1 crate(s)
 - bzip2 and libbzip2 License v1.0.6: 1 crate(s)
 
@@ -228,6 +228,8 @@ Apache License
 ### Apache License 2.0
 
 Used by:
+- blake3 1.8.7 (https://github.com/BLAKE3-team/BLAKE3)
+- constant_time_eq 0.4.2 (https://github.com/cesarb/constant_time_eq)
 - dunce 1.0.5 (https://gitlab.com/kornelski/dunce)
 
 ```text
@@ -373,8 +375,9 @@ pub(crate) static GB18030_2022_OVERRIDE_BYTES: [[u8; 2]; 18] = [
 ### BSD 3-Clause "New" or "Revised" License
 
 Used by:
-- zstd-safe 7.3.0 (https://github.com/gyscos/zstd-rs)
+- zstd-safe 8.2.0 (https://github.com/gyscos/zstd-rs)
 - zstd-sys 2.1.2+zstd.1.5.7 (https://github.com/gyscos/zstd-rs)
+- zstd 0.14.3 (https://github.com/gyscos/zstd-rs)
 
 ```text
 BSD 3-Clause License
@@ -2626,7 +2629,7 @@ DEALINGS IN THE SOFTWARE.
 ### MIT License
 
 Used by:
-- crypto-bigint 0.7.8 (https://github.com/RustCrypto/crypto-bigint)
+- crypto-bigint 0.7.10 (https://github.com/RustCrypto/crypto-bigint)
 - sec1 0.8.1 (https://github.com/RustCrypto/formats)
 - spki 0.8.1 (https://github.com/RustCrypto/formats)
 
@@ -2891,7 +2894,7 @@ DEALINGS IN THE SOFTWARE.
 ### MIT License
 
 Used by:
-- ctutils 0.4.5 (https://github.com/RustCrypto/utils)
+- ctutils 0.4.6 (https://github.com/RustCrypto/utils)
 
 ```text
 Copyright (c) 2025-2026 The RustCrypto Project Developers
@@ -3089,6 +3092,40 @@ Used by:
 
 ```text
 Copyright (c) The rust-url developers
+
+Permission is hereby granted, free of charge, to any
+person obtaining a copy of this software and associated
+documentation files (the "Software"), to deal in the
+Software without restriction, including without
+limitation the rights to use, copy, modify, merge,
+publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software
+is furnished to do so, subject to the following
+conditions:
+
+The above copyright notice and this permission notice
+shall be included in all copies or substantial portions
+of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
+ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
+TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
+IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+
+```
+
+### MIT License
+
+Used by:
+- arrayvec 0.7.8 (https://github.com/bluss/arrayvec)
+
+```text
+Copyright (c) Ulrik Sverdrup "bluss" 2015-2023
 
 Permission is hereby granted, free of charge, to any
 person obtaining a copy of this software and associated
@@ -4776,23 +4813,6 @@ HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
-
-```
-
-### MIT License
-
-Used by:
-- zstd 0.13.3 (https://github.com/gyscos/zstd-rs)
-
-```text
-The MIT License (MIT)
-Copyright (c) 2016 Alexandre Bury
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ```
 

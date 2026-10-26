@@ -139,10 +139,12 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
      Dialogue System Lua as data; encrypted refused) (`4214786`). zstd 0.14.3 for three new advisories (`dcfa9c1`).
      AGS (header/description editable, state read-only), ONScripter (global.sav numbers and Shift-JIS strings,
      slot description; from a behavioral spec, GPL source not copied), Emuera binary saves (`ccd64b1`).
-     Synthetic files only.
+     FromSoftware BND4 (raw and DCX-zlib entries editable; Oodle/encrypted entries read-only, no key), Blizzard MPQ
+     (stored entries editable; compressed read-only), Brickadia `.brz` + `.brs` (same-length stored blobs; `blake3`,
+     CC0-1.0 OR Apache-2.0). Synthetic files only.
    - GitHub Actions minutes ran out 2026-10-26: commits stay local until next month (last pushed `4214786`).
-   - Running (EVREN, at most 2 at once): `archives` (BND4, MPQ, Brickadia), `kvdb` (LevelDB, RocksDB, LiteDB). Next
-     brief ready: `w3-ser`; then vn3 and the Gwent view.
+   - Running (EVREN, at most 2 at once): `kvdb` (LevelDB, RocksDB, LiteDB). Next brief ready: `w3-ser`; then vn3
+     and the Gwent view.
    - Wave 2, first: auto-unlock (user idea, 2026-10-24): every layer tried by content whatever the extension; simple XOR
      obfuscation broken automatically from the expected start of the inner format (`{`, `<?xml`, `PK`...); a key finder
      that reads candidate passwords from the game's own files (Unity `Assembly-CSharp.dll` strings, IL2CPP

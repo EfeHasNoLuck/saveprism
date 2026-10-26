@@ -42,6 +42,13 @@ const EXTENSION_LABELS: Record<string, string> = {
   mod: "Neverwinter Nights",
   hak: "Neverwinter Nights",
   nwm: "Neverwinter Nights",
+  sl2: "Elden Ring / Dark Souls",
+  bnd: "BND4",
+  brs: "Brickadia",
+  brz: "Brickadia",
+  mpq: "MPQ",
+  sc2save: "StarCraft II",
+  w3z: "Warcraft III",
 };
 
 const CODEC_LABELS: Record<string, string> = {
@@ -94,6 +101,10 @@ const CODEC_LABELS: Record<string, string> = {
   "container.ps2-card": "PS2 memory card",
   "container.psu": "PS2 .psu",
   "container.sharkport": "SharkPort GBA",
+  "container.bnd4": "BND4",
+  "container.mpq": "MPQ",
+  "container.brz": "Brickadia",
+  "format.brickadia-brs": "Brickadia",
 };
 
 const ENGINE_LABELS: Record<string, string> = {

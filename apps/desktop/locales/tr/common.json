@@ -210,7 +210,9 @@
       "kotor": "Knights of the Old Republic",
       "ags": "Adventure Game Studio",
       "nscripter": "NScripter / ONScripter",
-      "emuera": "Emuera / eraMaker"
+      "emuera": "Emuera / eraMaker",
+      "elden-ring": "Elden Ring",
+      "dark-souls-3": "Dark Souls III"
     },
     "note": {
       "rpgmaker-mv": "MV www/save, MZ save klasörünü kullanır.",
@@ -229,7 +231,9 @@
       "kotor": "Kayıtlar oyun klasöründeki .sav dosyalarıdır, her slot bir klasördür.",
       "emuera": "Kayıtlar oyun klasöründe ya da oyunun kullandığı sav klasöründe.",
       "nscripter": "Oyun klasöründe save1.dat ... ve global.sav (veya gloval.sav).",
-      "ags": "Kayıt yuvaları oyunun yanındaki agssave.000 ile agssave.999 arasıdır."
+      "ags": "Kayıt yuvaları oyunun yanındaki agssave.000 ile agssave.999 arasıdır.",
+      "elden-ring": "Steam kimliğinizin altındaki klasörde ER0000.sl2 bulunur.",
+      "dark-souls-3": "Steam kimliğinizin altındaki klasörde DS30000.sl2 bulunur."
     }
   },
   "password": {
