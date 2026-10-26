@@ -12,7 +12,7 @@ use std::sync::{Mutex, MutexGuard, PoisonError};
 use session::{
     ApiError, BackupRow, Change, CompareResult, Field, FieldKind, FileReport, GameView,
     HistoryResult, HistoryState, NodeRow, OpenInfo, Page, SaveLocation, SaveResult, Session,
-    app_codes, read_file_report, save_locations,
+    W3CardsView, app_codes, read_file_report, save_locations,
 };
 use tauri::{AppHandle, Manager, State};
 use tauri_plugin_opener::OpenerExt;
@@ -146,6 +146,17 @@ async fn game_view(state: State<'_, AppState>) -> Result<GameView, ApiError> {
 #[tauri::command]
 async fn field_info(state: State<'_, AppState>, path: String) -> Result<Field, ApiError> {
     state.with_session(|session| session.field_info(&path))
+}
+
+/// Every Gwent card for the open Witcher 3 save, with names read from the player's own game files.
+/// When no game folder is found the result is the `pickGameFolder` state, not an error; pass the
+/// folder the player picked as `gameFolder` to try it. The card catalog is kept for this session.
+#[tauri::command]
+async fn w3_cards(
+    state: State<'_, AppState>,
+    game_folder: Option<String>,
+) -> Result<W3CardsView, ApiError> {
+    state.with_session(|session| Ok(session.w3_cards(game_folder.as_deref())))
 }
 
 /// Reads the names from a game data folder the player picked and returns the view with them.
@@ -390,6 +401,7 @@ pub fn run() {
             edit_value,
             edit_values,
             game_view,
+            w3_cards,
             set_data_folder,
             add_inventory,
             add_value,

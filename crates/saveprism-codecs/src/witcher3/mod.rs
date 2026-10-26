@@ -66,6 +66,18 @@
 //! supported, because that would require rewriting every stored offset, including ones inside
 //! payloads this codec keeps opaque.
 
+//! # Gwent card names
+//!
+//! [`bundle`] reads the game's own `POTATO70` content bundles and [`cards`] parses the card XML
+//! inside them at runtime; no card table is part of SavePrism. See those modules for the public
+//! sources of their layouts.
+
+pub mod bundle;
+#[cfg(test)]
+mod bundle_tests;
+pub mod cards;
+#[cfg(test)]
+mod cards_tests;
 mod read;
 #[cfg(test)]
 mod tests;
@@ -84,6 +96,8 @@ pub const W3_PARSE: ErrorCode = ErrorCode::new("SP-W3-001");
 pub const W3_NOT_SAVE: ErrorCode = ErrorCode::new("SP-W3-002");
 /// A value cannot be written back safely (wrong type, span out of bounds, changed string size).
 pub const W3_WRITE: ErrorCode = ErrorCode::new("SP-W3-003");
+/// A game bundle is malformed, unsupported (version or compression) or over its size budget.
+pub const W3_BUNDLE: ErrorCode = ErrorCode::new("SP-W3-004");
 
 /// Prefix of every hint this codec writes.
 pub const HINT_PREFIX: &str = "W3:";

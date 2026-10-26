@@ -756,7 +756,7 @@ fn read_dir_bounded(dir: &Path, budget: &mut Budget) -> Vec<PathBuf> {
 }
 
 /// The Steam installation folders on this PC. Never scans a disk: registry and the usual path.
-fn platform_steam_roots() -> Vec<PathBuf> {
+pub(crate) fn platform_steam_roots() -> Vec<PathBuf> {
     let mut out = Vec::new();
     #[cfg(windows)]
     {
@@ -782,7 +782,7 @@ fn platform_steam_roots() -> Vec<PathBuf> {
 }
 
 /// The Steam root and every library listed in its `libraryfolders.vdf`, de-duplicated and capped.
-fn library_folders(root: &Path) -> Vec<PathBuf> {
+pub(crate) fn library_folders(root: &Path) -> Vec<PathBuf> {
     let mut out = Vec::new();
     let mut seen = HashSet::new();
     let mut push = |path: PathBuf| {

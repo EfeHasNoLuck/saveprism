@@ -50,6 +50,7 @@ mod report;
 mod rgss;
 mod structure;
 mod sugarcube;
+mod w3cards;
 
 pub use backups::BackupRow;
 pub use code::MAX_PASTED;
@@ -69,6 +70,7 @@ pub use renpy::{
 };
 pub use report::{EntropyClass, FileReport, read_file_report};
 pub use sugarcube::SugarCubeView;
+pub use w3cards::W3CardsView;
 
 #[cfg(test)]
 mod tests;
@@ -436,6 +438,8 @@ pub struct Session {
     /// The player's Ren'Py key file, when the document is a signed Ren'Py file and one was found.
     /// The key itself is read only while signing; the path is all that is kept.
     renpy_key: Option<PathBuf>,
+    /// Gwent card definitions read from the player's own game files, kept for this session.
+    witcher3_cards: Option<w3cards::W3CardsCache>,
 }
 
 fn io_error(path: &FsPath, source: std::io::Error) -> Error {
@@ -952,6 +956,7 @@ impl Session {
             data_folder: None,
             renpy_keys: keys,
             renpy_key: None,
+            witcher3_cards: None,
         };
         // Only a signed Ren'Py document looks for the player's key file (only such a file is signed
         // again); every other format never touches it.
