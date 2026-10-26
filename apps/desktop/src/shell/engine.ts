@@ -49,6 +49,8 @@ const CODEC_LABELS: Record<string, string> = {
   "format.rpgmaker-json": "RPG Maker",
   "format.es3": "Easy Save 3",
   "format.es3-json": "Easy Save 3",
+  "format.adventure-creator": "Adventure Creator",
+  "format.pixel-crushers": "Pixel Crushers",
   "format.odin": "Odin Serializer",
   "format.gvas": "Unreal",
   "format.ruby-marshal": "Ruby Marshal",

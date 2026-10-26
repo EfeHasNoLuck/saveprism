@@ -4,6 +4,8 @@
 //! scalar record the byte span of its token. Writing applies only the spans whose value changed and
 //! copies every other byte, so comments, spacing, order and line endings stay untouched.
 
+use std::collections::HashMap;
+
 use saveprism_core::limits::len_u64;
 use saveprism_core::{
     ByteSpan, Error, ErrorCode, Node, NodeFlags, NodeId, Result, SaveDoc, TypeHint, Value,
@@ -162,4 +164,79 @@ pub(crate) fn is_generic_text_name(name: &str) -> bool {
     [".txt", ".json", ".jsonl", ".log", ".md"]
         .iter()
         .any(|extension| name.ends_with(extension))
+}
+
+/// Copies the graph reachable from `root` into `target`, preserving references and cycles.
+/// `code` is the error used when a node is missing or a reference leaves the copied graph.
+pub(crate) fn copy_graph(
+    source: &SaveDoc,
+    target: &mut SaveDoc,
+    root: NodeId,
+    code: ErrorCode,
+) -> Result<NodeId> {
+    let mut map: HashMap<NodeId, NodeId> = HashMap::new();
+    let mut stack = vec![root];
+    while let Some(id) = stack.pop() {
+        if map.contains_key(&id) {
+            continue;
+        }
+        let Some(node) = source.get(id) else {
+            return Err(Error::new(
+                code,
+                "the decoded data refers to a missing node",
+            ));
+        };
+        let new_id = target.reserve()?;
+        map.insert(id, new_id);
+        match &node.value {
+            Value::Array(items) => stack.extend(items.iter().copied()),
+            Value::Object(entries) => stack.extend(entries.iter().map(|(_, child)| *child)),
+            Value::Map(entries) => {
+                for (key, value) in entries {
+                    stack.push(*key);
+                    stack.push(*value);
+                }
+            }
+            Value::Ref(child) => stack.push(*child),
+            _ => {}
+        }
+    }
+    let mut pending: Vec<(NodeId, NodeId)> = map.iter().map(|(old, new)| (*old, *new)).collect();
+    pending.sort_by_key(|(old, _)| old.index());
+    for (old, new) in pending {
+        let Some(node) = source.get(old) else {
+            continue;
+        };
+        let mut copy = node.clone();
+        match &mut copy.value {
+            Value::Array(items) => {
+                for item in items.iter_mut() {
+                    *item = remap(*item, &map, code)?;
+                }
+            }
+            Value::Object(entries) => {
+                for (_, child) in entries.iter_mut() {
+                    *child = remap(*child, &map, code)?;
+                }
+            }
+            Value::Map(entries) => {
+                for (key, value) in entries.iter_mut() {
+                    *key = remap(*key, &map, code)?;
+                    *value = remap(*value, &map, code)?;
+                }
+            }
+            Value::Ref(child) => *child = remap(*child, &map, code)?,
+            _ => {}
+        }
+        target.finish(new, copy)?;
+    }
+    map.get(&root)
+        .copied()
+        .ok_or_else(|| Error::new(code, "the decoded data has no root"))
+}
+
+fn remap(id: NodeId, map: &HashMap<NodeId, NodeId>, code: ErrorCode) -> Result<NodeId> {
+    map.get(&id)
+        .copied()
+        .ok_or_else(|| Error::new(code, "a reference leaves the copied data"))
 }

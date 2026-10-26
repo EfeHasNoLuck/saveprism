@@ -387,3 +387,82 @@ fn bioware_fixtures_detect_as_gff_and_erf() {
         assert_eq!(again, bytes, "{name} does not round-trip");
     }
 }
+
+#[test]
+fn unity_asset_saves_are_claimed_by_their_specific_codec() {
+    let reg = registry();
+    let detect_named = |name: &str, bytes: &[u8]| {
+        let opts = DetectOptions {
+            file_name: Some(name.to_owned()),
+            ..DetectOptions::default()
+        };
+        detect(bytes, &reg, &Limits::default(), &opts).expect("detected")
+    };
+
+    // Adventure Creator joins its parts with `||`; plain JSON or XML without it stays plain.
+    let ac = [
+        (
+            "village.json.save",
+            include_bytes!("../../../fixtures/synthetic/adventure-creator/village.json.save")
+                .as_slice(),
+        ),
+        (
+            "village.xml.save",
+            include_bytes!("../../../fixtures/synthetic/adventure-creator/village.xml.save")
+                .as_slice(),
+        ),
+        (
+            "village.binary.save",
+            include_bytes!("../../../fixtures/synthetic/adventure-creator/village.binary.save")
+                .as_slice(),
+        ),
+    ];
+    for (name, bytes) in ac {
+        assert_eq!(
+            detect_named(name, bytes).best.recipe.kinds(),
+            ["format.adventure-creator"],
+            "{name}"
+        );
+    }
+    for (name, bytes) in [
+        (
+            "save.json",
+            b"{\"mainData\":{\"currentPlayerID\":1},\"playerData\":[]}".as_slice(),
+        ),
+        (
+            "save.xml",
+            b"<SaveData><mainData><currentPlayerID>1</currentPlayerID></mainData></SaveData>"
+                .as_slice(),
+        ),
+    ] {
+        let kinds = detect_named(name, bytes).best.recipe.kinds().join(" > ");
+        assert_ne!(kinds, "format.adventure-creator", "{name}");
+    }
+
+    // Pixel Crushers writes SavedGameData JSON with save records and nested strings.
+    for (name, bytes) in [
+        (
+            "save0.dat",
+            include_bytes!("../../../fixtures/synthetic/pixelcrushers/save0.dat").as_slice(),
+        ),
+        (
+            "save1.dat",
+            include_bytes!("../../../fixtures/synthetic/pixelcrushers/save1.dat").as_slice(),
+        ),
+    ] {
+        assert_eq!(
+            detect_named(name, bytes).best.recipe.kinds(),
+            ["format.pixel-crushers"],
+            "{name}"
+        );
+    }
+    // A plain JSON object with a `records` key is not a Pixel Crushers save.
+    for name in ["save.json", "save.dat"] {
+        let bytes = b"{\"records\":[{\"key\":\"a\",\"data\":\"x\"}],\"items\":[1,2]}";
+        assert_eq!(
+            detect_named(name, bytes).best.recipe.kinds(),
+            ["format.json"],
+            "{name}"
+        );
+    }
+}
