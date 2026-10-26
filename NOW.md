@@ -157,8 +157,12 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
      `name` attribute because `.w3strings` is described only in GPL code). Synthetic files only.
    - ES3 dictionaries with bare number/bool keys (`3a2bc9a`): 2 real Supermarket Simulator saves now open; a sweep of
      all 88 local real saves showed no regression (3 ES3 files went from semantic to exact).
-   - Running: the Gwent view UI in two variants (Claude subagent; A/B screenshots to the user in
-     `.motor/gwent-ab/`).
+   - Gwent collection view merged in two layouts (`6092cc4`; checked in the running app on a copy of a real save:
+     139 cards, 13 leaders, 5 decks, edit + undo, folder pick, TR, dark/light). Repeated Witcher 3 record names are
+     now numbered (`Name#2`), so every card count (and repeated inventory record) is editable. Waiting for the
+     user's A/B pick (`GWENT_LAYOUT` in `apps/desktop/src/editor/gwent.ts`, now "a"; screenshots in
+     `.motor/gwent-ab/`), then delete the other layout.
+   - Running: ES3 dictionaries with object keys (EVREN `es3objkeys`).
      Left from `/formats` after these: Easy Save 2 (no public layout), Oodle/Kraken (no permissive decoder),
      "SSSoftware Serialize" (unknown format).
    - Wave 2, first: auto-unlock (user idea, 2026-10-24): every layer tried by content whatever the extension; simple XOR
