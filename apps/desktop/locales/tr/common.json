@@ -203,7 +203,9 @@
       "twine": "Twine / SugarCube",
       "flash": "Flash",
       "witcher3": "The Witcher 3",
-      "palworld": "Palworld"
+      "palworld": "Palworld",
+      "neverwinter-nights": "Neverwinter Nights",
+      "kotor": "Knights of the Old Republic"
     },
     "note": {
       "rpgmaker-mv": "MV www/save, MZ save klasörünü kullanır.",
@@ -216,7 +218,9 @@
       "twine": "Tarayıcı deposunda: oyunun Save to disk / dışa aktarma seçeneğini kullan.",
       "flash": "Yerel paylaşılan nesneler.",
       "witcher3": "Belgeler klasörü OneDrive'a taşınmış olabilir.",
-      "palworld": "Steam kimliği klasörünün altında."
+      "palworld": "Steam kimliği klasörünün altında.",
+      "neverwinter-nights": "Enhanced Edition kayıtları Belgeler klasöründe tutar; klasik oyun kendi klasöründeki saves klasörünü kullanır.",
+      "kotor": "Kayıtlar oyun klasöründeki .sav dosyalarıdır, her slot bir klasördür."
     }
   },
   "password": {

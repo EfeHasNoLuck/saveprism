@@ -35,6 +35,11 @@ const EXTENSION_LABELS: Record<string, string> = {
   yml: "YAML",
   csv: "CSV",
   plist: "Property list",
+  das: "Dragon Age",
+  erf: "BioWare ERF",
+  mod: "Neverwinter Nights",
+  hak: "Neverwinter Nights",
+  nwm: "Neverwinter Nights",
 };
 
 const CODEC_LABELS: Record<string, string> = {
@@ -72,6 +77,9 @@ const CODEC_LABELS: Record<string, string> = {
   "format.yaml": "YAML",
   "format.csv": "CSV",
   "format.plist": "Property list",
+  "format.gff": "BioWare GFF",
+  "format.gff4": "Dragon Age",
+  "container.erf": "BioWare ERF",
   "container.psx-card": "PS1 memory card",
   "container.psx-gme": "PS1 memory card (.gme)",
   "container.ps2-card": "PS2 memory card",

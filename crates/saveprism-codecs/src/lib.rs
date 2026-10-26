@@ -11,6 +11,8 @@ pub mod csv_text;
 pub mod es3;
 pub mod gamemaker;
 pub mod gen3;
+pub mod gff;
+pub mod gff4;
 pub mod godot;
 pub mod gvas;
 pub mod ini;
@@ -65,6 +67,8 @@ pub fn register_all(reg: &mut Registry) {
     gamemaker::register(reg);
     csv_text::register(reg);
     gen3::register(reg);
+    gff::register(reg);
+    gff4::register(reg);
     gvas::register(reg);
     ini::register(reg);
     palworld::register(reg);

@@ -51,6 +51,9 @@ SavePrism needs Microsoft Edge WebView2, which Windows 10 and 11 already have; t
 | Flash | `.sol` (AMF0 / AMF3) | values |
 | Pokémon Gen 3 | `.sav` | money, coins, bag, party EXP / IVs / EVs / stats |
 | The Witcher 3 | `.sav` | orens, item quantities |
+| BioWare GFF V3.2 | `.bic`, `.ifo`, `.git`, `.are`, `.uti`, `.utc`, `.dlg`, `.jrl` (Neverwinter Nights, KOTOR, Jade Empire, The Witcher) | numbers and same-length strings; structs and lists stay read-only |
+| BioWare ERF containers | `.erf`, `.mod`, `.hak`, `.sav` (Neverwinter Nights, KOTOR `SAVEGAME.sav`) | one resource inside; the others stay byte-identical |
+| Dragon Age: Origins / II GFF V4 | `.das` | values shown read-only (the V4 layout is not rewritten) |
 | Java serialization | object streams | values (read as data, never run) |
 | SQLite | database saves | table values |
 | JSON and text | `.json`, zip- or gzip-packed JSON | values; add and remove entries |

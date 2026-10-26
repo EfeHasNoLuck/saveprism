@@ -203,7 +203,9 @@
       "twine": "Twine / SugarCube",
       "flash": "Flash",
       "witcher3": "The Witcher 3",
-      "palworld": "Palworld"
+      "palworld": "Palworld",
+      "neverwinter-nights": "Neverwinter Nights",
+      "kotor": "Knights of the Old Republic"
     },
     "note": {
       "rpgmaker-mv": "MV uses www/save; MZ uses save.",
@@ -216,7 +218,9 @@
       "twine": "Browser storage: use the game's Save to disk / export option.",
       "flash": "Local shared objects.",
       "witcher3": "The Documents folder may be moved to OneDrive.",
-      "palworld": "Under the Steam ID folder."
+      "palworld": "Under the Steam ID folder.",
+      "neverwinter-nights": "Enhanced Edition keeps saves in Documents; the classic game uses saves inside its folder.",
+      "kotor": "Saves are the .sav files in the game folder, one folder per slot."
     }
   },
   "password": {

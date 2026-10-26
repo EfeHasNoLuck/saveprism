@@ -210,3 +210,24 @@ path = "fuzz_targets/kirikiri.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "gff"
+path = "fuzz_targets/gff.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "gff4"
+path = "fuzz_targets/gff4.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "erf"
+path = "fuzz_targets/erf.rs"
+test = false
+doc = false
+bench = false
