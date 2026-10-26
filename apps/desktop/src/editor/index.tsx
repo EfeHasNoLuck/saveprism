@@ -36,6 +36,7 @@ import { registerEditorBundles } from "./i18n";
 import { RpgMaker } from "./RpgMaker";
 import { SugarCube } from "./SugarCube";
 import { ValuesCard } from "./ValuesCard";
+import { Witcher3 } from "./Witcher3";
 
 /** What the app can ask of the editor from outside. */
 export interface EditorHandle {
@@ -326,6 +327,8 @@ export function EditorView({
             <RpgMaker view={view.view} saveFolder={saveFolder} />
           ) : view.kind === "sugarcube" ? (
             <SugarCube view={view.view} />
+          ) : view.kind === "witcher3" ? (
+            <Witcher3 view={view.view} />
           ) : (
             <ValuesCard rows={view.rows} addParent={view.addParent} />
           )}

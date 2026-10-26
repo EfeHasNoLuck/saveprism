@@ -25,7 +25,9 @@
 //!
 //! The root is an `Object` (hint `W3:save`) with the save, game and build version (read-only)
 //! and a `Variables` object. `Variables` holds the records from the variable table, nested by
-//! their stored offset ranges. A record whose tag is `BS` or `BLCK` becomes a read-only object;
+//! their stored offset ranges. A record name that repeats inside one record is numbered in order
+//! (`SBCollectionCard`, `SBCollectionCard#2`, ...), so every record has a path of its own. A record
+//! whose tag is `BS` or `BLCK` becomes a read-only object;
 //! a `VL`, `OP`, `AVAL` or `PORP` record with a confirmed scalar type becomes an editable leaf
 //! (hint `W3:<type>`); an `SS`, `SXAP` or `ROTS` payload and unknown tags stay read-only `Bytes`.
 //!

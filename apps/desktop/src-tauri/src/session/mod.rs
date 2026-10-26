@@ -39,6 +39,7 @@ mod code;
 mod compare;
 mod export;
 mod game;
+mod gwent;
 mod history;
 mod json_apply;
 mod keyfinder;
@@ -58,8 +59,9 @@ pub use compare::{CompareKind, CompareResult, CompareRow};
 use game::check_bounds_in;
 pub use game::{
     Actor, AddLists, Bonus, Catalog, Entry, Field, FieldKind, GameView, NamedId, NoteKind, RowNote,
-    RpgMakerView, ValueRow,
+    RpgMakerView, ValueRow, Witcher3View,
 };
+pub use gwent::{GwentCard, GwentDeck, GwentView};
 use history::{DocStep, History, MAX_VALUES, Mutation, scalar_owned};
 pub use history::{HistoryResult, HistoryState};
 use keyfinder::KeyFinder;

@@ -240,15 +240,72 @@ fn children_named(doc: &SaveDoc, path: &str, name: &str) -> Vec<NodeId> {
     children_named_id(doc, id_at(doc, path), name)
 }
 
+/// The children named `name`, including the numbered repeats (`name#2`, `name#3`, ...).
 fn children_named_id(doc: &SaveDoc, id: NodeId, name: &str) -> Vec<NodeId> {
+    let repeat = format!("{name}#");
     match doc.get(id).map(|node| &node.value) {
         Some(Value::Object(entries)) => entries
             .iter()
-            .filter(|(key, _)| key == name)
+            .filter(|(key, _)| key == name || key.starts_with(&repeat))
             .map(|(_, id)| *id)
             .collect(),
         other => panic!("{id:?} is {other:?}"),
     }
+}
+
+#[test]
+fn repeated_names_get_unique_numbered_keys() {
+    let names = ["A", "A", "A#2", "B", "A"];
+    let entries = names
+        .iter()
+        .enumerate()
+        .map(|(index, name)| (name.to_string(), NodeId::from_index(index).unwrap()));
+    let keys: Vec<String> = read::numbered(entries)
+        .into_iter()
+        .map(|(key, _)| key)
+        .collect();
+    assert_eq!(keys, ["A", "A#2", "A#2#2", "B", "A#3"]);
+
+    let many = (0..20_000).map(|index| {
+        (
+            "SBCollectionCard".to_string(),
+            NodeId::from_index(index).unwrap(),
+        )
+    });
+    let keys = read::numbered(many);
+    assert_eq!(
+        keys.last().map(|(key, _)| key.as_str()),
+        Some("SBCollectionCard#20000")
+    );
+}
+
+#[test]
+fn repeated_gwent_records_are_numbered_so_each_copy_count_has_a_path() {
+    let bytes = fixture();
+    let mut decoded = decode(&bytes);
+    let collection = "Variables.CR4GwintManager.SBCollectionCardSize";
+    assert_eq!(
+        hinted(&decoded, &format!("{collection}.SBCollectionCard")),
+        "W3:gwent-card:3"
+    );
+    assert_eq!(
+        hinted(&decoded, &format!("{collection}.SBCollectionCard#2")),
+        "W3:gwent-card:4"
+    );
+    assert_eq!(
+        hinted(&decoded, "Variables.CR4GwintManager.GwintDecks.GwintDeck#2"),
+        "W3:gwent-deck"
+    );
+
+    let second = format!("{collection}.SBCollectionCard#2.numCopies");
+    set(&mut decoded, &second, OwnedValue::Int(3)).unwrap();
+    let again = decode(&encode(&decoded));
+    assert_eq!(int_at(&again.doc, &second), 3);
+    let first = format!("{collection}.SBCollectionCard.numCopies");
+    assert_eq!(
+        int_at(&again.doc, &first),
+        int_at(&decode(&bytes).doc, &first)
+    );
 }
 
 fn hint_of(doc: &SaveDoc, id: NodeId) -> String {

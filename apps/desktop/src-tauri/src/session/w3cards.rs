@@ -224,7 +224,7 @@ impl Session {
         view
     }
 
-    fn is_witcher3(&self) -> bool {
+    pub(super) fn is_witcher3(&self) -> bool {
         self.recipe
             .steps
             .last()

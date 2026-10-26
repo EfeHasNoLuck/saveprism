@@ -10,7 +10,9 @@ use std::path::Path;
 use serde::Serialize;
 use serde_json::{Map, Value, json};
 
-use crate::session::{ApiError, Entry, FieldKind, GameView, NamedId, Session, ValueRow, app_codes};
+use crate::session::{
+    ApiError, Entry, FieldKind, GameView, GwentCard, NamedId, Session, ValueRow, app_codes,
+};
 
 use super::{CallError, RpcError, ServerState, bad_arguments, bad_value};
 
@@ -110,9 +112,9 @@ fn definitions() -> Vec<Value> {
         tool(
             "game_view",
             "Game view",
-            "Returns the game view of the open document: RPG Maker sections, a SugarCube story, or a flat value list. Rows can be filtered and paged. For an RPG Maker save without a section the result is only the counts; filter, offset and limit apply to sections.",
+            "Returns the game view of the open document: RPG Maker sections, a SugarCube story, a Witcher 3 save (values plus a gwent section), or a flat value list. Rows can be filtered and paged. For an RPG Maker save without a section the result is only the counts; filter, offset and limit apply to sections.",
             json!({
-                "section": text("RPG Maker section: items, weapons, armors, variables, switches, catalogItems, catalogWeapons or catalogArmors."),
+                "section": text("RPG Maker section: items, weapons, armors, variables, switches, catalogItems, catalogWeapons or catalogArmors. Witcher 3: gwent (the owned Gwent cards with their copy counts, the decks and the selected faction; filter by card index)."),
                 "filter": text("Keep rows whose name contains this text (case-insensitive) or whose id/key equals it. An empty or blank filter keeps every row."),
                 "offset": count("Index of the first row to return.", 0),
                 "limit": count("Most rows to return (capped at 500).", 100)
@@ -657,6 +659,49 @@ fn summarize(
             Ok(json!({
                 "kind": "values",
                 "addParent": add_parent,
+                "total": total,
+                "offset": offset,
+                "rows": rows
+            }))
+        }
+        GameView::Witcher3 { view } => {
+            if section == Some("gwent") {
+                let Some(gwent) = &view.gwent else {
+                    return Err(bad_value(
+                        "this save has no Gwent collection",
+                        "Leave out the section to list the values.",
+                    ));
+                };
+                let filtered: Vec<&GwentCard> = gwent
+                    .cards
+                    .iter()
+                    .filter(|card| {
+                        filter.is_none_or(|filter| filter.parse::<u32>().ok() == Some(card.index))
+                    })
+                    .collect();
+                let total = filtered.len();
+                let cards = rows_value(filtered.into_iter().skip(offset).take(limit))?;
+                return Ok(json!({
+                    "kind": "witcher3",
+                    "section": "gwent",
+                    "decks": to_value(&gwent.decks)?,
+                    "selected": &gwent.selected,
+                    "total": total,
+                    "offset": offset,
+                    "cards": cards
+                }));
+            }
+            let filtered: Vec<&ValueRow> = view
+                .rows
+                .iter()
+                .filter(|row| filter.is_none_or(|filter| row_matches(row, filter)))
+                .collect();
+            let total = filtered.len();
+            let rows = rows_value(filtered.into_iter().skip(offset).take(limit))?;
+            Ok(json!({
+                "kind": "witcher3",
+                "addParent": view.add_parent,
+                "gwentCards": view.gwent.as_ref().map(|gwent| gwent.cards.len()),
                 "total": total,
                 "offset": offset,
                 "rows": rows

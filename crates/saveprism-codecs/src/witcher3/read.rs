@@ -1,6 +1,6 @@
 //! Decodes the `SNFHFZLC` container, the LZ4 block chunks and the REDengine record stream.
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use saveprism_core::limits::len_u64;
 use saveprism_core::{
@@ -867,6 +867,43 @@ fn build_record(
     }
 }
 
+/// Object entries with each repeated name numbered in order (`SBCollectionCard`,
+/// `SBCollectionCard#2`, ...), so every record has a path of its own. The next number is kept per
+/// name, so many repeats of one name stay linear.
+pub(super) fn numbered(entries: impl Iterator<Item = (String, NodeId)>) -> Vec<(String, NodeId)> {
+    let mut used: HashSet<String> = HashSet::new();
+    let mut next: HashMap<String, usize> = HashMap::new();
+    let mut out = Vec::new();
+    for (name, id) in entries {
+        let mut key = name.clone();
+        if used.contains(&key) {
+            let number = next.entry(name.clone()).or_insert(2);
+            loop {
+                key = format!("{name}#{number}");
+                *number = number.saturating_add(1);
+                if !used.contains(&key) {
+                    break;
+                }
+            }
+        }
+        used.insert(key.clone());
+        out.push((key, id));
+    }
+    out
+}
+
+/// A record name without the `#n` that [`numbered`] adds to a repeated one.
+fn base_name(key: &str) -> &str {
+    match key.rsplit_once('#') {
+        Some((base, number))
+            if !number.is_empty() && number.bytes().all(|byte| byte.is_ascii_digit()) =>
+        {
+            base
+        }
+        _ => key,
+    }
+}
+
 /// Cloned `Object` entries of a node (empty for any other value).
 fn object_entries(doc: &SaveDoc, id: NodeId) -> Vec<(String, NodeId)> {
     match doc.get(id).map(|node| &node.value) {
@@ -900,7 +937,7 @@ fn mark_read_only(doc: &mut SaveDoc, id: NodeId) -> Result<()> {
 fn annotate_gwent_card(doc: &mut SaveDoc, id: NodeId) -> Result<()> {
     let index = object_entries(doc, id)
         .into_iter()
-        .find(|(name, _)| name == "cardIndex")
+        .find(|(name, _)| base_name(name) == "cardIndex")
         .and_then(|(_, child)| int_value(doc, child));
     let text = match index {
         Some(index) => format!("gwent-card:{index}"),
@@ -909,7 +946,7 @@ fn annotate_gwent_card(doc: &mut SaveDoc, id: NodeId) -> Result<()> {
     set_hint(doc, id, &text)?;
     mark_read_only(doc, id)?;
     for (name, child) in object_entries(doc, id) {
-        if name == "cardIndex" {
+        if base_name(&name) == "cardIndex" {
             mark_read_only(doc, child)?;
         }
     }
@@ -921,9 +958,9 @@ fn annotate_gwent_card(doc: &mut SaveDoc, id: NodeId) -> Result<()> {
 fn annotate_gwent_collection(doc: &mut SaveDoc, id: NodeId, card_name: &str) -> Result<()> {
     set_hint(doc, id, "gwent-collection")?;
     for (name, child) in object_entries(doc, id) {
-        if name == "Size" {
+        if base_name(&name) == "Size" {
             mark_read_only(doc, child)?;
-        } else if name == card_name {
+        } else if base_name(&name) == card_name {
             annotate_gwent_card(doc, child)?;
         }
     }
@@ -935,7 +972,7 @@ fn annotate_gwent_deck(doc: &mut SaveDoc, id: NodeId) -> Result<()> {
     set_hint(doc, id, "gwent-deck")?;
     mark_read_only(doc, id)?;
     for (name, child) in object_entries(doc, id) {
-        match name.as_str() {
+        match base_name(&name) {
             "DeckUnlocked" | "LeaderIndex" | "CardCount" => mark_read_only(doc, child)?,
             "GwintDeckCard" => annotate_gwent_card(doc, child)?,
             _ => {}
@@ -947,9 +984,9 @@ fn annotate_gwent_deck(doc: &mut SaveDoc, id: NodeId) -> Result<()> {
 fn annotate_gwent_decks(doc: &mut SaveDoc, id: NodeId) -> Result<()> {
     set_hint(doc, id, "gwent-decks")?;
     for (name, child) in object_entries(doc, id) {
-        if name == "DeckCount" {
+        if base_name(&name) == "DeckCount" {
             mark_read_only(doc, child)?;
-        } else if name == "GwintDeck" {
+        } else if base_name(&name) == "GwintDeck" {
             annotate_gwent_deck(doc, child)?;
         }
     }
@@ -959,7 +996,7 @@ fn annotate_gwent_decks(doc: &mut SaveDoc, id: NodeId) -> Result<()> {
 fn annotate_gwint_manager(doc: &mut SaveDoc, id: NodeId) -> Result<()> {
     set_hint(doc, id, "gwent-manager")?;
     for (name, child) in object_entries(doc, id) {
-        match name.as_str() {
+        match base_name(&name) {
             "SBCollectionCardSize" => annotate_gwent_collection(doc, child, "SBCollectionCard")?,
             "SBLeaderCollectionCardSize" => {
                 annotate_gwent_collection(doc, child, "SBLeaderCollectionCard")?;
@@ -968,7 +1005,7 @@ fn annotate_gwint_manager(doc: &mut SaveDoc, id: NodeId) -> Result<()> {
             "SBSelectedDeckIndex" => {
                 set_hint(doc, child, "gwent-selected-deck")?;
                 for (field, value) in object_entries(doc, child) {
-                    if field == "deckIndex" {
+                    if base_name(&field) == "deckIndex" {
                         mark_read_only(doc, value)?;
                     }
                 }
@@ -1004,23 +1041,24 @@ pub(super) fn read_all(input: &[u8], ctx: &DecodeCtx<'_>) -> Result<(SaveDoc, Pa
         let Some(record) = tree.get(index) else {
             continue;
         };
-        let children: Vec<(String, NodeId)> = record
-            .children
-            .iter()
-            .filter_map(|child| node_ids.get(*child).and_then(|entry| entry.clone()))
-            .collect();
+        let children = numbered(
+            record
+                .children
+                .iter()
+                .filter_map(|child| node_ids.get(*child).and_then(|entry| entry.clone())),
+        );
         let built = build_record(&mut doc, stream, &tables.names, record, children, ctx)?;
         if let Some(slot) = node_ids.get_mut(index) {
             *slot = Some(built);
         }
     }
 
-    let variables = tree
-        .first()
-        .into_iter()
-        .flat_map(|root| root.children.iter())
-        .filter_map(|child| node_ids.get(*child).and_then(|entry| entry.clone()))
-        .collect::<Vec<_>>();
+    let variables = numbered(
+        tree.first()
+            .into_iter()
+            .flat_map(|root| root.children.iter())
+            .filter_map(|child| node_ids.get(*child).and_then(|entry| entry.clone())),
+    );
     let variables_id = doc.push({
         let mut node = Node::new(Value::Object(variables));
         node.type_hint = Some(hint("variables"));

@@ -21,6 +21,7 @@ use std::path::{Path as FsPath, PathBuf};
 use saveprism_core::{Node, NodeFlags, NodeId, OwnedValue, Path, SaveDoc, Value};
 use serde::{Deserialize, Serialize};
 
+use super::gwent::GwentView;
 use super::structure::{Shaper, repeated_keys};
 use super::sugarcube::SugarCubeView;
 use super::{
@@ -250,6 +251,11 @@ pub enum GameView {
         /// The story view.
         view: Box<SugarCubeView>,
     },
+    /// The Witcher 3: the Gwent collection and the flat list of the top-level values.
+    Witcher3 {
+        /// The Gwent collection and the values.
+        view: Box<Witcher3View>,
+    },
     /// Flat list of the top-level values.
     Values {
         /// The rows.
@@ -258,6 +264,18 @@ pub enum GameView {
         #[serde(rename = "addParent")]
         add_parent: Option<String>,
     },
+}
+
+/// A Witcher 3 save: its Gwent collection above the flat Values list.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Witcher3View {
+    /// The Gwent collection, or `None` when the save has none.
+    pub gwent: Option<GwentView>,
+    /// The top-level values, as [`GameView::Values`] lists them.
+    pub rows: Vec<ValueRow>,
+    /// Where a new top-level value goes, or `None` when none can be added.
+    pub add_parent: Option<String>,
 }
 
 /// Inclusive limits of a whole number; `None` means unlimited on that side.
@@ -1112,8 +1130,8 @@ impl Session {
         }
     }
 
-    /// The limits of every field of the RPG Maker view (MV/MZ, XP/VX/VX Ace or 2000/2003), by path
-    /// (empty for other formats).
+    /// The limits of every field of the RPG Maker view (MV/MZ, XP/VX/VX Ace or 2000/2003) or of the
+    /// Witcher 3 Gwent copy counts, by path (empty for other formats).
     pub(super) fn rpg_bounds(&self) -> HashMap<String, Bounds> {
         let ctx = self.game_ctx();
         if let Some(engine) = self.rpg_engine() {
@@ -1122,6 +1140,8 @@ impl Session {
             let _ = ctx.rgss_view(engine, &GameNames::default());
         } else if self.is_lcf_save() {
             self.lcf_bounds(&ctx);
+        } else if self.is_witcher3() {
+            let _ = ctx.gwent_view();
         } else {
             return HashMap::new();
         }
@@ -1139,7 +1159,8 @@ impl Session {
     }
 
     /// The SugarCube story view, the RPG Maker sections for MV/MZ, XP/VX/VX Ace and 2000/2003
-    /// saves, else the flat Values list.
+    /// saves, the Gwent collection with the Values list for Witcher 3 saves, else the flat Values
+    /// list.
     pub fn game_view(&self) -> Result<GameView, ApiError> {
         let ctx = self.game_ctx();
         if let Some(mut view) = ctx.sugarcube_view() {
@@ -1187,10 +1208,17 @@ impl Session {
         let add_parent = shaper
             .addable(&self.doc, &Path::root(), root)
             .then(String::new);
-        Ok(GameView::Values {
-            rows: self.with_previews(ctx.value_rows(easy_save, &shaper)),
-            add_parent,
-        })
+        let rows = self.with_previews(ctx.value_rows(easy_save, &shaper));
+        if self.is_witcher3() {
+            return Ok(GameView::Witcher3 {
+                view: Box::new(Witcher3View {
+                    gwent: ctx.gwent_view(),
+                    rows,
+                    add_parent,
+                }),
+            });
+        }
+        Ok(GameView::Values { rows, add_parent })
     }
 
     /// Fills the preview of the rows that show neither an editor nor children, so a read-only value
