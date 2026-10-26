@@ -63,40 +63,59 @@ def red_string_ansi(text: str) -> bytes:
 
 
 NAMES = [
-    "W3Player",  # 1
-    "Orens",  # 2
-    "Int32",  # 3
-    "level",  # 4
-    "name",  # 5
-    "String",  # 6
-    "weight",  # 7
-    "Float",  # 8
-    "CInventoryComponent",  # 9
-    "SItem",  # 10
-    "quantity",  # 11
-    "itemName",  # 12
-    "CName",  # 13
-    "quantities",  # 14
-    "array:2,0,Int32",  # 15
-    "saveInfo",  # 16
-    "playthroughId",  # 17
-    "facts",  # 18
-    "GwintManager",  # 19
-    "cardCount",  # 20
-    "collection",  # 21
-    "array:2,0,Uint8",  # 22
-    "InitialBuildIDBlock",  # 23
-    "InitialBuildID",  # 24
-    "StringAnsi",  # 25
-    "Bool",  # 26
-    "isNewGamePlus",  # 27
-    "Double",  # 28
-    "playtime",  # 29
-    "Uint64",  # 30
-    "seed",  # 31
-    "latinText",  # 32
-    "bonus",  # 33
-    "OP",  # 34 (unused placeholder, keeps indices explicit)
+    "W3Player",
+    "Orens",
+    "Int32",
+    "level",
+    "name",
+    "String",
+    "weight",
+    "Float",
+    "CInventoryComponent",
+    "SItem",
+    "quantity",
+    "itemName",
+    "CName",
+    "quantities",
+    "array:2,0,Int32",
+    "saveInfo",
+    "playthroughId",
+    "facts",
+    "CR4GwintManager",
+    "SBCollectionCardSize",
+    "Size",
+    "SBCollectionCard",
+    "cardIndex",
+    "numCopies",
+    "SBLeaderCollectionCardSize",
+    "SBLeaderCollectionCard",
+    "SBSelectedDeckIndex",
+    "deckIndex",
+    "eGwintFaction",
+    "F_NORTHERN_KINGDOM",
+    "GwintDecks",
+    "DeckCount",
+    "GwintDeck",
+    "DeckUnlocked",
+    "LeaderIndex",
+    "CardCount",
+    "GwintDeckCard",
+    "GwintTutorials",
+    "GwintTutorialsDone",
+    "GwintDeckTutorialsDone",
+    "Uint32",
+    "InitialBuildIDBlock",
+    "InitialBuildID",
+    "StringAnsi",
+    "Bool",
+    "isNewGamePlus",
+    "Double",
+    "playtime",
+    "Uint64",
+    "seed",
+    "latinText",
+    "bonus",
+    "OP",
 ]
 
 
@@ -163,10 +182,84 @@ TREE = [
     ),
     bs("facts", [ss("facts", b"SXAP" + u32(66) + u32(29) + u32(163) + b"invented-facts")]),
     blck(
-        "GwintManager",
+        "CR4GwintManager",
         [
-            vl("cardCount", "Int32", struct.pack("<i", 2)),
-            vl("collection", "array:2,0,Uint8", u32(4) + bytes([1, 2, 3, 4])),
+            blck(
+                "SBCollectionCardSize",
+                [
+                    vl("Size", "Uint32", u32(2)),
+                    bs(
+                        "SBCollectionCard",
+                        [
+                            vl("cardIndex", "Int32", struct.pack("<i", 3)),
+                            vl("numCopies", "Int32", struct.pack("<i", 4)),
+                        ],
+                    ),
+                    bs(
+                        "SBCollectionCard",
+                        [
+                            vl("cardIndex", "Int32", struct.pack("<i", 4)),
+                            vl("numCopies", "Int32", struct.pack("<i", 2)),
+                        ],
+                    ),
+                ],
+            ),
+            blck(
+                "SBLeaderCollectionCardSize",
+                [
+                    vl("Size", "Uint32", u32(1)),
+                    bs(
+                        "SBLeaderCollectionCard",
+                        [
+                            vl("cardIndex", "Int32", struct.pack("<i", 1001)),
+                            vl("numCopies", "Int32", struct.pack("<i", 1)),
+                        ],
+                    ),
+                ],
+            ),
+            blck(
+                "SBSelectedDeckIndex",
+                [
+                    vl("deckIndex", "eGwintFaction", u16(name("F_NORTHERN_KINGDOM"))),
+                ],
+            ),
+            blck(
+                "GwintDecks",
+                [
+                    vl("DeckCount", "Uint32", u32(2)),
+                    blck(
+                        "GwintDeck",
+                        [
+                            vl("DeckUnlocked", "Bool", b"\x01"),
+                            vl("LeaderIndex", "Int32", struct.pack("<i", 4001)),
+                            vl("CardCount", "Uint32", u32(0)),
+                        ],
+                    ),
+                    blck(
+                        "GwintDeck",
+                        [
+                            vl("DeckUnlocked", "Bool", b"\x00"),
+                            vl("LeaderIndex", "Int32", struct.pack("<i", 2001)),
+                            vl("CardCount", "Uint32", u32(2)),
+                            bs(
+                                "GwintDeckCard",
+                                [vl("cardIndex", "Int32", struct.pack("<i", 3))],
+                            ),
+                            bs(
+                                "GwintDeckCard",
+                                [vl("cardIndex", "Int32", struct.pack("<i", 4))],
+                            ),
+                        ],
+                    ),
+                ],
+            ),
+            blck(
+                "GwintTutorials",
+                [
+                    vl("GwintTutorialsDone", "Bool", b"\x00"),
+                    vl("GwintDeckTutorialsDone", "Bool", b"\x01"),
+                ],
+            ),
         ],
     ),
     bs(

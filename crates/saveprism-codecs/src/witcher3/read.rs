@@ -653,7 +653,7 @@ fn build_value(
             None,
             &[] as &[u8],
         ),
-        _ if kind.starts_with('E') && length >= 2 => (
+        _ if (kind.starts_with('E') || kind.starts_with('e')) && length >= 2 => (
             Value::Str(name_at(names, u16le(bytes, 0).unwrap_or(0))),
             "CName",
             None,
@@ -692,7 +692,7 @@ fn fixed_width(kind: &str, length: usize) -> usize {
         "Uint32" | "Int32" | "Float" | "CName" => 4,
         "Uint64" | "Int64" | "Double" => 8,
         "CGUID" => 16,
-        _ if kind.starts_with('E') => 2,
+        _ if kind.starts_with('E') || kind.starts_with('e') => 2,
         _ => return length,
     };
     if width <= length { width } else { length }
@@ -867,6 +867,129 @@ fn build_record(
     }
 }
 
+/// Cloned `Object` entries of a node (empty for any other value).
+fn object_entries(doc: &SaveDoc, id: NodeId) -> Vec<(String, NodeId)> {
+    match doc.get(id).map(|node| &node.value) {
+        Some(Value::Object(entries)) => entries.clone(),
+        _ => Vec::new(),
+    }
+}
+
+fn int_value(doc: &SaveDoc, id: NodeId) -> Option<i128> {
+    match doc.get(id)?.value {
+        Value::Int { v, .. } => Some(v),
+        _ => None,
+    }
+}
+
+fn set_hint(doc: &mut SaveDoc, id: NodeId, text: &str) -> Result<()> {
+    doc.set_type_hint(id, Some(hint(text)))
+}
+
+fn mark_read_only(doc: &mut SaveDoc, id: NodeId) -> Result<()> {
+    let Some(node) = doc.get(id) else {
+        return Ok(());
+    };
+    let mut flags = node.flags;
+    flags.insert(NodeFlags::READ_ONLY);
+    doc.set_flags(id, flags)
+}
+
+/// Notes one Gwent card record: its type hint carries the card index, and its identity stays
+/// read-only so a UI cannot rewrite deck membership in place.
+fn annotate_gwent_card(doc: &mut SaveDoc, id: NodeId) -> Result<()> {
+    let index = object_entries(doc, id)
+        .into_iter()
+        .find(|(name, _)| name == "cardIndex")
+        .and_then(|(_, child)| int_value(doc, child));
+    let text = match index {
+        Some(index) => format!("gwent-card:{index}"),
+        None => "gwent-card".to_string(),
+    };
+    set_hint(doc, id, &text)?;
+    mark_read_only(doc, id)?;
+    for (name, child) in object_entries(doc, id) {
+        if name == "cardIndex" {
+            mark_read_only(doc, child)?;
+        }
+    }
+    Ok(())
+}
+
+/// Notes a collection block (`SBCollectionCardSize` or `SBLeaderCollectionCardSize`). The
+/// per-card copy counts stay editable; the size word stays read-only.
+fn annotate_gwent_collection(doc: &mut SaveDoc, id: NodeId, card_name: &str) -> Result<()> {
+    set_hint(doc, id, "gwent-collection")?;
+    for (name, child) in object_entries(doc, id) {
+        if name == "Size" {
+            mark_read_only(doc, child)?;
+        } else if name == card_name {
+            annotate_gwent_card(doc, child)?;
+        }
+    }
+    Ok(())
+}
+
+/// Notes one deck: its leader, unlocked flag, card count and card list are read-only.
+fn annotate_gwent_deck(doc: &mut SaveDoc, id: NodeId) -> Result<()> {
+    set_hint(doc, id, "gwent-deck")?;
+    mark_read_only(doc, id)?;
+    for (name, child) in object_entries(doc, id) {
+        match name.as_str() {
+            "DeckUnlocked" | "LeaderIndex" | "CardCount" => mark_read_only(doc, child)?,
+            "GwintDeckCard" => annotate_gwent_card(doc, child)?,
+            _ => {}
+        }
+    }
+    Ok(())
+}
+
+fn annotate_gwent_decks(doc: &mut SaveDoc, id: NodeId) -> Result<()> {
+    set_hint(doc, id, "gwent-decks")?;
+    for (name, child) in object_entries(doc, id) {
+        if name == "DeckCount" {
+            mark_read_only(doc, child)?;
+        } else if name == "GwintDeck" {
+            annotate_gwent_deck(doc, child)?;
+        }
+    }
+    Ok(())
+}
+
+fn annotate_gwint_manager(doc: &mut SaveDoc, id: NodeId) -> Result<()> {
+    set_hint(doc, id, "gwent-manager")?;
+    for (name, child) in object_entries(doc, id) {
+        match name.as_str() {
+            "SBCollectionCardSize" => annotate_gwent_collection(doc, child, "SBCollectionCard")?,
+            "SBLeaderCollectionCardSize" => {
+                annotate_gwent_collection(doc, child, "SBLeaderCollectionCard")?;
+            }
+            "GwintDecks" => annotate_gwent_decks(doc, child)?,
+            "SBSelectedDeckIndex" => {
+                set_hint(doc, child, "gwent-selected-deck")?;
+                for (field, value) in object_entries(doc, child) {
+                    if field == "deckIndex" {
+                        mark_read_only(doc, value)?;
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+    Ok(())
+}
+
+/// Finds the `CR4GwintManager` record (the game also writes it without the `CR4` prefix in
+/// older saves) and marks its Gwent collection, decks and cards.
+fn annotate_gwent(doc: &mut SaveDoc, variables: NodeId) -> Result<()> {
+    for (name, id) in object_entries(doc, variables) {
+        if name.to_ascii_lowercase().ends_with("gwintmanager") {
+            annotate_gwint_manager(doc, id)?;
+        }
+    }
+    Ok(())
+}
+
 /// Reads the whole save into a document and the parameters needed to write it back.
 pub(super) fn read_all(input: &[u8], ctx: &DecodeCtx<'_>) -> Result<(SaveDoc, Params)> {
     let container = read_container(input, ctx)?;
@@ -904,6 +1027,7 @@ pub(super) fn read_all(input: &[u8], ctx: &DecodeCtx<'_>) -> Result<(SaveDoc, Pa
         node.flags.insert(NodeFlags::READ_ONLY);
         node
     })?;
+    annotate_gwent(&mut doc, variables_id)?;
 
     let version = |doc: &mut SaveDoc, position: usize, label: &str| -> Result<NodeId> {
         let value = u32le(stream, position).map(i128::from).unwrap_or(0);

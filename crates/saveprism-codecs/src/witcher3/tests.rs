@@ -162,8 +162,28 @@ fn tree_exposes_the_confirmed_scalars() {
         int_at(doc, "Variables.W3Player.CInventoryComponent.quantities.1"),
         2
     );
-    assert_eq!(int_at(doc, "Variables.GwintManager.cardCount"), 2);
-    assert_eq!(int_at(doc, "Variables.GwintManager.collection.3"), 4);
+    assert_eq!(
+        int_at(doc, "Variables.CR4GwintManager.SBCollectionCardSize.Size"),
+        2
+    );
+    assert_eq!(
+        int_at(
+            doc,
+            "Variables.CR4GwintManager.SBCollectionCardSize.SBCollectionCard.numCopies"
+        ),
+        4
+    );
+    assert_eq!(
+        int_at(doc, "Variables.CR4GwintManager.GwintDecks.DeckCount"),
+        2
+    );
+    assert_eq!(
+        int_at(
+            doc,
+            "Variables.CR4GwintManager.GwintDecks.GwintDeck.LeaderIndex"
+        ),
+        4001
+    );
     assert_eq!(
         int_at(doc, "Variables.InitialBuildIDBlock.seed"),
         18446744073709551615
@@ -188,6 +208,169 @@ fn tree_exposes_the_confirmed_scalars() {
         "W3:String/utf8"
     );
     assert_eq!(hinted(&decoded, "Variables.facts.record"), "W3:bytes");
+    assert_eq!(
+        hinted(&decoded, "Variables.CR4GwintManager"),
+        "W3:gwent-manager"
+    );
+    assert_eq!(
+        hinted(&decoded, "Variables.CR4GwintManager.SBCollectionCardSize"),
+        "W3:gwent-collection"
+    );
+    assert_eq!(
+        hinted(
+            &decoded,
+            "Variables.CR4GwintManager.SBCollectionCardSize.SBCollectionCard"
+        ),
+        "W3:gwent-card:3"
+    );
+    assert_eq!(
+        hinted(&decoded, "Variables.CR4GwintManager.GwintDecks.GwintDeck"),
+        "W3:gwent-deck"
+    );
+    let decks = children_named(doc, "Variables.CR4GwintManager.GwintDecks", "GwintDeck");
+    let deck_cards = children_named_id(doc, decks[1], "GwintDeckCard");
+    assert_eq!(hint_of(doc, deck_cards[0]), "W3:gwent-card:3");
+    assert_eq!(
+        hinted(&decoded, "Variables.CR4GwintManager.SBSelectedDeckIndex"),
+        "W3:gwent-selected-deck"
+    );
+}
+
+fn children_named(doc: &SaveDoc, path: &str, name: &str) -> Vec<NodeId> {
+    children_named_id(doc, id_at(doc, path), name)
+}
+
+fn children_named_id(doc: &SaveDoc, id: NodeId, name: &str) -> Vec<NodeId> {
+    match doc.get(id).map(|node| &node.value) {
+        Some(Value::Object(entries)) => entries
+            .iter()
+            .filter(|(key, _)| key == name)
+            .map(|(_, id)| *id)
+            .collect(),
+        other => panic!("{id:?} is {other:?}"),
+    }
+}
+
+fn hint_of(doc: &SaveDoc, id: NodeId) -> String {
+    doc.get(id)
+        .and_then(|node| node.type_hint.as_ref())
+        .map(|hint| hint.as_str().to_string())
+        .unwrap_or_default()
+}
+
+fn is_read_only(doc: &SaveDoc, id: NodeId) -> bool {
+    doc.get(id)
+        .is_some_and(|node| node.flags.contains(NodeFlags::READ_ONLY))
+}
+
+#[test]
+fn gwent_cards_carry_their_index_and_keep_their_identity_read_only() {
+    let decoded = decode(&fixture());
+    let doc = &decoded.doc;
+    let collection = "Variables.CR4GwintManager.SBCollectionCardSize";
+    let cards = children_named(doc, collection, "SBCollectionCard");
+    assert_eq!(cards.len(), 2);
+    assert_eq!(hint_of(doc, cards[0]), "W3:gwent-card:3");
+    assert_eq!(hint_of(doc, cards[1]), "W3:gwent-card:4");
+    assert!(is_read_only(doc, cards[0]));
+
+    let fields = match &doc.get(cards[0]).unwrap().value {
+        Value::Object(entries) => entries.clone(),
+        other => panic!("card is {other:?}"),
+    };
+    let card_index = fields
+        .iter()
+        .find(|(key, _)| key == "cardIndex")
+        .map(|(_, id)| *id)
+        .unwrap();
+    let copies = fields
+        .iter()
+        .find(|(key, _)| key == "numCopies")
+        .map(|(_, id)| *id)
+        .unwrap();
+    assert!(is_read_only(doc, card_index));
+    assert!(!is_read_only(doc, copies));
+
+    let decks = children_named(doc, "Variables.CR4GwintManager.GwintDecks", "GwintDeck");
+    assert_eq!(decks.len(), 2);
+    assert_eq!(hint_of(doc, decks[0]), "W3:gwent-deck");
+    assert!(is_read_only(doc, decks[0]));
+    let deck_fields = match &doc.get(decks[1]).unwrap().value {
+        Value::Object(entries) => entries.clone(),
+        other => panic!("deck is {other:?}"),
+    };
+    for (name, id) in &deck_fields {
+        if ["DeckUnlocked", "LeaderIndex", "CardCount"].contains(&name.as_str()) {
+            assert!(is_read_only(doc, *id), "{name} should be read-only");
+        }
+    }
+    let deck_cards = children_named_id(doc, decks[1], "GwintDeckCard");
+    assert_eq!(deck_cards.len(), 2);
+    let deck_card_fields = children_named_id(doc, deck_cards[0], "cardIndex");
+    assert_eq!(deck_card_fields.len(), 1);
+    assert!(is_read_only(doc, deck_card_fields[0]));
+}
+
+#[test]
+fn editing_a_collection_copy_count_round_trips() {
+    let bytes = fixture();
+    let mut decoded = decode(&bytes);
+    let collection = "Variables.CR4GwintManager.SBCollectionCardSize";
+    let cards = children_named(&decoded.doc, collection, "SBCollectionCard");
+    let copies = match &decoded.doc.get(cards[1]).unwrap().value {
+        Value::Object(entries) => entries
+            .iter()
+            .find(|(key, _)| key == "numCopies")
+            .map(|(_, id)| *id)
+            .unwrap(),
+        other => panic!("card is {other:?}"),
+    };
+    decoded
+        .doc
+        .set_value(
+            copies,
+            Value::Int {
+                v: 3,
+                width: saveprism_core::IntWidth::I32,
+            },
+        )
+        .unwrap();
+
+    let written = encode(&decoded);
+    assert_ne!(written, bytes);
+    let again = decode(&written);
+    let cards = children_named(&again.doc, collection, "SBCollectionCard");
+    let copies = match &again.doc.get(cards[1]).unwrap().value {
+        Value::Object(entries) => entries
+            .iter()
+            .find(|(key, _)| key == "numCopies")
+            .map(|(_, id)| *id)
+            .unwrap(),
+        other => panic!("card is {other:?}"),
+    };
+    assert_eq!(
+        again.doc.get(copies).unwrap().value,
+        Value::Int {
+            v: 3,
+            width: saveprism_core::IntWidth::I32,
+        }
+    );
+}
+
+#[test]
+fn gwent_identity_and_structure_edits_are_refused() {
+    let mut decoded = decode(&fixture());
+    for path in [
+        "Variables.CR4GwintManager.SBCollectionCardSize.Size",
+        "Variables.CR4GwintManager.SBCollectionCardSize.SBCollectionCard.cardIndex",
+        "Variables.CR4GwintManager.GwintDecks.DeckCount",
+        "Variables.CR4GwintManager.GwintDecks.GwintDeck.LeaderIndex",
+        "Variables.CR4GwintManager.GwintDecks.GwintDeck.CardCount",
+        "Variables.CR4GwintManager.GwintDecks.GwintDeck.DeckUnlocked",
+    ] {
+        let error = set(&mut decoded, path, OwnedValue::Int(1)).unwrap_err();
+        assert_eq!(error.code(), codes::CORE_READ_ONLY, "{path}");
+    }
 }
 
 #[test]
@@ -399,6 +582,74 @@ fn params_keep_the_container_facts() {
         decoded.params.get(P_ORIGINAL),
         Some(&ParamValue::Bytes(bytes))
     );
+}
+
+#[test]
+#[ignore = "reads the three local real saves when they are present"]
+fn real_saves_round_trip_and_expose_a_gwent_collection() {
+    fn collect(dir: &std::path::Path, out: &mut Vec<PathBuf>) {
+        let Ok(entries) = std::fs::read_dir(dir) else {
+            return;
+        };
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                collect(&path, out);
+            } else if path
+                .extension()
+                .is_some_and(|extension| extension.eq_ignore_ascii_case("sav"))
+            {
+                out.push(path);
+            }
+        }
+    }
+
+    let root = fixtures().join("external/witcher3");
+    let mut saves = Vec::new();
+    collect(&root, &mut saves);
+    if saves.is_empty() {
+        eprintln!("no real Witcher 3 saves under {}", root.display());
+        return;
+    }
+
+    for path in saves {
+        let bytes = std::fs::read(&path).unwrap();
+        let decoded = decode(&bytes);
+        assert_eq!(
+            encode(&decoded),
+            bytes,
+            "{} does not round-trip",
+            path.display()
+        );
+
+        let doc = &decoded.doc;
+        let mut collections = 0usize;
+        let mut cards = 0usize;
+        for index in 0..doc.len() {
+            let Some(node) = doc.get_index(index) else {
+                continue;
+            };
+            let hint = node.type_hint.as_ref().map(|hint| hint.as_str());
+            if hint == Some("W3:gwent-collection") {
+                collections += 1;
+                if let Value::Object(entries) = &node.value {
+                    cards += entries
+                        .iter()
+                        .filter(|(_, child)| {
+                            doc.get(*child)
+                                .and_then(|node| node.type_hint.as_ref())
+                                .is_some_and(|hint| hint.as_str().starts_with("W3:gwent-card"))
+                        })
+                        .count();
+                }
+            }
+        }
+        assert!(
+            collections >= 1 && cards > 0,
+            "{} has no Gwent collection",
+            path.display()
+        );
+    }
 }
 
 proptest! {
