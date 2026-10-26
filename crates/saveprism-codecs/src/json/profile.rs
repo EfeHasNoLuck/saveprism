@@ -32,8 +32,12 @@ pub(crate) struct Profile {
     pub crlf: bool,
     /// Compact mode only: `", "` instead of `","`.
     pub comma_space: bool,
-    /// `": "` instead of `":"`.
+    /// `": "` instead of `":"` after a quoted key.
     pub colon_space: bool,
+    /// `": "` instead of `":"` after a bare (Easy Save 3 dictionary) key.
+    pub colon_space_bare: bool,
+    /// A space before the colon of an object key (`"key" : value`).
+    pub before_colon_space: bool,
     /// Empty containers are written `[ ]` / `{ }` instead of `[]` / `{}`.
     pub empty_spaced: bool,
     pub trailing_newline: bool,
@@ -50,6 +54,8 @@ impl Default for Profile {
             crlf: false,
             comma_space: false,
             colon_space: false,
+            colon_space_bare: false,
+            before_colon_space: false,
             empty_spaced: false,
             trailing_newline: false,
             bom: false,
@@ -65,8 +71,12 @@ pub(crate) struct Observed {
     pub after_open: Option<Range<usize>>,
     /// Whitespace right after the first `,`.
     pub after_comma: Option<Range<usize>>,
-    /// Whitespace right after the first `:`.
+    /// Whitespace right after the first `:` of a quoted key.
     pub after_colon: Option<Range<usize>>,
+    /// Whitespace right after the first `:` of a bare key.
+    pub after_colon_bare: Option<Range<usize>>,
+    /// Whitespace right before the first `:` of an object key.
+    pub before_colon: Option<Range<usize>>,
     /// Whitespace inside the first empty container.
     pub empty_interior: Option<Range<usize>>,
     /// Whitespace after the root value.
@@ -116,6 +126,8 @@ impl Profile {
             profile.comma_space = slice(&observed.after_comma) == " ";
         }
         profile.colon_space = slice(&observed.after_colon) == " ";
+        profile.colon_space_bare = slice(&observed.after_colon_bare) == " ";
+        profile.before_colon_space = slice(&observed.before_colon) == " ";
         profile.empty_spaced = slice(&observed.empty_interior) == " ";
 
         match text.get(observed.tail.clone()).unwrap_or("") {
@@ -143,6 +155,11 @@ impl Profile {
         params.set("newline", if self.crlf { "crlf" } else { "lf" });
         params.set("item_sep", if self.comma_space { ", " } else { "," });
         params.set("key_sep", if self.colon_space { ": " } else { ":" });
+        params.set(
+            "key_sep_bare",
+            if self.colon_space_bare { ": " } else { ":" },
+        );
+        params.set("key_pad", self.before_colon_space);
         params.set("empty", if self.empty_spaced { "[ ]" } else { "[]" });
         params.set("trailing_newline", self.trailing_newline);
         params.set("bom", self.bom);
@@ -182,6 +199,12 @@ impl Profile {
             Some(": ") => true,
             Some(_) => return Err(invalid("key_sep")),
         };
+        let colon_space_bare = match params.opt_str("key_sep_bare")? {
+            None => colon_space,
+            Some(":") => false,
+            Some(": ") => true,
+            Some(_) => return Err(invalid("key_sep_bare")),
+        };
         let empty_spaced = match params.opt_str("empty")? {
             None | Some("[]") => false,
             Some("[ ]") => true,
@@ -192,6 +215,8 @@ impl Profile {
             crlf,
             comma_space,
             colon_space,
+            colon_space_bare,
+            before_colon_space: params.opt_bool("key_pad")?.unwrap_or(false),
             empty_spaced,
             trailing_newline: params.opt_bool("trailing_newline")?.unwrap_or(false),
             bom: params.opt_bool("bom")?.unwrap_or(false),

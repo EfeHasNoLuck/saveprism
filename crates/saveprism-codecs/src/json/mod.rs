@@ -17,6 +17,10 @@
 //! Known limitations: an object key written with a non-canonical escape (`"\/"`, `"é"`) is
 //! normalised when written (the document is marked irregular); a key with an unpaired surrogate
 //! escape is refused (`SP-JSON-005`).
+//!
+//! Easy Save 3 text may write a dictionary key that is not a string without quotes (`{0 : 159}`).
+//! [`decode_es3`] accepts those keys, records them in the object node's lexeme (`es3-bare-keys:…`)
+//! and the writer emits them bare again; strict `format.json` never accepts them.
 
 pub(crate) mod parse;
 pub(crate) mod profile;
@@ -50,10 +54,71 @@ pub const JSON_LONE_SURROGATE: ErrorCode = ErrorCode::new("SP-JSON-005");
 /// Parameter: the text encoding of the file (`utf-8`, `shift_jis`, ...).
 pub(crate) const P_TEXT_ENCODING: &str = "text_encoding";
 
+/// Prefix of the object-node lexeme that records which entries had a bare (unquoted) key. Only
+/// Easy Save 3 text can have such keys; the writer emits those keys bare again.
+pub(crate) const BARE_KEY_MARKER: &str = "es3-bare-keys:";
+
+/// Builds the object-node lexeme that records the bare keys, or `None` when there are none.
+pub(crate) fn bare_key_lexeme(bare: &[bool]) -> Option<Box<str>> {
+    if !bare.iter().any(|flag| *flag) {
+        return None;
+    }
+    let mut text = String::from(BARE_KEY_MARKER);
+    let mut first = true;
+    for (index, flag) in bare.iter().enumerate() {
+        if *flag {
+            if !first {
+                text.push(',');
+            }
+            text.push_str(&index.to_string());
+            first = false;
+        }
+    }
+    Some(text.into_boxed_str())
+}
+
 /// Parses a JSON text into a document (used by codecs whose values hold JSON text, such as
 /// Naninovel state slots). The caller charges the nodes of the returned document.
 pub(crate) fn parse_text(text: &str, ctx: &DecodeCtx<'_>) -> Result<SaveDoc> {
-    Ok(parse::parse(text, 0, ctx)?.doc)
+    Ok(parse::parse(text, 0, ctx, parse::KeyStyle::Strict)?.doc)
+}
+
+/// Decodes JSON text; `style` decides whether bare dictionary keys are accepted. Only Easy Save 3
+/// asks for [`KeyStyle::Bare`](parse::KeyStyle::Bare), so a plain `.json` file with bare keys is
+/// still rejected.
+fn decode_text(input: &[u8], ctx: &mut DecodeCtx<'_>, style: parse::KeyStyle) -> Result<Decoded> {
+    let decoded = crate::text_encoding::decode_sniff(input).ok_or_else(|| {
+        Error::new(
+            JSON_UTF8,
+            "the JSON text is not valid in any encoding SavePrism reads (UTF-8, UTF-16, UTF-32, Shift_JIS, GB18030, CP949, Windows-1252)",
+        )
+    })?;
+    let text = decoded.text.as_str();
+    let base = if decoded.encoding == crate::text_encoding::TextEncoding::Utf8 {
+        len_u64(decoded.bom_len)
+    } else {
+        0
+    };
+    let parsed = parse::parse(text, base, ctx, style)?;
+    ctx.charge_nodes(len_u64(parsed.doc.len()))?;
+
+    let mut profile = Profile::infer(text, &parsed.observed, decoded.bom_len > 0);
+    profile.text_encoding = decoded.encoding;
+    let regular = write::write_document(&parsed.doc, &profile).is_ok_and(|written| {
+        std::str::from_utf8(&written).is_ok_and(|written| {
+            crate::text_encoding::encode_with(written, decoded.encoding, decoded.bom_len > 0)
+                .is_ok_and(|bytes| bytes == input)
+        })
+    });
+    Ok(Decoded {
+        doc: parsed.doc,
+        params: profile.to_params(regular),
+    })
+}
+
+/// Decodes Easy Save 3 text, where an object key may be a bare number or `true`/`false`.
+pub(crate) fn decode_es3(input: &[u8], ctx: &mut DecodeCtx<'_>) -> Result<Decoded> {
+    decode_text(input, ctx, parse::KeyStyle::Bare)
 }
 
 /// Writes the value at `id` as compact JSON (no indentation, no trailing newline).
@@ -114,33 +179,7 @@ impl Codec for JsonCodec {
     }
 
     fn decode(&self, input: &[u8], ctx: &mut DecodeCtx<'_>) -> Result<Decoded> {
-        let decoded = crate::text_encoding::decode_sniff(input).ok_or_else(|| {
-            Error::new(
-                JSON_UTF8,
-                "the JSON text is not valid in any encoding SavePrism reads (UTF-8, UTF-16, UTF-32, Shift_JIS, GB18030, CP949, Windows-1252)",
-            )
-        })?;
-        let text = decoded.text.as_str();
-        let base = if decoded.encoding == crate::text_encoding::TextEncoding::Utf8 {
-            len_u64(decoded.bom_len)
-        } else {
-            0
-        };
-        let parsed = parse::parse(text, base, ctx)?;
-        ctx.charge_nodes(len_u64(parsed.doc.len()))?;
-
-        let mut profile = Profile::infer(text, &parsed.observed, decoded.bom_len > 0);
-        profile.text_encoding = decoded.encoding;
-        let regular = write::write_document(&parsed.doc, &profile).is_ok_and(|written| {
-            std::str::from_utf8(&written).is_ok_and(|written| {
-                crate::text_encoding::encode_with(written, decoded.encoding, decoded.bom_len > 0)
-                    .is_ok_and(|bytes| bytes == input)
-            })
-        });
-        Ok(Decoded {
-            doc: parsed.doc,
-            params: profile.to_params(regular),
-        })
+        decode_text(input, ctx, parse::KeyStyle::Strict)
     }
 
     fn encode(&self, doc: &SaveDoc, params: &Params) -> Result<Vec<u8>> {

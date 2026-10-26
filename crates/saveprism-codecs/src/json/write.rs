@@ -4,6 +4,7 @@ use std::collections::HashSet;
 
 use saveprism_core::{Error, NodeId, Result, SaveDoc, Value, codes};
 
+use super::BARE_KEY_MARKER;
 use super::JSON_UNWRITABLE;
 use super::profile::{Indent, Profile};
 
@@ -45,8 +46,23 @@ enum Frame<'a> {
     Object {
         id: NodeId,
         entries: &'a [(String, NodeId)],
+        /// Indices of the entries whose key is written bare (Easy Save 3 dictionaries).
+        bare: Vec<usize>,
         next: usize,
     },
+}
+
+/// The bare-key entry indices recorded in an object node's lexeme, if any.
+fn bare_key_indices(node: &saveprism_core::Node) -> Vec<usize> {
+    node.lexeme
+        .as_deref()
+        .and_then(|lexeme| lexeme.strip_prefix(BARE_KEY_MARKER))
+        .map(|list| {
+            list.split(',')
+                .filter_map(|index| index.parse().ok())
+                .collect()
+        })
+        .unwrap_or_default()
 }
 
 fn write_tree(doc: &SaveDoc, root: NodeId, profile: &Profile, out: &mut Vec<u8>) -> Result<()> {
@@ -88,6 +104,7 @@ fn write_tree(doc: &SaveDoc, root: NodeId, profile: &Profile, out: &mut Vec<u8>)
                         stack.push(Frame::Object {
                             id,
                             entries: entries.as_slice(),
+                            bare: bare_key_indices(node),
                             next: 0,
                         });
                     }
@@ -111,12 +128,30 @@ fn write_tree(doc: &SaveDoc, root: NodeId, profile: &Profile, out: &mut Vec<u8>)
                     close(profile, out, stack.len(), b']')?;
                 }
             }
-            Some(Frame::Object { id, entries, next }) => {
+            Some(Frame::Object {
+                id,
+                entries,
+                bare,
+                next,
+            }) => {
                 if let Some((key, child)) = entries.get(*next) {
                     separator(profile, out, *next == 0, level)?;
-                    write_string(out, key);
+                    let bare_key = bare.contains(&*next);
+                    if bare_key {
+                        out.extend_from_slice(key.as_bytes());
+                    } else {
+                        write_string(out, key);
+                    }
+                    if profile.before_colon_space {
+                        out.push(b' ');
+                    }
                     out.push(b':');
-                    if profile.colon_space {
+                    let colon_space = if bare_key {
+                        profile.colon_space_bare
+                    } else {
+                        profile.colon_space
+                    };
+                    if colon_space {
                         out.push(b' ');
                     }
                     *next += 1;

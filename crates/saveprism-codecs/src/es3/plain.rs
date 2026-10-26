@@ -3,15 +3,21 @@
 //! Decoding runs the JSON codec and then copies the tree, giving the `value` node of every
 //! `__type` object the hint `ES3:<type>`. Encoding undoes the one thing the hint replaced
 //! (`JSON:float`, which the JSON writer needs to keep `1.0` a float) and runs the JSON writer.
+//!
+//! A dictionary whose key type is not a string is written with bare keys (`{0 : 159}`). The JSON
+//! layer accepts them only for ES3 and keeps them bare on the way back; the container is marked
+//! read-only (its keys cannot be renamed or added to without knowing the dictionary's key type),
+//! while its values stay editable.
 
 use std::collections::HashMap;
 
 use saveprism_core::{
-    Codec, DecodeCtx, Decoded, Error, Node, NodeId, Params, Result, SaveDoc, TypeHint, Value,
+    Codec, DecodeCtx, Decoded, Error, Node, NodeFlags, NodeId, Params, Result, SaveDoc, TypeHint,
+    Value,
 };
 
 use super::{ES3_ROOT, ES3_UNSUPPORTED};
-use crate::json::JsonCodec;
+use crate::json::{self, JsonCodec};
 
 const TYPE_KEY: &str = "__type";
 const VALUE_KEY: &str = "value";
@@ -32,8 +38,7 @@ enum Work {
 
 /// Decodes plain ES3 text.
 pub(super) fn decode(input: &[u8], ctx: &mut DecodeCtx<'_>) -> Result<Decoded> {
-    let decoded = JsonCodec
-        .decode(input, ctx)
+    let decoded = json::decode_es3(input, ctx)
         .map_err(|error| error.context("reading an Easy Save 3 file"))?;
     let root_is_object = decoded
         .doc
@@ -142,6 +147,9 @@ fn copy_node(node: &Node, id: NodeId, hints: &HashMap<NodeId, String>, mode: Mod
             if let Some(hint) = hints.get(&id) {
                 copy.type_hint = Some(TypeHint::new(hint.as_str()));
             }
+            if is_bare_key_object(&copy) {
+                copy.flags.insert(NodeFlags::READ_ONLY);
+            }
         }
         Mode::Restore => {
             let es3_hint = copy
@@ -154,6 +162,17 @@ fn copy_node(node: &Node, id: NodeId, hints: &HashMap<NodeId, String>, mode: Mod
         }
     }
     copy
+}
+
+/// True for an object whose keys were written bare (a dictionary whose key type is not a string).
+/// Its keys cannot be renamed or added to without knowing the dictionary's key type, so the
+/// container is read-only; its values stay editable.
+fn is_bare_key_object(node: &Node) -> bool {
+    matches!(node.value, Value::Object(_))
+        && node
+            .lexeme
+            .as_deref()
+            .is_some_and(|lexeme| lexeme.starts_with(json::BARE_KEY_MARKER))
 }
 
 fn missing() -> Error {

@@ -30,6 +30,13 @@ doc = false
 bench = false
 
 [[bin]]
+name = "es3"
+path = "fuzz_targets/es3.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "layers"
 path = "fuzz_targets/layers.rs"
 test = false

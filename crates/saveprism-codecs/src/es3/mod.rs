@@ -107,9 +107,12 @@ impl Codec for Es3Codec {
 mod tests {
     use std::path::Path as FsPath;
 
-    use saveprism_core::{Limits, Path};
+    use saveprism_core::{
+        Edit, Limits, NodeFlags, OwnedValue, Path, Position, Value, apply_edits, codes,
+    };
 
     use super::*;
+    use crate::json::JsonCodec;
 
     fn fixture(name: &str) -> Vec<u8> {
         let path = FsPath::new(env!("CARGO_MANIFEST_DIR"))
@@ -274,5 +277,248 @@ mod tests {
         let mut reg = Registry::default();
         register(&mut reg);
         register(&mut reg);
+    }
+
+    fn id_at(decoded: &Decoded, path: &str) -> saveprism_core::NodeId {
+        decoded
+            .doc
+            .resolve(&Path::parse(path).unwrap())
+            .unwrap_or_else(|| panic!("{path} is missing"))
+    }
+
+    fn read_only(decoded: &Decoded, path: &str) -> bool {
+        decoded
+            .doc
+            .get(id_at(decoded, path))
+            .unwrap()
+            .flags
+            .contains(NodeFlags::READ_ONLY)
+    }
+
+    #[test]
+    fn bare_int_keys_round_trip_and_keep_their_text() {
+        let bytes = fixture("dict-int-pretty.es3");
+        let decoded = assert_round_trip(&bytes);
+        assert!(
+            hint_at(&decoded, "/playedMaps/value")
+                .is_some_and(|hint| hint.starts_with("ES3:System.Collections.Generic.Dictionary`2"))
+        );
+        // The bare keys are ordinary, addressable object keys and the values are editable.
+        assert_eq!(
+            decoded
+                .doc
+                .get(id_at(&decoded, "/playedMaps/value/12"))
+                .unwrap()
+                .value,
+            Value::Int {
+                v: 6,
+                width: saveprism_core::IntWidth::Unbounded
+            }
+        );
+        assert_eq!(
+            decoded
+                .doc
+                .get(id_at(&decoded, "/zoomLevels/value/1.5"))
+                .unwrap()
+                .value,
+            Value::Float {
+                v: 2.25,
+                width: saveprism_core::FloatWidth::F64
+            }
+        );
+        assert!(read_only(&decoded, "/playedMaps/value"));
+        assert!(read_only(&decoded, "/zoomLevels/value"));
+    }
+
+    #[test]
+    fn editing_a_value_keeps_the_keys_bare() {
+        let decoded = decode(&fixture("dict-int-pretty.es3")).unwrap();
+        let mut doc = decoded.doc.clone();
+        apply_edits(
+            &mut doc,
+            &[Edit::Set {
+                path: Path::parse("/playedMaps/value/0").unwrap(),
+                value: OwnedValue::Int(200),
+            }],
+            &Limits::default(),
+        )
+        .unwrap();
+        let text = String::from_utf8(Es3Codec.encode(&doc, &decoded.params).unwrap()).unwrap();
+        assert!(text.contains("            0 : 200,"), "{text}");
+        assert!(text.contains("            12 : 6,"), "{text}");
+        assert!(!text.contains("\"0\""), "{text}");
+    }
+
+    #[test]
+    fn bare_key_containers_are_read_only_but_growable_is_not_needed() {
+        let decoded = decode(&fixture("dict-int-pretty.es3")).unwrap();
+        let mut doc = decoded.doc.clone();
+        let rename = Edit::RenameKey {
+            path: Path::parse("/playedMaps/value/12").unwrap(),
+            new_key: "13".into(),
+        };
+        let error = apply_edits(&mut doc, &[rename], &Limits::default()).unwrap_err();
+        assert_eq!(error.code(), codes::CORE_READ_ONLY);
+
+        let insert = Edit::Insert {
+            parent: Path::parse("/playedMaps/value").unwrap(),
+            at: Position::Key("4".into()),
+            value: OwnedValue::Int(9),
+        };
+        let error = apply_edits(&mut doc, &[insert], &Limits::default()).unwrap_err();
+        assert_eq!(error.code(), codes::CORE_READ_ONLY);
+
+        // A value below a bare key is still editable.
+        apply_edits(
+            &mut doc,
+            &[Edit::Set {
+                path: Path::parse("/playedMaps/value/-3").unwrap(),
+                value: OwnedValue::Int(8),
+            }],
+            &Limits::default(),
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn compact_shape_and_bool_keys_round_trip() {
+        let compact = assert_round_trip(&fixture("dict-int-compact.es3"));
+        assert_eq!(
+            hint_at(&compact, "/settings/value").as_deref(),
+            Some("ES3:dict[int, int]")
+        );
+        // The observed `values` key is not the node ES3 gives a type hint, but its keys are bare.
+        assert_eq!(
+            compact
+                .doc
+                .get(id_at(&compact, "/scores/values/3"))
+                .unwrap()
+                .value,
+            Value::Str("4".into())
+        );
+        assert!(read_only(&compact, "/settings/value"));
+        assert!(read_only(&compact, "/scores/values"));
+
+        let booleans = assert_round_trip(&fixture("dict-bool.es3"));
+        assert_eq!(
+            booleans
+                .doc
+                .get(id_at(&booleans, "/toggles/value/true"))
+                .unwrap()
+                .value,
+            Value::Str("on".into())
+        );
+        assert_eq!(
+            booleans
+                .doc
+                .get(id_at(&booleans, "/toggles/value/false"))
+                .unwrap()
+                .value,
+            Value::Str("off".into())
+        );
+        assert!(read_only(&booleans, "/toggles/value"));
+    }
+
+    #[test]
+    fn a_bare_word_key_is_an_error_not_a_panic() {
+        for bad in [
+            &br#"{"d":{"__type":"dict[int,int]","value":{abc:1}}}"#[..],
+            &br#"{"d":{1.5e:1}}"#[..],
+            &br#"{"d":{truex:1}}"#[..],
+            &br#"{"d":{-.5:1}}"#[..],
+            &br#"{"d":{-:1}}"#[..],
+        ] {
+            let error = decode(bad).unwrap_err();
+            assert!(
+                error.code().as_str().starts_with("SP-"),
+                "unexpected code for {bad:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn strict_json_still_rejects_bare_keys() {
+        let limits = Limits::default();
+        let mut ctx = DecodeCtx::new(&limits);
+        let error = JsonCodec
+            .decode(br#"{"d":{"value":{1:2}}}"#, &mut ctx)
+            .unwrap_err();
+        assert_eq!(error.code(), crate::json::JSON_SYNTAX);
+        // The same bytes do open as Easy Save 3 (the `__type` is not required for decoding).
+        assert!(decode(br#"{"d":{"__type":"dict[int,int]","value":{1:2}}}"#).is_ok());
+    }
+
+    #[test]
+    fn detection_prefers_es3_for_bare_dictionaries() {
+        use saveprism_core::detect::{DetectOptions, detect};
+
+        let mut reg = Registry::default();
+        crate::register_all(&mut reg);
+        for bytes in [
+            fixture("dict-int-pretty.es3"),
+            fixture("dict-int-compact.es3"),
+            fixture("dict-bool.es3"),
+        ] {
+            let found =
+                detect(&bytes, &reg, &Limits::default(), &DetectOptions::default()).unwrap();
+            assert_eq!(found.best.recipe.kinds(), ["format.es3"]);
+        }
+    }
+
+    #[test]
+    #[ignore = "needs local files under fixtures/external/es3 (never committed)"]
+    fn every_external_es3_file_round_trips() {
+        use saveprism_core::detect::{DetectOptions, detect};
+        use saveprism_core::{Registry, pipeline};
+
+        let dir = FsPath::new(env!("CARGO_MANIFEST_DIR")).join("../../fixtures/external/es3");
+        let Ok(entries) = std::fs::read_dir(&dir) else {
+            return;
+        };
+        let mut reg = Registry::default();
+        crate::register_all(&mut reg);
+        let limits = Limits::default();
+        let mut stack: Vec<std::path::PathBuf> = entries.flatten().map(|e| e.path()).collect();
+        let mut checked = 0_usize;
+        while let Some(path) = stack.pop() {
+            if path.is_dir() {
+                if let Ok(inner) = std::fs::read_dir(&path) {
+                    stack.extend(inner.flatten().map(|e| e.path()));
+                }
+                continue;
+            }
+            if !path
+                .extension()
+                .is_some_and(|ext| ext.eq_ignore_ascii_case("es3"))
+            {
+                continue;
+            }
+            let Ok(input) = std::fs::read(&path) else {
+                continue;
+            };
+            let Ok(found) = detect(&input, &reg, &limits, &DetectOptions::default()) else {
+                // Encrypted files need a password the detector cannot invent; skip them.
+                continue;
+            };
+            let Ok(out) = pipeline::decode(&input, &found.best.recipe, &reg, &limits) else {
+                continue;
+            };
+            let Ok(again) = pipeline::encode(&out.doc, &out.recipe, &reg) else {
+                continue;
+            };
+            // Some real saves re-encode with other whitespace (the guard's "semantic" level);
+            // those must still decode to the same tree.
+            if again != input {
+                let reread = pipeline::decode(&again, &out.recipe, &reg, &limits)
+                    .unwrap_or_else(|e| panic!("{} did not decode again: {e}", path.display()));
+                assert!(
+                    reread.doc.tree_eq(&out.doc),
+                    "{} did not round-trip to the same tree",
+                    path.display()
+                );
+            }
+            checked += 1;
+        }
+        eprintln!("checked {checked} external .es3 files");
     }
 }
