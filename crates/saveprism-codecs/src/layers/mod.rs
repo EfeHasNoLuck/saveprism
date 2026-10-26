@@ -20,6 +20,7 @@ mod base64;
 mod brotli;
 mod bzip2;
 mod deflate;
+mod erf;
 mod gzip;
 mod hex;
 mod kirikiri;
@@ -44,6 +45,7 @@ pub use base64::Base64Layer;
 pub use brotli::BrotliLayer;
 pub use bzip2::Bzip2Layer;
 pub use deflate::DeflateLayer;
+pub use erf::{ERF_DAMAGED, ERF_NO_PAYLOAD, ERF_WRITE, ErfLayer};
 pub use gzip::GzipLayer;
 pub use hex::HexLayer;
 pub use kirikiri::KirikiriLayer;
@@ -134,6 +136,7 @@ pub fn register(reg: &mut Registry) {
     reg.add_layer(Arc::new(UrlEscapeLayer));
     zip::register(reg);
     tar::register(reg);
+    erf::register(reg);
     psx::register(reg);
     ps2::register(reg);
     psu::register(reg);
@@ -315,10 +318,11 @@ mod tests {
             "encoding.url-escape",
             "container.zip",
             "container.tar",
+            "container.erf",
         ] {
             assert!(reg.is_layer(id), "{id} is not registered");
         }
-        assert_eq!(reg.layers().count(), 24);
+        assert_eq!(reg.layers().count(), 25);
     }
 
     #[test]
@@ -349,6 +353,9 @@ mod tests {
         assert_eq!(TAR_DAMAGED.as_str(), "SP-TAR-001");
         assert_eq!(TAR_NO_PAYLOAD.as_str(), "SP-TAR-002");
         assert_eq!(TAR_WRITE.as_str(), "SP-TAR-003");
+        assert_eq!(ERF_DAMAGED.as_str(), "SP-ERF-001");
+        assert_eq!(ERF_NO_PAYLOAD.as_str(), "SP-ERF-002");
+        assert_eq!(ERF_WRITE.as_str(), "SP-ERF-003");
         assert_eq!(PSX_DAMAGED.as_str(), "SP-PSX-001");
         assert_eq!(PSX_WRITE.as_str(), "SP-PSX-002");
         assert_eq!(PSX_NO_PAYLOAD.as_str(), "SP-PSX-003");
@@ -388,7 +395,7 @@ mod tests {
             std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../fixtures/synthetic");
         let mut paths = Vec::new();
         files(&root, &mut paths);
-        let new_layers: [&dyn Layer; 14] = [
+        let new_layers: [&dyn Layer; 15] = [
             &Bzip2Layer,
             &ZstdLayer,
             &XzLayer,
@@ -403,6 +410,7 @@ mod tests {
             &Ps2CardLayer,
             &PsuLayer,
             &SharkPortLayer,
+            &ErfLayer,
         ];
         let ctx = SniffCtx::default();
         let mut failures = Vec::new();
@@ -412,7 +420,10 @@ mod tests {
                 .unwrap_or(&path)
                 .to_string_lossy()
                 .replace('\\', "/");
-            if relative.starts_with("layers/") || relative.starts_with("console/") {
+            if relative.starts_with("layers/")
+                || relative.starts_with("console/")
+                || relative.starts_with("bioware/")
+            {
                 continue;
             }
             let Ok(bytes) = std::fs::read(&path) else {

@@ -205,7 +205,9 @@
       "flash": "Flash",
       "witcher3": "The Witcher 3",
       "palworld": "Palworld",
-      "terraria": "Terraria"
+      "terraria": "Terraria",
+      "neverwinter-nights": "Neverwinter Nights",
+      "kotor": "Knights of the Old Republic"
     },
     "note": {
       "rpgmaker-mv": "MV uses www/save; MZ uses save.",
@@ -219,7 +221,9 @@
       "flash": "Local shared objects.",
       "witcher3": "The Documents folder may be moved to OneDrive.",
       "palworld": "Under the Steam ID folder.",
-      "terraria": "Players holds the characters; Worlds holds the worlds. The Documents folder may be moved to OneDrive."
+      "terraria": "Players holds the characters; Worlds holds the worlds. The Documents folder may be moved to OneDrive.",
+      "neverwinter-nights": "Enhanced Edition keeps saves in Documents; the classic game uses saves inside its folder.",
+      "kotor": "Saves are the .sav files in the game folder, one folder per slot."
     }
   },
   "password": {

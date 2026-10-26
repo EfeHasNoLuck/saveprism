@@ -357,3 +357,33 @@ fn kirikiri_and_gamemaker_flavors_are_recognised() {
         check(&reg, bytes, expected);
     }
 }
+
+#[test]
+fn bioware_fixtures_detect_as_gff_and_erf() {
+    let reg = registry();
+    let limits = Limits::default();
+    let cases: &[(&str, &[&str])] = &[
+        ("character.bic", &["format.gff"]),
+        ("module.ifo", &["format.gff"]),
+        ("kotor-save.sav", &["container.erf", "format.gff"]),
+        ("dao-save.das", &["format.gff4"]),
+    ];
+    for (name, expected) in cases {
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../fixtures/synthetic/bioware")
+            .join(name);
+        let bytes = std::fs::read(&path).expect("fixture readable");
+        let opts = DetectOptions {
+            file_name: Some((*name).to_owned()),
+            ..DetectOptions::default()
+        };
+        let detection = detect(&bytes, &reg, &limits, &opts)
+            .unwrap_or_else(|error| panic!("{name}: {error:?}"));
+        assert_eq!(detection.best.recipe.kinds(), *expected, "{name}");
+        let decoded = pipeline::decode(&bytes, &detection.best.recipe, &reg, &limits)
+            .unwrap_or_else(|error| panic!("{name}: {error:?}"));
+        let again = pipeline::encode(&decoded.doc, &decoded.recipe, &reg)
+            .unwrap_or_else(|error| panic!("{name}: {error:?}"));
+        assert_eq!(again, bytes, "{name} does not round-trip");
+    }
+}

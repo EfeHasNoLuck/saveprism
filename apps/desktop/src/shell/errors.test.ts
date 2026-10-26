@@ -154,6 +154,13 @@ describe("engine helpers", () => {
     expect(engineLabel("slot.sav", "format.qsp")).toBe("QSP");
     expect(engineLabel("chapter-one.sav", "format.qsp")).toBe("QSP");
     expect(engineLabel("ManualSave_1.sav", "format.witcher3")).toBe("The Witcher 3");
+    expect(engineLabel("character.bic", "format.gff")).toBe("BioWare GFF");
+    expect(engineLabel("SAVEGAME.sav", "format.gff")).toBe("BioWare GFF");
+    expect(engineLabel("save.das", "format.gff4")).toBe("Dragon Age");
+    expect(engineLabel("data.bin", "format.gff4")).toBe("Dragon Age");
+    expect(engineLabel("module.mod", "container.erf")).toBe("Neverwinter Nights");
+    expect(engineLabel("save.erf", "container.erf")).toBe("BioWare ERF");
+    expect(engineLabel("data.bin", "container.erf")).toBe("BioWare ERF");
     expect(engineLabel("data.bin", "format.unknown")).toBeNull();
     expect(engineLabel("slot1.save", "format.json", "sugarcube")).toBe("SugarCube");
     expect(engineLabel("1-1-LT1.save", "format.python-pickle", "renpy")).toBe("Ren'Py");

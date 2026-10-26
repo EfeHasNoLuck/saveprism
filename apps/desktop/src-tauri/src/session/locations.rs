@@ -85,6 +85,20 @@ const CATALOG: &[(&str, &[&str])] = &[
             "%USERPROFILE%\\Documents\\My Games\\Terraria\\Worlds",
         ],
     ),
+    (
+        "neverwinter-nights",
+        &[
+            "%USERPROFILE%\\Documents\\Neverwinter Nights\\saves",
+            "<game folder>\\saves",
+        ],
+    ),
+    (
+        "kotor",
+        &[
+            "<game folder>\\saves",
+            "%USERPROFILE%\\Documents\\Knights of the Old Republic\\saves",
+        ],
+    ),
 ];
 
 /// The usual save folders of every engine the dialog names.
@@ -176,6 +190,8 @@ mod tests {
             "witcher3",
             "palworld",
             "terraria",
+            "neverwinter-nights",
+            "kotor",
         ] {
             assert!(engines.contains(&engine), "{engine}");
         }

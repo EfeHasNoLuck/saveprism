@@ -205,7 +205,9 @@
       "flash": "Flash",
       "witcher3": "The Witcher 3",
       "palworld": "Palworld",
-      "terraria": "Terraria"
+      "terraria": "Terraria",
+      "neverwinter-nights": "Neverwinter Nights",
+      "kotor": "Knights of the Old Republic"
     },
     "note": {
       "rpgmaker-mv": "MV www/save, MZ save klasörünü kullanır.",
@@ -219,7 +221,9 @@
       "flash": "Yerel paylaşılan nesneler.",
       "witcher3": "Belgeler klasörü OneDrive'a taşınmış olabilir.",
       "palworld": "Steam kimliği klasörünün altında.",
-      "terraria": "Players karakterleri, Worlds dünyaları tutar. Belgeler klasörü OneDrive'a taşınmış olabilir."
+      "terraria": "Players karakterleri, Worlds dünyaları tutar. Belgeler klasörü OneDrive'a taşınmış olabilir.",
+      "neverwinter-nights": "Enhanced Edition kayıtları Belgeler klasöründe tutar; klasik oyun kendi klasöründeki saves klasörünü kullanır.",
+      "kotor": "Kayıtlar oyun klasöründeki .sav dosyalarıdır, her slot bir klasördür."
     }
   },
   "password": {
