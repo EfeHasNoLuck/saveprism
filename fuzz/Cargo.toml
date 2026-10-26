@@ -280,3 +280,31 @@ path = "fuzz_targets/pixelcrushers.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "proto"
+path = "fuzz_targets/proto.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "bitser"
+path = "fuzz_targets/bitser.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "scs_sii"
+path = "fuzz_targets/scs_sii.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "emu"
+path = "fuzz_targets/emu.rs"
+test = false
+doc = false
+bench = false

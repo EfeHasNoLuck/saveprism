@@ -1,0 +1,26 @@
+// SavePrism synthetic SII save; invented data
+/* a block comment */
+SiiNunit
+{
+player : .data.player
+{
+    # a line comment
+    name: "Mira"
+    money: 1200
+    speed: 12.5
+    active: true
+    home: .garage.main
+    color: (1.0, 0.5, 0.25)
+    note: nil
+    empty: ""
+    array_test[0]: 1
+    array_test[1]: 2
+    @include "other.sui"
+}
+
+other : .data.other
+{
+    name: "Ash"
+    payload: &3f800000
+}
+}

@@ -212,7 +212,10 @@
       "nscripter": "NScripter / ONScripter",
       "emuera": "Emuera / eraMaker",
       "elden-ring": "Elden Ring",
-      "dark-souls-3": "Dark Souls III"
+      "dark-souls-3": "Dark Souls III",
+      "ets2": "Euro Truck Simulator 2",
+      "ats": "American Truck Simulator",
+      "retroarch": "RetroArch"
     },
     "note": {
       "rpgmaker-mv": "MV uses www/save; MZ uses save.",
@@ -233,7 +236,10 @@
       "nscripter": "save1.dat ... and global.sav (or gloval.sav) in the game folder.",
       "ags": "Save slots are agssave.000 to agssave.999 next to the game.",
       "elden-ring": "The folder under your Steam ID holds ER0000.sl2.",
-      "dark-souls-3": "The folder under your Steam ID holds DS30000.sl2."
+      "dark-souls-3": "The folder under your Steam ID holds DS30000.sl2.",
+      "ets2": "Each profile has save/<slot>/game.sii; set g_save_format to 2 for plain text.",
+      "ats": "Each profile has save/<slot>/game.sii; set g_save_format to 2 for plain text.",
+      "retroarch": "states and saves are the usual folders; save states may be RZIP-compressed (Save State File Compression)."
     }
   },
   "password": {

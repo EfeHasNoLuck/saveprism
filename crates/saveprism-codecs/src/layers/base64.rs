@@ -364,6 +364,26 @@ mod tests {
     }
 
     #[test]
+    fn url_alphabet_unpadded_fixture_round_trips() {
+        let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../fixtures/synthetic/layers/save.url.b64");
+        let text = std::fs::read(path).unwrap();
+        let (inner, params) = round_trip(&text);
+        assert_eq!(params.str("alphabet").unwrap(), "url");
+        assert!(!params.bool("pad").unwrap());
+        assert!(inner.starts_with(b"{"));
+        assert!(!text.contains(&b'+'));
+        assert!(!text.contains(&b'/'));
+    }
+
+    #[test]
+    fn url_alphabet_is_recognised_for_both_special_characters() {
+        let (inner, params) = round_trip(b"-_8=");
+        assert_eq!(inner, [0xFB, 0xFF]);
+        assert_eq!(params.str("alphabet").unwrap(), "url");
+    }
+
+    #[test]
     fn unpadded() {
         let (inner, params) = round_trip(b"SGVsbG8");
         assert_eq!(inner, b"Hello");

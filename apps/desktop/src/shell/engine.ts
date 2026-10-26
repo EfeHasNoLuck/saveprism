@@ -49,6 +49,26 @@ const EXTENSION_LABELS: Record<string, string> = {
   mpq: "MPQ",
   sc2save: "StarCraft II",
   w3z: "Warcraft III",
+  pb: "Protocol Buffers",
+  pbf: "Protocol Buffers",
+  protobuf: "Protocol Buffers",
+  protobin: "Protocol Buffers",
+  sii: "SCS SII",
+  state: "RetroArch",
+  state1: "RetroArch",
+  state2: "RetroArch",
+  state3: "RetroArch",
+  frz: "Snes9x",
+  "000": "Snes9x",
+  "001": "Snes9x",
+  "002": "Snes9x",
+  "003": "Snes9x",
+  "004": "Snes9x",
+  "005": "Snes9x",
+  "006": "Snes9x",
+  "007": "Snes9x",
+  "008": "Snes9x",
+  "009": "Snes9x",
 };
 
 const CODEC_LABELS: Record<string, string> = {
@@ -105,6 +125,14 @@ const CODEC_LABELS: Record<string, string> = {
   "container.mpq": "MPQ",
   "container.brz": "Brickadia",
   "format.brickadia-brs": "Brickadia",
+  "format.protobuf": "Protocol Buffers",
+  "format.bitser": "Bitser",
+  "format.scs-sii": "SCS SII",
+  "format.scs-sii-binary": "SCS SII (binary)",
+  "format.scs-sii-encrypted": "SCS SII (encrypted)",
+  "format.snes9x-snapshot": "Snes9x snapshot",
+  "format.retroarch-state": "RetroArch state",
+  "format.emu-sram": "Emulator SRAM",
 };
 
 const ENGINE_LABELS: Record<string, string> = {

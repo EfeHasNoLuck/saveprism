@@ -104,6 +104,21 @@ const CATALOG: &[(&str, &[&str])] = &[
     ),
     ("elden-ring", &["%APPDATA%\\EldenRing"]),
     ("dark-souls-3", &["%APPDATA%\\DarkSoulsIII"]),
+    (
+        "ets2",
+        &["%USERPROFILE%\\Documents\\Euro Truck Simulator 2\\profiles"],
+    ),
+    (
+        "ats",
+        &["%USERPROFILE%\\Documents\\American Truck Simulator\\profiles"],
+    ),
+    (
+        "retroarch",
+        &[
+            "%APPDATA%\\RetroArch\\states",
+            "%APPDATA%\\RetroArch\\saves",
+        ],
+    ),
 ];
 
 /// The usual save folders of every engine the dialog names.

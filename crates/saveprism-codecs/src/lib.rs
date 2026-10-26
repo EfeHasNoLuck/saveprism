@@ -7,10 +7,12 @@ use saveprism_core::Registry;
 
 pub mod adventure_creator;
 pub mod ags;
+pub mod bitser;
 pub mod brickadia;
 pub mod bson;
 pub mod cbor;
 pub mod csv_text;
+pub mod emu;
 pub mod emuera;
 pub mod es3;
 pub mod gamemaker;
@@ -36,11 +38,13 @@ pub mod pickle;
 pub mod pixelcrushers;
 pub mod plist;
 pub mod properties;
+pub mod proto;
 pub mod qsp;
 pub mod raw;
 pub mod reg;
 pub mod renpy;
 pub mod rpgmaker;
+pub mod scs_sii;
 pub mod sol;
 pub mod sqlite;
 pub mod terraria;
@@ -64,6 +68,7 @@ pub fn resolve_text_encoding(label: &str) -> Option<&'static str> {
 pub fn register_all(reg: &mut Registry) {
     layers::register(reg);
     ags::register(reg);
+    emu::register(reg);
     emuera::register(reg);
     onscripter::register(reg);
     raw::register(reg);
@@ -73,9 +78,11 @@ pub fn register_all(reg: &mut Registry) {
     msgpack::register(reg);
     cbor::register(reg);
     bson::register(reg);
+    bitser::register(reg);
     nbt::register(reg);
     json::register(reg);
     rpgmaker::register(reg);
+    scs_sii::register(reg);
     es3::register(reg);
     gamemaker::register(reg);
     csv_text::register(reg);
@@ -92,6 +99,7 @@ pub fn register_all(reg: &mut Registry) {
     pickle::register(reg);
     plist::register(reg);
     properties::register(reg);
+    proto::register(reg);
     qsp::register(reg);
     reg::register(reg);
     renpy::register(reg);

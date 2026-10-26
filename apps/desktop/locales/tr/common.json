@@ -212,7 +212,10 @@
       "nscripter": "NScripter / ONScripter",
       "emuera": "Emuera / eraMaker",
       "elden-ring": "Elden Ring",
-      "dark-souls-3": "Dark Souls III"
+      "dark-souls-3": "Dark Souls III",
+      "ets2": "Euro Truck Simulator 2",
+      "ats": "American Truck Simulator",
+      "retroarch": "RetroArch"
     },
     "note": {
       "rpgmaker-mv": "MV www/save, MZ save klasörünü kullanır.",
@@ -233,7 +236,10 @@
       "nscripter": "Oyun klasöründe save1.dat ... ve global.sav (veya gloval.sav).",
       "ags": "Kayıt yuvaları oyunun yanındaki agssave.000 ile agssave.999 arasıdır.",
       "elden-ring": "Steam kimliğinizin altındaki klasörde ER0000.sl2 bulunur.",
-      "dark-souls-3": "Steam kimliğinizin altındaki klasörde DS30000.sl2 bulunur."
+      "dark-souls-3": "Steam kimliğinizin altındaki klasörde DS30000.sl2 bulunur.",
+      "ets2": "Her profilde save/<slot>/game.sii bulunur; düz metin için g_save_format değerini 2 yap.",
+      "ats": "Her profilde save/<slot>/game.sii bulunur; düz metin için g_save_format değerini 2 yap.",
+      "retroarch": "states ve saves olağan klasörlerdir; kayıt durumları RZIP ile sıkıştırılmış olabilir (Save State File Compression)."
     }
   },
   "password": {
