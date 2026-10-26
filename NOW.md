@@ -151,8 +151,12 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
      collections, decks, selected faction; only `numCopies` editable; checked on the 3 real saves) (`097915f`);
      AliceSoft System 3.x/4 editable, Artemis read-only, Construct 2/3 labels (`5a09adf`). Not possible (no public
      save layout, not claimed): Smile Game Builder `.sgs`, LiveMaker, Visionaire `.vsf`, Construct Classic, Aoi.
-   - Running (EVREN, at most 2 at once): `w3cards` (Gwent card names from the player's own game bundles; backend
-     command, no UI), `godotres` (Godot `.tres`/`.res`). Then the Gwent view UI (A/B screenshots to the user).
+   - Merged 2026-10-27 (rust 3/3, web 3/3, cargo deny ok): Godot `.tres` text and `.res`/RSCC binary resources
+     (`4a0ed89`; ConfigFile and resources share one Variant text parser); Gwent card list from the player's own
+     game bundles (`78dfdc9`: `POTATO70` reader, `w3_cards` command with a pick-the-folder state; names from the XML
+     `name` attribute because `.w3strings` is described only in GPL code). Synthetic files only.
+   - Running: the Gwent view UI in two variants (Claude subagent; A/B screenshots to the user in
+     `.motor/gwent-ab/`), ES3 dictionaries with bare number keys (EVREN `es3keys`).
      Left from `/formats` after these: Easy Save 2 (no public layout), Oodle/Kraken (no permissive decoder),
      "SSSoftware Serialize" (unknown format).
    - Wave 2, first: auto-unlock (user idea, 2026-10-24): every layer tried by content whatever the extension; simple XOR
