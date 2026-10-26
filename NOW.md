@@ -147,9 +147,14 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
      `.sii` text (binary/encrypted read-only), LZip, Base64URL, Snes9x snapshots (SRA editable), RetroArch states
      (read-only), `.srm` SRAM (`5e5a3e5`); LevelDB/RocksDB read-only, LiteDB v4/v5 fixed-size values in place with
      `_id` and indexed fields read-only (`dfc4903`; `snap`, BSD-3-Clause). Synthetic files only.
-   - Running (EVREN, at most 2 at once): `vn3` (Artemis, Smile Game Builder, LiveMaker, AliceSoft, Visionaire,
-     Construct Classic, Aoi), `gwent` (the real Gwent collection layout in Witcher 3 saves; core only). Then the Gwent
-     view UI (A/B screenshots to the user).
+   - Merged 2026-10-27 (rust 3/3, web 3/3, cargo deny ok): the real Witcher 3 Gwent layout (`CR4GwintManager`,
+     collections, decks, selected faction; only `numCopies` editable; checked on the 3 real saves) (`097915f`);
+     AliceSoft System 3.x/4 editable, Artemis read-only, Construct 2/3 labels (`5a09adf`). Not possible (no public
+     save layout, not claimed): Smile Game Builder `.sgs`, LiveMaker, Visionaire `.vsf`, Construct Classic, Aoi.
+   - Running (EVREN, at most 2 at once): `w3cards` (Gwent card names from the player's own game bundles; backend
+     command, no UI), `godotres` (Godot `.tres`/`.res`). Then the Gwent view UI (A/B screenshots to the user).
+     Left from `/formats` after these: Easy Save 2 (no public layout), Oodle/Kraken (no permissive decoder),
+     "SSSoftware Serialize" (unknown format).
    - Wave 2, first: auto-unlock (user idea, 2026-10-24): every layer tried by content whatever the extension; simple XOR
      obfuscation broken automatically from the expected start of the inner format (`{`, `<?xml`, `PK`...); a key finder
      that reads candidate passwords from the game's own files (Unity `Assembly-CSharp.dll` strings, IL2CPP
