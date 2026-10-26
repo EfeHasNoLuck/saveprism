@@ -128,6 +128,27 @@ doc = false
 bench = false
 
 [[bin]]
+name = "ags"
+path = "fuzz_targets/ags.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "onscripter"
+path = "fuzz_targets/onscripter.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "emuera"
+path = "fuzz_targets/emuera.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "sqlite"
 path = "fuzz_targets/sqlite.rs"
 test = false

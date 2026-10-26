@@ -33,6 +33,9 @@ SavePrism needs Microsoft Edge WebView2, which Windows 10 and 11 already have; t
 | RPG Maker XP / VX / VX Ace | `.rxdata`, `.rvdata`, `.rvdata2` | the same sections, names from the `Data` folder |
 | RPG Maker 2000 / 2003 | `.lsd` | the same sections, names from `RPG_RT.ldb`; Shift-JIS or Windows-1252 text (also from `RPG_RT.ini`) |
 | Wolf RPG Editor | `.sav` (not encrypted) | switches, variables, the variable database |
+| Adventure Game Studio | `agssave.000` ... `agssave.999` | description, engine and game title; 3.x script globals read-only |
+| NScripter / ONScripter | `save*.dat`, `global.sav` / `gloval.sav` | global numbers and Shift-JIS strings; the slot description (the slot body stays read-only) |
+| Emuera / eraMaker | binary `saveNN.sav`, `global.sav`, `var_*.dat`, `chara_*.dat` | variables and character arrays by name; text-format saves are not opened |
 | Unity · Easy Save 3 | `.es3` | plain, GZip and AES (password needed) |
 | Unity · Odin Serializer | Odin binary (`BinaryDataWriter`) saves | primitives, strings and arrays (type tables and references read-only) |
 | Unity · PlayerPrefs | registry export `.reg` | ints, floats, strings |

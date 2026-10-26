@@ -58,6 +58,9 @@ const CATALOG: &[(&str, &[&str])] = &[
         &["<game folder>", "<game folder>\\Save"],
     ),
     ("wolf-rpg", &["<game folder>\\Save"]),
+    ("ags", &["<game folder>"]),
+    ("nscripter", &["<game folder>", "<game folder>\\sav"]),
+    ("emuera", &["<game folder>", "<game folder>\\sav"]),
     (
         "unity",
         &["%USERPROFILE%\\AppData\\LocalLow\\<company>\\<game>"],
@@ -168,6 +171,9 @@ mod tests {
             "flash",
             "witcher3",
             "palworld",
+            "ags",
+            "nscripter",
+            "emuera",
         ] {
             assert!(engines.contains(&engine), "{engine}");
         }

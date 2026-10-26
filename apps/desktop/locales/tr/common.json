@@ -203,6 +203,9 @@
       "twine": "Twine / SugarCube",
       "flash": "Flash",
       "witcher3": "The Witcher 3",
+      "ags": "Adventure Game Studio",
+      "nscripter": "NScripter / ONScripter",
+      "emuera": "Emuera / eraMaker",
       "palworld": "Palworld"
     },
     "note": {
@@ -216,7 +219,10 @@
       "twine": "Tarayıcı deposunda: oyunun Save to disk / dışa aktarma seçeneğini kullan.",
       "flash": "Yerel paylaşılan nesneler.",
       "witcher3": "Belgeler klasörü OneDrive'a taşınmış olabilir.",
-      "palworld": "Steam kimliği klasörünün altında."
+      "palworld": "Steam kimliği klasörünün altında.",
+      "emuera": "Kayıtlar oyun klasöründe ya da oyunun kullandığı sav klasöründe.",
+      "nscripter": "Oyun klasöründe save1.dat ... ve global.sav (veya gloval.sav).",
+      "ags": "Kayıt yuvaları oyunun yanındaki agssave.000 ile agssave.999 arasıdır."
     }
   },
   "password": {

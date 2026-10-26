@@ -203,6 +203,9 @@
       "twine": "Twine / SugarCube",
       "flash": "Flash",
       "witcher3": "The Witcher 3",
+      "ags": "Adventure Game Studio",
+      "nscripter": "NScripter / ONScripter",
+      "emuera": "Emuera / eraMaker",
       "palworld": "Palworld"
     },
     "note": {
@@ -216,7 +219,10 @@
       "twine": "Browser storage: use the game's Save to disk / export option.",
       "flash": "Local shared objects.",
       "witcher3": "The Documents folder may be moved to OneDrive.",
-      "palworld": "Under the Steam ID folder."
+      "palworld": "Under the Steam ID folder.",
+      "emuera": "Saves are in the game folder, or in its sav folder when the game uses one.",
+      "nscripter": "save1.dat ... and global.sav (or gloval.sav) in the game folder.",
+      "ags": "Save slots are agssave.000 to agssave.999 next to the game."
     }
   },
   "password": {
