@@ -155,8 +155,10 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
      (`4a0ed89`; ConfigFile and resources share one Variant text parser); Gwent card list from the player's own
      game bundles (`78dfdc9`: `POTATO70` reader, `w3_cards` command with a pick-the-folder state; names from the XML
      `name` attribute because `.w3strings` is described only in GPL code). Synthetic files only.
+   - ES3 dictionaries with bare number/bool keys (`3a2bc9a`): 2 real Supermarket Simulator saves now open; a sweep of
+     all 88 local real saves showed no regression (3 ES3 files went from semantic to exact).
    - Running: the Gwent view UI in two variants (Claude subagent; A/B screenshots to the user in
-     `.motor/gwent-ab/`), ES3 dictionaries with bare number keys (EVREN `es3keys`).
+     `.motor/gwent-ab/`).
      Left from `/formats` after these: Easy Save 2 (no public layout), Oodle/Kraken (no permissive decoder),
      "SSSoftware Serialize" (unknown format).
    - Wave 2, first: auto-unlock (user idea, 2026-10-24): every layer tried by content whatever the extension; simple XOR
@@ -177,7 +179,7 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
 ## Known gaps
 - A zip save with several JSON entries opens only the largest (Shapez 2: `local-player.json`, not `research.json` or
   `savegame.json`; House Flipper 2: `parcel.json`, not `header.json`).
-- RPG Maker saves re-compress to different bytes: editable, not byte-exact. ES3 dicts with number keys don't open. Palworld PlZ2 world
+- RPG Maker saves re-compress to different bytes: editable, not byte-exact. ES3 dicts with object keys (`{ "low": 16, "high": 0 }: {...}`) don't open (number/bool keys do since `3a2bc9a`). Palworld PlZ2 world
   files are slow.
 - JSON view/export on huge saves: the 50 MB cap is checked only after the whole text is built, and `unique_key` in
   `session/export.rs` is quadratic on many repeated keys; both run under the session lock (review, 2026-10-22).
