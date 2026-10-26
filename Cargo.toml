@@ -15,7 +15,7 @@ lz-str = "0.2"
 lz4_flex = "0.14"
 bzip2 = "0.6"
 lzma-rs = "0.3"
-zstd = { version = "0.13", default-features = false }
+zstd = { version = "0.14.3", default-features = false }
 brotli = "9"
 uesave = "0.7"
 aes = "0.9"
