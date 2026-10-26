@@ -107,6 +107,13 @@ doc = false
 bench = false
 
 [[bin]]
+name = "witcher3_bundle"
+path = "fuzz_targets/witcher3_bundle.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "nrbf"
 path = "fuzz_targets/nrbf.rs"
 test = false

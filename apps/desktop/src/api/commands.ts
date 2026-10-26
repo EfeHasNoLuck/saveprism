@@ -406,6 +406,44 @@ export function setDataFolder(folder: string): Promise<GameView> {
   return invoke<GameView>("set_data_folder", { folder });
 }
 
+/** One Gwent card whose name came from the player's own Witcher 3 install. */
+export interface W3Card {
+  /** The index the save's `W3:gwent-card:<index>` hints carry. */
+  index: number;
+  /** A readable name from the game's XML `name` (or the `title` key when `name` is missing). */
+  name: string;
+  /** The XML localization key, kept for a future `.w3strings` reader. */
+  title: string;
+  /** The XML `faction_index`, e.g. `F_NORTHERN_KINGDOM`. */
+  faction: string;
+  /** True for a battle-king (leader) card. */
+  leader: boolean;
+}
+
+export type W3CardsState = "ready" | "pickGameFolder" | "noCards" | "notWitcher3Save";
+
+/** Every Gwent card for the open Witcher 3 save, read from the player's game files. */
+export interface W3CardsView {
+  state: W3CardsState;
+  /** The game folder that was used, when one was found. */
+  gameFolder: string | null;
+  /** How the folder was found: `save`, `steam`, `gog` or `picked`. */
+  source: "save" | "steam" | "gog" | "picked" | null;
+  cardCount: number;
+  cards: W3Card[];
+  /** Bundles or XML files that could not be read (English, for the log). */
+  warnings: string[];
+}
+
+/**
+ * Every Gwent card for the open Witcher 3 save. Names come only from the player's own game files.
+ * When no game folder is found the answer has `state: "pickGameFolder"` (never an error): ask the
+ * player for the folder and call again with `gameFolder`.
+ */
+export function w3Cards(gameFolder?: string): Promise<W3CardsView> {
+  return invoke<W3CardsView>("w3_cards", { gameFolder: gameFolder ?? null });
+}
+
 /**
  * Adds `count` (1 to 99) of the database entry `id` to the party's `list` ("items", "weapons" or
  * "armors") of an RPG Maker save. One undo step.

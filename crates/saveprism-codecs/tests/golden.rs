@@ -28,7 +28,9 @@ fn fixtures_dir() -> PathBuf {
 }
 
 fn is_skipped(name: &str) -> bool {
-    name.starts_with('.') || name.starts_with("README")
+    // `witcher3-bundle` holds content bundles for the Gwent card reader tests: game containers,
+    // not save documents, so detection has no codec for them.
+    name.starts_with('.') || name.starts_with("README") || name == "witcher3-bundle"
 }
 
 /// Lists all regular files below `root` without recursion (explicit stack), sorted.
