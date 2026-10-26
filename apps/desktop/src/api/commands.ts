@@ -385,9 +385,43 @@ export interface SugarCubeView {
   addParent: string | null;
 }
 
+/** One card of a Witcher 3 save's Gwent collection. */
+export interface GwentCard {
+  /** The card index of the game's card definitions (`W3Card.index`). */
+  index: number;
+  /** True for a leader (battle king) card. */
+  leader: boolean;
+  /** The number of copies owned, the only editable Gwent value. */
+  copies: Field;
+}
+
+/** One Gwent deck (read-only). */
+export interface GwentDeck {
+  unlocked: boolean;
+  /** Card index of the deck's leader, or null. */
+  leader: number | null;
+  cardCount: number;
+}
+
+export interface GwentView {
+  /** The owned cards: the collection first, then the leaders. */
+  cards: GwentCard[];
+  decks: GwentDeck[];
+  /** The selected faction as the save names it (`GwintFaction_NothernKingdom`), or null. */
+  selected: string | null;
+}
+
+/** A Witcher 3 save: its Gwent collection (null when it has none) above the Values list. */
+export interface Witcher3View {
+  gwent: GwentView | null;
+  rows: ValueRow[];
+  addParent: string | null;
+}
+
 export type GameView =
   | { kind: "rpgmaker"; view: RpgMakerView }
   | { kind: "sugarcube"; view: SugarCubeView }
+  | { kind: "witcher3"; view: Witcher3View }
   | { kind: "values"; rows: ValueRow[]; addParent: string | null };
 
 /**

@@ -808,7 +808,7 @@ fn encrypted_gzip_es3_opens_with_the_password() {
 fn rpg_view(session: &Session) -> Option<RpgMakerView> {
     match session.game_view().unwrap() {
         GameView::Rpgmaker { view } => Some(*view),
-        GameView::Values { .. } | GameView::Sugarcube { .. } => None,
+        GameView::Values { .. } | GameView::Sugarcube { .. } | GameView::Witcher3 { .. } => None,
     }
 }
 
@@ -1480,7 +1480,7 @@ const STORY: &str = "synthetic/sugarcube/multi-moment.save";
 fn story_view(session: &Session) -> Option<SugarCubeView> {
     match session.game_view().unwrap() {
         GameView::Sugarcube { view } => Some(*view),
-        GameView::Rpgmaker { .. } | GameView::Values { .. } => None,
+        GameView::Rpgmaker { .. } | GameView::Values { .. } | GameView::Witcher3 { .. } => None,
     }
 }
 
@@ -3800,4 +3800,74 @@ fn an_encrypted_player_that_looks_like_another_format_still_opens_as_a_player() 
         let error = open(&env, &path, None).err().unwrap();
         assert_eq!(error.code, "SP-TERRARIA-006", "{name}");
     }
+}
+
+// The Witcher 3 Gwent collection.
+
+const WITCHER3_SAVE: &str = "synthetic/witcher3/ManualSave_invented.sav";
+
+fn witcher3_view(session: &Session) -> Witcher3View {
+    match session.game_view().unwrap() {
+        GameView::Witcher3 { view } => *view,
+        other => panic!("a Witcher 3 save must open with the Gwent view, got {other:?}"),
+    }
+}
+
+#[test]
+fn witcher3_saves_list_the_gwent_cards_and_decks() {
+    let env = self::env();
+    let path = copy_in(&env, WITCHER3_SAVE);
+    let session = open(&env, &path, None).unwrap();
+    let view = witcher3_view(&session);
+    assert!(
+        !view.rows.is_empty(),
+        "the Values list stays below the collection"
+    );
+    let gwent = view.gwent.expect("the fixture has a Gwent manager");
+    let cards: Vec<(u32, bool, &str)> = gwent
+        .cards
+        .iter()
+        .map(|card| (card.index, card.leader, card.copies.value.as_str()))
+        .collect();
+    assert_eq!(
+        cards,
+        vec![(3, false, "4"), (4, false, "2"), (1001, true, "1")]
+    );
+    for card in &gwent.cards {
+        assert!(card.copies.editable, "card {} copies", card.index);
+        assert_eq!(card.copies.min, Some(0));
+        assert_eq!(card.copies.max, Some(i64::from(i32::MAX)));
+    }
+    assert_eq!(gwent.decks.len(), 2);
+    assert_eq!(gwent.decks[0].leader, Some(4001));
+    assert_eq!(gwent.decks[1].leader, Some(2001));
+}
+
+#[test]
+fn a_gwent_copy_count_of_a_repeated_record_edits_and_saves() {
+    let env = self::env();
+    let path = copy_in(&env, WITCHER3_SAVE);
+    let mut session = open(&env, &path, None).unwrap();
+    let second = witcher3_view(&session).gwent.unwrap().cards[1]
+        .copies
+        .clone();
+    assert!(
+        second.path.ends_with("SBCollectionCard#2/numCopies"),
+        "{}",
+        second.path
+    );
+
+    let error = session.edit_value(&second.path, "-1").unwrap_err();
+    assert_eq!(error.code, app_codes::OUT_OF_RANGE);
+    session.edit_value(&second.path, "3").unwrap();
+    let after = witcher3_view(&session).gwent.unwrap();
+    assert_eq!(after.cards[1].copies.value, "3");
+    assert_eq!(after.cards[1].copies.original, "2");
+    assert_eq!(after.cards[0].copies.value, "4", "the first record stays");
+
+    session.save(path.to_str().unwrap(), true, None).unwrap();
+    let reopened = open(&env, &path, None).unwrap();
+    let cards = witcher3_view(&reopened).gwent.unwrap().cards;
+    assert_eq!(cards[1].copies.value, "3");
+    assert_eq!(cards[0].copies.value, "4");
 }
