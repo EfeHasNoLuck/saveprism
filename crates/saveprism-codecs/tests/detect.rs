@@ -254,6 +254,56 @@ fn structured_text_is_recognised_by_content() {
 }
 
 #[test]
+fn godot_resources_are_detected_by_content_and_config_files_stay_config() {
+    let reg = registry();
+    let cases: &[(&str, &[u8], &str)] = &[
+        (
+            "player.tres",
+            include_bytes!("../../../fixtures/synthetic/godot/resource4.tres"),
+            "format.godot-resource-text",
+        ),
+        (
+            "player.tres",
+            include_bytes!("../../../fixtures/synthetic/godot/resource3.tres"),
+            "format.godot-resource-text",
+        ),
+        (
+            "save.res",
+            include_bytes!("../../../fixtures/synthetic/godot/resource4.res"),
+            "format.godot-resource",
+        ),
+        (
+            "save.res",
+            include_bytes!("../../../fixtures/synthetic/godot/resource3.res"),
+            "format.godot-resource",
+        ),
+        (
+            "save.res",
+            include_bytes!("../../../fixtures/synthetic/godot/resource4-deflate.res"),
+            "format.godot-resource",
+        ),
+        (
+            "settings.cfg",
+            b"[Player]\nlevel = 4\nname = \"Mira\"\n",
+            "format.godot-config",
+        ),
+    ];
+    for (name, bytes, expected) in cases {
+        let opts = DetectOptions {
+            file_name: Some((*name).to_owned()),
+            ..DetectOptions::default()
+        };
+        let detection = detect(bytes, &reg, &Limits::default(), &opts)
+            .unwrap_or_else(|error| panic!("{name}: {error:?}"));
+        assert_eq!(
+            detection.best.recipe.kinds(),
+            [*expected],
+            "{name} detected as the wrong codec"
+        );
+    }
+}
+
+#[test]
 fn plain_text_and_json_are_not_taken_by_structured_text() {
     let reg = registry();
     for (name, bytes) in [

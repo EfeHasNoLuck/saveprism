@@ -99,6 +99,8 @@ const CODEC_LABELS: Record<string, string> = {
   "format.reg": "Registry (.reg)",
   "format.godot-config": "Godot",
   "format.godot-variant": "Godot",
+  "format.godot-resource": "Godot",
+  "format.godot-resource-text": "Godot",
   "format.sqlite": "SQLite",
   "format.leveldb-sst": "LevelDB",
   "format.leveldb-log": "LevelDB",
