@@ -143,8 +143,13 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
      (stored entries editable; compressed read-only), Brickadia `.brz` + `.brs` (same-length stored blobs; `blake3`,
      CC0-1.0 OR Apache-2.0). Synthetic files only.
    - GitHub Actions minutes ran out 2026-10-26: commits stay local until next month (last pushed `4214786`).
-   - Running (EVREN, at most 2 at once): `kvdb` (LevelDB, RocksDB, LiteDB), `ser` (protobuf, Bitser, SCS .sii, LZip, emulator states). Then vn3
-     and the Gwent view.
+   - Merged 2026-10-27 (rust 3/3, web 3/3, cargo deny ok): protobuf (schema-less, exact re-encode only), Bitser, SCS
+     `.sii` text (binary/encrypted read-only), LZip, Base64URL, Snes9x snapshots (SRA editable), RetroArch states
+     (read-only), `.srm` SRAM (`5e5a3e5`); LevelDB/RocksDB read-only, LiteDB v4/v5 fixed-size values in place with
+     `_id` and indexed fields read-only (`dfc4903`; `snap`, BSD-3-Clause). Synthetic files only.
+   - Running (EVREN, at most 2 at once): `vn3` (Artemis, Smile Game Builder, LiveMaker, AliceSoft, Visionaire,
+     Construct Classic, Aoi), `gwent` (the real Gwent collection layout in Witcher 3 saves; core only). Then the Gwent
+     view UI (A/B screenshots to the user).
    - Wave 2, first: auto-unlock (user idea, 2026-10-24): every layer tried by content whatever the extension; simple XOR
      obfuscation broken automatically from the expected start of the inner format (`{`, `<?xml`, `PK`...); a key finder
      that reads candidate passwords from the game's own files (Unity `Assembly-CSharp.dll` strings, IL2CPP
