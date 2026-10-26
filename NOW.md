@@ -162,7 +162,7 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
      now numbered (`Name#2`), so every card count (and repeated inventory record) is editable. Waiting for the
      user's A/B pick (`GWENT_LAYOUT` in `apps/desktop/src/editor/gwent.ts`, now "a"; screenshots in
      `.motor/gwent-ab/`), then delete the other layout.
-   - Running: ES3 dictionaries with object keys (EVREN `es3objkeys`).
+   - Running: GVAS struct type hints found automatically (EVREN `gvashints`; a real UE 4.27 save still fails).
      Left from `/formats` after these: Easy Save 2 (no public layout), Oodle/Kraken (no permissive decoder),
      "SSSoftware Serialize" (unknown format).
    - Wave 2, first: auto-unlock (user idea, 2026-10-24): every layer tried by content whatever the extension; simple XOR
@@ -183,7 +183,7 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
 ## Known gaps
 - A zip save with several JSON entries opens only the largest (Shapez 2: `local-player.json`, not `research.json` or
   `savegame.json`; House Flipper 2: `parcel.json`, not `header.json`).
-- RPG Maker saves re-compress to different bytes: editable, not byte-exact. ES3 dicts with object keys (`{ "low": 16, "high": 0 }: {...}`) don't open (number/bool keys do since `3a2bc9a`). Palworld PlZ2 world
+- RPG Maker saves re-compress to different bytes: editable, not byte-exact. ES3 dicts with number/bool keys (`3a2bc9a`) and object keys (`3a40520`) open; all 15 local real `.es3` files pass. Palworld PlZ2 world
   files are slow.
 - JSON view/export on huge saves: the 50 MB cap is checked only after the whole text is built, and `unique_key` in
   `session/export.rs` is quadratic on many repeated keys; both run under the session lock (review, 2026-10-22).
