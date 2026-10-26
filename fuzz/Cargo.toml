@@ -135,6 +135,20 @@ doc = false
 bench = false
 
 [[bin]]
+name = "alicesoft"
+path = "fuzz_targets/alicesoft.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "artemis"
+path = "fuzz_targets/artemis.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "onscripter"
 path = "fuzz_targets/onscripter.rs"
 test = false

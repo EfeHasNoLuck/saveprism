@@ -40,6 +40,8 @@ SavePrism needs Microsoft Edge WebView2, which Windows 10 and 11 already have; t
 | Wolf RPG Editor | `.sav` (not encrypted) | switches, variables, the variable database |
 | Adventure Game Studio | `agssave.000` ... `agssave.999` | description, engine and game title; 3.x script globals read-only |
 | NScripter / ONScripter | `save*.dat`, `global.sav` / `gloval.sav` | global numbers and Shift-JIS strings; the slot description (the slot body stays read-only) |
+| AliceSoft System 3.x / 4 | `.asd`, `.as2`, `.asdbak` | System 3.x numbers and fixed-length Shift-JIS strings; System 4 globals (numbers, booleans, floats, fixed-length strings); encrypted System 4 saves are read-only |
+| Artemis Engine | `save/*.dat`, `saveg.dat` | detected (magic, version and the decompressed body); the body is read-only because its inner layout has no public description |
 | Emuera / eraMaker | binary `saveNN.sav`, `global.sav`, `var_*.dat`, `chara_*.dat` | variables and character arrays by name; text-format saves are not opened |
 | Unity · Easy Save 3 | `.es3` | plain, GZip and AES (password needed) |
 | Unity · Odin Serializer | Odin binary (`BinaryDataWriter`) saves | primitives, strings and arrays (type tables and references read-only) |

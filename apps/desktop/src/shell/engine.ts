@@ -69,6 +69,11 @@ const EXTENSION_LABELS: Record<string, string> = {
   "007": "Snes9x",
   "008": "Snes9x",
   "009": "Snes9x",
+  asd: "AliceSoft",
+  as2: "AliceSoft",
+  asdbak: "AliceSoft",
+  c2save: "Construct",
+  c3save: "Construct",
 };
 
 const CODEC_LABELS: Record<string, string> = {
@@ -103,6 +108,8 @@ const CODEC_LABELS: Record<string, string> = {
   "format.qsp": "QSP",
   "format.ags": "Adventure Game Studio",
   "format.onscripter": "NScripter",
+  "format.alicesoft": "AliceSoft",
+  "format.artemis": "Artemis",
   "format.emuera": "Emuera",
   "format.tjs2": "KiriKiri",
   "format.gamemaker-ds-map": "GameMaker",

@@ -7,6 +7,8 @@ use saveprism_core::Registry;
 
 pub mod adventure_creator;
 pub mod ags;
+pub mod alicesoft;
+pub mod artemis;
 pub mod bitser;
 pub mod brickadia;
 pub mod bson;
@@ -73,6 +75,8 @@ pub fn register_all(reg: &mut Registry) {
     layers::register(reg);
     ags::register(reg);
     emu::register(reg);
+    alicesoft::register(reg);
+    artemis::register(reg);
     emuera::register(reg);
     onscripter::register(reg);
     raw::register(reg);
