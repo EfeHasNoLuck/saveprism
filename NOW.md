@@ -133,9 +133,13 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
      inventory; `.wld` header flags and seed editable, name/id/size read-only (footer and tiles depend on them);
      implausible values open read-only. Synthetic files only: no real `.plr`/`.wld` tested yet, item id cap 5600 is a
      guess above 1.4.4's count.
-   - Running (EVREN, resumed by `.motor/resume_job.sh` at 03:05 TR after the daily limit): `unity2` (Adventure Creator,
-     Pixel Crushers), `vn2` (AGS, NScripter, Emuera), `bioware` (GFF, ERF). Next briefs ready: `w3-archives`,
-     `w3-kvdb`, `w3-ser`.
+   - Merged 2026-10-26 (rust 3/3, web 3/3, cargo deny ok): BioWare GFF V3.2 (numbers in place, strings only at the
+     same length), Dragon Age GFF V4 read-only, ERF/MOD/SAV/HAK containers (`29f6677`); Adventure Creator (parts
+     split at `||`/`|ROOMDELIMITER|`, each opened as JSON/XML/Base64 NRBF) and Pixel Crushers (nested JSON and
+     Dialogue System Lua as data; encrypted refused) (`4214786`). zstd 0.14.3 for three new advisories (`dcfa9c1`).
+     Synthetic files only.
+   - Running (EVREN, at most 2 at once): `vn2` (AGS, NScripter, Emuera), `archives` (BND4, MPQ, Brickadia). Next
+     briefs ready: `w3-kvdb`, `w3-ser`; then vn3 and the Gwent view.
    - Wave 2, first: auto-unlock (user idea, 2026-10-24): every layer tried by content whatever the extension; simple XOR
      obfuscation broken automatically from the expected start of the inner format (`{`, `<?xml`, `PK`...); a key finder
      that reads candidate passwords from the game's own files (Unity `Assembly-CSharp.dll` strings, IL2CPP
