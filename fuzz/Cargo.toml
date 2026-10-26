@@ -210,3 +210,17 @@ path = "fuzz_targets/kirikiri.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "adventure_creator"
+path = "fuzz_targets/adventure_creator.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "pixelcrushers"
+path = "fuzz_targets/pixelcrushers.rs"
+test = false
+doc = false
+bench = false

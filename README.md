@@ -36,6 +36,8 @@ SavePrism needs Microsoft Edge WebView2, which Windows 10 and 11 already have; t
 | Unity · Easy Save 3 | `.es3` | plain, GZip and AES (password needed) |
 | Unity · Odin Serializer | Odin binary (`BinaryDataWriter`) saves | primitives, strings and arrays (type tables and references read-only) |
 | Unity · PlayerPrefs | registry export `.reg` | ints, floats, strings |
+| Unity · Adventure Creator | save files in the persistent data folder (JSON, XML and Base64 BinaryFormatter parts joined by `||`) | values in every part; one part is rewritten at a time |
+| Unity · Pixel Crushers Save System | `save<N>.dat` (JSON `SavedGameData`) | saver data as nested JSON; Dialogue System Lua variables and quests (read as data, never run) |
 | Unity / .NET BinaryFormatter | `.dat`, RAGS `.rsv` | values (read as data, never run) |
 | Unreal Engine | `.sav` (GVAS) | values |
 | Palworld | `.sav` (PlZ) | values (PlM/Oodle not supported) |

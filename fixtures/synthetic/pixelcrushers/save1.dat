@@ -1,0 +1,16 @@
+{
+  "version": 4,
+  "sceneName": "Forest",
+  "saveRecords": [
+    {
+      "key": "Inventory",
+      "sceneIndex": 1,
+      "data": "{\"gold\":250,\"slots\":[{\"id\":3,\"count\":2}]}"
+    },
+    {
+      "key": "SpawnedObjectManager",
+      "sceneIndex": 1,
+      "data": "{\"prefabs\":[],\"destroyed\":[\"Orc\"]}"
+    }
+  ]
+}

@@ -5,6 +5,7 @@
 
 use saveprism_core::Registry;
 
+pub mod adventure_creator;
 pub mod bson;
 pub mod cbor;
 pub mod csv_text;
@@ -26,6 +27,7 @@ pub mod nrbf;
 pub mod odin;
 pub mod palworld;
 pub mod pickle;
+pub mod pixelcrushers;
 pub mod plist;
 pub mod properties;
 pub mod qsp;
@@ -55,6 +57,8 @@ pub fn resolve_text_encoding(label: &str) -> Option<&'static str> {
 pub fn register_all(reg: &mut Registry) {
     layers::register(reg);
     raw::register(reg);
+    adventure_creator::register(reg);
+    pixelcrushers::register(reg);
     msgpack::register(reg);
     cbor::register(reg);
     bson::register(reg);
