@@ -3,6 +3,7 @@ node_modules/
 dist/
 coverage/
 *.log
+!fixtures/synthetic/**/*.log
 .vite/
 
 # Rust / Tauri

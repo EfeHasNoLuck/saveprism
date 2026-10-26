@@ -67,6 +67,9 @@ SavePrism needs Microsoft Edge WebView2, which Windows 10 and 11 already have; t
 | Dragon Age: Origins / II GFF V4 | `.das` | values shown read-only (the V4 layout is not rewritten) |
 | Java serialization | object streams | values (read as data, never run) |
 | SQLite | database saves | table values |
+| LevelDB | `.ldb`, `.sst` (tables) and `.log` (write-ahead log) | keys and values as text or hex; read-only |
+| RocksDB | `.sst` (block-based tables) | keys and values; read-only |
+| LiteDB | `.db` (LiteDB 4 and 5 datafiles) | collection documents; fixed-size integers, doubles and booleans are editable |
 | JSON and text | `.json`, zip- or gzip-packed JSON | values; add and remove entries |
 | MessagePack | `.msgpack`, `.msgp` | values (extension payloads are read-only) |
 | Protocol Buffers | `.pb`, `.pbf`, `.protobuf`, `.protobin`, `.bytes` | field numbers, varints, fixed values and strings; nested message lengths are recomputed (groups read-only) |
