@@ -8,6 +8,10 @@
 //!
 //! Encrypted files are opened through the `crypto.es3-aes` layer (see `aes`), optionally followed
 //! by `compression.gzip`: the recipe is `crypto.es3-aes` -> `compression.gzip` -> `format.es3`.
+//!
+//! A dictionary whose key type is a struct or array writes each key as a JSON object/array before
+//! the colon (`{ {"low": 16, "high": 0}: {...} }`). Such entries are read as a `Value::Map`; the
+//! key subtree is visible but read-only and the values stay editable (see `plain`).
 
 mod aes;
 mod plain;
@@ -449,6 +453,173 @@ mod tests {
     }
 
     #[test]
+    fn object_keys_round_trip_and_stay_read_only() {
+        let decoded = assert_round_trip(&fixture("dict-object-key-pretty.es3"));
+        assert!(
+            hint_at(&decoded, "/LocalPlayerOutfit/value")
+                .is_some_and(|hint| hint == "ES3:PlayerOutfit,Assembly-CSharp")
+        );
+        // The key's fields are visible as normal nodes under `<entry>.key`.
+        assert_eq!(
+            decoded
+                .doc
+                .get(id_at(&decoded, "/LocalPlayerOutfit/value/Items/0.key/low"))
+                .unwrap()
+                .value,
+            Value::Int {
+                v: 16,
+                width: saveprism_core::IntWidth::Unbounded
+            }
+        );
+        assert_eq!(
+            decoded
+                .doc
+                .get(id_at(&decoded, "/LocalPlayerOutfit/value/Items/1.key/high"))
+                .unwrap()
+                .value,
+            Value::Int {
+                v: 0,
+                width: saveprism_core::IntWidth::Unbounded
+            }
+        );
+        // The dictionary and the whole key subtree are read-only; the values are editable.
+        assert!(read_only(&decoded, "/LocalPlayerOutfit/value/Items"));
+        assert!(read_only(&decoded, "/LocalPlayerOutfit/value/Items/0.key"));
+        assert!(read_only(
+            &decoded,
+            "/LocalPlayerOutfit/value/Items/0.key/low"
+        ));
+        assert!(!read_only(&decoded, "/LocalPlayerOutfit/value/Items/0"));
+    }
+
+    #[test]
+    fn editing_an_object_key_value_keeps_the_key() {
+        let decoded = decode(&fixture("dict-object-key-pretty.es3")).unwrap();
+        let mut doc = decoded.doc.clone();
+        apply_edits(
+            &mut doc,
+            &[Edit::Set {
+                path: Path::parse("/LocalPlayerOutfit/value/Items/0/materialOption").unwrap(),
+                value: OwnedValue::Int(7),
+            }],
+            &Limits::default(),
+        )
+        .unwrap();
+        let text = String::from_utf8(Es3Codec.encode(&doc, &decoded.params).unwrap()).unwrap();
+        assert!(text.contains("\"materialOption\" : 7"), "{text}");
+        assert!(text.contains("\"low\" : 16"), "{text}");
+        assert!(text.contains("\n                } : {"), "{text}");
+    }
+
+    #[test]
+    fn editing_an_object_key_is_refused() {
+        let decoded = decode(&fixture("dict-object-key-pretty.es3")).unwrap();
+        let mut doc = decoded.doc.clone();
+        let error = apply_edits(
+            &mut doc,
+            &[Edit::Set {
+                path: Path::parse("/LocalPlayerOutfit/value/Items/0.key/low").unwrap(),
+                value: OwnedValue::Int(1),
+            }],
+            &Limits::default(),
+        )
+        .unwrap_err();
+        assert_eq!(error.code(), codes::CORE_READ_ONLY);
+
+        let insert = Edit::InsertEntry {
+            parent: Path::parse("/LocalPlayerOutfit/value/Items").unwrap(),
+            key: OwnedValue::Int(1),
+            value: OwnedValue::Int(2),
+        };
+        let error = apply_edits(&mut doc, &[insert], &Limits::default()).unwrap_err();
+        assert_eq!(error.code(), codes::CORE_READ_ONLY);
+    }
+
+    #[test]
+    fn array_keys_round_trip_in_the_compact_shape() {
+        let decoded = assert_round_trip(&fixture("dict-object-key-compact.es3"));
+        assert!(read_only(&decoded, "/grid/value"));
+        assert_eq!(
+            decoded
+                .doc
+                .get(id_at(&decoded, "/grid/value/0.key/x"))
+                .unwrap()
+                .value,
+            Value::Int {
+                v: 1,
+                width: saveprism_core::IntWidth::Unbounded
+            }
+        );
+        assert_eq!(
+            decoded
+                .doc
+                .get(id_at(&decoded, "/grid/value/1"))
+                .unwrap()
+                .value,
+            Value::Int {
+                v: 20,
+                width: saveprism_core::IntWidth::Unbounded
+            }
+        );
+        assert_eq!(
+            decoded
+                .doc
+                .get(id_at(&decoded, "/grid/value/1.key/0"))
+                .unwrap()
+                .value,
+            Value::Int {
+                v: 3,
+                width: saveprism_core::IntWidth::Unbounded
+            }
+        );
+    }
+
+    #[test]
+    fn broken_object_keys_are_errors_not_panics() {
+        for bad in [
+            &br#"{"d":{"value":{{"low":1}:2}"#[..],
+            &br#"{"d":{"value":{{"low":1} 2}}}"#[..],
+            &br#"{"d":{"value":{{"low" 1}:2}}}"#[..],
+            &br#"{"d":{"value":{ {:"x"}:2}}}"#[..],
+            &br#"{"d":{"value":{[1,2]:}}}"#[..],
+        ] {
+            let error = decode(bad).unwrap_err();
+            assert!(
+                error.code().as_str().starts_with("SP-"),
+                "unexpected code for {bad:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn strict_json_still_rejects_object_keys() {
+        let limits = Limits::default();
+        let mut ctx = DecodeCtx::new(&limits);
+        let error = JsonCodec
+            .decode(br#"{"d":{"value":{{"low":1}:2}}}"#, &mut ctx)
+            .unwrap_err();
+        assert_eq!(error.code(), crate::json::JSON_SYNTAX);
+        // Easy Save 3 accepts the same bytes.
+        assert!(decode(br#"{"d":{"value":{{"low":1}:2}}}"#).is_ok());
+    }
+
+    #[test]
+    fn object_keys_respect_the_depth_limit() {
+        let mut deep = String::from(r#"{"d":{"value":"#);
+        deep.push_str(&"[".repeat(10));
+        deep.push('1');
+        deep.push_str(&"]".repeat(10));
+        deep.push_str(":2}}}");
+        let limits = Limits {
+            max_depth: 3,
+            ..Limits::default()
+        };
+        let mut ctx = DecodeCtx::new(&limits);
+        let error = Es3Codec.decode(deep.as_bytes(), &mut ctx).unwrap_err();
+        assert_eq!(error.code(), codes::CORE_LIMIT_DEPTH);
+    }
+
+    #[test]
     fn detection_prefers_es3_for_bare_dictionaries() {
         use saveprism_core::detect::{DetectOptions, detect};
 
@@ -458,11 +629,49 @@ mod tests {
             fixture("dict-int-pretty.es3"),
             fixture("dict-int-compact.es3"),
             fixture("dict-bool.es3"),
+            fixture("dict-object-key-pretty.es3"),
+            fixture("dict-object-key-compact.es3"),
         ] {
             let found =
                 detect(&bytes, &reg, &Limits::default(), &DetectOptions::default()).unwrap();
             assert_eq!(found.best.recipe.kinds(), ["format.es3"]);
         }
+    }
+
+    #[test]
+    #[ignore = "needs fixtures/external/es3/yurei-tests/player_items.es3 (never committed)"]
+    fn external_object_key_dictionary_round_trips() {
+        use saveprism_core::detect::{DetectOptions, detect};
+        use saveprism_core::{Registry, pipeline};
+
+        let path = FsPath::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../fixtures/external/es3/yurei-tests/player_items.es3");
+        let Ok(input) = std::fs::read(&path) else {
+            return;
+        };
+        let mut reg = Registry::default();
+        crate::register_all(&mut reg);
+        let limits = Limits::default();
+        let found = detect(&input, &reg, &limits, &DetectOptions::default()).unwrap();
+        let out = pipeline::decode(&input, &found.best.recipe, &reg, &limits).unwrap();
+        let items = out
+            .doc
+            .resolve(&Path::parse("/LocalPlayerOutfit/value/Items").unwrap())
+            .unwrap();
+        assert!(matches!(out.doc.get(items).unwrap().value, Value::Map(_)));
+        assert!(
+            out.doc
+                .get(items)
+                .unwrap()
+                .flags
+                .contains(NodeFlags::READ_ONLY)
+        );
+        let again = pipeline::encode(&out.doc, &out.recipe, &reg).unwrap();
+        assert_eq!(
+            String::from_utf8_lossy(&again),
+            String::from_utf8_lossy(&input),
+            "the external object-key save changed on a no-op write"
+        );
     }
 
     #[test]

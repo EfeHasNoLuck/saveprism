@@ -51,6 +51,42 @@ COMPACT = (
 
 BOOL_KEYS = '{"toggles": {"__type": "dict[bool, str]", "value": {true:"on", false:"off"}}}'
 
+# A dictionary whose key type is a struct: Easy Save 3 writes the key as an object before the colon.
+PRETTY_OBJECT_KEYS = """{
+    "LocalPlayerOutfit" : {
+        "__type" : "PlayerOutfit,Assembly-CSharp",
+        "value" : {
+            "Items" : {
+                {
+                    "low" : 16,
+                    "high" : 0
+                } : {
+                    "guid" : {
+                        "value" : "00000000-0000-0000-0000-000000000001"
+                    },
+                    "materialOption" : 0
+                },
+                {
+                    "low" : 8,
+                    "high" : 0
+                } : {
+                    "guid" : {
+                        "value" : "00000000-0000-0000-0000-000000000002"
+                    },
+                    "materialOption" : 1
+                }
+            }
+        }
+    }
+}
+"""
+
+# Compact, and one array key: Easy Save 3 accepts any value as a dictionary key.
+COMPACT_OBJECT_KEYS = (
+    '{"grid": {"__type": "dict[Vector2Int, int]",'
+    ' "value": {{"x": 1, "y": 2}:10, [3, 4]:20}}}'
+)
+
 
 def aes_encrypt(payload: bytes, iv: bytes) -> bytes:
     from cryptography.hazmat.primitives import padding
@@ -69,6 +105,12 @@ def main() -> None:
     (OUT / "dict-int-pretty.es3").write_bytes(PRETTY.encode("utf-8"))
     (OUT / "dict-int-compact.es3").write_bytes(COMPACT.encode("utf-8"))
     (OUT / "dict-bool.es3").write_bytes(BOOL_KEYS.encode("utf-8"))
+    (OUT / "dict-object-key-pretty.es3").write_bytes(
+        PRETTY_OBJECT_KEYS.encode("utf-8")
+    )
+    (OUT / "dict-object-key-compact.es3").write_bytes(
+        COMPACT_OBJECT_KEYS.encode("utf-8")
+    )
     # Encrypted fixtures live with the other password-protected files: detection cannot find a
     # password, so the golden corpus must not scan this one.
     KEYED.mkdir(parents=True, exist_ok=True)

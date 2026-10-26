@@ -40,6 +40,14 @@ enum Frame {
         key: String,
         start: usize,
     },
+    /// An Easy Save 3 dictionary whose key type is a struct or array: the key is itself an
+    /// object or array, so the entries are kept as [`Value::Map`] pairs.
+    Map {
+        entries: Vec<(NodeId, NodeId)>,
+        /// The key of the value being read, once its node is complete.
+        key: Option<NodeId>,
+        start: usize,
+    },
 }
 
 struct StrToken {
@@ -201,6 +209,15 @@ impl Parser<'_, '_> {
                         self.push(Node::new(Value::Object(Vec::new())), start)?
                     } else {
                         self.note_open(ws);
+                        if self.style == KeyStyle::Bare && matches!(self.peek(), Some(b'{' | b'['))
+                        {
+                            stack.push(Frame::Map {
+                                entries: Vec::new(),
+                                key: None,
+                                start,
+                            });
+                            continue;
+                        }
                         let (key, bare) = self.parse_key()?;
                         stack.push(Frame::Object {
                             entries: Vec::new(),
@@ -268,6 +285,48 @@ impl Parser<'_, '_> {
                                 done = self.push(node, start)?;
                             }
                             _ => return Err(self.unexpected()),
+                        }
+                    }
+                    Some(Frame::Map {
+                        entries,
+                        key,
+                        start,
+                    }) => {
+                        if let Some(key_id) = key.take() {
+                            entries.push((key_id, done));
+                            self.skip_ws();
+                            match self.peek() {
+                                Some(b',') => {
+                                    self.pos += 1;
+                                    let ws = self.skip_ws();
+                                    self.note_comma(ws);
+                                    break;
+                                }
+                                Some(b'}') => {
+                                    self.pos += 1;
+                                    let entries = std::mem::take(entries);
+                                    let start = *start;
+                                    stack.pop();
+                                    done = self.push(Node::new(Value::Map(entries)), start)?;
+                                }
+                                _ => return Err(self.unexpected()),
+                            }
+                        } else {
+                            // `done` is the structured key; the colon follows it.
+                            let before = self.skip_ws();
+                            if self.obs.before_colon.is_none() {
+                                self.obs.before_colon = Some(before);
+                            }
+                            if self.peek() != Some(b':') {
+                                return Err(self.unexpected());
+                            }
+                            self.pos += 1;
+                            let ws = self.skip_ws();
+                            if self.obs.after_colon_bare.is_none() {
+                                self.obs.after_colon_bare = Some(ws);
+                            }
+                            *key = Some(done);
+                            break;
                         }
                     }
                 }

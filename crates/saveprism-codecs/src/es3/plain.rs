@@ -8,8 +8,11 @@
 //! layer accepts them only for ES3 and keeps them bare on the way back; the container is marked
 //! read-only (its keys cannot be renamed or added to without knowing the dictionary's key type),
 //! while its values stay editable.
+//!
+//! A dictionary whose key type is a struct or array keeps its keys as nodes (a `Value::Map`): the
+//! key's fields stay visible, the key subtree is read-only and the values stay editable.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use saveprism_core::{
     Codec, DecodeCtx, Decoded, Error, Node, NodeFlags, NodeId, Params, Result, SaveDoc, TypeHint,
@@ -67,6 +70,7 @@ pub(super) fn encode(doc: &SaveDoc, params: &Params) -> Result<Vec<u8>> {
 /// Copies the tree reachable from the root into `dst` (children first, iterative).
 fn rebuild(src: &SaveDoc, mut dst: SaveDoc, mode: Mode) -> Result<SaveDoc> {
     let mut hints: HashMap<NodeId, String> = HashMap::new();
+    let mut read_only: HashSet<NodeId> = HashSet::new();
     let mut results: Vec<NodeId> = Vec::new();
     let mut work = vec![Work::Enter(src.root())];
 
@@ -75,27 +79,34 @@ fn rebuild(src: &SaveDoc, mut dst: SaveDoc, mode: Mode) -> Result<SaveDoc> {
             Work::Enter(id) => {
                 let node = src.get(id).ok_or_else(missing)?;
                 match &node.value {
-                    Value::Array(_) | Value::Object(_) => {
-                        if mode == Mode::Annotate
-                            && let Value::Object(entries) = &node.value
-                        {
-                            note_hint(src, entries, &mut hints);
+                    Value::Array(_) | Value::Object(_) | Value::Map(_) => {
+                        if mode == Mode::Annotate {
+                            if let Value::Object(entries) = &node.value {
+                                note_hint(src, entries, &mut hints);
+                            }
+                            if let Value::Map(entries) = &node.value {
+                                read_only.insert(id);
+                                for (key, _) in entries {
+                                    mark_subtree(src, *key, &mut read_only);
+                                }
+                            }
                         }
                         work.push(Work::Exit(id));
-                        for child in src.children(id).into_iter().rev() {
+                        for child in child_ids(src, id).into_iter().rev() {
                             work.push(Work::Enter(child));
                         }
                     }
-                    Value::Map(_) | Value::Ref(_) => return Err(unsupported()),
+                    Value::Ref(_) => return Err(unsupported()),
                     _ => {
-                        let copy = copy_node(node, id, &hints, mode);
+                        let copy = copy_node(node, id, &hints, &read_only, mode);
                         results.push(dst.push(copy)?);
                     }
                 }
             }
             Work::Exit(id) => {
                 let node = src.get(id).ok_or_else(missing)?;
-                let count = src.children(id).len();
+                let children = child_ids(src, id);
+                let count = children.len();
                 let start = results.len().saturating_sub(count);
                 let children = results.split_off(start);
                 let value = match &node.value {
@@ -107,9 +118,17 @@ fn rebuild(src: &SaveDoc, mut dst: SaveDoc, mode: Mode) -> Result<SaveDoc> {
                             .zip(children)
                             .collect(),
                     ),
+                    Value::Map(_) => {
+                        let mut pairs = Vec::with_capacity(children.len() / 2);
+                        let mut iter = children.into_iter();
+                        while let (Some(key), Some(value)) = (iter.next(), iter.next()) {
+                            pairs.push((key, value));
+                        }
+                        Value::Map(pairs)
+                    }
                     _ => return Err(unsupported()),
                 };
-                let mut copy = copy_node(node, id, &hints, mode);
+                let mut copy = copy_node(node, id, &hints, &read_only, mode);
                 copy.value = value;
                 results.push(dst.push(copy)?);
             }
@@ -119,6 +138,40 @@ fn rebuild(src: &SaveDoc, mut dst: SaveDoc, mode: Mode) -> Result<SaveDoc> {
     let root = results.pop().ok_or_else(missing)?;
     dst.set_root(root);
     Ok(dst)
+}
+
+/// Child ids in copy order; a map yields each key followed by its value.
+fn child_ids(src: &SaveDoc, id: NodeId) -> Vec<NodeId> {
+    match src.get(id).map(|node| &node.value) {
+        Some(Value::Map(entries)) => entries
+            .iter()
+            .flat_map(|(key, value)| [*key, *value])
+            .collect(),
+        _ => src.children(id),
+    }
+}
+
+/// Adds every node of `id`'s subtree to `set` (iterative).
+fn mark_subtree(src: &SaveDoc, id: NodeId, set: &mut HashSet<NodeId>) {
+    let mut stack = vec![id];
+    while let Some(id) = stack.pop() {
+        if !set.insert(id) {
+            continue;
+        }
+        if let Some(node) = src.get(id) {
+            match &node.value {
+                Value::Array(items) => stack.extend(items.iter().copied()),
+                Value::Object(entries) => stack.extend(entries.iter().map(|(_, child)| *child)),
+                Value::Map(entries) => {
+                    for (key, value) in entries {
+                        stack.push(*key);
+                        stack.push(*value);
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
 }
 
 /// If `entries` holds a string `__type` and a `value`, remembers the hint for the `value` node.
@@ -140,14 +193,20 @@ fn note_hint(src: &SaveDoc, entries: &[(String, NodeId)], hints: &mut HashMap<No
     }
 }
 
-fn copy_node(node: &Node, id: NodeId, hints: &HashMap<NodeId, String>, mode: Mode) -> Node {
+fn copy_node(
+    node: &Node,
+    id: NodeId,
+    hints: &HashMap<NodeId, String>,
+    read_only: &HashSet<NodeId>,
+    mode: Mode,
+) -> Node {
     let mut copy = node.clone();
     match mode {
         Mode::Annotate => {
             if let Some(hint) = hints.get(&id) {
                 copy.type_hint = Some(TypeHint::new(hint.as_str()));
             }
-            if is_bare_key_object(&copy) {
+            if read_only.contains(&id) || is_bare_key_object(&copy) {
                 copy.flags.insert(NodeFlags::READ_ONLY);
             }
         }
