@@ -61,6 +61,9 @@ const CATALOG: &[(&str, &[&str])] = &[
     ("ags", &["<game folder>"]),
     ("nscripter", &["<game folder>", "<game folder>\\sav"]),
     ("emuera", &["<game folder>", "<game folder>\\sav"]),
+    ("alicesoft", &["<game folder>\\SaveData", "<game folder>"]),
+    ("artemis", &["<game folder>\\save"]),
+    ("construct", &[]),
     (
         "unity",
         &["%USERPROFILE%\\AppData\\LocalLow\\<company>\\<game>"],
@@ -175,7 +178,7 @@ mod tests {
     fn every_engine_has_paths_except_browser_storage() {
         let locations = save_locations();
         for location in &locations {
-            if location.engine == "twine" {
+            if location.engine == "twine" || location.engine == "construct" {
                 assert!(location.paths.is_empty());
             } else {
                 assert!(!location.paths.is_empty(), "{}", location.engine);
@@ -200,6 +203,9 @@ mod tests {
             "ags",
             "nscripter",
             "emuera",
+            "alicesoft",
+            "artemis",
+            "construct",
         ] {
             assert!(engines.contains(&engine), "{engine}");
         }

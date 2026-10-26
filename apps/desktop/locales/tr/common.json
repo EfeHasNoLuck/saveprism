@@ -211,6 +211,9 @@
       "ags": "Adventure Game Studio",
       "nscripter": "NScripter / ONScripter",
       "emuera": "Emuera / eraMaker",
+      "alicesoft": "AliceSoft System 3.x / 4",
+      "construct": "Construct",
+      "artemis": "Artemis Motoru",
       "elden-ring": "Elden Ring",
       "dark-souls-3": "Dark Souls III"
     },
@@ -232,6 +235,9 @@
       "emuera": "Kayıtlar oyun klasöründe ya da oyunun kullandığı sav klasöründe.",
       "nscripter": "Oyun klasöründe save1.dat ... ve global.sav (veya gloval.sav).",
       "ags": "Kayıt yuvaları oyunun yanındaki agssave.000 ile agssave.999 arasıdır.",
+      "alicesoft": "System 3.x kayıtları oyun klasöründe tutar; System 4 oyunları genelde SaveData kullanır.",
+      "artemis": "Kayıtlar oyun çalıştırılabilir dosyasının yanındaki save klasöründe.",
+      "construct": "Construct 2/3 kayıtları genelde tarayıcı deposundadır; .c2save/.c3save dosyası düz JSON'dur ve içeriğe göre açılır.",
       "elden-ring": "Steam kimliğinizin altındaki klasörde ER0000.sl2 bulunur.",
       "dark-souls-3": "Steam kimliğinizin altındaki klasörde DS30000.sl2 bulunur."
     }

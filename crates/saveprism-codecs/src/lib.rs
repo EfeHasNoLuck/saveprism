@@ -7,6 +7,8 @@ use saveprism_core::Registry;
 
 pub mod adventure_creator;
 pub mod ags;
+pub mod alicesoft;
+pub mod artemis;
 pub mod brickadia;
 pub mod bson;
 pub mod cbor;
@@ -64,6 +66,8 @@ pub fn resolve_text_encoding(label: &str) -> Option<&'static str> {
 pub fn register_all(reg: &mut Registry) {
     layers::register(reg);
     ags::register(reg);
+    alicesoft::register(reg);
+    artemis::register(reg);
     emuera::register(reg);
     onscripter::register(reg);
     raw::register(reg);
