@@ -79,17 +79,17 @@ def object_reference(level: str, path: str) -> bytes:
     return string(level) + string(path)
 
 
-def inventory_item(name: str) -> bytes:
-    # FInventoryItem: ObjectReference + FGDynamicStruct (no valid struct).
-    return object_reference("Persistent_Level", name) + i32(0)
+def inventory_item(class_path: str) -> bytes:
+    # FInventoryItem: the class ObjectReference + FGDynamicStruct (no valid struct).
+    return object_reference("Persistent_Level", class_path) + i32(0)
 
 
-def inventory_stack(count: int) -> bytes:
+def inventory_stack(count: int, class_path: str) -> bytes:
     return properties(
         tag(
             "Item",
             "StructProperty",
-            inventory_item("Persistent_Level:PersistentLevel.InventedItem"),
+            inventory_item(class_path),
             subtype="InventoryItem",
         ),
         tag("NumItems", "IntProperty", i32(count)),
@@ -99,6 +99,14 @@ def inventory_stack(count: int) -> bytes:
 def actor_payload(properties_bytes: bytes) -> bytes:
     parent = object_reference("Persistent_Level", "Persistent_Level:PersistentLevel.InventedActor")
     return parent + i32(0) + properties_bytes + i32(0)
+
+
+def component_header(type_path: str, instance: str, parent: str) -> bytes:
+    return u32(0) + string(type_path) + string("Persistent_Level") + string(instance) + u32(0) + string(parent)
+
+
+def component_payload(properties_bytes: bytes) -> bytes:
+    return properties_bytes + i32(0)
 
 
 def actor_header(type_path: str, instance: str) -> bytes:
@@ -145,6 +153,12 @@ def body() -> bytes:
     sub_headers = [actor_header("/Script/FactoryGame.InventedSubActor", "SubLevel:SubLevel.InventedSubActor")]
     sub_objects = [actor_payload(properties(tag("mResourcesLeft", "IntProperty", i32(11))))]
 
+    plate = "/Game/FactoryGame/Resource/Parts/InventedPlate/Desc_InventedPlate.Desc_InventedPlate_C"
+    wire = "/Game/FactoryGame/Resource/Parts/InventedWire/Desc_InventedWire.Desc_InventedWire_C"
+    ore = "/Game/FactoryGame/Resource/Parts/InventedOre/Desc_InventedOre.Desc_InventedOre_C"
+    player = "Persistent_Level:PersistentLevel.Char_Player_C_1"
+    storage = "Persistent_Level:PersistentLevel.Build_StorageContainerMk1_C_1"
+
     main_props = properties(
         tag("mHealth", "FloatProperty", f32(100.0)),
         tag("mGold", "IntProperty", i32(500)),
@@ -160,19 +174,77 @@ def body() -> bytes:
             + tag(
                 "mInventoryStacks",
                 "StructProperty",
-                inventory_stack(3) + inventory_stack(42),
+                inventory_stack(3, plate) + inventory_stack(42, wire),
                 subtype="InventoryStack",
             ),
             subtype="StructProperty",
         ),
     )
+    player_props = properties(
+        tag("mCachedPlayerName", "StrProperty", string("Invented Player")),
+        tag(
+            "mInventory",
+            "ObjectProperty",
+            object_reference("Persistent_Level", player + ".inventory"),
+        ),
+    )
+    storage_props = properties(
+        tag(
+            "mStorageInventory",
+            "ObjectProperty",
+            object_reference("Persistent_Level", storage + ".StorageInventory"),
+        )
+    )
+    player_inventory = properties(
+        tag(
+            "mInventoryStacks",
+            "ArrayProperty",
+            u32(2)
+            + tag(
+                "mInventoryStacks",
+                "StructProperty",
+                inventory_stack(40, plate) + inventory_stack(7, wire),
+                subtype="InventoryStack",
+            ),
+            subtype="StructProperty",
+        )
+    )
+    storage_inventory = properties(
+        tag(
+            "mInventoryStacks",
+            "ArrayProperty",
+            u32(1)
+            + tag(
+                "mInventoryStacks",
+                "StructProperty",
+                inventory_stack(120, ore),
+                subtype="InventoryStack",
+            ),
+            subtype="StructProperty",
+        )
+    )
     main_headers = [
         actor_header(
             "/Game/FactoryGame/Invented/InventedActor.InventedActor_C",
             "Persistent_Level:PersistentLevel.InventedActor",
-        )
+        ),
+        actor_header("/Game/FactoryGame/Character/Player/Char_Player.Char_Player_C", player),
+        actor_header(
+            "/Game/FactoryGame/Buildable/Factory/StorageContainerMk1/Build_StorageContainerMk1.Build_StorageContainerMk1_C",
+            storage,
+        ),
+        component_header("/Script/FactoryGame.FGInventoryComponent", player + ".inventory", player),
+        component_header(
+            "/Script/FactoryGame.FGInventoryComponent", storage + ".StorageInventory", storage
+        ),
     ]
-    main_objects = [actor_payload(main_props)]
+    main_objects = [
+        actor_payload(main_props),
+        actor_payload(player_props),
+        actor_payload(storage_props),
+        component_payload(player_inventory),
+        component_payload(storage_inventory),
+    ]
 
     rest = grids
     rest += i32(1)  # one sublevel

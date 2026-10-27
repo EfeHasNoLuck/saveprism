@@ -870,6 +870,9 @@ impl<'a, 'ctx> TreeBuilder<'a, 'ctx> {
             | "InterfaceProperty" | "SoftObjectProperty" => self.string_value(tag, reader),
             "StructProperty" => {
                 let subtype = tag.subtype.as_deref().unwrap_or_default();
+                if subtype == "InventoryItem" {
+                    return self.inventory_item(tag, reader);
+                }
                 if is_binary_struct(subtype) {
                     let start = reader.pos;
                     reader.pos = start.saturating_add(tag.size);
@@ -1014,6 +1017,49 @@ impl<'a, 'ctx> TreeBuilder<'a, 'ctx> {
             "raw:ArrayProperty",
             Some(self.span(payload_start, end)),
         ))
+    }
+
+    /// The `FInventoryItem` inside an `InventoryStack`: the item class reference is named and the
+    /// item state (`FGDynamicStruct`) stays raw. A struct whose reference does not fit its tag is
+    /// left to the caller's raw fallback.
+    fn inventory_item(&mut self, tag: &Tag, reader: &mut Reader<'_>) -> Result<NodeId> {
+        let start = reader.pos;
+        let end = start
+            .checked_add(tag.size)
+            .ok_or_else(|| parse_error("an InventoryItem size overflows"))?;
+        let level = reader.string()?;
+        let path = reader.string()?;
+        let reference_end = reader.pos;
+        if reference_end > end {
+            return Err(parse_error(
+                "an InventoryItem reference does not fit its tag",
+            ));
+        }
+        let text = if level.is_empty() {
+            path
+        } else {
+            format!("{level}:{path}")
+        };
+        let mut item_class = readonly_node(Value::Str(text), "String");
+        let (span_start, span_end) = self.span(start, reference_end);
+        item_class.span = Some(ByteSpan {
+            start: len_u64(span_start),
+            end: len_u64(span_end),
+        });
+        let class_id = self.doc.push(item_class)?;
+        let state_bytes = reader.data.get(reference_end..end).unwrap_or(&[]).to_vec();
+        let state_id = self.doc.push(raw_node(
+            &state_bytes,
+            "raw:InventoryItemState",
+            Some(self.span(reference_end, end)),
+        ))?;
+        reader.pos = end;
+        let mut node = object_node(vec![
+            ("ItemClass".to_string(), class_id),
+            ("ItemState".to_string(), state_id),
+        ]);
+        node.type_hint = Some(hint("StructProperty:InventoryItem"));
+        self.doc.push(node)
     }
 
     fn property_list(

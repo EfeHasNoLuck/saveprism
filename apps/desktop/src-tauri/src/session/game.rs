@@ -22,6 +22,7 @@ use saveprism_core::{Node, NodeFlags, NodeId, OwnedValue, Path, SaveDoc, Value};
 use serde::{Deserialize, Serialize};
 
 use super::gwent::GwentView;
+use super::satisfactory::SatisfactoryView;
 use super::structure::{Shaper, repeated_keys};
 use super::sugarcube::SugarCubeView;
 use super::{
@@ -266,6 +267,11 @@ pub enum GameView {
     Witcher3 {
         /// The Gwent collection and the values.
         view: Box<Witcher3View>,
+    },
+    /// Satisfactory: the inventories above the flat list of the top-level values.
+    Satisfactory {
+        /// The inventories and the values.
+        view: Box<SatisfactoryView>,
     },
     /// Flat list of the top-level values.
     Values {
@@ -1157,6 +1163,8 @@ impl Session {
             self.lcf_bounds(&ctx);
         } else if self.is_witcher3() {
             let _ = ctx.gwent_view();
+        } else if self.is_satisfactory() {
+            let _ = ctx.satisfactory_inventories();
         } else {
             return HashMap::new();
         }
@@ -1224,6 +1232,15 @@ impl Session {
             .addable(&self.doc, &Path::root(), root)
             .then(String::new);
         let rows = self.with_previews(ctx.value_rows(easy_save, &shaper));
+        if self.is_satisfactory() {
+            return Ok(GameView::Satisfactory {
+                view: Box::new(SatisfactoryView {
+                    inventories: ctx.satisfactory_inventories(),
+                    rows,
+                    add_parent,
+                }),
+            });
+        }
         if self.is_witcher3() {
             return Ok(GameView::Witcher3 {
                 view: Box::new(Witcher3View {

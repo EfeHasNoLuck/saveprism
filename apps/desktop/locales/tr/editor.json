@@ -267,5 +267,19 @@
     "deckLocked": "Bu deste kilitli ve kart içermiyor.",
     "locked": "Kilitli",
     "selected": "Seçili"
+  },
+  "satisfactory": {
+    "title": "Envanterler",
+    "info": "Yalnızca yığın adetleri değiştirilebilir. 500, en büyük yığın boyutudur.",
+    "playerInventory": "Oyuncu envanteri",
+    "playerNInventory": "{{n}}. oyuncu envanteri",
+    "pick": "Envanter",
+    "kinds": "Envanter türü",
+    "kind": {
+      "player": "Oyuncu",
+      "storage": "Depolama",
+      "other": "Diğer"
+    },
+    "empty": "Bu kayıtta dolu envanter yok."
   }
 }

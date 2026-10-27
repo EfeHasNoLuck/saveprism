@@ -808,7 +808,10 @@ fn encrypted_gzip_es3_opens_with_the_password() {
 fn rpg_view(session: &Session) -> Option<RpgMakerView> {
     match session.game_view().unwrap() {
         GameView::Rpgmaker { view } => Some(*view),
-        GameView::Values { .. } | GameView::Sugarcube { .. } | GameView::Witcher3 { .. } => None,
+        GameView::Values { .. }
+        | GameView::Sugarcube { .. }
+        | GameView::Witcher3 { .. }
+        | GameView::Satisfactory { .. } => None,
     }
 }
 
@@ -1480,7 +1483,10 @@ const STORY: &str = "synthetic/sugarcube/multi-moment.save";
 fn story_view(session: &Session) -> Option<SugarCubeView> {
     match session.game_view().unwrap() {
         GameView::Sugarcube { view } => Some(*view),
-        GameView::Rpgmaker { .. } | GameView::Values { .. } | GameView::Witcher3 { .. } => None,
+        GameView::Rpgmaker { .. }
+        | GameView::Values { .. }
+        | GameView::Witcher3 { .. }
+        | GameView::Satisfactory { .. } => None,
     }
 }
 
@@ -3916,5 +3922,179 @@ fn litedb_fields_kept_by_an_index_say_so() {
         let info = session.field_info(field).unwrap();
         assert_eq!(info.read_only_reason, reason, "{field}");
         assert_eq!(info.editable, editable, "{field}");
+    }
+}
+
+// The Satisfactory inventories.
+
+const SATISFACTORY_SAVE: &str = "synthetic/satisfactory/invented.sav";
+
+fn satisfactory_view(session: &Session) -> SatisfactoryView {
+    match session.game_view().unwrap() {
+        GameView::Satisfactory { view } => *view,
+        other => panic!("a Satisfactory save must open with its view, got {other:?}"),
+    }
+}
+
+#[test]
+fn satisfactory_saves_list_player_and_storage_inventories() {
+    let env = self::env();
+    let path = copy_in(&env, SATISFACTORY_SAVE);
+    let session = open(&env, &path, None).unwrap();
+    let view = satisfactory_view(&session);
+    assert!(!view.rows.is_empty(), "the Values list stays below");
+    assert_eq!(view.inventories.len(), 2);
+    let player = &view.inventories[0];
+    assert_eq!(player.kind, InventoryKind::Player);
+    assert_eq!(player.label, "Player inventory");
+    let stacks: Vec<(&str, &str)> = player
+        .stacks
+        .iter()
+        .map(|stack| (stack.name.as_str(), stack.count.value.as_str()))
+        .collect();
+    assert_eq!(
+        stacks,
+        vec![("Invented Plate", "40"), ("Invented Wire", "7")]
+    );
+    for stack in &player.stacks {
+        assert!(stack.count.path.ends_with("/NumItems"));
+        assert!(stack.count.editable);
+        assert_eq!(stack.count.min, Some(0));
+        assert_eq!(stack.count.max, Some(500));
+        assert!(stack.count.hint.contains("500 is the largest stack size"));
+    }
+    let storage = &view.inventories[1];
+    assert_eq!(storage.kind, InventoryKind::Storage);
+    assert_eq!(storage.label, "Storage Container Mk1");
+    assert_eq!(storage.stacks.len(), 1);
+    assert_eq!(storage.stacks[0].name, "Invented Ore");
+    assert_eq!(storage.stacks[0].count.value, "120");
+}
+
+#[test]
+fn a_satisfactory_stack_count_edits_and_undoes() {
+    let env = self::env();
+    let path = copy_in(&env, SATISFACTORY_SAVE);
+    let mut session = open(&env, &path, None).unwrap();
+    let count = satisfactory_view(&session).inventories[0].stacks[0]
+        .count
+        .clone();
+
+    let error = session.edit_value(&count.path, "501").unwrap_err();
+    assert_eq!(error.code, app_codes::OUT_OF_RANGE);
+    session.edit_value(&count.path, "55").unwrap();
+    let edited = satisfactory_view(&session).inventories[0].stacks[0]
+        .count
+        .clone();
+    assert_eq!(edited.value, "55");
+    assert_eq!(edited.original, "40");
+    assert_eq!(session.pending_changes().len(), 1);
+
+    session.undo().unwrap();
+    let undone = satisfactory_view(&session).inventories[0].stacks[0]
+        .count
+        .clone();
+    assert_eq!(undone.value, "40");
+    assert!(session.pending_changes().is_empty());
+}
+
+fn collect_real_saves(dir: &Path, out: &mut Vec<PathBuf>) {
+    let Ok(entries) = fs::read_dir(dir) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.is_dir() {
+            collect_real_saves(&path, out);
+        } else if path
+            .extension()
+            .is_some_and(|extension| extension.eq_ignore_ascii_case("sav"))
+        {
+            out.push(path);
+        }
+    }
+}
+
+#[test]
+#[ignore = "reads the local, git-ignored fixtures/external/satisfactory saves"]
+fn real_satisfactory_saves_list_a_player_inventory_and_edit_one_count() {
+    let root = fixture("external/satisfactory");
+    let mut saves = Vec::new();
+    collect_real_saves(&root, &mut saves);
+    if saves.is_empty() {
+        eprintln!("no real Satisfactory saves under {}", root.display());
+        return;
+    }
+
+    for (index, source) in saves.iter().enumerate() {
+        let env = self::env();
+        let name = source
+            .file_name()
+            .and_then(|name| name.to_str())
+            .unwrap_or("save.sav");
+        let path = env.work.join(format!("{index}-{name}"));
+        fs::copy(source, &path).unwrap();
+
+        let mut session = open(&env, &path, None).unwrap();
+        let started = std::time::Instant::now();
+        let view = satisfactory_view(&session);
+        let build = started.elapsed();
+        let player = view
+            .inventories
+            .iter()
+            .find(|inventory| inventory.kind == InventoryKind::Player)
+            .unwrap_or_else(|| panic!("{} has no player inventory", source.display()));
+        assert!(
+            !player.stacks.is_empty(),
+            "{} has an empty player inventory",
+            source.display()
+        );
+        assert!(player.stacks.iter().all(|stack| !stack.name.is_empty()));
+        let stack = player.stacks[0].count.clone();
+        let old: i64 = stack.value.parse().unwrap();
+        let new = if old < 500 { old + 1 } else { old - 1 };
+        assert_ne!(old, new, "{} has no room to edit a count", source.display());
+
+        session.edit_value(&stack.path, &new.to_string()).unwrap();
+        let pending = session.pending_changes();
+        assert_eq!(pending.len(), 1, "{}", source.display());
+        assert_eq!(pending[0].path, stack.path);
+
+        session.save(path.to_str().unwrap(), true, None).unwrap();
+        let reopened = open(&env, &path, None).unwrap();
+        let again = satisfactory_view(&reopened);
+        let count = again
+            .inventories
+            .iter()
+            .flat_map(|inventory| &inventory.stacks)
+            .find(|candidate| candidate.count.path == stack.path)
+            .unwrap_or_else(|| panic!("{} lost the edited stack", source.display()));
+        assert_eq!(count.count.value, new.to_string());
+        eprintln!(
+            "{}: {} inventories ({} player, {} storage, {} other), {} stacks, view built in {:?}",
+            source.display(),
+            again.inventories.len(),
+            again
+                .inventories
+                .iter()
+                .filter(|inventory| inventory.kind == InventoryKind::Player)
+                .count(),
+            again
+                .inventories
+                .iter()
+                .filter(|inventory| inventory.kind == InventoryKind::Storage)
+                .count(),
+            again
+                .inventories
+                .iter()
+                .filter(|inventory| inventory.kind == InventoryKind::Other)
+                .count(),
+            again
+                .inventories
+                .iter()
+                .map(|inventory| inventory.stacks.len())
+                .sum::<usize>(),
+            build
+        );
     }
 }

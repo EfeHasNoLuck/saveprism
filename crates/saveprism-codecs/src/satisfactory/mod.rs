@@ -33,10 +33,13 @@
 //! payloads (`Int8`, `UInt8`, `Int`, `UInt32`, `Int64`, `UInt64`, `Float`, `Double`, `Bool`,
 //! and a `ByteProperty` whose enum type is `None`) are editable leaves with an exact span.
 //! `InventoryStack` arrays are opened, so the item count (`NumItems`) of every stack is an
-//! editable `IntProperty`. Strings, enums, object references, maps, sets, text, binary structs and
-//! arrays of unknown structs stay read-only: changing them would change a length or needs the
-//! game schema. Any property whose payload does not parse exactly is kept as read-only bytes by
-//! its tag span, so one unusual property never hides the rest of the object.
+//! editable `IntProperty`. The `InventoryItem` of a stack (`FInventoryItem`: an object reference
+//! followed by an `FGDynamicStruct` item state) names its class reference in a read-only
+//! `ItemClass` string and keeps the item state raw read-only by span. Strings, enums, object
+//! references, maps, sets, text, binary structs and arrays of unknown structs stay read-only:
+//! changing them would change a length or needs the game schema. Any property whose payload does
+//! not parse exactly is kept as read-only bytes by its tag span, so one unusual property never
+//! hides the rest of the object.
 //!
 //! # Exact writing
 //!
