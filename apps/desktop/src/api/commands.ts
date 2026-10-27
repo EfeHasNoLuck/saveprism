@@ -224,6 +224,43 @@ export function getChildren(
   return invoke<Page<NodeRow>>("get_children", { path, offset, limit });
 }
 
+/**
+ * One page of the children of the group at `path` as the Values list shows them: wrappers folded
+ * (an Easy Save 3 `{__type, value}`, a group with one value, a list with one item) and a map entry
+ * as one row named after its key. `entry` is the child's own path; `path` lies below it when
+ * wrappers were folded.
+ */
+export function valueChildren(
+  path: string,
+  offset: number,
+  limit: number,
+): Promise<Page<ValueChild>> {
+  return invoke<Page<ValueChild>>("value_children", { path, offset, limit });
+}
+
+/** What the Values list's search found (`valueSearch`). */
+export interface ValueHits {
+  /** Paths of the entries whose own key or value holds the query (at most 5,000). */
+  paths: string[];
+  /** Number of entries found; more than `paths` holds when the list was cut. */
+  total: number;
+  /** The search stopped at its hit limit, so `total` is a lower bound. */
+  truncated: boolean;
+}
+
+/**
+ * Case-insensitive search of the Values list: entries whose own key (at any depth) or value holds
+ * `query`. The path above an entry does not count, so a group's name finds the group.
+ */
+export function valueSearch(query: string): Promise<ValueHits> {
+  return invoke<ValueHits>("value_search", { query });
+}
+
+/** The name a player reads for each path ("STATUS · 0 · currentValue"); "" for the root. */
+export function valueLabels(paths: string[]): Promise<string[]> {
+  return invoke<string[]>("value_labels", { paths });
+}
+
 /** Case-insensitive search over paths and scalar values. An empty query gives an empty page. */
 export function search(
   query: string,
@@ -370,6 +407,11 @@ export interface ValueRow {
   removable: boolean;
 }
 
+/** A child row of a group (`valueChildren`): the row and the path of the child's own entry. */
+export interface ValueChild extends ValueRow {
+  entry: string;
+}
+
 /** A SugarCube (Twine) save: its facts and the story variables at the moment the game resumes at. */
 export interface SugarCubeView {
   /** The save's title, or null. */
@@ -455,7 +497,13 @@ export type GameView =
   | { kind: "sugarcube"; view: SugarCubeView }
   | { kind: "witcher3"; view: Witcher3View }
   | { kind: "satisfactory"; view: SatisfactoryView }
-  | { kind: "values"; rows: ValueRow[]; addParent: string | null };
+  | {
+      kind: "values";
+      rows: ValueRow[];
+      addParent: string | null;
+      /** What describes the file rather than the game (a GVAS header), read-only; often empty. */
+      details: ValueRow[];
+    };
 
 /**
  * The game view of the open file: RPG Maker sections for MV, MZ, XP, VX and VX Ace saves, the story

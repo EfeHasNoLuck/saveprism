@@ -52,6 +52,7 @@ mod rgss;
 mod satisfactory;
 mod structure;
 mod sugarcube;
+mod values;
 mod w3cards;
 
 pub use backups::BackupRow;
@@ -74,6 +75,7 @@ pub use renpy::{
 pub use report::{EntropyClass, FileReport, read_file_report};
 pub use satisfactory::{InventoryKind, SatisfactoryInventory, SatisfactoryStack, SatisfactoryView};
 pub use sugarcube::SugarCubeView;
+pub use values::{ValueChild, ValueHits};
 pub use w3cards::W3CardsView;
 
 #[cfg(test)]
@@ -1131,22 +1133,28 @@ impl Session {
         })
     }
 
-    /// Depth-first walk in document order. The visit budget (one visit per node) stops cyclic graphs.
+    /// The nodes whose path text or scalar value text holds `needle` (see [`Session::collect_by`]).
     fn collect_hits(&self, needle: &str) -> (Vec<(NodeId, Path)>, bool) {
-        struct Frame {
-            id: NodeId,
-            path: Path,
-            next: usize,
-        }
         let doc = &self.doc;
-        let matches = |id: NodeId, path: &Path| -> bool {
+        self.collect_by(|id: NodeId, path: &Path| -> bool {
             if path.to_string().to_lowercase().contains(needle) {
                 return true;
             }
             doc.get(id)
                 .and_then(value_text)
                 .is_some_and(|text| text.to_lowercase().contains(needle))
-        };
+        })
+    }
+
+    /// The nodes `matches` accepts, at most [`MAX_SEARCH_HITS`] (then `true`). Depth-first walk in
+    /// document order. The visit budget (one visit per node) stops cyclic graphs.
+    fn collect_by(&self, matches: impl Fn(NodeId, &Path) -> bool) -> (Vec<(NodeId, Path)>, bool) {
+        struct Frame {
+            id: NodeId,
+            path: Path,
+            next: usize,
+        }
+        let doc = &self.doc;
 
         let mut hits: Vec<(NodeId, Path)> = Vec::new();
         let root = doc.root();

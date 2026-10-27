@@ -17,6 +17,7 @@ import {
   pendingChanges,
   removeValue as removeValueCommand,
   setDataFolder as setDataFolderCommand,
+  valueLabels,
   type ApiError,
   type Change,
   type Field,
@@ -33,6 +34,7 @@ import {
   type RevealTarget,
 } from "./context";
 import { registerEditorBundles } from "./i18n";
+import { pickLabels, viewLabels } from "./labels";
 import { RpgMaker } from "./RpgMaker";
 import { SugarCube } from "./SugarCube";
 import { ValuesCard } from "./ValuesCard";
@@ -47,6 +49,11 @@ export interface EditorHandle {
   reload: () => void;
   /** Opens the groups around `path` and scrolls to the value (a picked compare row). */
   reveal: (path: string) => void;
+  /**
+   * The name a player reads for each path ("Gold", "Platina · Level", "STATUS · 0 · currentValue"),
+   * else the path itself; for the pending changes and Compare, which keep the path for a tooltip.
+   */
+  labels: (paths: readonly string[]) => Promise<Map<string, string>>;
 }
 
 export interface EditorViewProps {
@@ -192,8 +199,22 @@ export function EditorView({
         revealNonce.current += 1;
         setReveal({ path, nonce: revealNonce.current });
       },
+      labels: async (paths) => {
+        const own = view === null ? new Map<string, string>() : viewLabels(view, t);
+        const rest = paths.filter((path) => !own.has(path));
+        let host: string[] = [];
+        if (rest.length > 0) {
+          try {
+            host = await valueLabels(rest);
+          } catch {
+            // The paths themselves are shown instead.
+          }
+        }
+        const byPath = new Map(rest.map((path, index) => [path, host[index] ?? ""]));
+        return pickLabels(paths, own, paths.map((path) => byPath.get(path) ?? ""));
+      },
     }),
-    [refreshCount, reloadView],
+    [refreshCount, reloadView, view, t],
   );
 
   // Scrolls to the value the app asked for. The groups along the way open themselves, so this
@@ -333,7 +354,7 @@ export function EditorView({
           ) : view.kind === "satisfactory" ? (
             <Satisfactory view={view.view} />
           ) : (
-            <ValuesCard rows={view.rows} addParent={view.addParent} />
+            <ValuesCard rows={view.rows} addParent={view.addParent} details={view.details} />
           )}
         </div>
       </Tooltip.Provider>

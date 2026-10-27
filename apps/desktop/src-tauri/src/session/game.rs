@@ -280,6 +280,9 @@ pub enum GameView {
         /// Where a new top-level value goes (`add_value`), or `None` when none can be added.
         #[serde(rename = "addParent")]
         add_parent: Option<String>,
+        /// What describes the file rather than the game (a GVAS save's header), shown apart and
+        /// read-only; empty for most files.
+        details: Vec<ValueRow>,
     },
 }
 
@@ -1046,16 +1049,20 @@ impl Ctx<'_> {
         })
     }
 
-    /// One row of the Values list for the entry `key` at `id`.
-    fn value_row(&self, name: String, id: NodeId, path: Path, easy_save: bool) -> ValueRow {
-        // Easy Save 3 keeps the value of an entry in `{"__type": ..., "value": ...}`.
-        let mut at: At = (id, path);
-        if easy_save {
-            let has_type = self.entry(&at, "__type").is_some();
-            if has_type && let Some(inner) = self.entry(&at, "value") {
-                at = inner;
-            }
-        }
+    /// One row of the Values list for the entry `key` at `id`. Easy Save 3 keeps the value of an
+    /// entry in `{"__type": ..., "value": ...}`, which is always folded; with `fold`, a group with
+    /// one value and a list with one item are too (see `values.rs`).
+    fn value_row(
+        &self,
+        name: String,
+        id: NodeId,
+        path: Path,
+        easy_save: bool,
+        fold: bool,
+        shaper: &Shaper,
+    ) -> ValueRow {
+        let addable = |at: &At| shaper.addable(self.doc, &at.1, at.0);
+        let at = self.fold((id, path), easy_save, fold, &addable);
         let children = self
             .doc
             .get(at.0)
@@ -1072,9 +1079,10 @@ impl Ctx<'_> {
         }
     }
 
-    /// The top-level rows, with what can be added and removed by `shaper`.
-    pub(super) fn value_rows(&self, easy_save: bool, shaper: &Shaper) -> Vec<ValueRow> {
-        let root = self.doc.root();
+    /// The rows of the top level (`base`: the root, or the properties of a GVAS save), with what
+    /// can be added and removed by `shaper`.
+    pub(super) fn value_rows(&self, base: &At, easy_save: bool, shaper: &Shaper) -> Vec<ValueRow> {
+        let root = base.0;
         let Some(node) = self.doc.get(root) else {
             return Vec::new();
         };
@@ -1100,20 +1108,21 @@ impl Ctx<'_> {
             .into_iter()
             .take(MAX_VALUE_ROWS)
             .map(|(name, id)| {
-                let mut path = Path::root();
+                let mut path = base.1.clone();
                 if !is_root_scalar {
                     path.push(name.as_str());
                 }
                 let removable = !is_root_scalar
                     && shaper.removable(
                         self.doc,
-                        &Path::root(),
+                        &base.1,
                         root,
                         &name,
                         id,
                         repeated.contains(&name),
                     );
-                let mut row = self.value_row(name, id, path, easy_save);
+                let fold = !is_root_scalar && !removable;
+                let mut row = self.value_row(name, id, path, easy_save, fold, shaper);
                 row.removable = removable;
                 if let Ok(row_path) = Path::parse(&row.path)
                     && let Some(row_id) = self.doc.resolve(&row_path)
@@ -1196,12 +1205,14 @@ impl Session {
             return Ok(GameView::Values {
                 rows: self.with_previews(rows),
                 add_parent: None,
+                details: Vec::new(),
             });
         }
         if let Some(rows) = self.renpy_view(&ctx) {
             return Ok(GameView::Values {
                 rows: self.with_previews(rows),
                 add_parent: None,
+                details: Vec::new(),
             });
         }
         if let Some(engine) = self.rpg_engine()
@@ -1221,17 +1232,16 @@ impl Session {
                 view: Box::new(view),
             });
         }
-        let easy_save = self
-            .recipe
-            .steps
-            .iter()
-            .any(|step| step.kind == "format.es3");
+        let easy_save = self.is_easy_save();
         let shaper = self.shaper(&ctx);
-        let root = self.doc.root();
+        // A GVAS save lists its properties; the rest of the file is its details.
+        let base = self
+            .gvas_properties(&ctx)
+            .unwrap_or_else(|| (self.doc.root(), Path::root()));
         let add_parent = shaper
-            .addable(&self.doc, &Path::root(), root)
-            .then(String::new);
-        let rows = self.with_previews(ctx.value_rows(easy_save, &shaper));
+            .addable(&self.doc, &base.1, base.0)
+            .then(|| base.1.to_string());
+        let rows = self.with_previews(ctx.value_rows(&base, easy_save, &shaper));
         if self.is_satisfactory() {
             return Ok(GameView::Satisfactory {
                 view: Box::new(SatisfactoryView {
@@ -1250,7 +1260,11 @@ impl Session {
                 }),
             });
         }
-        Ok(GameView::Values { rows, add_parent })
+        Ok(GameView::Values {
+            rows,
+            add_parent,
+            details: self.gvas_details(&ctx),
+        })
     }
 
     /// Fills the preview of the rows that show neither an editor nor children, so a read-only value

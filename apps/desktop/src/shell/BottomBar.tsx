@@ -25,6 +25,9 @@ import { InfoTip } from "@/components/ui/info-tip";
 import type { CopyCodePlace } from "./code";
 import type { SaveDefault } from "./settings";
 
+/** A pending change with the name a player reads for its path (the path stays in a tooltip). */
+export type LabeledChange = Change & { label: string };
+
 interface BottomBarProps {
   changeCount: number;
   /** Added and removed entries among the pending changes. */
@@ -39,7 +42,8 @@ interface BottomBarProps {
   /** There is an edit to undo or redo (Ctrl+Z, Ctrl+Y). */
   canUndo: boolean;
   canRedo: boolean;
-  loadChanges: () => Promise<Change[]>;
+  /** The pending changes, each with the name a player reads for its path. */
+  loadChanges: () => Promise<LabeledChange[]>;
   onUndo: () => void;
   onRedo: () => void;
   onUndoAll: () => void;
@@ -80,7 +84,7 @@ export function BottomBar({
   onCopyCode,
 }: BottomBarProps) {
   const { t } = useTranslation();
-  const [changes, setChanges] = useState<Change[] | null>(null);
+  const [changes, setChanges] = useState<LabeledChange[] | null>(null);
   const cannotSave = readOnly || invalid || busy;
   const disabledReason = readOnly
     ? t("bottom.readOnlyTip")
@@ -147,8 +151,8 @@ export function BottomBar({
               <ul className="dense-scroll flex max-h-72 flex-col gap-1 overflow-y-auto">
                 {changes.map((change) => (
                   <li key={change.path} className="rounded-sm bg-surface-high px-2.5 py-1 text-xs">
-                    <span className="block truncate font-mono text-[0.6875rem] text-muted-foreground" title={change.path}>
-                      {change.path}
+                    <span className="block truncate text-[0.6875rem] font-medium text-foreground-variant" title={change.path}>
+                      {change.label}
                     </span>
                     {change.kind !== "set" ? (
                       <span className="text-[0.6875rem] font-medium text-muted-foreground">

@@ -650,7 +650,9 @@ fn summarize(
     limit: usize,
 ) -> Result<Value, CallError> {
     match view {
-        GameView::Values { rows, add_parent } => {
+        GameView::Values {
+            rows, add_parent, ..
+        } => {
             let filtered: Vec<&ValueRow> = rows
                 .iter()
                 .filter(|row| filter.is_none_or(|filter| row_matches(row, filter)))

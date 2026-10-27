@@ -26,6 +26,8 @@ interface CompareDialogProps {
   onClose: () => void;
   /** Shows the value in the open document (the row is in the editor). */
   onReveal: (path: string) => void;
+  /** The name a player reads for each path; a row without one shows its path. */
+  labels: (paths: readonly string[]) => Promise<ReadonlyMap<string, string>>;
 }
 
 /** Tiny one-sided badge ("only here" / "only there"). */
@@ -61,15 +63,23 @@ function Side({ value }: { value: string | null }) {
  * Compares the open document with another save: every value that differs, plus the entries only
  * one side has. Read-only; a row the open document has jumps to that value in the editor.
  */
-export function CompareDialog({ path, fileName, onClose, onReveal }: CompareDialogProps) {
+export function CompareDialog({ path, fileName, onClose, onReveal, labels }: CompareDialogProps) {
   const { t } = useTranslation();
   const [state, setState] = useState<CompareState>({ status: "loading" });
   const [query, setQuery] = useState("");
+  const [names, setNames] = useState<ReadonlyMap<string, string>>(new Map());
 
   useEffect(() => {
     let cancelled = false;
     compareWith(path)
-      .then((result) => !cancelled && setState({ status: "ready", result }))
+      .then(async (result) => {
+        const found = await labels(result.rows.map((row) => row.path)).catch(
+          () => new Map<string, string>(),
+        );
+        if (cancelled) return;
+        setNames(found);
+        setState({ status: "ready", result });
+      })
       .catch((error: unknown) => {
         if (cancelled) return;
         const { reason, fix } = describeError(error, t);
@@ -81,12 +91,12 @@ export function CompareDialog({ path, fileName, onClose, onReveal }: CompareDial
     return () => {
       cancelled = true;
     };
-  }, [path, t]);
+  }, [path, t, labels]);
 
   const result = state.status === "ready" ? state.result : null;
   const rows = useMemo(
-    () => (result === null ? [] : filterCompareRows(result.rows, query)),
-    [query, result],
+    () => (result === null ? [] : filterCompareRows(result.rows, query, names)),
+    [query, result, names],
   );
   const name = result?.otherFileName ?? fileName;
 
@@ -145,8 +155,8 @@ export function CompareDialog({ path, fileName, onClose, onReveal }: CompareDial
                   const body = (
                     <>
                       <span className="flex min-w-0 items-center gap-2">
-                        <span className="min-w-0 truncate font-mono text-xs" title={row.path}>
-                          {row.path}
+                        <span className="min-w-0 truncate text-xs font-medium" title={row.path}>
+                          {names.get(row.path) ?? row.path}
                         </span>
                         <KindBadge row={row} />
                         {row.here !== null ? (

@@ -3525,7 +3525,9 @@ fn a_vx_ace_item_can_be_added_undone_and_saved() {
 
 fn values_view(session: &Session) -> (Vec<ValueRow>, Option<String>) {
     match session.game_view().unwrap() {
-        GameView::Values { rows, add_parent } => (rows, add_parent),
+        GameView::Values {
+            rows, add_parent, ..
+        } => (rows, add_parent),
         _ => panic!("not a Values list"),
     }
 }

@@ -1,24 +1,40 @@
 import { Sparkles } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { fieldInfo, getChildren } from "@/api/commands";
+import { fieldInfo, valueChildren } from "@/api/commands";
 import { Button } from "@/components/ui/button";
 import {
   askAiValueCount,
   buildAskAiText,
   collectAskAiRows,
   MAX_ASK_AI_VALUES,
+  type AskAiGroup,
   type AskAiRow,
   type AskAiSource,
 } from "./askAi";
 import { useEditorContext } from "./context";
 
-/** The host as the source of the values inside groups. */
+/** The host as the source of the values inside groups, named and folded as the card shows them. */
 const HOST: AskAiSource = {
   children: async (path, offset) => {
     try {
-      const page = await getChildren(path, offset, 200);
-      return { items: page.items, total: page.total };
+      const page = await valueChildren(path, offset, 200);
+      const items = page.items.map((row) => ({
+        key: row.name,
+        path: row.path,
+        kind: row.field !== null ? row.field.kind : row.children > 0 ? "object" : "none",
+        field:
+          row.field === null
+            ? null
+            : {
+                path: row.field.path,
+                value: row.field.value,
+                kind: row.field.kind,
+                min: row.field.min,
+                max: row.field.max,
+              },
+      }));
+      return { items, total: page.total };
     } catch {
       return null;
     }
@@ -51,8 +67,8 @@ export function AskAiButton({
   /** The values the card shows, on every page. */
   rows: AskAiRow[];
   total: number;
-  /** Paths of the card's groups, whose values the note lists after `rows`. */
-  groups?: readonly string[];
+  /** The card's groups, whose values the note lists after `rows`. */
+  groups?: readonly AskAiGroup[];
 }) {
   const { t } = useTranslation("editor");
   const { fileName, formatLabel, copyForAi } = useEditorContext();

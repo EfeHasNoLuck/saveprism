@@ -24,6 +24,7 @@ import {
   pagerLabel,
   readOnlyText,
   sameValue,
+  searchCover,
   stepValue,
 } from "./helpers";
 
@@ -357,5 +358,37 @@ describe("change counts", () => {
       ]),
     ).toEqual({ added: 2, removed: 1 });
     expect(countChangeKinds([])).toEqual({ added: 0, removed: 0 });
+  });
+});
+
+describe("searchCover", () => {
+  it("adds every group above a found path, and marks the groups that hold one", () => {
+    const { covered, inside } = searchCover([
+      "/root/properties/money/0",
+      "/root/properties/stats/hp",
+      "/gold",
+    ]);
+    expect([...covered].sort()).toEqual([
+      "/gold",
+      "/root",
+      "/root/properties",
+      "/root/properties/money",
+      "/root/properties/money/0",
+      "/root/properties/stats",
+      "/root/properties/stats/hp",
+    ]);
+    expect([...inside].sort()).toEqual([
+      "/root",
+      "/root/properties",
+      "/root/properties/money",
+      "/root/properties/stats",
+    ]);
+  });
+
+  it("keeps a found group out of `inside` when nothing below it was found", () => {
+    const { covered, inside } = searchCover(["/a/b"]);
+    expect(covered.has("/a/b")).toBe(true);
+    expect(inside.has("/a/b")).toBe(false);
+    expect(inside.has("")).toBe(false);
   });
 });

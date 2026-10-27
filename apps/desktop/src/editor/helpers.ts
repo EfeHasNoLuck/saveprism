@@ -293,6 +293,33 @@ export function cardWidth(columns: number): number {
   return columns * MIN_COLUMN + (columns - 1) * COLUMN_GAP + CARD_EDGES;
 }
 
+/**
+ * The paths a search found with every group above them (`covered`), and only the groups above
+ * them (`inside`, the groups that hold something found). Paths are JSON Pointers; the root ("")
+ * is left out.
+ */
+export function searchCover(paths: readonly string[]): {
+  covered: Set<string>;
+  inside: Set<string>;
+} {
+  const covered = new Set<string>();
+  const inside = new Set<string>();
+  for (const path of paths) {
+    covered.add(path);
+    let current = path;
+    for (;;) {
+      const cut = current.lastIndexOf("/");
+      if (cut <= 0) break;
+      current = current.slice(0, cut);
+      // The groups above one already in were added with it.
+      if (inside.has(current)) break;
+      inside.add(current);
+      covered.add(current);
+    }
+  }
+  return { covered, inside };
+}
+
 /** What a read-only row of the story view holds (mirrors `RowNote` of the host). */
 export interface NoteLike {
   kind: "changed" | "map" | "set" | "date" | "code" | "empty";

@@ -30,6 +30,7 @@ use uesave::{Save, SaveReader, Types};
 
 use crate::json::JsonCodec;
 
+mod details;
 mod infer;
 
 /// `uesave` could not read the GVAS bytes (the error carries the byte offset).
@@ -158,6 +159,7 @@ impl Codec for GvasCodec {
         ctx.check_output(input_len, len_u64(json.len()))?;
 
         let mut decoded = JsonCodec.decode(json.as_bytes(), ctx)?;
+        details::lock(&mut decoded.doc)?;
         decoded.params.set(TYPES_KEY, stored);
         Ok(decoded)
     }

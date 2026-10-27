@@ -12,7 +12,7 @@ use std::sync::{Mutex, MutexGuard, PoisonError};
 use session::{
     ApiError, BackupRow, Change, CompareResult, Field, FieldKind, FileReport, GameView,
     HistoryResult, HistoryState, NodeRow, OpenInfo, Page, SaveLocation, SaveResult, Session,
-    W3CardsView, app_codes, read_file_report, save_locations,
+    ValueChild, ValueHits, W3CardsView, app_codes, read_file_report, save_locations,
 };
 use tauri::{AppHandle, Manager, State};
 use tauri_plugin_opener::OpenerExt;
@@ -103,6 +103,33 @@ async fn get_children(
     limit: usize,
 ) -> Result<Page<NodeRow>, ApiError> {
     state.with_session(|session| session.get_children(&path, offset, limit))
+}
+
+/// One page of the children of the group at `path` as the Values list shows them: wrappers
+/// folded, a map entry as one row named after its key (`limit` is capped at 500).
+#[tauri::command]
+async fn value_children(
+    state: State<'_, AppState>,
+    path: String,
+    offset: usize,
+    limit: usize,
+) -> Result<Page<ValueChild>, ApiError> {
+    state.with_session(|session| session.value_children(&path, offset, limit))
+}
+
+/// The search of the Values list: entries whose own key or value holds `query`.
+#[tauri::command]
+async fn value_search(state: State<'_, AppState>, query: String) -> Result<ValueHits, ApiError> {
+    state.with_session(|session| Ok(session.value_search(&query)))
+}
+
+/// The name a player reads for each path ("STATUS · 0 · currentValue"), in the same order.
+#[tauri::command]
+async fn value_labels(
+    state: State<'_, AppState>,
+    paths: Vec<String>,
+) -> Result<Vec<String>, ApiError> {
+    state.with_session(|session| Ok(session.value_labels(&paths)))
 }
 
 /// Case-insensitive search over paths and scalar values.
@@ -404,6 +431,9 @@ pub fn run() {
             open_code,
             copy_code,
             get_children,
+            value_children,
+            value_labels,
+            value_search,
             search,
             edit_value,
             edit_values,
