@@ -55,9 +55,19 @@ order; show mockups (A/B screenshots) before building a new screen.
 - An animated logo when the app opens (for example the logo drawing itself). Installer screens and Windows
   notifications cannot animate: they get the static logo.
 - Animation libraries must be permissive (CSS, Motion/MIT, lottie-web/MIT); GSAP's license is not, so not GSAP.
-- The design/skill repos the maintainer found (open-design, react-particle-image, get-shit-done, taste-skill,
-  impeccable, awesome-design-md, genjutsu, motion-design-skill, design-dna, gsap-skills, threejs-skills): analyze each
-  and adapt what fits SavePrism into our own docs; do not install third-party skill packs as they are.
+- The design/skill repos the maintainer found were analyzed (2026-10-27, report `.motor/design-repos-report.md`, local).
+  Adopted as our own rules (no packages, no skill packs installed):
+  - Opening logo: plain CSS/SVG stroke animation (no library, starts on first paint, follows theme colors), shown only
+    while the app loads; it never delays or blocks input. (motion-design-skill, comparison in the report)
+  - UI motion: 150-200 ms, ease-out entrances (e.g. scale 0.96 → 1), fast ease-in exits; never block input; follow
+    Windows' "show animations" setting (`prefers-reduced-motion`). (genjutsu, motion-design-skill)
+  - Dialogs and Settings: 4/8 px spacing rhythm, visible keyboard focus, full keyboard navigation, Esc closes, focus
+    stays inside the dialog. (impeccable)
+  - Start screen FAQ and About: tight type hierarchy, no generic three-card templates. (taste-skill)
+  - Theme files for import/export: a typed JSON schema (colors, pattern, photo settings), validated on import, data
+    only. (design-dna, open-design token ideas)
+  - Not used: react-particle-image (abandoned, constant CPU), GSAP and gsap-skills (license), Three.js (size, GPU),
+    get-shit-done (workflow tool; our NOW.md process covers it).
 
 ## Windows integration
 - Explorer right-click entry with the logo, added by the installer: TR "SavePrism ile çöz", EN "Decode with
