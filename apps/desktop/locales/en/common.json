@@ -804,6 +804,53 @@
     "licenseValue": "MIT license",
     "privacy": "Files stay on this computer. Backups are kept in %LOCALAPPDATA%\\SavePrism\\backups.",
     "notices": "Third-party notices",
-    "noticesFailed": "The notices could not be opened"
+    "noticesFailed": "The notices could not be read",
+    "versionLine": "Version {{version}}",
+    "licenseTag": "MIT License",
+    "licenseShort": "MIT",
+    "licenseBody": "SavePrism is released under the MIT License. The full text is below.",
+    "tagline": "A save editor that runs on your PC. No account, no upload.",
+    "coreVersion": "Core {{version}}",
+    "whatsNew": "What's new in {{version}}",
+    "showTour": "Show the tour again",
+    "copyright": "© 2026 SavePrism contributors",
+    "noticesSubtitle": "SavePrism is built with these open-source packages. Thank you!",
+    "searchPackages": "Search packages",
+    "searchEmpty": "No package matches.",
+    "noticesCount": "{{total}} packages",
+    "licenseUnknown": "Unknown",
+    "noticeNoText": "No license text is included in the notices file."
+  },
+  "whatsNew": {
+    "title": "What's new in {{version}}",
+    "subtitle": "Here is what changed in this version.",
+    "gotIt": "Got it"
+  },
+  "tour": {
+    "step": "Step {{current}} of {{total}}",
+    "back": "Back",
+    "next": "Next",
+    "skip": "Skip",
+    "done": "Done",
+    "drop": {
+      "title": "Open a save",
+      "body": "Drop a save file here, or use Open file and Paste code to start."
+    },
+    "where": {
+      "title": "Not sure where your save is?",
+      "body": "This link lists the usual save folders for each kind of game."
+    },
+    "language": {
+      "title": "Language",
+      "body": "Switch between English and Turkish here."
+    },
+    "bell": {
+      "title": "Notifications",
+      "body": "This session's events show up here."
+    },
+    "settings": {
+      "title": "Settings",
+      "body": "Theme, backups and the rest of SavePrism live here."
+    }
   }
 }

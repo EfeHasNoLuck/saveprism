@@ -91,11 +91,18 @@ export function Header({ file, onCloseFile, onWhereSaves, onOpenSettings }: Head
             </Button>
           </>
         ) : null}
-        <LanguageSwitcher />
-        {settings.showNotifications ? <Bell /> : null}
+        <span data-tour="language" className="flex">
+          <LanguageSwitcher />
+        </span>
+        {settings.showNotifications ? (
+          <span data-tour="bell" className="flex">
+            <Bell />
+          </span>
+        ) : null}
         <Button
           variant="ghost"
           size="icon-sm"
+          data-tour="settings"
           aria-label={t("header.settings")}
           title={t("header.settings")}
           onClick={onOpenSettings}

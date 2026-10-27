@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { getVersion } from "@tauri-apps/api/app";
 import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
@@ -45,12 +46,22 @@ import { Header } from "./shell/Header";
 import { JsonDialog, type ApplyResult, type JsonState } from "./shell/JsonDialog";
 import { OpeningOverlay } from "./shell/OpeningOverlay";
 import { gameFolder } from "./shell/names";
+import {
+  LAST_SEEN_VERSION_KEY,
+  readStored,
+  TOUR_SEEN_KEY,
+  tourSeen,
+  whatsNewDecision,
+  writeStored,
+} from "./shell/onboarding";
 import { PasswordDialog } from "./shell/PasswordDialog";
 import { SaveLocationsDialog } from "./shell/SaveLocationsDialog";
 import { SettingsPage } from "./shell/SettingsPage";
 import { firstListSearch, isTextEditing, shortcutFor } from "./shell/shortcuts";
 import { StartScreen } from "./shell/StartScreen";
 import { Toasts } from "./shell/Toasts";
+import { Tour } from "./shell/TourOverlay";
+import { WhatsNewDialog } from "./shell/WhatsNewDialog";
 
 /** Opening a file shows the loading cover only when it takes longer than this. */
 const OPEN_COVER_DELAY_MS = 300;
@@ -80,6 +91,11 @@ function App() {
   const [busy, setBusy] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [tourRunning, setTourRunning] = useState(() => !tourSeen());
+  /** The version whose "What's new" dialog is open, else null. */
+  const [whatsNewVersion, setWhatsNewVersion] = useState<string | null>(null);
+  /** "Show the tour again" asked for the start screen while a file is open. */
+  const [tourAfterClose, setTourAfterClose] = useState(false);
   const [backupsOpen, setBackupsOpen] = useState(false);
   /** Path of the second save of a comparison, while its dialog is open. */
   const [comparePath, setComparePath] = useState<string | null>(null);
@@ -750,6 +766,8 @@ function App() {
       // Nothing happens behind a dialog or an open menu, or while another action runs.
       const modal =
         settingsOpen ||
+        tourRunning ||
+        whatsNewVersion !== null ||
         backupsOpen ||
         comparePath !== null ||
         locationsOpen ||
@@ -802,7 +820,7 @@ function App() {
   const pasteHandler = useRef<(event: ClipboardEvent) => void>(() => undefined);
   useEffect(() => {
     pasteHandler.current = (event) => {
-      if (file !== null || busy || settingsOpen || pasteRequest !== null) return;
+      if (file !== null || busy || settingsOpen || tourRunning || pasteRequest !== null) return;
       const target = event.target instanceof Element ? event.target : null;
       if (isTextEditing(target) || document.querySelector('[role="dialog"]') !== null) return;
       const text = pastedText(event.clipboardData);
@@ -817,6 +835,48 @@ function App() {
     return () => window.removeEventListener("paste", listener);
   }, []);
 
+  // The notes of a new version open once; the first launch stores the version and shows the tour.
+  useEffect(() => {
+    let cancelled = false;
+    getVersion()
+      .then((version) => {
+        if (cancelled) return;
+        const decision = whatsNewDecision(readStored(LAST_SEEN_VERSION_KEY), version);
+        if (decision.store !== null) writeStored(LAST_SEEN_VERSION_KEY, decision.store);
+        if (decision.show) setWhatsNewVersion(version);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const finishTour = useCallback(() => {
+    writeStored(TOUR_SEEN_KEY, "1");
+    setTourRunning(false);
+  }, []);
+
+  const showTourAgain = useCallback(() => {
+    setSettingsOpen(false);
+    if (file === null) {
+      setTourRunning(true);
+      return;
+    }
+    // The tour points at the start screen, so a file that is open is closed first (asking when
+    // it has unsaved changes).
+    if (changeCount > 0) {
+      setTourAfterClose(true);
+      setCloseFileAsked(true);
+      return;
+    }
+    void closeOpenFile().then(() => setTourRunning(true));
+  }, [changeCount, closeOpenFile, file]);
+
+  const closeWhatsNew = useCallback(() => {
+    if (whatsNewVersion !== null) writeStored(LAST_SEEN_VERSION_KEY, whatsNewVersion);
+    setWhatsNewVersion(null);
+  }, [whatsNewVersion]);
+
   return (
     <TooltipProvider>
       <div className="relative flex h-screen flex-col bg-background text-foreground">
@@ -829,7 +889,7 @@ function App() {
         />
 
         {settingsOpen ? (
-          <SettingsPage onClose={() => setSettingsOpen(false)} />
+          <SettingsPage onClose={() => setSettingsOpen(false)} onShowTour={showTourAgain} />
         ) : (
           <>
             {readOnly ? (
@@ -1001,9 +1061,22 @@ function App() {
           <ConfirmDiscardDialog
             reason="close"
             count={changeCount}
-            onCancel={() => setCloseFileAsked(false)}
-            onDiscard={() => void closeOpenFile()}
+            onCancel={() => {
+              setCloseFileAsked(false);
+              setTourAfterClose(false);
+            }}
+            onDiscard={() => {
+              const startTour = tourAfterClose;
+              setTourAfterClose(false);
+              void closeOpenFile().then(() => {
+                if (startTour) setTourRunning(true);
+              });
+            }}
           />
+        ) : null}
+        {tourRunning ? <Tour onDone={finishTour} /> : null}
+        {whatsNewVersion !== null ? (
+          <WhatsNewDialog version={whatsNewVersion} onClose={closeWhatsNew} />
         ) : null}
         <Toasts />
       </div>

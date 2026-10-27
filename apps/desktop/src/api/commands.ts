@@ -777,16 +777,6 @@ export function fileReport(path: string): Promise<FileReport> {
   return invoke<FileReport>("file_report", { path });
 }
 
-/** True when the installer includes `THIRD_PARTY_NOTICES.md`. */
-export function noticesAvailable(): Promise<boolean> {
-  return invoke<boolean>("notices_available");
-}
-
-/** Opens the bundled `THIRD_PARTY_NOTICES.md` with the system's default program. */
-export function openNotices(): Promise<void> {
-  return invoke<void>("open_notices");
-}
-
 /** Path of the running SavePrism executable, for the AI app setup snippet. */
 export function mcpCommand(): Promise<string> {
   return invoke<string>("mcp_command");
