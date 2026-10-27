@@ -162,7 +162,10 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
      now numbered (`Name#2`), so every card count (and repeated inventory record) is editable. Waiting for the
      user's A/B pick (`GWENT_LAYOUT` in `apps/desktop/src/editor/gwent.ts`, now "a"; screenshots in
      `.motor/gwent-ab/`), then delete the other layout.
-   - Running: GVAS struct type hints found automatically (EVREN `gvashints`; a real UE 4.27 save still fails).
+   - GVAS struct type hints found automatically (`e91ee3d`; bounded search, kept only with an exact round trip): the
+     real UE 4.27 save opens. Of the 88 local real saves only the deliberately corrupted RPG Maker MZ file fails.
+   - Running: visual check over CDP of every format added since 2026-10-25, plus "Copy file report" and the header S
+     mark (Claude subagent; screenshots in `.motor/vcheck-1027/`).
      Left from `/formats` after these: Easy Save 2 (no public layout), Oodle/Kraken (no permissive decoder),
      "SSSoftware Serialize" (unknown format).
    - Wave 2, first: auto-unlock (user idea, 2026-10-24): every layer tried by content whatever the extension; simple XOR
