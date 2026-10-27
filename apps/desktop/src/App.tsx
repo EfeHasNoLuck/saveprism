@@ -755,7 +755,7 @@ function App() {
   const shortcutHandler = useRef<(event: KeyboardEvent) => void>(() => undefined);
   useEffect(() => {
     shortcutHandler.current = (event) => {
-      const action = shortcutFor(event);
+      const action = shortcutFor(event, settings.shortcuts);
       if (action === null) return;
       // Typing owns Ctrl+Z and Ctrl+Y in a text box and in the JSON editor. A key the editor
       // already handled (its own Ctrl+F) is left alone too.
@@ -784,7 +784,27 @@ function App() {
         if (!event.repeat) void chooseAndOpen();
         return;
       }
+      if (action === "pasteCode") {
+        if (file === null && !event.repeat) requestPaste();
+        return;
+      }
+      if (action === "openSettings") {
+        if (!event.repeat) setSettingsOpen(true);
+        return;
+      }
+      if (action === "whereSaves") {
+        if (!event.repeat) setLocationsOpen(true);
+        return;
+      }
       if (file === null) return;
+      if (action === "closeFile") {
+        if (!event.repeat) requestCloseFile();
+        return;
+      }
+      if (action === "undoAll") {
+        if (!event.repeat && changeCount > 0) void undoAll();
+        return;
+      }
       if (action === "undo" || action === "redo") {
         stepHistory(action);
       } else if (action === "find") {
