@@ -1,24 +1,39 @@
 # HANDOFF
 
-**State (2026-10-27, ~18:10 TR):** polish done. Today on `main` (local only, not pushed; GitHub Actions minutes are out,
-user: "commit tut, push atarız sonra"; last pushed `4214786`): Satisfactory codec + inventory view, the visual-check
-polish, and the fixes from a player audit of the four focus engines (details and commits in `NOW.md`, todo 6, and
-`.motor/audit-1027/REPORT.md`). Every merge: kontrol rust + web 3/3, `cargo deny check`, ignored real-save tests.
-**Next:** ask the user about publishing. Recommended first: build a fresh MSI from `main`
-(`pnpm -C apps/desktop tauri build`), the user installs it (`msiexec /i ... /l*v <scratch log>`, they click) and opens a
-few real save copies from `.motor/realtest/`; then publishing (public repo + release) only with their explicit OK.
+**State (2026-10-27, ~20:00 TR):** building the maintainer's polish list `docs/design/polish-v0.1.md` (todo 7 in
+`NOW.md`). Mockups approved (`.motor/mockups-1027/`, local): Settings layout **B**, start screen and "Where is my
+save?" as drawn, About says "MIT License" (no "free"). Everything is local on `main` (not pushed: GitHub Actions minutes
+are out; last pushed `4214786`). Weekly Claude limit was 85% → EVREN builds, Claude only merges, checks and does the
+final visual check.
 
-**User decisions:** focus on Unreal, Unity, RPG Maker, Ren'Py; other engines only through issues (memory
-`focus-engines`). No value finder; quiet backend UX; at most 2 EVREN jobs at once; never touch the user's original
-saves (copies only). Weekly Claude limit was at 81% on 2026-10-27: prefer EVREN for code chores.
+**Running (EVREN, started ~19:55 TR, background Bash of the session that wrote this):**
+- `w4-settings` in `../saveprism-wt/w4-settings` (brief `.motor/w4-settings.md`, log `.motor/w4-settings.log`, report
+  `../saveprism-wt/w4-settings/.motor/w4-settings-report.md`): Settings page B with General, Appearance, Saving & backups.
+- `w4-start` in `../saveprism-wt/w4-start` (brief `.motor/w4-start.md`, report `.../w4-start/.motor/w4-start-report.md`):
+  header, start screen + FAQ + slogan, "Where is my save?" redesign, custom scrollbar.
+- If a job stopped without a report: find its session id in `~/.local/share/opencode/log/opencode.log` by the worktree
+  path and resume with `bash .motor/resume_job.sh <name> <session> now` (the script assumes `w3-<name>` file names;
+  adjust) or `opencode run --session <id>`.
+- Merge each: `python -I .motor/merge_wt.py w4-<name> "<subject>"`, `cargo fmt --all`, kontrol rust + web,
+  `cargo deny check`, `cargo test -p saveprism-desktop -- --ignored`, commit. Both touch `App.tsx`/`Header.tsx`/locales:
+  expect conflicts, resolve by hand, then re-run the checks.
 
-**Works (evidence today):** CLI opens the 3 real Satisfactory saves exactly; the user opened one in the app (raw tree →
-view added since, not opened by the user yet). Audit fixes checked in the running app by a subagent (screenshots
-`.motor/polish2-1027/`), except the last small-fixes commit `329e69d` (unit tests only).
+**Next parts (briefs to write, EVREN, at most 2 at once):**
+1. AI connection tab (stepper, per-client setup from `docs/ai.md`) + MCP tools `compare_saves`, `save_locations`,
+   `open_code` (+ check `open_save` uses the automatic key finder) + docs.
+2. About tab (logo, version, MIT License, in-app Third-party notices list, What's new popup from release notes built
+   in at build time) + first-launch tour.
+3. Keyboard shortcuts tab: rebindable, ≤3 keys, ≤2 per action, conflict warning, reset, Windows-key note. The recording
+   look is waiting for the maintainer's choice (the mockup's "● Press keys…" chip was called generic).
+4. Opening logo CSS/SVG animation, Explorer right-click "SavePrism ile çöz" / "Decode with SavePrism" (installer
+   registry, under "Show more options"), theme file export/import, Community link.
+Then one Claude visual check of everything (screenshots, dark/light, EN/TR), show the maintainer, then a fresh MSI for
+them to install and try, then ask about publishing.
 
-**Not done / known:** audit leftovers listed in `NOW.md` Known gaps (Set all only for RPG Maker, ES3 trash icons, Ren'Py
-internals, Palworld `PlayerUId` editable, Palworld `Level.sav` raw in debug builds only).
-**Gotchas:** Claude worktree subagents start at origin/main (pushed) — brief them to `git merge --ff-only main` first.
-Leftover folders the hook won't delete (Filename too long; user can delete by hand): `../saveprism-wt/satisfactory`,
+**User decisions:** focus engines Unreal/Unity/RPG Maker/Ren'Py; backups min 1 (default 10, 30 days, newest never
+deleted); no contrast warning (auto text color); Win key not offered (note in the tab); GitHub Discussions as community
+(website/donations later). Never touch the user's original saves.
+**Gotchas:** Claude worktree subagents start at origin/main — brief them to `git merge --ff-only main` first. Leftover
+folders the hook won't delete (user can delete by hand): `../saveprism-wt/satisfactory`,
 `.claude/worktrees/agent-a0b6a9b8ab82d0764`, `agent-ab7b66a783b5d7813`, `agent-a5b61daf70f35e62e`,
 `agent-a945e990b19f4bff1`, `agent-a15308e8a9ffff604`.
