@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog";
-import { revealItemInDir } from "@tauri-apps/plugin-opener";
+import { openPath as openInFileManager, revealItemInDir } from "@tauri-apps/plugin-opener";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Info, TriangleAlert } from "lucide-react";
@@ -307,6 +307,24 @@ function App() {
       notifyError(t("toast.openFailed"), error);
     }
   }, [busy, notifyError, requestOpen, t]);
+
+  /**
+   * "Open folder" on the start screen: picks a folder and shows it in the system's file manager.
+   * SavePrism never scans the disk, so the player picks the save inside it from there.
+   */
+  const chooseFolder = useCallback(async () => {
+    if (busy) return;
+    try {
+      const picked = await openDialog({
+        directory: true,
+        multiple: false,
+        title: t("dialog.folderTitle"),
+      });
+      if (typeof picked === "string") await openInFileManager(picked);
+    } catch (error) {
+      notifyError(t("toast.folderFailed"), error);
+    }
+  }, [busy, notifyError, t]);
 
   /** Picks the second save of a comparison and opens its read-only dialog. */
   const chooseCompare = useCallback(async () => {
@@ -799,8 +817,6 @@ function App() {
         <BackgroundPattern />
         <Header
           file={file}
-          onOpenFile={() => void chooseAndOpen()}
-          onPasteCode={() => requestPaste()}
           onCloseFile={requestCloseFile}
           onWhereSaves={() => setLocationsOpen(true)}
           onOpenSettings={() => setSettingsOpen(true)}
@@ -867,6 +883,7 @@ function App() {
               dragging={dragging}
               onOpenFile={() => void chooseAndOpen()}
               onPasteCode={() => requestPaste()}
+              onOpenFolder={() => void chooseFolder()}
               onWhereSaves={() => setLocationsOpen(true)}
             />
           )}

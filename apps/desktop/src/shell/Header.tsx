@@ -1,7 +1,6 @@
 import {
   ClipboardPaste,
   FileText,
-  FolderOpen,
   FolderSearch,
   Settings as SettingsIcon,
   X,
@@ -10,7 +9,6 @@ import { useTranslation } from "react-i18next";
 import type { OpenInfo } from "@/api/commands";
 import { Button } from "@/components/ui/button";
 import { LanguageSwitcher } from "@/i18n";
-import { ThemeToggle } from "@/theme";
 import { Bell } from "./Bell";
 import { useSettings } from "./context";
 import { engineLabel } from "./engine";
@@ -18,9 +16,6 @@ import { Logo } from "./Logo";
 
 interface HeaderProps {
   file: OpenInfo | null;
-  onOpenFile: () => void;
-  /** Opens the dialog that takes a pasted save code. */
-  onPasteCode: () => void;
   /** Closes the open file (or pasted code) and goes back to the start screen. */
   onCloseFile: () => void;
   /** Opens the dialog that lists the usual save folders of each engine. */
@@ -29,17 +24,11 @@ interface HeaderProps {
 }
 
 /**
- * The top bar. With no file open it offers Paste code and Open file; while a file is open, one
- * Close file button takes their place (the start screen offers them again).
+ * The top bar. On the start screen it only holds the brand, the language menu, the bell and the
+ * settings gear: the start screen itself offers the ways to open a file. While a file is open one
+ * Close file button and the save locations button join them.
  */
-export function Header({
-  file,
-  onOpenFile,
-  onPasteCode,
-  onCloseFile,
-  onWhereSaves,
-  onOpenSettings,
-}: HeaderProps) {
+export function Header({ file, onCloseFile, onWhereSaves, onOpenSettings }: HeaderProps) {
   const { t } = useTranslation();
   const { settings } = useSettings();
   const known = file ? engineLabel(file.fileName, file.codec, file.engine) : null;
@@ -101,31 +90,8 @@ export function Header({
               <FolderSearch />
             </Button>
           </>
-        ) : (
-          <>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={onPasteCode}
-              title={t("header.pasteCodeTip")}
-              className="mr-1 bg-surface-container hover:bg-surface-high"
-            >
-              <ClipboardPaste />
-              {t("header.pasteCode")}
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={onOpenFile}
-              className="mr-1.5 bg-surface-container hover:bg-surface-high"
-            >
-              <FolderOpen />
-              {t("header.openFile")}
-            </Button>
-          </>
-        )}
+        ) : null}
         <LanguageSwitcher />
-        <ThemeToggle />
         {settings.showNotifications ? <Bell /> : null}
         <Button
           variant="ghost"

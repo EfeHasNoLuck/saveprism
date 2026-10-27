@@ -4,15 +4,14 @@
  * renders `LanguageSwitcher`.
  */
 import i18next from "i18next";
-import { Languages } from "lucide-react";
+import { Check, ChevronDown } from "lucide-react";
 import { initReactI18next, useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -25,15 +24,11 @@ import {
   SUPPORTED_LANGUAGES,
   type Language,
 } from "./detect";
+import { LanguageFlag } from "./flags";
+import { languageName, languageShortCode } from "./language";
 
 export { SUPPORTED_LANGUAGES };
 export type { Language };
-
-/** Language names are shown in their own language and are never translated. */
-const LANGUAGE_NAMES: Record<Language, string> = {
-  en: "English",
-  tr: "Türkçe",
-};
 
 const resources = {
   en: { common: en },
@@ -98,7 +93,7 @@ export function initI18n(): void {
   });
 }
 
-/** Dropdown for switching the language. The change applies without a reload. */
+/** Language menu: a round flag, the short code and a chevron; the menu shows each language's own name. */
 export function LanguageSwitcher() {
   const { t, i18n } = useTranslation();
   const active = i18n.resolvedLanguage;
@@ -112,29 +107,33 @@ export function LanguageSwitcher() {
           size="sm"
           aria-label={t("language.label")}
           title={t("language.label")}
-          className="gap-1 px-1.5 font-mono text-[0.6875rem] text-foreground-variant uppercase"
+          className="gap-1 px-1.5 text-foreground-variant"
         >
-          <Languages />
-          {current}
+          <LanguageFlag language={current} className="size-4" />
+          <span className="font-mono text-[0.6875rem] font-semibold uppercase">
+            {languageShortCode(current)}
+          </span>
+          <ChevronDown className="size-3" aria-hidden="true" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
+      <DropdownMenuContent align="end" className="w-48">
         <DropdownMenuLabel>{t("language.label")}</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuRadioGroup
-          value={current}
-          onValueChange={(value) => {
-            if (isLanguage(value)) {
-              void i18n.changeLanguage(value);
-            }
-          }}
-        >
-          {SUPPORTED_LANGUAGES.map((lang) => (
-            <DropdownMenuRadioItem key={lang} value={lang}>
-              {LANGUAGE_NAMES[lang]}
-            </DropdownMenuRadioItem>
-          ))}
-        </DropdownMenuRadioGroup>
+        {SUPPORTED_LANGUAGES.map((lang) => (
+          <DropdownMenuItem
+            key={lang}
+            className="gap-2.5"
+            onSelect={() => {
+              void i18n.changeLanguage(lang);
+            }}
+          >
+            <LanguageFlag language={lang} className="size-[18px]" />
+            <span>{languageName(lang)}</span>
+            {lang === current ? (
+              <Check className="ml-auto text-primary" aria-hidden="true" />
+            ) : null}
+          </DropdownMenuItem>
+        ))}
       </DropdownMenuContent>
     </DropdownMenu>
   );
