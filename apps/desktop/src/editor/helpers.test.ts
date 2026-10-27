@@ -9,6 +9,7 @@ import {
   changeValue,
   checkRange,
   clampPage,
+  COLUMN_GAP,
   columnsIn,
   countChangeKinds,
   fieldHint,
@@ -18,6 +19,8 @@ import {
   formatValue,
   hintLine,
   isEmptyContainerPreview,
+  MIN_COLUMN,
+  MIN_NAME,
   noteText,
   pageCount,
   pageItems,
@@ -251,15 +254,25 @@ describe("pager", () => {
 describe("entry columns", () => {
   it("fits whole columns, at least one", () => {
     expect(columnsIn(0)).toBe(1);
-    expect(columnsIn(475)).toBe(1);
-    expect(columnsIn(476)).toBe(2);
+    expect(columnsIn(2 * MIN_COLUMN + COLUMN_GAP - 1)).toBe(1);
+    expect(columnsIn(2 * MIN_COLUMN + COLUMN_GAP)).toBe(2);
+  });
+  it("keeps a readable name in every column before adding one", () => {
+    expect(MIN_NAME).toBeGreaterThanOrEqual(120);
+    expect(MIN_COLUMN).toBeGreaterThan(MIN_NAME);
+    // A wider window never makes the columns narrower than the minimum.
+    for (let width = 600; width <= 2400; width += 37) {
+      const columns = columnsIn(width);
+      expect((width - (columns - 1) * COLUMN_GAP) / columns).toBeGreaterThanOrEqual(MIN_COLUMN);
+    }
   });
   it("gives the spare columns of a row to the longest lists", () => {
-    // 990 px row: Items with 25 entries, Weapons and Armors empty.
-    expect(allocateColumns(990, [25, 0, 0])).toEqual([2, 0, 0]);
+    // 990 px row: Items with 25 entries, Weapons and Armors empty: no room for a second column.
+    expect(allocateColumns(990, [25, 0, 0])).toEqual([1, 0, 0]);
+    expect(allocateColumns(1100, [25, 0, 0])).toEqual([2, 0, 0]);
     // Variables 56, Switches 70: each gets one, then the tallest takes the next.
     expect(allocateColumns(990, [56, 70])).toEqual([1, 2]);
-    expect(allocateColumns(1246, [56, 70])).toEqual([2, 2]);
+    expect(allocateColumns(1300, [56, 70])).toEqual([2, 2]);
   });
   it("never gives a list more columns than entries", () => {
     expect(allocateColumns(3000, [3, 0])).toEqual([3, 0]);
@@ -270,7 +283,7 @@ describe("entry columns", () => {
   });
   it("sizes a card for its columns", () => {
     expect(cardWidth(0)).toBe(192);
-    expect(cardWidth(2)).toBe(2 * 232 + 12 + 26);
+    expect(cardWidth(2)).toBe(2 * MIN_COLUMN + 12 + 26);
   });
 });
 

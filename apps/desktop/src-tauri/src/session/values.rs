@@ -362,7 +362,7 @@ impl Session {
                     let mut entry = at.1.clone();
                     entry.push(segment.as_str());
                     let Some(child) = self.doc.resolve(&entry) else {
-                        names.extend(segments[used..].iter().cloned());
+                        names.extend(segments.get(used..).unwrap_or_default().iter().cloned());
                         break;
                     };
                     let pairs = maps.entry(at.0).or_insert_with(|| map_pairs(&ctx, at.0));
@@ -389,7 +389,7 @@ impl Session {
                     names.push(name);
                     used += 1;
                     let folded = inner.1.segments().get(used..).unwrap_or_default();
-                    let rest = &segments[used..];
+                    let rest = segments.get(used..).unwrap_or_default();
                     if rest.starts_with(folded) {
                         used += folded.len();
                         at = inner;

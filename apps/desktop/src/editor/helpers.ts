@@ -234,10 +234,20 @@ export function pagerLabel(page: number, total: number, size: number): string {
 }
 
 /**
- * Narrowest column of the entry grids, in pixels. These sizes are pixels at the default 16px text
- * size; callers scale them with the Text size setting (`rootScale` in `grid.ts`).
+ * Narrowest name of an entry before the grid adds another column, in pixels: about nine wide
+ * characters (CJK), so a name stays readable at every window width. These sizes are pixels at the
+ * default 16px text size; callers scale them with the Text size setting (`rootScale` in `grid.ts`).
  */
-export const MIN_COLUMN = 232;
+export const MIN_NAME = 120;
+/**
+ * What a cell holds beside its name, in pixels: "#id", the value box (or the true/false choice),
+ * undo and remove, with the gaps and padding (measured on RPG Maker lists).
+ */
+export const CELL_CONTROLS = 168;
+/** Narrowest column of the entry grids, in pixels: a readable name and its controls. */
+export const MIN_COLUMN = MIN_NAME + CELL_CONTROLS;
+/** Widest column when a list has fewer entries than columns fit, in pixels. */
+export const MAX_COLUMN = 2 * MIN_COLUMN;
 /** Space between the columns, in pixels (Tailwind `gap-x-3`). */
 export const COLUMN_GAP = 12;
 /** Rows on one page of a list; a page holds this many entries per column. */
