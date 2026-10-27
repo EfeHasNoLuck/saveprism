@@ -18,7 +18,7 @@ use std::fs;
 use std::io::Read as _;
 use std::path::{Path as FsPath, PathBuf};
 
-use saveprism_core::{Node, NodeFlags, NodeId, OwnedValue, Path, SaveDoc, Value};
+use saveprism_core::{Edit, Node, NodeFlags, NodeId, OwnedValue, Path, Position, SaveDoc, Value};
 use serde::{Deserialize, Serialize};
 
 use super::gwent::GwentView;
@@ -154,6 +154,7 @@ pub struct Bonus {
 
 /// A party member.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Actor {
     /// Actor id.
     pub id: u32,
@@ -169,6 +170,58 @@ pub struct Actor {
     pub exp: Option<Field>,
     /// Stat bonuses (`_paramPlus`; XP and VX: `@maxhp_plus`, ...).
     pub bonuses: Vec<Bonus>,
+    /// True when editing the level also sets the current class's EXP (MV/MZ with the game's
+    /// `Classes.json`); the UI shows a hint when it cannot.
+    pub level_updates_exp: bool,
+}
+
+/// RPG Maker MV/MZ class experience parameters (`expParams` of `Classes.json`).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(super) struct ExpParams {
+    basis: f64,
+    extra: f64,
+    acc_a: f64,
+    acc_b: f64,
+}
+
+impl ExpParams {
+    /// The total EXP a character of this class has at least at `level`.
+    ///
+    /// This is `Game_Actor.prototype.expForLevel` of the RPG Maker MV/MZ core scripts:
+    /// `Math.round(basis * Math.pow(level - 1, 0.9 + accA / 250) * level * (level + 1) /
+    /// (6 + Math.pow(level, 2) / 50 / accB) + (level - 1) * extra)`. `changeLevel` sets
+    /// `_exp[classId]` to `expForLevel(level)`, so that value is the minimum EXP of a level. The
+    /// official core scripts are MIT licensed (Copyright (c) 2015 KADOKAWA CORPORATION./YOJI
+    /// OJIMA); checked against
+    /// <https://github.com/rpgtkoolmv/corescript/blob/master/js/rpg_objects/Game_Actor.js> and
+    /// its LICENSE.
+    fn exp_for_level(self, level: i64) -> i128 {
+        let level_f = level as f64;
+        let acc_b = if self.acc_b == 0.0 { 1.0 } else { self.acc_b };
+        let first =
+            self.basis * (level_f - 1.0).powf(0.9 + self.acc_a / 250.0) * level_f * (level_f + 1.0)
+                / (6.0 + level_f * level_f / 50.0 / acc_b);
+        let total = first + (level_f - 1.0) * self.extra;
+        total.round() as i128
+    }
+}
+
+impl From<&serde_json::Value> for ExpParams {
+    fn from(value: &serde_json::Value) -> Self {
+        let number = |index: usize| {
+            value
+                .as_array()
+                .and_then(|list| list.get(index))
+                .and_then(serde_json::Value::as_f64)
+                .unwrap_or(0.0)
+        };
+        Self {
+            basis: number(0),
+            extra: number(1),
+            acc_a: number(2),
+            acc_b: number(3),
+        }
+    }
 }
 
 /// The RPG Maker sections.
@@ -558,6 +611,8 @@ pub(super) struct GameNames {
     pub(super) armors: HashMap<u32, String>,
     pub(super) variables: HashMap<u32, String>,
     pub(super) switches: HashMap<u32, String>,
+    /// Experience parameters of the game's classes (`Classes.json`), by class id.
+    pub(super) classes: HashMap<u32, ExpParams>,
 }
 
 /// The bytes of a game data file; `None` when it is missing, not a file or larger than
@@ -619,6 +674,72 @@ fn index_names(list: Option<&serde_json::Value>) -> HashMap<u32, String> {
     out
 }
 
+/// Experience parameters of the classes in `Classes.json`, by class id.
+fn class_exp_params(file: &serde_json::Value) -> HashMap<u32, ExpParams> {
+    let mut out = HashMap::new();
+    if let Some(list) = file.as_array() {
+        for entry in list {
+            let id = entry
+                .get("id")
+                .and_then(serde_json::Value::as_u64)
+                .and_then(|id| u32::try_from(id).ok());
+            let params = entry.get("expParams");
+            if let (Some(id), Some(params)) = (id, params) {
+                out.insert(id, ExpParams::from(params));
+            }
+        }
+    }
+    out
+}
+
+/// An MV/MZ `_data` array of switches or variables that can grow.
+#[derive(Clone, Debug, PartialEq)]
+pub(super) struct NamedArray {
+    /// True for switches (on/off), false for variables (whole numbers).
+    pub(super) switch: bool,
+    /// Core path of the array itself (inside `@a` for a JsonEx wrapped array).
+    pub(super) parent: Path,
+    /// Number of entries the array has now.
+    pub(super) len: usize,
+}
+
+/// A named switch or variable that the save does not hold yet.
+#[derive(Clone, Debug, PartialEq)]
+pub(super) struct NamedTarget {
+    /// What the id names.
+    pub(super) switch: bool,
+    /// The database id (index in `_data`).
+    pub(super) id: usize,
+    /// The array to grow.
+    pub(super) array: NamedArray,
+    /// The value the game shows for an id the save leaves unset.
+    pub(super) default: OwnedValue,
+}
+
+impl NamedTarget {
+    /// Parses `text` as the type this id takes (true/false or a whole number).
+    pub(super) fn parse(&self, text: &str) -> Result<OwnedValue, super::ApiError> {
+        let template = if self.switch {
+            Value::Bool(false)
+        } else {
+            Value::Int {
+                v: 0,
+                width: saveprism_core::IntWidth::I64,
+            }
+        };
+        super::parse_input(&template, text)
+    }
+
+    /// The text of the value shown when the save leaves the id unset.
+    pub(super) fn default_text(&self) -> String {
+        if self.switch {
+            "false".to_string()
+        } else {
+            "0".to_string()
+        }
+    }
+}
+
 /// The MV/MZ names in `folder` (`Items.json`, `Weapons.json`, `Armors.json`, `System.json`), or
 /// `None` when it has none of them readable.
 pub(super) fn mv_names_in(folder: &FsPath) -> Option<GameNames> {
@@ -640,6 +761,9 @@ pub(super) fn mv_names_in(folder: &FsPath) -> Option<GameNames> {
         names.variables = index_names(file.get("variables"));
         names.switches = index_names(file.get("switches"));
         found = true;
+    }
+    if let Some(file) = read_json(&folder.join("Classes.json")) {
+        names.classes = class_exp_params(&file);
     }
     found.then(|| {
         names.folder = Some(folder.to_path_buf());
@@ -796,6 +920,21 @@ impl Ctx<'_> {
         }
     }
 
+    /// Path and length of the array at `at` (also when JsonEx wraps it as `{"@a": [...]}`).
+    pub(super) fn array_info(&self, at: &At) -> Option<(Path, NodeId, usize)> {
+        match self.doc.get(at.0).map(|node| &node.value) {
+            Some(Value::Array(items)) => Some((at.1.clone(), at.0, items.len())),
+            Some(Value::Object(_)) => {
+                let inner = self.entry(at, "@a")?;
+                match self.doc.get(inner.0).map(|node| &node.value) {
+                    Some(Value::Array(items)) => Some((inner.1, inner.0, items.len())),
+                    _ => None,
+                }
+            }
+            _ => None,
+        }
+    }
+
     /// The elements of a JSON array, or of a JsonEx wrapped array (`{"@c": 3, "@a": [...]}`).
     pub(super) fn items(&self, at: &At) -> Vec<(usize, At)> {
         let Some(node) = self.doc.get(at.0) else {
@@ -923,7 +1062,64 @@ impl Ctx<'_> {
         out
     }
 
-    fn actor(&self, id: u32, at: &At) -> Option<Actor> {
+    /// [`Ctx::indexed`] for MV/MZ, plus every id that has a name in `System.json` but no entry in
+    /// the save's `_data` yet. A missing one is shown with the value the game uses when unset (off
+    /// or 0); editing it grows `_data` (see `Session::named_target`).
+    fn indexed_named(
+        &self,
+        root: &At,
+        key: &str,
+        names: &HashMap<u32, String>,
+        switch: bool,
+    ) -> Vec<Entry> {
+        let mut out = self.indexed(root, key, names);
+        let Some(data) = self.entry(root, key) else {
+            return out;
+        };
+        let Some((parent, id, _)) = self.array_info(&data) else {
+            return out;
+        };
+        let present: HashSet<u32> = out.iter().map(|entry| entry.id).collect();
+        let open = self.editable && !is_read_only(self.doc, id);
+        for (&index, name) in names {
+            if out.len() >= MAX_VALUE_ROWS {
+                break;
+            }
+            if index == 0 || present.contains(&index) {
+                continue;
+            }
+            let mut path = parent.clone();
+            path.push(index.to_string());
+            let (kind, value) = if switch {
+                (FieldKind::Bool, "false".to_string())
+            } else {
+                (FieldKind::Int, "0".to_string())
+            };
+            out.push(Entry {
+                id: index,
+                name: Some(name.clone()),
+                field: Field {
+                    path: path.to_string(),
+                    value: value.clone(),
+                    original: value,
+                    kind,
+                    type_name: None,
+                    min: None,
+                    max: None,
+                    hint: hint_text(kind, UNLIMITED),
+                    editable: open,
+                    read_only_reason: None,
+                    added: false,
+                },
+                removable: false,
+            });
+        }
+        out.sort_by_key(|entry| entry.id);
+        out.truncate(MAX_VALUE_ROWS);
+        out
+    }
+
+    fn actor(&self, id: u32, at: &At, classes: &HashMap<u32, ExpParams>) -> Option<Actor> {
         let level = self.field(&self.entry(at, "_level")?, LEVEL)?;
         let hp = self.field(&self.entry(at, "_hp")?, NON_NEGATIVE)?;
         let mp = self.field(&self.entry(at, "_mp")?, NON_NEGATIVE)?;
@@ -934,22 +1130,29 @@ impl Ctx<'_> {
             .unwrap_or_else(|| format!("Actor #{id}"));
 
         // Experience is kept per class: take the entry of the current class, else the first one.
-        let exp = self.entry(at, "_exp").and_then(|map| {
-            let class_key = self
-                .entry(at, "_classId")
-                .and_then(|class| self.int_at(&class))
-                .map(|class| class.to_string());
-            let keys: Vec<String> = match self.doc.get(map.0).map(|node| &node.value) {
-                Some(Value::Object(entries)) => entries
+        let class_id = self
+            .entry(at, "_classId")
+            .and_then(|class| self.int_at(&class))
+            .and_then(|class| u32::try_from(class).ok());
+        let exp_map = self.entry(at, "_exp");
+        let keys: Vec<String> = match exp_map.as_ref().and_then(|map| self.doc.get(map.0)) {
+            Some(node) => match &node.value {
+                Value::Object(entries) => entries
                     .iter()
                     .map(|(key, _)| key.clone())
                     .filter(|key| !key.starts_with('@'))
                     .collect(),
                 _ => Vec::new(),
-            };
-            let key = class_key
-                .filter(|wanted| keys.contains(wanted))
-                .or_else(|| keys.first().cloned())?;
+            },
+            None => Vec::new(),
+        };
+        let current_key = class_id
+            .map(|class| class.to_string())
+            .filter(|wanted| keys.contains(wanted));
+        let level_updates_exp =
+            current_key.is_some() && class_id.is_some_and(|class| classes.contains_key(&class));
+        let exp = exp_map.and_then(|map| {
+            let key = current_key.or_else(|| keys.first().cloned())?;
             self.field(&self.entry(&map, &key)?, NON_NEGATIVE)
         });
 
@@ -966,6 +1169,7 @@ impl Ctx<'_> {
             mp,
             exp,
             bonuses,
+            level_updates_exp,
         })
     }
 
@@ -984,7 +1188,7 @@ impl Ctx<'_> {
     }
 
     /// The party members: ids from `party._actors`, data from `actors._data[id]`.
-    fn actors(&self, root: &At, party: &At) -> Vec<Actor> {
+    fn actors(&self, root: &At, party: &At, classes: &HashMap<u32, ExpParams>) -> Vec<Actor> {
         let Some(list) = self.entry(party, "_actors") else {
             return Vec::new();
         };
@@ -1007,7 +1211,7 @@ impl Ctx<'_> {
                 continue;
             };
             let at = self.deref(at.clone());
-            if let Some(actor) = self.actor(id, &at) {
+            if let Some(actor) = self.actor(id, &at, classes) {
                 out.push(actor);
             }
         }
@@ -1019,20 +1223,20 @@ impl Ctx<'_> {
         let root: At = (self.doc.root(), Path::root());
         let party = self.entry(&root, "party")?;
         let gold = self.field(&self.entry(&party, "_gold")?, GOLD)?;
-        let section = |key: &str, map: &HashMap<u32, String>| {
+        let section = |key: &str, map: &HashMap<u32, String>, switch: bool| {
             self.entry(&root, key)
-                .map(|at| self.indexed(&at, "_data", map))
+                .map(|at| self.indexed_named(&at, "_data", map, switch))
                 .unwrap_or_default()
         };
         Some(RpgMakerView {
             engine: engine.to_string(),
             gold,
-            actors: self.actors(&root, &party),
+            actors: self.actors(&root, &party, &names.classes),
             items: self.counts(&party, "_items", &names.items),
             weapons: self.counts(&party, "_weapons", &names.weapons),
             armors: self.counts(&party, "_armors", &names.armors),
-            variables: section("variables", &names.variables),
-            switches: section("switches", &names.switches),
+            variables: section("variables", &names.variables, false),
+            switches: section("switches", &names.switches, true),
             names_folder: names
                 .folder
                 .as_ref()
@@ -1179,6 +1383,129 @@ impl Session {
             None if self.pasted => GameNames::default(),
             None => load_names(&self.path),
         }
+    }
+
+    /// The MV/MZ `_data` array of switches (`switch`) or variables, when the file is open.
+    fn named_array(&self, switch: bool) -> Option<NamedArray> {
+        if !matches!(self.rpg_engine(), Some("mv" | "mz")) {
+            return None;
+        }
+        let ctx = self.game_ctx();
+        let root: At = (self.doc.root(), Path::root());
+        let key = if switch { "switches" } else { "variables" };
+        let data = ctx.entry(&ctx.entry(&root, key)?, "_data")?;
+        let (parent, _, len) = ctx.array_info(&data)?;
+        Some(NamedArray {
+            switch,
+            parent,
+            len,
+        })
+    }
+
+    /// The named switch or variable at `path` when the save does not hold it yet: an id the game
+    /// names in `System.json` but the `_data` array ends before.
+    pub(super) fn named_target(&self, path: &Path) -> Option<NamedTarget> {
+        let segments = path.segments();
+        let switch = match segments.first().map(String::as_str)? {
+            "switches" => true,
+            "variables" => false,
+            _ => return None,
+        };
+        if segments.get(1).map(String::as_str)? != "_data" {
+            return None;
+        }
+        let array = self.named_array(switch)?;
+        if path.parent().as_ref() != Some(&array.parent) {
+            return None;
+        }
+        let id: usize = path.last()?.parse().ok()?;
+        if id == 0 || id < array.len {
+            return None;
+        }
+        let names = self.mv_names();
+        let id32 = u32::try_from(id).ok()?;
+        let known = if switch {
+            names.switches.contains_key(&id32)
+        } else {
+            names.variables.contains_key(&id32)
+        };
+        if !known {
+            return None;
+        }
+        let default = if switch {
+            OwnedValue::Bool(false)
+        } else {
+            OwnedValue::Int(0)
+        };
+        Some(NamedTarget {
+            switch,
+            id,
+            array,
+            default,
+        })
+    }
+
+    /// Inserts that grow the `_data` arrays of `targets` to their ids, filling the gap with `null`
+    /// (as the game leaves unset entries). Targets must be sorted by array and id.
+    pub(super) fn named_growth_edits(targets: &[(NamedTarget, OwnedValue)]) -> Vec<Edit> {
+        let mut order: Vec<&(NamedTarget, OwnedValue)> = targets.iter().collect();
+        order.sort_by(|left, right| {
+            let key = |target: &NamedTarget| (target.array.parent.to_string(), target.id);
+            key(&left.0).cmp(&key(&right.0))
+        });
+        let mut next: HashMap<String, usize> = HashMap::new();
+        let mut edits = Vec::new();
+        for (target, value) in order {
+            let key = target.array.parent.to_string();
+            let current = next.entry(key).or_insert(target.array.len);
+            while *current < target.id {
+                edits.push(Edit::Insert {
+                    parent: target.array.parent.clone(),
+                    at: Position::End,
+                    value: OwnedValue::Null,
+                });
+                *current += 1;
+            }
+            edits.push(Edit::Insert {
+                parent: target.array.parent.clone(),
+                at: Position::End,
+                value: value.clone(),
+            });
+            *current += 1;
+        }
+        edits
+    }
+
+    /// The MV/MZ EXP edit that keeps `level_path`'s actor at the minimum EXP of `new_level`, from
+    /// the current class's `expParams` in the game's `Classes.json`.
+    pub(super) fn level_exp_edit(
+        &self,
+        level_path: &Path,
+        new_level: i128,
+    ) -> Option<(Path, Edit)> {
+        if !matches!(self.rpg_engine(), Some("mv" | "mz")) {
+            return None;
+        }
+        let actor_path = level_path.parent()?;
+        let ctx = self.game_ctx();
+        let actor = (self.doc.resolve(&actor_path)?, actor_path);
+        let class = ctx
+            .entry(&actor, "_classId")
+            .and_then(|class| ctx.int_at(&class))
+            .and_then(|class| u32::try_from(class).ok())?;
+        let names = self.mv_names();
+        let params = *names.classes.get(&class)?;
+        let exp_map = ctx.entry(&actor, "_exp")?;
+        let exp_at = ctx.entry(&exp_map, &class.to_string())?;
+        let level = i64::try_from(new_level).ok()?;
+        let value = OwnedValue::Int(params.exp_for_level(level));
+        Some((
+            exp_at.1.clone(),
+            Edit::Set {
+                path: exp_at.1,
+                value,
+            },
+        ))
     }
 
     /// The SugarCube story view, the RPG Maker sections for MV/MZ, XP/VX/VX Ace and 2000/2003

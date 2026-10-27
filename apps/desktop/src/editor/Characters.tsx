@@ -164,10 +164,24 @@ export function Characters({
         <EmptyText>{t("empty.characters")}</EmptyText>
       ) : (
         <div className="grid grid-cols-1 gap-x-3 gap-y-0.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {stat(t("actor.level"), actor.level)}
+          {actor.levelUpdatesExp ? (
+            stat(t("actor.level"), actor.level)
+          ) : (
+            <div key={actor.level.path} className="min-w-0">
+              {stat(t("actor.level"), actor.level)}
+              <p className="pl-2 text-[0.6875rem] text-muted-foreground">
+                {t("actor.levelExpHint")}
+              </p>
+            </div>
+          )}
           {stat(t("actor.hp"), actor.hp)}
           {stat(t("actor.mp"), actor.mp)}
           {actor.exp !== null ? stat(t("actor.exp"), actor.exp) : null}
+          {actor.bonuses.length > 0 ? (
+            <p className="col-span-full pt-1 text-[0.6875rem] font-medium text-muted-foreground">
+              {t("actor.bonusHeading")}
+            </p>
+          ) : null}
           {actor.bonuses.map((b) => stat(t(`stat.${b.key}`, { defaultValue: b.key }), b.field))}
         </div>
       )}
