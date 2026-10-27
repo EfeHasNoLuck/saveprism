@@ -30,21 +30,27 @@ import {
   Users,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import licenseText from "../../../../LICENSE?raw";
 import {
   backgroundImage,
   chooseBackground,
   coreVersion,
   defaultPaths,
   mcpCommand,
-  noticesAvailable,
   openFolder,
-  openNotices,
   setAppFolder,
   setBackupFolder,
   type BackgroundImage as BackgroundImageData,
   type DefaultPaths,
 } from "@/api/commands";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -62,6 +68,8 @@ import { useTheme, type ThemePreference } from "@/theme";
 import { COLOR_PRESETS, DEFAULT_COLORS, isHexColor, textColorFor, tonesFor, type ColorGroup } from "./colors";
 import { useNotify, useSettings } from "./context";
 import { describeError } from "./errors";
+import { Logo } from "./Logo";
+import { loadNotices, type NoticePackage } from "./notices";
 import {
   clampKeepBackups,
   clampKeepDays,
@@ -72,8 +80,11 @@ import {
 } from "./settings";
 import { searchSettings, type SettingsTab } from "./settingsSearch";
 import { mcpSetupJson } from "./setup";
+import { WhatsNewDialog } from "./WhatsNewDialog";
 
-const COMMUNITY_URL = "https://github.com/huseyincancalti/saveprism/discussions";
+const REPO_URL = "https://github.com/huseyincancalti/saveprism";
+const COMMUNITY_URL = `${REPO_URL}/discussions`;
+const ISSUES_URL = `${REPO_URL}/issues/new`;
 
 const THEMES: ThemePreference[] = ["system", "light", "dark"];
 
@@ -236,7 +247,13 @@ function Row({
 }
 
 /** The whole Settings page (layout B): a sidebar with the tabs under the app header. */
-export function SettingsPage({ onClose }: { onClose: () => void }) {
+export function SettingsPage({
+  onClose,
+  onShowTour,
+}: {
+  onClose: () => void;
+  onShowTour: () => void;
+}) {
   const { t, i18n } = useTranslation();
   const { notify } = useNotify();
   const { settings, update } = useSettings();
@@ -251,7 +268,13 @@ export function SettingsPage({ onClose }: { onClose: () => void }) {
   const [busy, setBusy] = useState<FolderPicker | "photo" | null>(null);
   const [version, setVersion] = useState("—");
   const [core, setCore] = useState("—");
-  const [notices, setNotices] = useState(false);
+  const [noticesPage, setNoticesPage] = useState(false);
+  const [noticeQuery, setNoticeQuery] = useState("");
+  const [noticePackages, setNoticePackages] = useState<NoticePackage[] | null>(null);
+  const [noticeFailed, setNoticeFailed] = useState(false);
+  const [expandedNotices, setExpandedNotices] = useState<ReadonlySet<string>>(new Set());
+  const [licenseOpen, setLicenseOpen] = useState(false);
+  const [whatsNewOpen, setWhatsNewOpen] = useState(false);
   const pageRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -265,25 +288,36 @@ export function SettingsPage({ onClose }: { onClose: () => void }) {
     coreVersion()
       .then((value) => !cancelled && setCore(value))
       .catch(() => undefined);
-    noticesAvailable()
-      .then((value) => !cancelled && setNotices(value))
-      .catch(() => undefined);
     return () => {
       cancelled = true;
     };
   }, []);
 
+  // Only the About tab needs the notices, so the chunk is not part of the startup bundle.
+  useEffect(() => {
+    if (tab !== "about") return;
+    let cancelled = false;
+    loadNotices()
+      .then((value) => !cancelled && setNoticePackages(value))
+      .catch(() => !cancelled && setNoticeFailed(true));
+    return () => {
+      cancelled = true;
+    };
+  }, [tab]);
+
   useEffect(() => {
     const listener = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        onClose();
-      }
+      if (event.key !== "Escape") return;
+      // The dialogs close themselves; Settings stays open under them.
+      if (licenseOpen || whatsNewOpen) return;
+      event.preventDefault();
+      if (noticesPage) setNoticesPage(false);
+      else onClose();
     };
     window.addEventListener("keydown", listener);
     pageRef.current?.focus();
     return () => window.removeEventListener("keydown", listener);
-  }, [onClose]);
+  }, [licenseOpen, noticesPage, onClose, whatsNewOpen]);
 
   useEffect(() => {
     if (settings.backgroundMode !== "photo") return;
@@ -402,19 +436,25 @@ export function SettingsPage({ onClose }: { onClose: () => void }) {
     }
   }, [notify, t]);
 
-  const openCommunity = useCallback(async () => {
+  const openExternal = useCallback(async (url: string) => {
     try {
-      await openUrl(COMMUNITY_URL);
+      await openUrl(url);
     } catch {
-      window.open(COMMUNITY_URL, "_blank", "noopener,noreferrer");
+      window.open(url, "_blank", "noopener,noreferrer");
     }
   }, []);
 
-  const showNotices = useCallback(() => {
-    openNotices().catch((error: unknown) => reportError(t("about.noticesFailed"), error));
-  }, [reportError, t]);
-
   const titleKey = TABS.find((item) => item.id === tab)?.labelKey ?? "settings.tabs.general";
+  const notices = noticePackages ?? [];
+  const noticeSearch = noticeQuery.trim().toLocaleLowerCase(language);
+  const visibleNotices =
+    noticeSearch === ""
+      ? notices
+      : notices.filter((item) =>
+          `${item.name} ${item.version} ${item.license}`
+            .toLocaleLowerCase(language)
+            .includes(noticeSearch),
+        );
 
   return (
     <div
@@ -490,6 +530,7 @@ export function SettingsPage({ onClose }: { onClose: () => void }) {
               aria-current={tab === id ? "page" : undefined}
               onClick={() => {
                 setTab(id);
+                setNoticesPage(false);
                 setHighlight(null);
               }}
               className={
@@ -507,7 +548,7 @@ export function SettingsPage({ onClose }: { onClose: () => void }) {
         <div className="mt-auto flex flex-col gap-1.5 border-t border-border px-1.5 pt-2.5 text-[0.78rem]">
           <button
             type="button"
-            onClick={() => void openCommunity()}
+            onClick={() => void openExternal(COMMUNITY_URL)}
             className="flex items-center gap-2 rounded-sm text-left text-foreground-variant outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60"
           >
             <Users className="size-4 text-muted-foreground" />
@@ -521,6 +562,104 @@ export function SettingsPage({ onClose }: { onClose: () => void }) {
 
       <section className="dense-scroll min-w-0 flex-1 overflow-y-auto px-10 pt-6 pb-8">
         <div className="mx-auto max-w-[948px]">
+          {noticesPage ? (
+            <div>
+              <div className="mb-1 flex items-center gap-1 text-xs text-muted-foreground">
+                <button
+                  type="button"
+                  onClick={() => setNoticesPage(false)}
+                  className="inline-flex items-center gap-1 rounded-sm font-medium text-primary outline-none hover:text-primary/80 focus-visible:ring-2 focus-visible:ring-ring/60"
+                >
+                  <ArrowLeft className="size-3.5" />
+                  {t("settings.tabs.about")}
+                </button>
+                <ChevronRight className="size-3" />
+                <span>{t("about.notices")}</span>
+              </div>
+              <h2 className="text-[1.375rem] leading-7 font-semibold tracking-tight">
+                {t("about.notices")}
+              </h2>
+              <p className="mt-0.5 text-xs text-muted-foreground">{t("about.noticesSubtitle")}</p>
+
+              <div className="mt-4 flex items-center gap-3">
+                <div className="flex h-8 max-w-xs flex-1 items-center gap-2 rounded-sm border border-input bg-field px-2.5">
+                  <Search className="size-3.5 shrink-0 text-muted-foreground" />
+                  <input
+                    value={noticeQuery}
+                    onChange={(event) => setNoticeQuery(event.target.value)}
+                    placeholder={t("about.searchPackages")}
+                    aria-label={t("about.searchPackages")}
+                    className="min-w-0 flex-1 bg-transparent text-[0.8125rem] outline-none placeholder:text-muted-foreground"
+                  />
+                </div>
+                <span className="text-xs text-muted-foreground">
+                  {noticeFailed
+                    ? t("about.noticesFailed")
+                    : noticePackages === null
+                      ? t("common.loading")
+                      : t("about.noticesCount", { total: notices.length })}
+                </span>
+              </div>
+
+              <div className="mt-3 overflow-hidden rounded-lg border border-border bg-card dark:border-[#1d2d42]">
+                {noticeFailed ? (
+                  <p className="px-4 py-3 text-xs text-muted-foreground">
+                    {t("about.noticesFailed")}
+                  </p>
+                ) : noticePackages === null ? (
+                  <p className="px-4 py-3 text-xs text-muted-foreground">{t("common.loading")}</p>
+                ) : visibleNotices.length === 0 ? (
+                  <p className="px-4 py-3 text-xs text-muted-foreground">
+                    {t("about.searchEmpty")}
+                  </p>
+                ) : (
+                  visibleNotices.map((item, index) => {
+                    const id = `${item.name}@${item.version}@${item.license}`;
+                    const open = expandedNotices.has(id);
+                    return (
+                      <div
+                        key={id}
+                        className={index > 0 ? "border-t border-border dark:border-[#1d2d42]" : undefined}
+                      >
+                        <button
+                          type="button"
+                          aria-expanded={open}
+                          onClick={() =>
+                            setExpandedNotices((current) => {
+                              const next = new Set(current);
+                              if (next.has(id)) next.delete(id);
+                              else next.add(id);
+                              return next;
+                            })
+                          }
+                          className="flex h-10 w-full items-center gap-2.5 px-3.5 text-left text-[0.8125rem] outline-none hover:bg-surface-high focus-visible:bg-surface-high"
+                        >
+                          {open ? (
+                            <ChevronDown className="size-3.5 shrink-0 text-muted-foreground" />
+                          ) : (
+                            <ChevronRight className="size-3.5 shrink-0 text-muted-foreground" />
+                          )}
+                          <span className="truncate font-medium">{item.name}</span>
+                          <span className="font-mono text-[0.6875rem] text-muted-foreground">
+                            {item.version}
+                          </span>
+                          <span className="ml-auto shrink-0 rounded-sm bg-surface-high px-1.5 py-0.5 font-mono text-[0.6875rem] font-semibold text-tertiary">
+                            {item.license || t("about.licenseUnknown")}
+                          </span>
+                        </button>
+                        {open ? (
+                          <pre className="dense-scroll mx-3.5 mb-3 max-h-72 overflow-auto rounded-sm border border-border bg-field p-3 font-mono text-[0.6875rem] leading-5 break-words whitespace-pre-wrap text-foreground-variant dark:border-[#26364a]">
+                            {item.text || t("about.noticeNoText")}
+                          </pre>
+                        ) : null}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          ) : (
+            <>
           <div className="mb-1 flex items-center gap-1 text-xs text-muted-foreground">
             {t("settings.title")}
             <ChevronRight className="size-3" />
@@ -529,7 +668,9 @@ export function SettingsPage({ onClose }: { onClose: () => void }) {
           <h2 className="text-[1.375rem] leading-7 font-semibold tracking-tight">
             {t(titleKey)}
           </h2>
-          <p className="mt-0.5 text-xs text-muted-foreground">{t(`settings.sub.${tab}`)}</p>
+          {tab === "about" ? null : (
+            <p className="mt-0.5 text-xs text-muted-foreground">{t(`settings.sub.${tab}`)}</p>
+          )}
 
           {tab === "general" ? (
             <div className="mt-4">
@@ -960,75 +1101,152 @@ export function SettingsPage({ onClose }: { onClose: () => void }) {
 
           {tab === "about" ? (
             <div className="mt-5 flex flex-col items-center">
-              <span className="flex size-20 items-center justify-center rounded-[20px] bg-[linear-gradient(160deg,#13294a,#061428)] shadow-[0_10px_30px_-10px_rgba(0,0,0,0.6)]">
-                <Users className="size-8 text-[#abc7ff]" />
+              <span className="flex size-[84px] items-center justify-center rounded-[20px] bg-[linear-gradient(160deg,#13294a,#061428)] shadow-[0_10px_30px_-10px_rgba(0,0,0,0.6),inset_0_0_0_1px_rgba(171,199,255,0.14)]">
+                <Logo className="size-14" />
               </span>
-              <h3 className="mt-3.5 text-2xl font-semibold tracking-tight">SavePrism</h3>
+              <h3 className="mt-3.5 text-[22px] font-semibold tracking-[-0.02em]">SavePrism</h3>
               <p className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-                {t("about.version")} {version}
+                {t("about.versionLine", { version })}
                 <span className="rounded-full bg-surface-high px-2 py-0.5 text-[0.6875rem] font-semibold">
-                  MIT
+                  {t("about.licenseTag")}
                 </span>
               </p>
-              <div className="mt-4 w-[440px] max-w-full overflow-hidden rounded-lg border border-border bg-card dark:border-[#1d2d42]">
-                <AboutRow icon={<Gift className="size-3.5" />} label={t("about.version")} value={version} />
-                <AboutRow icon={<FileText className="size-3.5" />} label={t("about.core")} value={core} />
-                <AboutRow icon={<Scale className="size-3.5" />} label={t("about.license")} value={t("about.licenseValue")} />
-                {notices ? (
-                  <button
-                    type="button"
-                    onClick={showNotices}
-                    className="flex h-11 w-full items-center gap-3 border-t border-border px-3.5 text-left text-[0.84375rem] outline-none hover:bg-surface-high focus-visible:bg-surface-high dark:border-[#1d2d42]"
-                  >
-                    <span className="flex size-7 items-center justify-center rounded-md bg-surface-high text-primary">
-                      <FileText className="size-3.5" />
-                    </span>
-                    {t("about.notices")}
-                    <ExternalLink className="ml-auto size-3.5 text-muted-foreground" />
-                  </button>
-                ) : null}
-                <AboutLink icon={<Github className="size-3.5" />} label={t("settings.sourceCode")} url="https://github.com/huseyincancalti/saveprism" />
-                <AboutLink icon={<Users className="size-3.5" />} label={t("settings.communityThemes")} url={COMMUNITY_URL} />
-                <AboutLink icon={<Bug className="size-3.5" />} label={t("settings.reportProblem")} url="https://github.com/huseyincancalti/saveprism/issues" />
-              </div>
-              <p className="mt-1.5 max-w-md text-center text-xs leading-[17px] text-muted-foreground">
-                {t("about.privacy")}
+              <p className="mt-1 text-[0.6875rem] text-muted-foreground">
+                {t("about.coreVersion", { version: core })}
               </p>
-              <p className="mt-3 text-[0.71875rem] text-muted-foreground">© 2026 SavePrism contributors</p>
+              <p className="mt-2.5 max-w-md text-center text-[0.8125rem] text-foreground-variant">
+                {t("about.tagline")}
+              </p>
+              <div className="mt-4 flex w-[440px] max-w-full flex-col gap-3">
+                <Group>
+                  <AboutAction
+                    icon={<Gift className="size-3.5" />}
+                    label={t("about.whatsNew", { version })}
+                    onClick={() => setWhatsNewOpen(true)}
+                  />
+                  <AboutAction
+                    icon={<FileText className="size-3.5" />}
+                    label={t("about.notices")}
+                    value={
+                      noticeFailed
+                        ? undefined
+                        : noticePackages === null
+                          ? t("common.loading")
+                          : t("about.noticesCount", { total: noticePackages.length })
+                    }
+                    onClick={() => setNoticesPage(true)}
+                  />
+                  <AboutAction
+                    icon={<Scale className="size-3.5" />}
+                    label={t("about.license")}
+                    value={t("about.licenseShort")}
+                    onClick={() => setLicenseOpen(true)}
+                  />
+                  <AboutAction
+                    icon={<RotateCcw className="size-3.5" />}
+                    label={t("about.showTour")}
+                    onClick={onShowTour}
+                  />
+                </Group>
+                <Group>
+                  <AboutExternal
+                    icon={<Github className="size-3.5" />}
+                    label={t("settings.sourceCode")}
+                    onClick={() => void openExternal(REPO_URL)}
+                  />
+                  <AboutExternal
+                    icon={<Users className="size-3.5" />}
+                    label={t("settings.communityThemes")}
+                    onClick={() => void openExternal(COMMUNITY_URL)}
+                  />
+                  <AboutExternal
+                    icon={<Bug className="size-3.5" />}
+                    label={t("settings.reportProblem")}
+                    onClick={() => void openExternal(ISSUES_URL)}
+                  />
+                </Group>
+              </div>
+              <p className="mt-3.5 text-[0.71875rem] text-muted-foreground">
+                {t("about.copyright")}
+              </p>
             </div>
           ) : null}
+            </>
+          )}
         </div>
       </section>
+
+      {licenseOpen ? (
+        <Dialog open onOpenChange={(open) => (open ? undefined : setLicenseOpen(false))}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>{t("about.license")}</DialogTitle>
+              <DialogDescription>{t("about.licenseBody")}</DialogDescription>
+            </DialogHeader>
+            <pre className="dense-scroll max-h-[60vh] overflow-auto rounded-sm border border-border bg-field p-3 font-mono text-[0.6875rem] leading-5 whitespace-pre-wrap text-foreground-variant dark:border-[#26364a]">
+              {licenseText}
+            </pre>
+          </DialogContent>
+        </Dialog>
+      ) : null}
+
+      {whatsNewOpen ? (
+        <WhatsNewDialog version={version} onClose={() => setWhatsNewOpen(false)} />
+      ) : null}
     </div>
   );
 }
 
-function AboutRow({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
+function AboutAction({
+  icon,
+  label,
+  value,
+  onClick,
+}: {
+  icon: ReactNode;
+  label: string;
+  value?: string;
+  onClick: () => void;
+}) {
   return (
-    <div className="flex h-11 items-center gap-3 border-t border-border px-3.5 text-[0.84375rem] first:border-t-0 dark:border-[#1d2d42]">
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex h-11 w-full items-center gap-3 border-t border-border px-3.5 text-left text-[0.84375rem] outline-none first:border-t-0 hover:bg-surface-high focus-visible:bg-surface-high dark:border-[#1d2d42]"
+    >
       <span className="flex size-7 items-center justify-center rounded-md bg-surface-high text-primary">
         {icon}
       </span>
       <span>{label}</span>
-      <span className="ml-auto font-mono text-xs text-muted-foreground">{value}</span>
-    </div>
+      <span className="ml-auto flex items-center gap-1.5 text-xs text-muted-foreground">
+        {value}
+        <ChevronRight className="size-3.5 shrink-0" />
+      </span>
+    </button>
   );
 }
 
-function AboutLink({ icon, label, url }: { icon: ReactNode; label: string; url: string }) {
+function AboutExternal({
+  icon,
+  label,
+  onClick,
+}: {
+  icon: ReactNode;
+  label: string;
+  onClick: () => void;
+}) {
   return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noreferrer"
-      className="flex h-11 items-center gap-3 border-t border-border px-3.5 text-[0.84375rem] outline-none hover:bg-surface-high focus-visible:bg-surface-high dark:border-[#1d2d42]"
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex h-11 w-full items-center gap-3 border-t border-border px-3.5 text-left text-[0.84375rem] outline-none first:border-t-0 hover:bg-surface-high focus-visible:bg-surface-high dark:border-[#1d2d42]"
     >
       <span className="flex size-7 items-center justify-center rounded-md bg-surface-high text-primary">
         {icon}
       </span>
       {label}
       <ExternalLink className="ml-auto size-3.5 text-muted-foreground" />
-    </a>
+    </button>
   );
 }
 

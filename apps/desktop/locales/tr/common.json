@@ -773,6 +773,53 @@
     "licenseValue": "MIT lisansı",
     "privacy": "Dosyalar bu bilgisayarda kalır. Yedekler %LOCALAPPDATA%\\SavePrism\\backups klasöründe tutulur.",
     "notices": "Üçüncü taraf bildirimleri",
-    "noticesFailed": "Bildirimler açılamadı"
+    "noticesFailed": "Bildirimler okunamadı",
+    "versionLine": "Sürüm {{version}}",
+    "licenseTag": "MIT License",
+    "licenseShort": "MIT",
+    "licenseBody": "SavePrism, MIT Lisansı ile yayımlanır. Tam metin aşağıda.",
+    "tagline": "Bilgisayarında çalışan bir kayıt düzenleyici. Hesap yok, yükleme yok.",
+    "coreVersion": "Çekirdek {{version}}",
+    "whatsNew": "{{version}} sürümünde yeniler",
+    "showTour": "Turu yeniden göster",
+    "copyright": "© 2026 SavePrism katkıda bulunanlar",
+    "noticesSubtitle": "SavePrism bu açık kaynak paketlerle yapıldı. Teşekkürler!",
+    "searchPackages": "Paket ara",
+    "searchEmpty": "Eşleşen paket yok.",
+    "noticesCount": "{{total}} paket",
+    "licenseUnknown": "Bilinmiyor",
+    "noticeNoText": "Bildirim dosyasında lisans metni yok."
+  },
+  "whatsNew": {
+    "title": "{{version}} sürümünde yeniler",
+    "subtitle": "Bu sürümde değişenler.",
+    "gotIt": "Anladım"
+  },
+  "tour": {
+    "step": "{{total}} adımdan {{current}}.",
+    "back": "Geri",
+    "next": "İleri",
+    "skip": "Atla",
+    "done": "Bitti",
+    "drop": {
+      "title": "Bir kayıt aç",
+      "body": "Kayıt dosyasını buraya bırak ya da başlamak için Dosya aç ve Kod yapıştır'ı kullan."
+    },
+    "where": {
+      "title": "Kaydının nerede olduğundan emin değil misin?",
+      "body": "Bu bağlantı her oyun türü için olağan kayıt klasörlerini listeler."
+    },
+    "language": {
+      "title": "Dil",
+      "body": "Buradan İngilizce ve Türkçe arasında geçiş yap."
+    },
+    "bell": {
+      "title": "Bildirimler",
+      "body": "Bu oturumdaki olaylar burada görünür."
+    },
+    "settings": {
+      "title": "Ayarlar",
+      "body": "Tema, yedekler ve SavePrism'in geri kalanı burada."
+    }
   }
 }

@@ -15,7 +15,7 @@ use session::{
     HistoryResult, HistoryState, NodeRow, OpenInfo, Page, SaveLocation, SaveResult, Session,
     ValueChild, ValueHits, W3CardsView, app_codes, read_file_report, save_locations,
 };
-use tauri::{AppHandle, Manager, State};
+use tauri::{AppHandle, State};
 use tauri_plugin_opener::OpenerExt;
 
 /// The one open document (v0.1 keeps a single document at a time).
@@ -409,24 +409,6 @@ async fn file_report(path: String) -> Result<FileReport, ApiError> {
     read_file_report(&PathBuf::from(path))
 }
 
-/// The file name of the third-party notices in the installer.
-const NOTICES_FILE: &str = "THIRD_PARTY_NOTICES.md";
-
-/// The bundled notices file, if this build has it: in the resource folder, either at its top or
-/// where `bundle.resources` puts a path given with `..` (`_up_/_up_/_up_/`).
-fn notices_file(app: &AppHandle) -> Option<PathBuf> {
-    let dir = app.path().resource_dir().ok()?;
-    [
-        dir.join(NOTICES_FILE),
-        dir.join("_up_")
-            .join("_up_")
-            .join("_up_")
-            .join(NOTICES_FILE),
-    ]
-    .into_iter()
-    .find(|path| path.is_file())
-}
-
 /// Path of the running SavePrism executable, for the setup snippet of an AI app.
 #[tauri::command]
 fn mcp_command() -> Result<String, ApiError> {
@@ -535,33 +517,6 @@ fn background_image(app_folder: Option<String>) -> Result<Option<BackgroundImage
     folders::load_background(&app)
 }
 
-/// True when the third-party notices are bundled with this build.
-#[tauri::command]
-fn notices_available(app: AppHandle) -> bool {
-    notices_file(&app).is_some()
-}
-
-/// Opens the bundled third-party notices with the system's default program.
-#[tauri::command]
-fn open_notices(app: AppHandle) -> Result<(), ApiError> {
-    let path = notices_file(&app).ok_or_else(|| {
-        ApiError::new(
-            app_codes::NOTICES,
-            format!("{NOTICES_FILE} is not part of this build"),
-            "Read it in the SavePrism repository instead.",
-        )
-    })?;
-    app.opener()
-        .open_path(path.to_string_lossy(), None::<&str>)
-        .map_err(|error| {
-            ApiError::new(
-                app_codes::NOTICES,
-                format!("{NOTICES_FILE} could not be opened: {error}"),
-                "Open the file by hand from the SavePrism install folder.",
-            )
-        })
-}
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let result = tauri::Builder::default()
@@ -604,8 +559,6 @@ pub fn run() {
             file_report,
             list_backups,
             restore_backup,
-            notices_available,
-            open_notices,
             mcp_command,
             default_paths,
             set_backup_folder,

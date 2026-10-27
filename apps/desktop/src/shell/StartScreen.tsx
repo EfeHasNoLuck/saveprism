@@ -48,6 +48,7 @@ export function StartScreen({
     <div className="dense-scroll relative z-10 flex flex-1 flex-col items-center overflow-y-auto px-6 py-10">
       <div className="flex w-full max-w-[640px] flex-col">
         <div
+          data-tour="drop"
           className={cn(
             "flex flex-col items-center gap-3 rounded-md border border-dashed px-8 pt-[30px] pb-[22px] text-center transition-colors",
             dragging ? "border-primary bg-primary/10" : "border-input bg-card",
@@ -78,6 +79,7 @@ export function StartScreen({
             <span>{t("start.notSure")}</span>
             <button
               type="button"
+              data-tour="where"
               onClick={onWhereSaves}
               className="inline-flex items-center gap-1.5 rounded-sm font-medium text-primary outline-none hover:text-primary/80 focus-visible:ring-2 focus-visible:ring-ring/60"
             >
