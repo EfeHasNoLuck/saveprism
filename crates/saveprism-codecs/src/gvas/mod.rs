@@ -7,8 +7,10 @@
 //!
 //! Parameters of the step:
 //! - `types` (table): `uesave` type hints, property path to struct type name (for example
-//!   `.worldSaveData.CharacterSaveParameterMap.Key` = `"Guid"`). They are read from the recipe
-//!   hints on decode and stored again so encode and later decodes use the same table.
+//!   `PlayerAttributes.Key` = `"Struct"`). They are read from the recipe hints on decode. When a
+//!   map key/value or set element is a struct but the file does not name its type, the decode
+//!   infers the missing hint (see [`infer`]) and stores the complete table back, so later decodes
+//!   reuse exactly the same set.
 //! - the JSON codec's own format profile (`indent`, `regular`, ...), kept as it is.
 //!
 //! Known limits: the nodes carry no `GVAS:<type>` hint (a codec cannot set a hint on a node of a
@@ -24,9 +26,11 @@ use saveprism_core::{
     Codec, Confidence, DecodeCtx, Decoded, Error, ErrorCode, ParamValue, Params, Registry, Result,
     SaveDoc, SniffCtx, codes,
 };
-use uesave::{Save, StructType, Types};
+use uesave::{Save, SaveReader, Types};
 
 use crate::json::JsonCodec;
+
+mod infer;
 
 /// `uesave` could not read the GVAS bytes (the error carries the byte offset).
 pub const GVAS_PARSE: ErrorCode = ErrorCode::new("SP-GVAS-001");
@@ -46,9 +50,8 @@ pub fn register(reg: &mut Registry) {
 /// The `format.gvas` codec.
 pub(crate) struct GvasCodec;
 
-/// Reads the `types` table from the step hints: the `uesave` table plus the table to store back.
-fn read_types(hints: &Params) -> Result<(Types, Params)> {
-    let mut types = Types::new();
+/// Reads and validates the `types` table from the step hints.
+fn read_types(hints: &Params) -> Result<Params> {
     let mut stored = Params::new();
     match hints.get(TYPES_KEY) {
         None => {}
@@ -56,7 +59,6 @@ fn read_types(hints: &Params) -> Result<(Types, Params)> {
             for (path, value) in table.iter() {
                 match value {
                     ParamValue::Str(name) => {
-                        types.add(path.to_string(), StructType::from(name.as_str()));
                         stored.set(path, name.as_str());
                     }
                     _ => {
@@ -75,7 +77,7 @@ fn read_types(hints: &Params) -> Result<(Types, Params)> {
             ));
         }
     }
-    Ok((types, stored))
+    Ok(stored)
 }
 
 /// Runs `f`, turning a panic inside `uesave` into an error (the input is untrusted).
@@ -97,6 +99,22 @@ fn parse_save(input: &[u8], types: Types) -> Result<Save> {
                 .with_offset(len_u64(source.offset))
                 .with_source(source)
         })
+    })
+}
+
+/// Parses with unreadable properties kept as raw bytes, so the hint search can
+/// still see the surrounding tree and the schema of the property that failed.
+fn parse_save_lenient(input: &[u8], types: Types) -> Result<Save> {
+    guarded(GVAS_PARSE, "reading the save", || {
+        SaveReader::new()
+            .error_to_raw(true)
+            .types(types)
+            .read(Cursor::new(input))
+            .map_err(|source| {
+                Error::new(GVAS_PARSE, format!("cannot read the GVAS save: {source}"))
+                    .with_offset(len_u64(source.offset))
+                    .with_source(source)
+            })
     })
 }
 
@@ -127,9 +145,9 @@ impl Codec for GvasCodec {
     fn decode(&self, input: &[u8], ctx: &mut DecodeCtx<'_>) -> Result<Decoded> {
         let input_len = len_u64(input.len());
         ctx.limits().check_input(input_len)?;
-        let (types, stored) = read_types(ctx.hints())?;
+        let stored = read_types(ctx.hints())?;
 
-        let save = parse_save(input, types)?;
+        let (save, stored) = infer::guarded_read(input, &stored)?;
         let json = serde_json::to_string(&save).map_err(|source| {
             Error::new(
                 GVAS_JSON,
