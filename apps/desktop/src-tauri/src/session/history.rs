@@ -71,15 +71,6 @@ pub(super) enum Mutation {
 }
 
 impl Mutation {
-    /// The path the mutation is about (empty for a whole-document swap).
-    pub(super) fn path(&self) -> &str {
-        match self {
-            Mutation::Set { path, .. } => path,
-            Mutation::Entry(entry) => &entry.path,
-            Mutation::Document(_) => "",
-        }
-    }
-
     /// How much the history counts this mutation against [`MAX_VALUES`].
     fn weight(&self) -> usize {
         match self {

@@ -1196,7 +1196,9 @@ impl Session {
             return Err(self.read_only_error());
         }
         let parsed = Path::parse(path)?;
-        let id = self.doc.resolve(&parsed).ok_or_else(|| bad_path(path))?;
+        let Some(id) = self.doc.resolve(&parsed) else {
+            return self.edit_named_missing(&parsed, text);
+        };
         let node = self.doc.get(id).ok_or_else(|| bad_path(path))?;
         if node.flags.contains(NodeFlags::READ_ONLY) {
             return Err(Error::new(
@@ -1209,27 +1211,87 @@ impl Session {
         let before = scalar_owned(&node.value);
         let value = parse_input(&node.value, text)?;
         self.check_bounds(&parsed, node, &value)?;
-        apply_edits(
-            &mut self.doc,
-            &[Edit::Set {
-                path: parsed.clone(),
-                value,
-            }],
-            &self.limits,
-        )?;
-        let node = self.doc.get(id).ok_or_else(|| bad_path(path))?;
-        let new = value_text(node).unwrap_or_default();
-        if let (Some(before), Some(after)) = (before, scalar_owned(&node.value))
-            && before != after
-        {
-            self.history.record(vec![Mutation::Set {
-                path: parsed.to_string(),
-                before,
-                after,
-            }]);
+        // A level edit also moves the actor's EXP to the minimum of the new level (MV/MZ only,
+        // and only when the game's Classes.json is known).
+        let exp = match &value {
+            OwnedValue::Int(level) => self.level_exp_edit(&parsed, *level),
+            _ => None,
+        };
+        let mut set_edits = vec![Edit::Set {
+            path: parsed.clone(),
+            value,
+        }];
+        let mut targets = vec![(parsed.clone(), old, before)];
+        if let Some((exp_path, edit)) = exp {
+            let exp_old = self
+                .doc
+                .resolve(&exp_path)
+                .and_then(|id| self.doc.get(id))
+                .and_then(value_text)
+                .unwrap_or_default();
+            let exp_before = self
+                .doc
+                .resolve(&exp_path)
+                .and_then(|id| self.doc.get(id))
+                .and_then(|node| scalar_owned(&node.value));
+            targets.push((exp_path, exp_old, exp_before));
+            set_edits.push(edit);
         }
-        self.record_change(parsed.to_string(), old, new);
+        apply_edits(&mut self.doc, &set_edits, &self.limits)?;
+        let mut changes = Vec::with_capacity(targets.len());
+        let mut step = Vec::new();
+        for (path, old, before) in targets {
+            let id = self
+                .doc
+                .resolve(&path)
+                .ok_or_else(|| bad_path(&path.to_string()))?;
+            let node = self
+                .doc
+                .get(id)
+                .ok_or_else(|| bad_path(&path.to_string()))?;
+            let new = value_text(node).unwrap_or_default();
+            let after = scalar_owned(&node.value);
+            changes.push(Change::set(path.to_string(), old, new));
+            if let (Some(before), Some(after)) = (before, after)
+                && before != after
+            {
+                step.push(Mutation::Set {
+                    path: path.to_string(),
+                    before,
+                    after,
+                });
+            }
+        }
+        self.record_changes(changes);
+        self.history.record(step);
         make_row(&self.doc, self.editable, id, &parsed).ok_or_else(|| bad_path(path).into())
+    }
+
+    /// Edits a named MV/MZ switch or variable the save does not hold yet: grows its `_data` array
+    /// (filling the gap with `null`) and sets the value, as one undo step.
+    fn edit_named_missing(&mut self, path: &Path, text: &str) -> Result<NodeRow, ApiError> {
+        let Some(target) = self.named_target(path) else {
+            return Err(bad_path(&path.to_string()).into());
+        };
+        let value = target.parse(text)?;
+        let before_doc = self.doc.clone();
+        let before_pending = self.pending.clone();
+        let edits = Session::named_growth_edits(&[(target.clone(), value)]);
+        apply_edits(&mut self.doc, &edits, &self.limits)?;
+        let id = self
+            .doc
+            .resolve(path)
+            .ok_or_else(|| bad_path(&path.to_string()))?;
+        let new = self.doc.get(id).and_then(value_text).unwrap_or_default();
+        self.pending = before_pending.clone();
+        self.record_change(path.to_string(), target.default_text(), new);
+        self.history
+            .record(vec![Mutation::Document(Box::new(DocStep {
+                doc: before_doc,
+                pending: before_pending,
+            }))]);
+        make_row(&self.doc, self.editable, id, path)
+            .ok_or_else(|| bad_path(&path.to_string()).into())
     }
 
     /// Changes every scalar in `paths` to `text`, each parsed by its own type and checked against its
@@ -1251,12 +1313,26 @@ impl Session {
             ));
         }
         let mut seen = HashSet::with_capacity(paths.len());
+        let mut seen_missing = HashSet::with_capacity(paths.len());
         let mut edits = Vec::with_capacity(paths.len());
         for path in paths {
             let parsed = Path::parse(path)?;
-            let id = self.doc.resolve(&parsed).ok_or_else(|| bad_path(path))?;
-            if seen.insert(id) {
-                edits.push((path.clone(), text.to_string()));
+            match self.doc.resolve(&parsed) {
+                Some(id) => {
+                    if seen.insert(id) {
+                        edits.push((path.clone(), text.to_string()));
+                    }
+                }
+                None => {
+                    // A named MV/MZ switch or variable the save leaves out is not in the tree
+                    // yet; edit_each grows its array.
+                    if self.named_target(&parsed).is_none() {
+                        return Err(bad_path(path).into());
+                    }
+                    if seen_missing.insert(path.clone()) {
+                        edits.push((path.clone(), text.to_string()));
+                    }
+                }
             }
         }
         self.edit_each(&edits)
@@ -1282,8 +1358,10 @@ impl Session {
         }
         let bounds = self.rpg_bounds();
         let mut seen = HashSet::with_capacity(edits.len());
-        let mut touched = Vec::with_capacity(edits.len());
+        let mut touched: Vec<(String, String, Option<OwnedValue>)> =
+            Vec::with_capacity(edits.len());
         let mut set_edits = Vec::with_capacity(edits.len());
+        let mut missing: Vec<(game::NamedTarget, OwnedValue)> = Vec::new();
         for (path, text) in edits {
             if !seen.insert(path.as_str()) {
                 return Err(ApiError::new(
@@ -1293,7 +1371,14 @@ impl Session {
                 ));
             }
             let parsed = Path::parse(path)?;
-            let id = self.doc.resolve(&parsed).ok_or_else(|| bad_path(path))?;
+            let Some(id) = self.doc.resolve(&parsed) else {
+                // A named MV/MZ switch or variable the save leaves out: grow its array.
+                let target = self.named_target(&parsed).ok_or_else(|| bad_path(path))?;
+                let value = target.parse(text)?;
+                touched.push((path.clone(), target.default_text(), None));
+                missing.push((target, value));
+                continue;
+            };
             let node = self.doc.get(id).ok_or_else(|| bad_path(path))?;
             if node.flags.contains(NodeFlags::READ_ONLY) {
                 return Err(Error::new(
@@ -1306,18 +1391,29 @@ impl Session {
             check_bounds_in(&bounds, &parsed, node, &value)?;
             let old = value_text(node).unwrap_or_default();
             let before = scalar_owned(&node.value);
-            touched.push((id, parsed.to_string(), old, before));
+            touched.push((path.clone(), old, before));
             set_edits.push(Edit::Set {
                 path: parsed,
                 value,
             });
         }
+        let structural = !missing.is_empty();
+        let (before_doc, before_pending) = if structural {
+            (Some(self.doc.clone()), Some(self.pending.clone()))
+        } else {
+            (None, None)
+        };
+        let mut all_edits = Session::named_growth_edits(&missing);
+        all_edits.extend(set_edits);
         // One atomic edit: on an error the document is unchanged.
-        apply_edits(&mut self.doc, &set_edits, &self.limits)?;
+        apply_edits(&mut self.doc, &all_edits, &self.limits)?;
         let mut changes = Vec::with_capacity(touched.len());
         let mut step = Vec::with_capacity(touched.len());
-        for (id, path, old, before) in touched {
-            let node = self.doc.get(id);
+        for (path, old, before) in touched {
+            let node = self
+                .doc
+                .resolve(&Path::parse(&path)?)
+                .and_then(|id| self.doc.get(id));
             let new = node.and_then(value_text).unwrap_or_default();
             let after = node.and_then(|node| scalar_owned(&node.value));
             if let (Some(before), Some(after)) = (before, after)
@@ -1331,11 +1427,24 @@ impl Session {
             }
             changes.push(Change::set(path, old, new));
         }
-        let changed: Vec<String> = step
-            .iter()
-            .map(|mutation| mutation.path().to_string())
-            .collect();
+        let changed: Vec<String> = if structural {
+            changes.iter().map(|change| change.path.clone()).collect()
+        } else {
+            step.iter()
+                .filter_map(|mutation| match mutation {
+                    Mutation::Set { path, .. } => Some(path.clone()),
+                    _ => None,
+                })
+                .collect()
+        };
         self.record_changes(changes);
+        if let (Some(doc), Some(pending)) = (before_doc, before_pending) {
+            self.history
+                .record(vec![Mutation::Document(Box::new(DocStep { doc, pending }))]);
+            let mut result = self.history_result(changed);
+            result.structural = true;
+            return Ok(result);
+        }
         self.history.record(step);
         Ok(self.history_result(changed))
     }

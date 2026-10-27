@@ -320,6 +320,11 @@ export interface Actor {
   exp: Field | null;
   /** Stat bonuses in game order; translate `key` with `stat.<key>` (editor namespace). */
   bonuses: { key: StatKey; field: Field }[];
+  /**
+   * True when editing the level also sets the class's EXP (MV/MZ with the game's Classes.json);
+   * otherwise a hint under Level says EXP was not changed.
+   */
+  levelUpdatesExp: boolean;
 }
 
 export interface RpgMakerView {

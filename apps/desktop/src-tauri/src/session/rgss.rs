@@ -339,6 +339,7 @@ impl Ctx<'_> {
             mp,
             exp,
             bonuses,
+            level_updates_exp: true,
         })
     }
 

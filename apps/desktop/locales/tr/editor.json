@@ -43,7 +43,9 @@
     "hp": "HP",
     "mp": "MP",
     "exp": "EXP",
-    "lv": "Sv {{level}}"
+    "lv": "Sv {{level}}",
+    "bonusHeading": "Bonus (sınıf değerine eklenir)",
+    "levelExpHint": "EXP değiştirilmedi: oyunun Classes.json dosyası bulunamadı."
   },
   "field": {
     "undo": "Geri al (önceki: {{value}})",

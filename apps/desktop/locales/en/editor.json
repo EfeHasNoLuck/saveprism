@@ -43,7 +43,9 @@
     "hp": "HP",
     "mp": "MP",
     "exp": "EXP",
-    "lv": "Lv {{level}}"
+    "lv": "Lv {{level}}",
+    "bonusHeading": "Bonus (added to the class value)",
+    "levelExpHint": "EXP was not changed: the game's Classes.json was not found."
   },
   "field": {
     "undo": "Undo (was {{value}})",

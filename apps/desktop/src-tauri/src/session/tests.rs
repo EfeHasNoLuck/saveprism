@@ -3523,6 +3523,242 @@ fn a_vx_ace_item_can_be_added_undone_and_saved() {
     assert_eq!(ids(&rpg_view(&reopened).unwrap().items), [1, 2, 3]);
 }
 
+/// Writes a small MV/MZ data folder with more switch and variable names than a save holds, and
+/// the same class experience parameters for every id the save might use.
+fn write_named_data(folder: &Path) {
+    fs::create_dir_all(folder).unwrap();
+    let switches: Vec<String> = (0..=8).map(|id| format!("\"Switch {id}\"")).collect();
+    let variables: Vec<String> = (0..=8).map(|id| format!("\"Variable {id}\"")).collect();
+    fs::write(
+        folder.join("System.json"),
+        format!(
+            "{{\"switches\":[{}],\"variables\":[{}]}}",
+            switches.join(","),
+            variables.join(",")
+        ),
+    )
+    .unwrap();
+    let classes: Vec<String> = (1..=99)
+        .map(|id| format!("{{\"id\":{id},\"expParams\":[30,20,30,30]}}"))
+        .collect();
+    fs::write(
+        folder.join("Classes.json"),
+        format!("[null,{}]", classes.join(",")),
+    )
+    .unwrap();
+}
+
+/// The EXP `Game_Actor.prototype.expForLevel` gives for `[30, 20, 30, 30]`.
+fn expected_exp(level: i64) -> String {
+    let level = level as f64;
+    let total = 30.0 * (level - 1.0).powf(0.9 + 30.0 / 250.0) * level * (level + 1.0)
+        / (6.0 + level * level / 50.0 / 30.0)
+        + (level - 1.0) * 20.0;
+    total.round().to_string()
+}
+
+#[test]
+fn mv_level_edit_sets_the_class_exp_as_one_undo_step() {
+    let env = env();
+    let path = copy_in(&env, "synthetic/rpgmaker-mz/file1.rmmzsave");
+    let data = env.work.parent().unwrap().join("data");
+    write_named_data(&data);
+    let mut session = open(&env, &path, None).unwrap();
+    let view = rpg_view(&session).unwrap();
+    let actor = &view.actors[0];
+    assert!(actor.level_updates_exp);
+    let level_path = actor.level.path.clone();
+    let exp_path = actor.exp.as_ref().unwrap().path.clone();
+    let old_exp = actor.exp.as_ref().unwrap().value.clone();
+
+    session.edit_value(&level_path, "10").unwrap();
+    let view = rpg_view(&session).unwrap();
+    let actor = &view.actors[0];
+    assert_eq!(actor.level.value, "10");
+    assert_eq!(actor.exp.as_ref().unwrap().value, expected_exp(10));
+    let pending = session.pending_changes();
+    assert!(pending.iter().any(|change| change.path == level_path));
+    assert!(pending.iter().any(|change| change.path == exp_path));
+    assert_eq!(pending.len(), 2);
+
+    let result = session.undo().unwrap();
+    assert!(result.pending == 0);
+    let view = rpg_view(&session).unwrap();
+    assert_eq!(view.actors[0].level.value, "7");
+    assert_eq!(view.actors[0].exp.as_ref().unwrap().value, old_exp);
+}
+
+#[test]
+fn a_level_edit_without_classes_json_changes_only_the_level() {
+    let env = env();
+    let path = copy_in(&env, "synthetic/rpgmaker-mz/file1.rmmzsave");
+    let mut session = open(&env, &path, None).unwrap();
+    let view = rpg_view(&session).unwrap();
+    let actor = &view.actors[0];
+    assert!(!actor.level_updates_exp);
+    let level_path = actor.level.path.clone();
+    let old_exp = actor.exp.as_ref().unwrap().value.clone();
+
+    session.edit_value(&level_path, "9").unwrap();
+    let view = rpg_view(&session).unwrap();
+    assert_eq!(view.actors[0].level.value, "9");
+    assert_eq!(view.actors[0].exp.as_ref().unwrap().value, old_exp);
+    assert_eq!(session.pending_changes().len(), 1);
+}
+
+/// The first named switch the save's `_data` array does not hold yet.
+fn missing_named_switch(session: &Session, view: &RpgMakerView) -> Option<String> {
+    view.switches.iter().find_map(|entry| {
+        saveprism_core::Path::parse(&entry.field.path)
+            .ok()
+            .filter(|path| session.doc.resolve(path).is_none())
+            .map(|_| entry.field.path.clone())
+    })
+}
+
+#[test]
+fn a_missing_named_switch_grows_the_array_and_undo_takes_it_back() {
+    let env = env();
+    let path = copy_in(&env, "synthetic/rpgmaker-mz/file1.rmmzsave");
+    let data = env.work.parent().unwrap().join("data");
+    write_named_data(&data);
+    let mut session = open(&env, &path, None).unwrap();
+    let view = rpg_view(&session).unwrap();
+    let switch = missing_named_switch(&session, &view).expect("a named switch beyond the save");
+    assert!(view.switches.iter().any(|entry| entry.field.path == switch));
+
+    session.edit_value(&switch, "true").unwrap();
+    let parsed = saveprism_core::Path::parse(&switch).unwrap();
+    let id = session.doc.resolve(&parsed).expect("the grown entry");
+    assert!(matches!(
+        session.doc.get(id).map(|node| &node.value),
+        Some(saveprism_core::Value::Bool(true))
+    ));
+    let view = rpg_view(&session).unwrap();
+    assert!(
+        view.switches
+            .iter()
+            .any(|entry| entry.field.path == switch && entry.field.value == "true")
+    );
+
+    let result = session.undo().unwrap();
+    assert!(result.structural);
+    assert!(result.pending == 0);
+    let view = rpg_view(&session).unwrap();
+    assert!(session.doc.resolve(&parsed).is_none());
+    assert!(view.switches.iter().any(|entry| entry.field.path == switch));
+}
+
+#[test]
+fn set_all_grows_the_named_switches_in_one_undo_step() {
+    let env = env();
+    let path = copy_in(&env, "synthetic/rpgmaker-mz/file1.rmmzsave");
+    let data = env.work.parent().unwrap().join("data");
+    write_named_data(&data);
+    let mut session = open(&env, &path, None).unwrap();
+    let view = rpg_view(&session).unwrap();
+    let missing: Vec<String> = view
+        .switches
+        .iter()
+        .filter_map(|entry| {
+            let parsed = saveprism_core::Path::parse(&entry.field.path).ok()?;
+            session
+                .doc
+                .resolve(&parsed)
+                .is_none()
+                .then(|| entry.field.path.clone())
+        })
+        .take(2)
+        .collect();
+    assert_eq!(missing.len(), 2);
+
+    let result = session.edit_values(&missing, "true").unwrap();
+    assert!(result.structural);
+    assert_eq!(result.pending, 2);
+    for path in &missing {
+        let parsed = saveprism_core::Path::parse(path).unwrap();
+        let id = session.doc.resolve(&parsed).unwrap();
+        assert!(matches!(
+            session.doc.get(id).map(|node| &node.value),
+            Some(saveprism_core::Value::Bool(true))
+        ));
+    }
+
+    assert!(session.undo().unwrap().structural);
+    for path in &missing {
+        let parsed = saveprism_core::Path::parse(path).unwrap();
+        assert!(session.doc.resolve(&parsed).is_none());
+    }
+}
+
+#[test]
+fn a_missing_named_variable_is_listed_and_edits_to_a_whole_number() {
+    let env = env();
+    let path = copy_in(&env, "synthetic/rpgmaker-mz/file1.rmmzsave");
+    let data = env.work.parent().unwrap().join("data");
+    write_named_data(&data);
+    let mut session = open(&env, &path, None).unwrap();
+    let view = rpg_view(&session).unwrap();
+    let variable = view
+        .variables
+        .iter()
+        .find_map(|entry| {
+            let parsed = saveprism_core::Path::parse(&entry.field.path).ok()?;
+            session
+                .doc
+                .resolve(&parsed)
+                .is_none()
+                .then(|| entry.field.path.clone())
+        })
+        .expect("a named variable beyond the save");
+    session.edit_value(&variable, "42").unwrap();
+    let parsed = saveprism_core::Path::parse(&variable).unwrap();
+    let id = session.doc.resolve(&parsed).unwrap();
+    assert!(matches!(
+        session.doc.get(id).map(|node| &node.value),
+        Some(saveprism_core::Value::Int { v: 42, .. })
+    ));
+}
+
+#[test]
+fn an_unchanged_mv_file_with_a_data_folder_round_trips_exactly() {
+    let env = env();
+    let path = copy_in(&env, "synthetic/rpgmaker-mv/file1.rpgsave");
+    let data = env.work.parent().unwrap().join("data");
+    write_named_data(&data);
+    let before = fs::read(&path).unwrap();
+    let mut session = open(&env, &path, None).unwrap();
+    let _ = rpg_view(&session).unwrap();
+    session.save(path.to_str().unwrap(), false, None).unwrap();
+    assert_eq!(fs::read(&path).unwrap(), before);
+}
+
+#[test]
+#[ignore = "needs the real MZ fixtures in fixtures/external (local only)"]
+fn a_real_mz_named_switch_grows_and_undoes() {
+    let save = fixture("external/rpgmaker-mz/journey-of-elaina/file0.rmmzsave");
+    if !save.exists() {
+        eprintln!("skipping: {} is missing", save.display());
+        return;
+    }
+    let env = env();
+    let mut session = open(&env, &save, None).unwrap();
+    let view = rpg_view(&session).unwrap();
+    let Some(switch) = missing_named_switch(&session, &view) else {
+        eprintln!("skipping: every named switch is already in the save");
+        return;
+    };
+    session.edit_value(&switch, "true").unwrap();
+    let parsed = saveprism_core::Path::parse(&switch).unwrap();
+    let id = session.doc.resolve(&parsed).expect("the grown switch");
+    assert!(matches!(
+        session.doc.get(id).map(|node| &node.value),
+        Some(saveprism_core::Value::Bool(true))
+    ));
+    assert!(session.undo().unwrap().structural);
+    assert!(session.doc.resolve(&parsed).is_none());
+}
+
 fn values_view(session: &Session) -> (Vec<ValueRow>, Option<String>) {
     match session.game_view().unwrap() {
         GameView::Values { rows, add_parent } => (rows, add_parent),
