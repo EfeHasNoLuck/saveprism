@@ -47,10 +47,8 @@ import { JsonDialog, type ApplyResult, type JsonState } from "./shell/JsonDialog
 import { OpeningOverlay } from "./shell/OpeningOverlay";
 import { gameFolder } from "./shell/names";
 import { PasswordDialog } from "./shell/PasswordDialog";
-import { addRecent, loadRecent, saveRecent, type RecentFile } from "./shell/recent";
 import { SaveLocationsDialog } from "./shell/SaveLocationsDialog";
 import { SettingsDialog } from "./shell/SettingsDialog";
-import { browserStorage } from "./shell/settings";
 import { firstListSearch, isTextEditing, shortcutFor } from "./shell/shortcuts";
 import { StartScreen } from "./shell/StartScreen";
 import { Toasts } from "./shell/Toasts";
@@ -82,7 +80,6 @@ function App() {
   const [editorKey, setEditorKey] = useState(0);
   const [busy, setBusy] = useState(false);
   const [dragging, setDragging] = useState(false);
-  const [recent, setRecent] = useState<RecentFile[]>(() => loadRecent(browserStorage()));
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [backupsOpen, setBackupsOpen] = useState(false);
@@ -162,22 +159,6 @@ function App() {
     [notify, notifyError, t],
   );
 
-  const rememberRecent = useCallback(
-    (info: OpenInfo) => {
-      if (!settings.showRecent) return;
-      setRecent((list) => {
-        const next = addRecent(list, {
-          path: info.path,
-          fileName: info.fileName,
-          openedAt: Date.now(),
-        });
-        saveRecent(next, browserStorage());
-        return next;
-      });
-    },
-    [settings.showRecent],
-  );
-
   const openPath = useCallback(
     async (path: string, password?: string, gameFolder?: string) => {
       setBusy(true);
@@ -192,7 +173,6 @@ function App() {
         setInvalid(false);
         setEditorKey((key) => key + 1);
         setPasswordRequest(null);
-        rememberRecent(info);
         notify({
           kind: "opened",
           title: t("bell.opened", { name: info.fileName }),
@@ -227,7 +207,7 @@ function App() {
         setBusy(false);
       }
     },
-    [copyFileReport, notify, notifyError, rememberRecent, resetChanges, t],
+    [copyFileReport, notify, notifyError, resetChanges, t],
   );
 
   /**
@@ -822,6 +802,7 @@ function App() {
           onOpenFile={() => void chooseAndOpen()}
           onPasteCode={() => requestPaste()}
           onCloseFile={requestCloseFile}
+          onWhereSaves={() => setLocationsOpen(true)}
           onOpenSettings={() => setSettingsOpen(true)}
         />
 
@@ -884,10 +865,8 @@ function App() {
           ) : (
             <StartScreen
               dragging={dragging}
-              recent={recent}
               onOpenFile={() => void chooseAndOpen()}
               onPasteCode={() => requestPaste()}
-              onOpenRecent={requestOpen}
               onWhereSaves={() => setLocationsOpen(true)}
             />
           )}

@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
-import { translatePathPlaceholders } from "./locations";
+import { hasPathPlaceholder, translatePathPlaceholders } from "./locations";
 
 const TR = { gameFolder: "Oyun klasörü", game: "Oyun", company: "Şirket" };
 const EN = { gameFolder: "game folder", game: "game", company: "company" };
@@ -27,5 +27,18 @@ describe("translatePathPlaceholders", () => {
     expect(
       translatePathPlaceholders("<game>", { gameFolder: "", game: " ", company: "" }),
     ).toBe("<game>");
+  });
+});
+
+describe("hasPathPlaceholder", () => {
+  it("recognises every placeholder the host sends", () => {
+    expect(hasPathPlaceholder("<game folder>\\save")).toBe(true);
+    expect(hasPathPlaceholder("%APPDATA%\\RenPy\\<game>")).toBe(true);
+    expect(hasPathPlaceholder("%USERPROFILE%\\AppData\\LocalLow\\<company>\\<game>")).toBe(true);
+  });
+
+  it("is false for a real folder path", () => {
+    expect(hasPathPlaceholder("%APPDATA%\\RenPy\\saves")).toBe(false);
+    expect(hasPathPlaceholder("C:\\saves")).toBe(false);
   });
 });

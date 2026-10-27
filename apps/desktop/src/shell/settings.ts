@@ -23,8 +23,6 @@ export interface Settings {
   patternStrength: number;
   /** What the main Save button does. */
   saveDefault: SaveDefault;
-  /** Show the recent files on the start screen. */
-  showRecent: boolean;
   /** Show the notifications bell. */
   showNotifications: boolean;
   /** Backups kept per file; 1 to 50, 10 by default. */
@@ -41,7 +39,6 @@ export const DEFAULT_SETTINGS: Settings = {
   patternOn: true,
   patternStrength: 50,
   saveDefault: "saveAs",
-  showRecent: false,
   showNotifications: true,
   keepBackups: 10,
   textSize: "normal",
@@ -107,10 +104,6 @@ export function parseSettings(raw: string | null): Settings {
       record.saveDefault === "saveAs" || record.saveDefault === "overwrite"
         ? record.saveDefault
         : DEFAULT_SETTINGS.saveDefault,
-    showRecent:
-      typeof record.showRecent === "boolean"
-        ? record.showRecent
-        : DEFAULT_SETTINGS.showRecent,
     showNotifications:
       typeof record.showNotifications === "boolean"
         ? record.showNotifications

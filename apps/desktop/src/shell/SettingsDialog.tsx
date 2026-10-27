@@ -130,8 +130,8 @@ function Segmented<T extends string>({
           onClick={() => onChange(option.value)}
           className={
             option.value === value
-              ? "rounded-[3px] bg-primary/15 px-2.5 py-0.5 text-xs font-semibold text-primary outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
-              : "rounded-[3px] px-2.5 py-0.5 text-xs text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60"
+              ? "whitespace-nowrap rounded-[3px] bg-primary/15 px-2.5 py-0.5 text-xs font-semibold text-primary outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+              : "whitespace-nowrap rounded-[3px] px-2.5 py-0.5 text-xs text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60"
           }
         >
           {option.label}
@@ -343,16 +343,6 @@ export function SettingsDialog({ open, onOpenChange, onOpenAbout }: SettingsDial
               {t("settings.copySetup")}
             </Button>
           </div>
-        </Section>
-
-        <Section title={t("settings.recentSection")}>
-          <Row label={t("settings.showRecent")} info={t("settings.showRecentInfo")}>
-            <Switch
-              checked={settings.showRecent}
-              onCheckedChange={(checked) => update({ showRecent: checked })}
-              aria-label={t("settings.showRecent")}
-            />
-          </Row>
         </Section>
 
         <Section title={t("settings.notificationsSection")}>

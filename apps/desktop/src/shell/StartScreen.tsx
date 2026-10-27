@@ -1,41 +1,24 @@
-import { useState } from "react";
-import {
-  ChevronDown,
-  ClipboardPaste,
-  FileText,
-  FolderOpen,
-  FolderSearch,
-  Upload,
-} from "lucide-react";
+import { ClipboardPaste, FolderOpen, FolderSearch, Upload } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useSettings } from "./context";
-import type { RecentFile } from "./recent";
 
 interface StartScreenProps {
   dragging: boolean;
-  recent: RecentFile[];
   onOpenFile: () => void;
   /** Opens the dialog that takes a pasted save code. */
   onPasteCode: () => void;
-  onOpenRecent: (path: string) => void;
   /** Opens the dialog that lists the usual save folders of each engine. */
   onWhereSaves: () => void;
 }
 
 export function StartScreen({
   dragging,
-  recent,
   onOpenFile,
   onPasteCode,
-  onOpenRecent,
   onWhereSaves,
 }: StartScreenProps) {
   const { t } = useTranslation();
-  const { settings } = useSettings();
-  const [faqOpen, setFaqOpen] = useState(false);
-  const showRecent = settings.showRecent && recent.length > 0;
 
   return (
     <div className="relative z-10 flex flex-1 flex-col items-center overflow-y-auto px-6 py-10">
@@ -69,33 +52,6 @@ export function StartScreen({
           <p className="text-[0.8125rem] text-muted-foreground">{t("start.pasteHint")}</p>
           <p className="text-[0.8125rem] text-muted-foreground">{t("start.privacy")}</p>
         </div>
-
-        {showRecent ? (
-          <section aria-label={t("start.recent")} className="flex flex-col gap-2">
-            <h2 className="px-1 text-[0.6875rem] font-medium tracking-wider text-muted-foreground uppercase">
-              {t("start.recent")}
-            </h2>
-            <ul className="flex flex-col overflow-hidden rounded-md border border-border bg-card">
-              {recent.map((item) => (
-                <li key={item.path}>
-                  <button
-                    type="button"
-                    onClick={() => onOpenRecent(item.path)}
-                    className="flex w-full items-center gap-3 border-b border-border px-3 py-1.5 text-left outline-none hover:bg-surface-container focus-visible:bg-surface-container"
-                  >
-                    <FileText className="size-4 shrink-0 text-muted-foreground" />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate font-mono text-xs">{item.fileName}</span>
-                      <span className="block truncate text-[0.6875rem] text-muted-foreground">
-                        {item.path}
-                      </span>
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </section>
-        ) : null}
       </div>
 
       <div className="mt-6 flex w-full max-w-xl flex-col gap-1 text-[0.8125rem]">
@@ -108,27 +64,7 @@ export function StartScreen({
             <FolderSearch className="size-4" aria-hidden="true" />
             {t("start.whereLink")}
           </button>
-          <button
-            type="button"
-            aria-expanded={faqOpen}
-            onClick={() => setFaqOpen((open) => !open)}
-            className="inline-flex items-center gap-1 rounded-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60"
-          >
-            {t("start.faqLink")}
-            <ChevronDown className={cn("size-4 transition-transform", faqOpen && "rotate-180")} />
-          </button>
         </div>
-        {/* Always laid out (hidden while closed), so opening it does not move the card above. */}
-        <ul
-          className={cn(
-            "mt-2 flex list-disc flex-col gap-1 pl-5 text-muted-foreground",
-            !faqOpen && "invisible",
-          )}
-        >
-          <li>{t("start.faqRpgMaker")}</li>
-          <li>{t("start.faqUnity")}</li>
-          <li>{t("start.faqUnreal")}</li>
-        </ul>
       </div>
     </div>
   );

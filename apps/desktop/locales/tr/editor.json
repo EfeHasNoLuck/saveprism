@@ -1,4 +1,8 @@
 {
+  "bool": {
+    "true": "Açık",
+    "false": "Kapalı"
+  },
   "loading": "Değerler yükleniyor…",
   "loadFailed": "Değerler okunamadı. {{message}} {{hint}}",
   "sections": {
@@ -198,6 +202,7 @@
     "id": "Veritabanı numarası",
     "idPlaceholder": "Örneğin 12",
     "noCatalog": "Oyun veri klasörü bulunamadı; numarayı elle yaz.",
+    "missingFile": "Oyunun veri klasöründe {{file}} yok; numarayı elle yaz.",
     "count": "Adet",
     "submit": "Ekle"
   },
@@ -225,6 +230,7 @@
   "dataFolder": {
     "title": "Oyunun veri klasörünü seç",
     "none": "Oyun veri klasörü bulunamadı",
+    "namesFrom": "İsimler oyunun veri klasöründen",
     "choose": "Veri klasörü seç…",
     "change": "Değiştir…",
     "picking": "Açılıyor…"

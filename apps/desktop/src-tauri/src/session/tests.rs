@@ -650,6 +650,13 @@ fn map_session(env: &Env) -> Session {
 }
 
 #[test]
+fn a_shared_reference_shows_the_value_it_points_at() {
+    let env = env();
+    let session = map_session(&env);
+    assert_eq!(row(&session, "/link").preview, "same as Ann");
+}
+
+#[test]
 fn apply_json_changes_the_value_of_a_map_pair() {
     let env = env();
     let mut session = map_session(&env);

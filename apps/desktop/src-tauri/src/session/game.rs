@@ -1605,7 +1605,7 @@ impl Session {
             if let Ok(path) = Path::parse(&row.path)
                 && let Some(node) = self.doc.resolve(&path).and_then(|id| self.doc.get(id))
             {
-                row.preview = super::preview(node);
+                row.preview = super::preview_in(&self.doc, node);
             }
         }
         rows

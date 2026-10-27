@@ -45,6 +45,8 @@ export interface EntryListProps {
   canAdd?: boolean;
   /** The game's entries for this list (empty without a data folder). */
   catalog?: NamedId[];
+  /** The game's data folder was found, even if this list's database file was not. */
+  folderFound?: boolean;
   /** The game folder own names are kept under; null or missing hides them (pasted codes). */
   namesGame?: string | null;
   className?: string;
@@ -63,6 +65,7 @@ export function EntryList({
   entries,
   canAdd = false,
   catalog = [],
+  folderFound = false,
   namesGame,
   className,
   style,
@@ -207,7 +210,12 @@ export function EntryList({
     kind === "item" ? "items" : kind === "weapon" ? "weapons" : kind === "armor" ? "armors" : null;
   const add =
     canAdd && list !== null ? (
-      <AddEntryButton list={list} catalog={catalog} label={t(`addEntry.label.${kind}`)} />
+      <AddEntryButton
+        list={list}
+        catalog={catalog}
+        folderFound={folderFound}
+        label={t(`addEntry.label.${kind}`)}
+      />
     ) : null;
 
   /**

@@ -10,18 +10,28 @@ import { catalogId, checkRange, filterCatalog } from "./helpers";
 /** Most database entries the picker lists at once. */
 const MAX_RESULTS = 40;
 
+/** The game data file each list comes from (RPG Maker MV/MZ). */
+const DATA_FILE: Record<"items" | "weapons" | "armors", string> = {
+  items: "Items.json",
+  weapons: "Weapons.json",
+  armors: "Armors.json",
+};
+
 /**
  * "Add" of an inventory list: search the game's catalog by name or #id (or type an id when the
- * game's data folder was not found), a count from 1 to 99, then Add.
+ * game's data folder was not found or its file is missing), a count from 1 to 99, then Add.
  */
 export function AddEntryButton({
   list,
   catalog,
+  folderFound,
   label,
 }: {
   list: "items" | "weapons" | "armors";
   /** The game's entries for this list; empty when there is no data folder. */
   catalog: NamedId[];
+  /** The game's data folder was found, even if this list's file was not. */
+  folderFound: boolean;
   /** What is added ("item"), for the dialog texts. */
   label: string;
 }) {
@@ -151,7 +161,11 @@ export function AddEntryButton({
                   className="h-7 w-full rounded-sm border border-input/70 bg-field px-2 text-right font-mono text-xs tabular-nums outline-none focus-visible:border-ring dark:border-transparent dark:focus-visible:border-ring"
                 />
               </label>
-              <p className="text-[0.6875rem] text-muted-foreground">{t("addEntry.noCatalog")}</p>
+              <p className="text-[0.6875rem] text-muted-foreground">
+                {folderFound
+                  ? t("addEntry.missingFile", { file: DATA_FILE[list] })
+                  : t("addEntry.noCatalog")}
+              </p>
             </>
           )}
           <label className="flex items-center gap-2 text-xs text-muted-foreground">

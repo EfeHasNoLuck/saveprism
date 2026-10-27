@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { useNotify } from "./context";
 import { describeError } from "./errors";
-import { translatePathPlaceholders, type PlaceholderLabels } from "./locations";
+import { hasPathPlaceholder, translatePathPlaceholders, type PlaceholderLabels } from "./locations";
 
 type LocationsState =
   | { status: "loading" }
@@ -128,7 +128,7 @@ export function SaveLocationsDialog({ onClose }: SaveLocationsDialogProps) {
                           <FolderOpen />
                           {t("locations.openFolder")}
                         </Button>
-                      ) : (
+                      ) : hasPathPlaceholder(path.shown) ? null : (
                         <span className="shrink-0 text-[0.625rem] text-muted-foreground">
                           {t("locations.notFound")}
                         </span>

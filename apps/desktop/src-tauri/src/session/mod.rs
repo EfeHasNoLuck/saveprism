@@ -726,6 +726,34 @@ fn preview(node: &saveprism_core::Node) -> String {
     }
 }
 
+/// The text of the value a reference points at, stopped after a few links so a cycle cannot
+/// recurse. A ref whose target is missing reads as `another value`.
+fn ref_target_text(doc: &SaveDoc, node: &saveprism_core::Node, depth: u8) -> String {
+    match &node.value {
+        Value::Ref(target) if depth < 4 => doc.get(*target).map_or_else(
+            || "another value".to_string(),
+            |next| ref_target_text(doc, next, depth + 1),
+        ),
+        Value::Ref(_) => "another value".to_string(),
+        _ => preview(node),
+    }
+}
+
+/// The preview of a row, with a shared reference shown as the value it points at instead of the
+/// raw `-> #n` marker. The reference itself stays read-only.
+fn preview_in(doc: &SaveDoc, node: &saveprism_core::Node) -> String {
+    match &node.value {
+        Value::Ref(target) => {
+            let text = doc.get(*target).map_or_else(
+                || "another value".to_string(),
+                |next| ref_target_text(doc, next, 0),
+            );
+            format!("same as {text}")
+        }
+        _ => preview(node),
+    }
+}
+
 /// The `index`-th child: its path segment and node.
 fn child_at(doc: &SaveDoc, id: NodeId, index: usize) -> Option<(String, NodeId)> {
     match &doc.get(id)?.value {
@@ -754,7 +782,7 @@ fn make_row(doc: &SaveDoc, doc_editable: bool, id: NodeId, path: &Path) -> Optio
         path: path.to_string(),
         key: path.last().unwrap_or_default().to_string(),
         kind,
-        preview: preview(node),
+        preview: preview_in(doc, node),
         child_count: child_count(&node.value),
         editable,
         addable: false,

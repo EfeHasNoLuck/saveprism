@@ -19,17 +19,12 @@ describe("parseSettings", () => {
     expect(parseSettings("42")).toEqual(DEFAULT_SETTINGS);
   });
 
-  it("keeps recent files off by default", () => {
-    expect(DEFAULT_SETTINGS.showRecent).toBe(false);
-  });
-
   it("keeps valid fields and replaces invalid ones one by one", () => {
     const parsed = parseSettings(
       JSON.stringify({
         patternOn: false,
         patternStrength: "loud",
         saveDefault: "overwrite",
-        showRecent: "yes",
         showNotifications: false,
       }),
     );
@@ -37,7 +32,6 @@ describe("parseSettings", () => {
       patternOn: false,
       patternStrength: DEFAULT_SETTINGS.patternStrength,
       saveDefault: "overwrite",
-      showRecent: DEFAULT_SETTINGS.showRecent,
       showNotifications: false,
       keepBackups: DEFAULT_SETTINGS.keepBackups,
       textSize: DEFAULT_SETTINGS.textSize,
@@ -93,7 +87,7 @@ describe("loadSettings and saveSettings", () => {
       getItem: (key: string) => data.get(key) ?? null,
       setItem: (key: string, value: string) => void data.set(key, value),
     };
-    const settings = { ...DEFAULT_SETTINGS, showRecent: true, patternStrength: 80 };
+    const settings = { ...DEFAULT_SETTINGS, patternStrength: 80 };
     expect(saveSettings(settings, storage)).toBe(true);
     expect(data.has(SETTINGS_KEY)).toBe(true);
     expect(loadSettings(storage)).toEqual(settings);
