@@ -90,7 +90,11 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
    1 → 9, saved with a backup; values re-checked. A byte order mark before a line (Windows PowerShell pipes) is ignored.
    "Ask AI" on every list card and Settings → AI tools → Copy setup (`f4fe817`, checked in the running app, dark/light,
    EN/TR); its toast tells chatbot users what to do (`304baf0`). Docs: `docs/ai.md`.
-5. Installer. 2026-10-24: version 0.1.0, README rewritten (install, all formats, AI), notices regenerated (now with
+5. Installer. 2026-10-27 proof steps passed: the MSI built from `a04acaa` installed for real (user clicked through;
+   `C:\Program Files\SavePrism\`, Start menu shortcut); the user opened copies of 7 real saves in the installed app
+   ("güzel gözüküyor"); Claude Code (sonnet, `--mcp-config` → installed `saveprism-desktop.exe mcp`) set gold 200 → 4321
+   and an item 1 → 9 in a copy of a real MV save, saved with a backup; re-checked with the CLI (backup = original
+   bytes). Earlier, 2026-10-24: version 0.1.0, README rewritten (install, all formats, AI), notices regenerated (now with
    rusqlite and lz4_flex), `tauri build` → `SavePrism_0.1.0_x64-setup.exe` (4.0 MB) and `SavePrism_0.1.0_x64_en-US.msi`
    (6.5 MB) in `target/release/bundle/`. The MSI unpacked without installing (`msiexec /a`) holds
    `PFiles\SavePrism\saveprism-desktop.exe` (the exe name users see), the DLL and the notices; that exe opens its
