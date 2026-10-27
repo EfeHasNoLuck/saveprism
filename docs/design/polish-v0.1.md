@@ -11,8 +11,9 @@ Static HTML mockups in `.motor/mockups-1027/` (local, git-ignored; `start.html`,
   each tab are the ones drawn in `settings-A.html` (same in A and B).
 - Start screen and "Where is my save?" as drawn ("Where is my save?" liked as is).
 - About: say "MIT License"; do not advertise "free".
-- Keyboard shortcuts: the drawn "● Press keys…" recording chip looks generic; a different recording design is needed
-  (open, see below).
+- Keyboard shortcuts: not the drawn "● Press keys…" chip (looks generic). Chosen (A, like VS Code): clicking a
+  shortcut opens a small centered box "Press the new keys for <action>"; the keys show large while held; Enter saves,
+  Esc cancels; a conflict is explained inside the box.
 - Mockup content that was invented must be replaced with real data: the shortcut list (use the app's real shortcuts),
   the exe path (`saveprism-desktop.exe`; Copy setup fills the real path), notice versions, engine hints.
 
@@ -50,10 +51,10 @@ Static HTML mockups in `.motor/mockups-1027/` (local, git-ignored; `start.html`,
    - The app's own folder (backups, pasted codes, settings): open it in Explorer and change it.
 4. AI connection: two paths explained step by step with a visual stepper: (a) copy for a chatbot (paste into
    ChatGPT/Claude), (b) connect an AI agent over MCP (per-client setup with copy buttons).
-   MCP gaps to close (2026-10-27): the app can compare two saves, list "Where is my save?" folders and open a pasted
-   save code, but the MCP server cannot; add `compare_saves`, `save_locations` and `open_code` tools (same Session
-   code, read-only, documented in `docs/ai.md`), and check that `open_save` uses the same automatic key finder as the
-   app.
+   MCP gaps to close AFTER the polish (maintainer, 2026-10-27; they do not depend on the UI): the app can compare
+   two saves, list "Where is my save?" folders and open a pasted save code, but the MCP server cannot; add
+   `compare_saves`, `save_locations` and `open_code` tools (same Session code, read-only, documented in `docs/ai.md`),
+   and check that `open_save` uses the same automatic key finder as the app.
 5. Keyboard shortcuts: every action rebindable. Click to start recording, press the combination, recording stops;
    at most 3 keys per shortcut, at most 2 shortcuts per action; conflict warning; "Reset to default". The Windows key
    and system combinations (Alt+F4, Ctrl+Alt+Del) are not offered: Windows handles them before the app sees them.

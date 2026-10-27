@@ -18,17 +18,23 @@ final visual check.
   `cargo deny check`, `cargo test -p saveprism-desktop -- --ignored`, commit. Both touch `App.tsx`/`Header.tsx`/locales:
   expect conflicts, resolve by hand, then re-run the checks.
 
+**Watching the jobs:** both run as background Bash of the OLD session (the one that wrote this). Do not archive it
+until both reports exist or no `opencode.exe` is left in `tasklist`; then archive it. Watch with a background until-loop
+on the two report files / `tasklist`.
+
 **Next parts (briefs to write, EVREN, at most 2 at once):**
-1. AI connection tab (stepper, per-client setup from `docs/ai.md`) + MCP tools `compare_saves`, `save_locations`,
-   `open_code` (+ check `open_save` uses the automatic key finder) + docs.
+1. AI connection tab (stepper, per-client setup from `docs/ai.md`).
 2. About tab (logo, version, MIT License, in-app Third-party notices list, What's new popup from release notes built
    in at build time) + first-launch tour.
-3. Keyboard shortcuts tab: rebindable, ≤3 keys, ≤2 per action, conflict warning, reset, Windows-key note. The recording
-   look is waiting for the maintainer's choice (the mockup's "● Press keys…" chip was called generic).
+3. Keyboard shortcuts tab: rebindable, ≤3 keys, ≤2 per action, conflict warning, reset, Windows-key note. Recording
+   look decided: a small centered box like VS Code ("Press the new keys for <action>", keys shown large, Enter saves,
+   Esc cancels, conflicts explained in the box).
 4. Opening logo CSS/SVG animation, Explorer right-click "SavePrism ile çöz" / "Decode with SavePrism" (installer
    registry, under "Show more options"), theme file export/import, Community link.
-Then one Claude visual check of everything (screenshots, dark/light, EN/TR), show the maintainer, then a fresh MSI for
-them to install and try, then ask about publishing.
+Then one Claude visual check of everything (screenshots, dark/light, EN/TR), show the maintainer.
+After the polish (maintainer: fine to do later): MCP tools `compare_saves`, `save_locations`, `open_code` (+ check
+`open_save` uses the automatic key finder) + `docs/ai.md`. Then a fresh MSI for the maintainer to install and try,
+then ask about publishing.
 
 **User decisions:** focus engines Unreal/Unity/RPG Maker/Ren'Py; backups min 1 (default 10, 30 days, newest never
 deleted); no contrast warning (auto text color); Win key not offered (note in the tab); GitHub Discussions as community
