@@ -799,8 +799,6 @@ function App() {
         <BackgroundPattern />
         <Header
           file={file}
-          onOpenFile={() => void chooseAndOpen()}
-          onPasteCode={() => requestPaste()}
           onCloseFile={requestCloseFile}
           onWhereSaves={() => setLocationsOpen(true)}
           onOpenSettings={() => setSettingsOpen(true)}

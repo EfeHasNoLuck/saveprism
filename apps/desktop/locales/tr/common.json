@@ -51,10 +51,39 @@
   "start": {
     "dropActive": "Açmak için bırak",
     "openFile": "Dosya aç",
-    "privacy": "Dosyalar bu bilgisayarda kalır. Her kayıttan önce yedek alınır.",
     "pasteCode": "Kod yapıştır",
     "pasteHint": "Tarayıcı oyunu mu? Verdiği kayıt kodunu yapıştır (Ctrl+V).",
-    "whereLink": "Kaydım nerede?"
+    "notSure": "Kaydının nerede olduğundan emin değil misin?",
+    "whereLink": "Kaydım nerede?",
+    "slogan": "Dosyaların bilgisayarında kalır. Verilerin güvende.",
+    "faq": {
+      "title": "Sık sorulan sorular",
+      "saves": {
+        "question": "Kayıtlarım nerede?",
+        "answer": "Çoğu PC oyunu kayıtlarını kullanıcı klasöründe tutar; örneğin Belgeler\\My Games ya da AppData\\LocalLow\\<şirket>\\<oyun>. Bazıları kendi oyun klasöründe tutar. SavePrism bilgisayarını taramaz; olağan klasörleri gösterir.",
+        "link": "Her oyun türü için olağan klasörü gör"
+      },
+      "original": {
+        "question": "Orijinal kaydım değişir mi?",
+        "answer": "Yalnızca Geçerli dosyanın üzerine yaz'ı seçersen. Varsayılan Yeni dosya olarak kaydet'tir, böylece orijinal olduğu gibi kalır. Bir dosya değiştirilmeden önce SavePrism, Yedekler'den geri yükleyebileceğin bir kopya saklar."
+      },
+      "games": {
+        "question": "Hangi oyunlar çalışır?",
+        "answer": "Unity, Unreal Engine, RPG Maker, Ren'Py, Godot, GameMaker ve daha fazlasıyla yapılmış oyunlar, ayrıca tarayıcı oyunlarının kayıt kodları. Tam liste README'de. Bir dosya okunabiliyorsa değerleri hemen görünür."
+      },
+      "notOpen": {
+        "question": "Dosyam açılmıyor — şimdi ne olacak?",
+        "answer": "Açtığın şeyin kaydın kendisi olduğundan emin ol; kısayol ya da ekran görüntüsü olmasın. Bazı oyunlar kayıtlarını kilitler; SavePrism ne bulduğunu söyler. Hâlâ takıldıysan dosya raporunu kopyala ve oyunun adıyla GitHub'da bize yaz."
+      },
+      "ai": {
+        "question": "Bir yapay zekâ aracıyla nasıl kullanırım?",
+        "answer": "Herhangi bir listede AI'a sor'a basıp değerleri kopyala, sonra ChatGPT, Claude veya Gemini'ye yapıştır. MCP destekleyen yapay zekâ uygulamaları, örneğin Claude Desktop, doğrudan bağlanabilir: Ayarlar → Yapay zekâ bağlantısı."
+      },
+      "undo": {
+        "question": "Bir değişikliği nasıl geri alırım?",
+        "answer": "Geri almak için Ctrl+Z, yinelemek için Ctrl+Y ya da alt çubuktaki Tümünü geri al. Kaydettikten sonra önceki bir sürüme dönmek için Yedekler'i aç."
+      }
+    }
   },
   "banner": {
     "readOnly": "Bu dosya henüz güvenle yazılamıyor. Bakabilirsin ama kaydedemezsin.",
@@ -179,23 +208,50 @@
   },
   "locations": {
     "title": "Kaydım nerede?",
-    "description": "SavePrism bilgisayarını taramaz. Bunlar olağan konumlardır; birini açıp oyunun klasörünü bul. <Oyun> ve <Şirket> oyunun kendi klasör adlarının yerini tutar.",
+    "description": "SavePrism bilgisayarını taramaz. Bunlar her oyun türü için olağan kayıt klasörleridir.",
+    "searchPlaceholder": "Motor veya dosya türüne göre ara; örneğin Unity ya da .sav",
+    "searchLabel": "Kayıt klasörlerinde ara",
+    "clearSearch": "Aramayı temizle",
+    "count": "{{total}} oyun türünden {{shown}} tanesi",
+    "all": "Tümü",
+    "folders_one": "{{count}} klasör",
+    "folders_other": "{{count}} klasör",
+    "insideGame": "Oyunun kendi klasöründe",
+    "registry": "Kayıt defteri",
+    "registryHint": "Kayıt Defteri Düzenleyicisi ile dışa aktar",
+    "empty": "Aramanla eşleşen oyun türü yok.",
+    "emptyHint": "Motorun adını ya da .sav veya .rpgsave gibi bir dosya uzantısını dene.",
+    "tellUs": "Oyunun listede yok mu?",
+    "tellUsBody": "Oyunun adını ve kaydını nerede bulduğunu yaz.",
+    "tellUsButton": "GitHub'da bize yaz",
+    "tellUsFailed": "Sorun sayfası açılamadı",
     "openFolder": "Klasörü aç",
     "notFound": "Bu bilgisayarda yok",
     "inBrowser": "Tarayıcının kendi deposunda",
     "placeholder": {
-      "gameFolder": "Oyun klasörü",
-      "game": "Oyun",
-      "company": "Şirket"
+      "gameFolder": "oyun klasörü",
+      "game": "oyun",
+      "company": "şirket"
     },
     "openFailed": "Klasör açılamadı",
     "failed": "Kayıt konumları okunamadı.",
+    "group": {
+      "unity": "Unity",
+      "unreal": "Unreal Engine",
+      "rpgmaker-mv": "RPG Maker MV/MZ",
+      "rpgmaker-classic": "RPG Maker XP/VX",
+      "renpy": "Ren'Py",
+      "godot": "Godot",
+      "gamemaker": "GameMaker",
+      "other": "Diğer"
+    },
     "engine": {
       "rpgmaker-mv": "RPG Maker MV / MZ",
       "rpgmaker-classic": "RPG Maker XP / VX / VX Ace / 2000 / 2003",
       "wolf-rpg": "Wolf RPG Editor",
       "unity": "Unity",
       "unreal": "Unreal Engine",
+      "gamemaker": "GameMaker",
       "renpy": "Ren'Py",
       "godot": "Godot",
       "twine": "Twine / SugarCube",
@@ -218,12 +274,42 @@
       "ats": "American Truck Simulator",
       "retroarch": "RetroArch"
     },
+    "hint": {
+      "rpgmaker-mv": "MV'de www klasörü, MZ'de js ve data klasörleri var. Kayıtlar .rpgsave veya .rmmzsave biter.",
+      "rpgmaker-classic": "Game.exe, Game.ini'nin yanında. Kayıtlar .rxdata, .rvdata veya .rvdata2 biter.",
+      "wolf-rpg": "Game.exe ile Data/BasicData. Kayıtlar Save klasöründeki .sav dosyalarıdır.",
+      "unity": ".exe'nin yanında UnityPlayer.dll ve <oyun>_Data klasörü var.",
+      "unreal": "Oyunun klasörünün yanında Engine klasörü var. Kayıtlar .sav biter.",
+      "gamemaker": ".exe'nin yanında data.win dosyası var.",
+      "renpy": "renpy ve game klasörleri var. Kayıtlar .save biter.",
+      "godot": "Aynı adlı .pck dosyasıyla tek bir .exe.",
+      "twine": "Tarayıcıda çalışır. Oyunun Save to disk veya dışa aktarma seçeneğini kullan.",
+      "flash": "Bir .swf dosyası. Kayıtlar yerel paylaşılan nesnelerdir (.sol).",
+      "witcher3": "Kayıtlar Belgeler\\The Witcher 3\\gamesaves içinde, .sav biter.",
+      "satisfactory": "Kayıtlar FactoryGame\\Saved\\SaveGames altında, .sav biter.",
+      "palworld": "Pal\\Saved\\SaveGames\\<id> altında Level.sav.",
+      "terraria": "Belgeler\\My Games\\Terraria içinde karakterler (.plr) ve dünyalar (.wld).",
+      "neverwinter-nights": "Kayıtlar Belgeler'de ya da oyunun klasöründe .sav klasörleridir.",
+      "kotor": "Kayıtlar oyunun klasöründe, her slot için bir .sav klasörüdür.",
+      "ags": "Oyunun yanında agssave.000 ile agssave.999.",
+      "nscripter": "nscript.dat veya bir .nsa dosyası. Kayıtlar oyun klasöründeki save*.dat dosyalarıdır.",
+      "emuera": "Emuera.exe. Kayıtlar oyun klasöründe ya da sav klasöründe .sav dosyalarıdır.",
+      "alicesoft": "System 3.x .asd kayıtlarını oyun klasöründe tutar; System 4 genelde SaveData kullanır.",
+      "construct": "Construct 2/3 oyunları tarayıcıda kaydeder; .c2save/.c3save dosyası düz JSON'dur.",
+      "artemis": "Kayıtlar .exe'nin yanındaki save klasöründe.",
+      "elden-ring": "%APPDATA%\\EldenRing\\<id> altında ER0000.sl2.",
+      "dark-souls-3": "%APPDATA%\\DarkSoulsIII\\<id> altında DS30000.sl2.",
+      "ets2": "Profiller Belgeler\\Euro Truck Simulator 2\\profiles içinde.",
+      "ats": "Profiller Belgeler\\American Truck Simulator\\profiles içinde.",
+      "retroarch": "%APPDATA%\\RetroArch altında kayıt durumları (.state) ve pil kayıtları (.srm)."
+    },
     "note": {
       "rpgmaker-mv": "MV www/save, MZ save klasörünü kullanır.",
       "rpgmaker-classic": "Kayıt oyun klasöründe veya Save klasöründe olabilir.",
       "wolf-rpg": "Kayıtlar oyun klasöründeki Save klasöründe.",
-      "unity": "PlayerPrefs Windows kayıt defterindedir: regedit ile dışa aktar. Easy Save dosyaları %USERPROFILE%\\AppData\\LocalLow\\<Şirket>\\<Oyun>\\ altındadır.",
+      "unity": "PlayerPrefs Windows kayıt defterindedir: regedit ile dışa aktar. Easy Save dosyaları %USERPROFILE%\\AppData\\LocalLow\\<şirket>\\<oyun>\\ altındadır.",
       "unreal": "Proje adı oyunun klasör adıdır.",
+      "gamemaker": "Oyunun veri klasörü %LOCALAPPDATA% altında.",
       "renpy": "Oyun klasöründeki game/saves de olabilir.",
       "godot": "user:// klasörü.",
       "twine": "Tarayıcı deposunda: oyunun Save to disk / dışa aktarma seçeneğini kullan.",

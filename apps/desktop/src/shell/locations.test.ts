@@ -1,6 +1,14 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
-import { hasPathPlaceholder, translatePathPlaceholders } from "./locations";
+import {
+  engineInitials,
+  filterLocations,
+  hasPathPlaceholder,
+  highlightText,
+  isRegistryPath,
+  tokenizePath,
+  translatePathPlaceholders,
+} from "./locations";
 
 const TR = { gameFolder: "Oyun klasörü", game: "Oyun", company: "Şirket" };
 const EN = { gameFolder: "game folder", game: "game", company: "company" };
@@ -40,5 +48,125 @@ describe("hasPathPlaceholder", () => {
   it("is false for a real folder path", () => {
     expect(hasPathPlaceholder("%APPDATA%\\RenPy\\saves")).toBe(false);
     expect(hasPathPlaceholder("C:\\saves")).toBe(false);
+  });
+});
+
+describe("filterLocations", () => {
+  const ITEMS = [
+    {
+      engine: "unity",
+      name: "Unity",
+      hint: "UnityPlayer.dll and a <game>_Data folder.",
+      paths: [
+        "%USERPROFILE%\\AppData\\LocalLow\\<company>\\<game>",
+        "HKEY_CURRENT_USER\\Software\\<company>\\<game>",
+      ],
+    },
+    {
+      engine: "godot",
+      name: "Godot",
+      hint: "One .exe with a .pck file.",
+      paths: ["%APPDATA%\\Godot\\app_userdata\\<game>"],
+    },
+    {
+      engine: "witcher3",
+      name: "The Witcher 3",
+      hint: "Saves end in .sav in Documents.",
+      paths: ["%USERPROFILE%\\Documents\\The Witcher 3\\gamesaves"],
+    },
+  ];
+
+  it("matches the engine name, the hint and the path", () => {
+    expect(filterLocations(ITEMS, "unity", "all").map((item) => item.engine)).toEqual(["unity"]);
+    expect(filterLocations(ITEMS, "pck", "all").map((item) => item.engine)).toEqual(["godot"]);
+    expect(filterLocations(ITEMS, "gamesaves", "all").map((item) => item.engine)).toEqual([
+      "witcher3",
+    ]);
+  });
+
+  it("is case-insensitive and ignores surrounding spaces", () => {
+    expect(filterLocations(ITEMS, "  WITCHER ", "all").map((item) => item.engine)).toEqual([
+      "witcher3",
+    ]);
+  });
+
+  it("keeps only the chosen chip's engines", () => {
+    expect(filterLocations(ITEMS, "", "godot").map((item) => item.engine)).toEqual(["godot"]);
+    expect(filterLocations(ITEMS, "", "other").map((item) => item.engine)).toEqual(["witcher3"]);
+  });
+
+  it("returns nothing when no engine matches", () => {
+    expect(filterLocations(ITEMS, "renpy", "all")).toEqual([]);
+  });
+});
+
+describe("engineInitials", () => {
+  it("uses the short tiles of the dialog and derives the others", () => {
+    expect(engineInitials("unity")).toBe("U");
+    expect(engineInitials("unreal")).toBe("UE");
+    expect(engineInitials("rpgmaker-mv")).toBe("MV");
+    expect(engineInitials("rpgmaker-classic")).toBe("XP");
+    expect(engineInitials("renpy")).toBe("R'");
+    expect(engineInitials("gamemaker")).toBe("GM");
+    expect(engineInitials("witcher3")).toBe("W");
+    expect(engineInitials("neverwinter-nights")).toBe("NN");
+  });
+});
+
+describe("highlightText", () => {
+  it("splits the matches out and keeps their original case", () => {
+    expect(highlightText("RPG Maker MV", "rpg")).toEqual([
+      { text: "RPG", hit: true },
+      { text: " Maker MV", hit: false },
+    ]);
+  });
+
+  it("returns the whole text when the query is empty", () => {
+    expect(highlightText("Unity", "  ")).toEqual([{ text: "Unity", hit: false }]);
+  });
+
+  it("treats special characters as plain text", () => {
+    expect(highlightText("a .sav file", ".sav")).toEqual([
+      { text: "a ", hit: false },
+      { text: ".sav", hit: true },
+      { text: " file", hit: false },
+    ]);
+    expect(highlightText("a (b) c", "(")).toEqual([
+      { text: "a ", hit: false },
+      { text: "(", hit: true },
+      { text: "b) c", hit: false },
+    ]);
+  });
+});
+
+describe("tokenizePath", () => {
+  it("marks environment variables and placeholders", () => {
+    expect(tokenizePath("%USERPROFILE%\\AppData\\LocalLow\\<company>\\<game>")).toEqual([
+      { kind: "env", text: "%USERPROFILE%" },
+      { kind: "text", text: "\\AppData\\LocalLow\\" },
+      { kind: "placeholder", text: "<company>" },
+      { kind: "text", text: "\\" },
+      { kind: "placeholder", text: "<game>" },
+    ]);
+  });
+
+  it("marks a registry root as an environment-like key", () => {
+    expect(tokenizePath("HKEY_CURRENT_USER\\Software\\<company>")).toEqual([
+      { kind: "env", text: "HKEY_CURRENT_USER" },
+      { kind: "text", text: "\\Software\\" },
+      { kind: "placeholder", text: "<company>" },
+    ]);
+  });
+
+  it("leaves a plain path as one text token", () => {
+    expect(tokenizePath("C:\\saves")).toEqual([{ kind: "text", text: "C:\\saves" }]);
+  });
+});
+
+describe("isRegistryPath", () => {
+  it("recognises registry keys only", () => {
+    expect(isRegistryPath("HKEY_CURRENT_USER\\Software")).toBe(true);
+    expect(isRegistryPath("%APPDATA%\\EldenRing")).toBe(false);
+    expect(isRegistryPath("<game folder>\\save")).toBe(false);
   });
 });

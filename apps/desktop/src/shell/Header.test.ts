@@ -15,8 +15,6 @@ const noop = () => undefined;
 function header(file: OpenInfo | null): string {
   const bar = createElement(Header, {
     file,
-    onOpenFile: noop,
-    onPasteCode: noop,
     onCloseFile: noop,
     onWhereSaves: noop,
     onOpenSettings: noop,
@@ -44,19 +42,28 @@ beforeAll(async () => {
 });
 
 describe("Header", () => {
-  it("offers Paste code and Open file while no file is open", () => {
+  it("keeps the brand, language menu and settings on the start screen", () => {
     const html = header(null);
-    expect(html).toContain("Paste code");
-    expect(html).toContain("Open file");
+    expect(html).toContain("SavePrism");
+    expect(html).toContain("Language");
+    expect(html).toContain("Settings");
+    expect(html).toContain("EN");
+  });
+
+  it("removes Paste code, Open file and the theme toggle from the start screen", () => {
+    const html = header(null);
+    expect(html).not.toContain("Paste code");
+    expect(html).not.toContain("Open file");
+    expect(html).not.toContain("Switch to dark theme");
+    expect(html).not.toContain("Switch to light theme");
     expect(html).not.toContain("Close file");
   });
 
-  it("shows one Close file button in their place while a file is open", () => {
+  it("shows Close file and Where is my save while a file is open", () => {
     const html = header(FILE);
     expect(html).toContain("Close file");
     expect(html).toContain("Where is my save?");
     expect(html).not.toContain("Paste code");
-    expect(html).not.toContain("Open file");
   });
 
   it("shows Close file for a pasted code too", () => {

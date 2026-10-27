@@ -66,9 +66,13 @@ const CATALOG: &[(&str, &[&str])] = &[
     ("construct", &[]),
     (
         "unity",
-        &["%USERPROFILE%\\AppData\\LocalLow\\<company>\\<game>"],
+        &[
+            "%USERPROFILE%\\AppData\\LocalLow\\<company>\\<game>",
+            "HKEY_CURRENT_USER\\Software\\<company>\\<game>",
+        ],
     ),
     ("unreal", &["%LOCALAPPDATA%\\<game>\\Saved\\SaveGames"]),
+    ("gamemaker", &["%LOCALAPPDATA%\\<game>"]),
     (
         "renpy",
         &["%APPDATA%\\RenPy\\<game>", "<game folder>\\game\\saves"],
@@ -210,6 +214,7 @@ mod tests {
             "wolf-rpg",
             "unity",
             "unreal",
+            "gamemaker",
             "renpy",
             "godot",
             "twine",
