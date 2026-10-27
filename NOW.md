@@ -244,5 +244,6 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
   (SP-APP-023) until the file is opened again.
 
 ## Later (not now)
-Linux/macOS, game showcase, plugins, web version, code signing, hex editing, recent-files list (user: not wanted).
+Linux/macOS, game showcase, plugins, web version, code signing, hex editing, recent-files list (user: not wanted),
+community website with in-app sharing and donations (user, 2026-10-27: GitHub Discussions first).
 Old plans: `docs/ROADMAP.md`, `docs/archive/TASKS.md`.

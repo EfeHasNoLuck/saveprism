@@ -10,6 +10,8 @@ order; show mockups (A/B screenshots) before building a new screen.
 - Replace "Files stay on this PC. A backup is made before every save." with a short slogan in the right places:
   "Your files stay on your PC. Your data is safe." (no backup wording: it makes players ask where backups go).
 - First launch: a short tour that points out where things are.
+- After each update: a "What's new" popup the player can close, with the release notes. The notes are built into the
+  app from the release text at build time (no network call, works offline, keeps "nothing leaves the PC").
 
 ## Language
 - Header language button and the Settings language list show round (sphere) flag icons plus the language's own name
@@ -28,8 +30,9 @@ order; show mockups (A/B screenshots) before building a new screen.
 3. Saving and backups:
    - Default save action (moved here).
    - Backups to keep: a slider, minimum 1 (the newest backup always stays, so a bad write can never lose the save;
-     the leftmost position means "only the latest"), up to 50.
+     the leftmost position means "only the latest"), up to 50, default 10.
    - Keep backups for N days (default 30); age-based cleanup never deletes the newest backup of a save.
+   - Say it under the controls: "The latest backup of each save is always kept, so you can always go back."
    - Backup folder: choose where backups go (never the save's own folder).
    - The app's own folder (backups, pasted codes, settings): open it in Explorer and change it.
 4. AI connection: two paths explained step by step with a visual stepper: (a) copy for a chatbot (paste into
@@ -37,6 +40,8 @@ order; show mockups (A/B screenshots) before building a new screen.
 5. Keyboard shortcuts: every action rebindable. Click to start recording, press the combination, recording stops;
    at most 3 keys per shortcut, at most 2 shortcuts per action; conflict warning; "Reset to default". The Windows key
    and system combinations (Alt+F4, Ctrl+Alt+Del) are not offered: Windows handles them before the app sees them.
+   A short note in the tab tells the player so. (Catching them would need a system-wide keyboard hook: antivirus
+   tools treat that like a keylogger and it breaks Windows' own shortcuts, so no.)
 6. About: like a phone's About page — logo, version, links. Third-party notices open in an in-app scrollable list
    (today the entry looks like a web link but goes nowhere).
 
@@ -55,9 +60,10 @@ order; show mockups (A/B screenshots) before building a new screen.
   and adapt what fits SavePrism into our own docs; do not install third-party skill packs as they are.
 
 ## Windows integration
-- Explorer right-click entry "Open with SavePrism" with the logo, added by the installer (on Windows 11 it sits under
-  "Show more options"; the modern top-level menu is not needed).
+- Explorer right-click entry with the logo, added by the installer: TR "SavePrism ile çöz", EN "Decode with
+  SavePrism" (on Windows 11 it sits under "Show more options"; the modern top-level menu is not needed).
 
-## Open: community
-- The maintainer wants a place where people share themes/customization packs and how to open game saves.
-  Discussed scope in chat; not decided yet.
+## Community
+- v0.1: export/import a theme as a file in Settings; a "Community" link to GitHub Discussions, where people share
+  themes and notes on how to open game saves (shared "recipes" are data only, never code). No server, no accounts.
+- Later (out of scope now): if the community grows, a website, showing shared themes/recipes inside the app, donations.
