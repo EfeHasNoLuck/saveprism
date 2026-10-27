@@ -20,7 +20,8 @@ interface HeaderProps {
 export function Header({ file, onOpenFile, onPasteCode, onOpenSettings }: HeaderProps) {
   const { t } = useTranslation();
   const { settings } = useSettings();
-  const engine = file ? (engineLabel(file.fileName, file.codec, file.engine) ?? t("header.engineUnknown")) : null;
+  const known = file ? engineLabel(file.fileName, file.codec, file.engine) : null;
+  const engine = file ? (known ?? t("header.engineUnknown")) : null;
 
   return (
     <header className="relative z-10 flex h-11 shrink-0 items-center justify-between gap-4 border-b border-border bg-chrome px-3">
@@ -44,7 +45,11 @@ export function Header({ file, onOpenFile, onPasteCode, onOpenSettings }: Header
                 </span>
               </>
             )}
-            <span className="shrink-0 rounded-sm bg-surface-high px-1 font-mono text-[0.6875rem] leading-4 font-medium text-tertiary uppercase">
+            {/* Engine names are English: uppercase them by English rules ("SQLITE", not "SQLİTE"). */}
+            <span
+              lang={known ? "en" : undefined}
+              className="shrink-0 rounded-sm bg-surface-high px-1 font-mono text-[0.6875rem] leading-4 font-medium text-tertiary uppercase"
+            >
               {engine}
             </span>
           </div>

@@ -697,9 +697,11 @@ fn value_text(node: &saveprism_core::Node) -> Option<String> {
     match &node.value {
         Value::Bool(v) => Some(v.to_string()),
         Value::Int { v, .. } => Some(v.to_string()),
+        // Some codecs keep a marker such as `sii:original` in the lexeme, not the number text.
         Value::Float { v, .. } => Some(
             node.lexeme
                 .as_deref()
+                .filter(|text| text.trim().parse::<f64>().is_ok())
                 .map_or_else(|| format!("{v:?}"), str::to_string),
         ),
         Value::Str(text) => Some(text.clone()),

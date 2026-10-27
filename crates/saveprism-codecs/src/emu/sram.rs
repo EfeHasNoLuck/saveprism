@@ -2,8 +2,8 @@
 
 use saveprism_core::limits::len_u64;
 use saveprism_core::{
-    ByteSpan, Codec, Confidence, DecodeCtx, Decoded, Error, ErrorCode, IntWidth, Node, Params,
-    Result, SaveDoc, SniffCtx, TypeHint, Value,
+    ByteSpan, Codec, Confidence, DecodeCtx, Decoded, Error, ErrorCode, IntWidth, Node, NodeFlags,
+    Params, Result, SaveDoc, SniffCtx, TypeHint, Value,
 };
 
 /// The edited SRAM changed its length.
@@ -46,6 +46,8 @@ impl Codec for EmulatorSramCodec {
             width: IntWidth::U32,
         });
         size.type_hint = Some(hint("size"));
+        // The size is the file length, shown for information; the battery size cannot change.
+        size.flags.insert(NodeFlags::READ_ONLY);
         let size = doc.push(size)?;
         let mut data = Node::new(Value::Bytes(input.to_vec()));
         data.type_hint = Some(hint("sram"));

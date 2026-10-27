@@ -150,6 +150,9 @@ describe("engine helpers", () => {
     expect(engineLabel("game.sqlite", "format.sqlite")).toBe("SQLite");
     expect(engineLabel("game.sqlite3", "format.sqlite")).toBe("SQLite");
     expect(engineLabel("save.db", "format.sqlite")).toBe("SQLite");
+    expect(engineLabel("game.db", "format.litedb")).toBe("LiteDB");
+    expect(engineLabel("agssave.000", "format.ags")).toBe("Adventure Game Studio");
+    expect(engineLabel("snapshot.000", "format.snes9x-snapshot")).toBe("Snes9x snapshot");
     expect(engineLabel("data.bin", "format.sqlite")).toBe("SQLite");
     expect(engineLabel("SaveData01.sav", "format.wolf-rpg")).toBe("Wolf RPG");
     expect(engineLabel("data.bin", "format.wolf-rpg")).toBe("Wolf RPG");

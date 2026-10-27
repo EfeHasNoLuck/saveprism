@@ -3871,3 +3871,18 @@ fn a_gwent_copy_count_of_a_repeated_record_edits_and_saves() {
     assert_eq!(cards[1].copies.value, "3");
     assert_eq!(cards[0].copies.value, "4");
 }
+
+#[test]
+fn a_float_shows_its_number_not_a_codec_marker() {
+    let float = |lexeme: Option<&str>| {
+        let mut node = saveprism_core::Node::new(Value::Float {
+            v: 12.5,
+            width: saveprism_core::FloatWidth::F64,
+        });
+        node.lexeme = lexeme.map(Box::from);
+        value_text(&node).unwrap()
+    };
+    assert_eq!(float(Some("sii:original")), "12.5");
+    assert_eq!(float(Some("12.50")), "12.50");
+    assert_eq!(float(None), "12.5");
+}
