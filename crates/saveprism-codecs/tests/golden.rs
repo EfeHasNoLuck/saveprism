@@ -30,7 +30,12 @@ fn fixtures_dir() -> PathBuf {
 fn is_skipped(name: &str) -> bool {
     // `witcher3-bundle` holds content bundles for the Gwent card reader tests: game containers,
     // not save documents, so detection has no codec for them.
-    name.starts_with('.') || name.starts_with("README") || name == "witcher3-bundle"
+    // `map-unresolvable.sav` is deliberately undecodable (the GVAS hint inference tests need a
+    // file no struct type can resolve).
+    name.starts_with('.')
+        || name.starts_with("README")
+        || name == "witcher3-bundle"
+        || name == "map-unresolvable.sav"
 }
 
 /// Lists all regular files below `root` without recursion (explicit stack), sorted.

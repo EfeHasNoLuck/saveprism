@@ -135,6 +135,13 @@ doc = false
 bench = false
 
 [[bin]]
+name = "gvas"
+path = "fuzz_targets/gvas.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "qsp"
 path = "fuzz_targets/qsp.rs"
 test = false
