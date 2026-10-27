@@ -214,6 +214,9 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
      cards, emulator states, SharkPort); LevelDB/RocksDB/LiteDB; a local "unsupported file" report. Then the same REA
      pass on saveeditor.online.
    - Wave 3, 2026-10-25: local unsupported-file report done (Copy file report on the SP-DET-001 toast).
+7. The maintainer's polish list (2026-10-27): `docs/design/polish-v0.1.md` (start screen + FAQ, header, tabbed
+   Settings, backgrounds, shortcuts, AI connection, About, "Where is my save?" search, opening animation, Explorer
+   right-click entry). Mockups first, then build in parts. Publishing waits until this is done.
 
 ## Known gaps
 - A zip save with several JSON entries opens only the largest (Shapez 2: `local-player.json`, not `research.json` or
