@@ -1,48 +1,44 @@
 # HANDOFF
 
-**State (2026-10-26, ~22:45 TR):** todo 6 (parity with saveeditonline.com `/formats`), wave 3. Last commit is this
-handoff, on top of `3b15435`. **Not pushed:** GitHub Actions minutes ran out on 2026-10-26 (jobs fail in ~5 s with
-"recent account payments have failed or your spending limit needs to be increased"). Option B (memory
-`ci-minutes-fallback`): commit locally, run kontrol rust + web + `cargo deny check` before each commit, push next month.
-Last pushed commit: `4214786`.
+**State (2026-10-27, ~03:45 TR):** todo 6 (parity with saveeditonline.com `/formats`), wave 3 done except the user's
+Gwent A/B pick. **Not pushed:** GitHub Actions minutes ran out on 2026-10-26; the user said (2026-10-26 night) "commit
+tut, push atarız sonra". Before each commit: kontrol rust + web + `cargo deny check`. Last pushed commit: `4214786`.
 
-**Works (with evidence)**
-- Merged since the last handoff, each after `kontrol.sh rust` 3/3, `kontrol.sh web` 3/3, `cargo deny check` all ok:
-  Terraria `.plr`/`.wld` (`e770de5`) + review fixes (`2d08633`: world name/id/size read-only, 8-char key candidates,
-  item id/difficulty checks, `.plr.bak`, weak detector guess no longer beats the key path); NRBF fuzz OOM fix
-  (`58ccdd3`, fuzz CI green after it); "Copy file report" on the unknown-format toast (`585479e`); new S mark in the
-  header/About (`6e26f1a`); BioWare GFF/GFF4/ERF (`29f6677`); zstd 0.14.3 for RUSTSEC-2026-0391/0398/0403
-  (`dcfa9c1`); Adventure Creator + Pixel Crushers (`4214786`); AGS, ONScripter, Emuera (`ccd64b1`); BND4, MPQ,
-  Brickadia BRZ/BRS + `blake3` + regenerated notices (`31a1e50`).
-- Logo pack in `docs/brand/`, app icons regenerated from `SavePrism-icon-navy.svg` (`60439a5`, CI green then).
-- Visual check over CDP 2026-10-25 (dark/light, EN/TR): Open folder, translated error toasts, Compare polish,
-  password focus all pass.
+**Works (with evidence)** — merged this session, each after kontrol rust 3/3, web 3/3, cargo deny ok:
+- ser `5e5a3e5` (protobuf, Bitser, SCS `.sii`, LZip, Base64URL, Snes9x, RetroArch, `.srm`); kvdb `dfc4903` (LevelDB,
+  RocksDB read-only; LiteDB in place with `_id`/indexed fields read-only); real Gwent layout `097915f`; vn3 `5a09adf`
+  (AliceSoft, Artemis read-only, Construct labels); Godot `.tres`/`.res` `4a0ed89`; Gwent card list from the
+  player's game bundles `78dfdc9`; ES3 bare number/bool keys `3a2bc9a` and object keys `3a40520`; GVAS hint inference
+  `e91ee3d`; Gwent view A+B `6092cc4`; visual-check fixes `0453533`.
+- Sweep of all 88 local real saves (`fixtures/external`, CLI `inspect`): only the deliberately corrupted RPG Maker MZ
+  file fails; 4 ES3 + 1 GVAS real saves newly open; no regressions.
+- Visual check over CDP 2026-10-27 of every new format (screenshots `.motor/vcheck-1027/`), Gwent view checked on a
+  copy of a real save (screenshots `.motor/gwent-ab/`, sent to the user).
 
-**Running (EVREN, at most 2 at once; logs stay empty until the end, progress in
-`~/.local/share/opencode/log/opencode.log` by cwd)**
-- `kvdb` (LevelDB, RocksDB, LiteDB) in `../saveprism-wt/kvdb`, session `ses_e86715b09ffeOB45I3YvblrKqF`, log
-  `.motor/w3-kvdb-resume.log`, report `.motor/w3-kvdb-report.md` (in the worktree).
-- `ser` (protobuf, Bitser, SCS .sii, LZip, Base64URL, Snes9x/RetroArch states) in `../saveprism-wt/ser`, session
-  `ses_e86532ac0ffeSlSRfw1oWFh4HC`, log `.motor/w3-ser-resume.log`.
-- If `tasklist | grep opencode` shows nothing and there is no report: resume with
-  `bash .motor/resume_job.sh <kvdb|ser> <session> now` (start runs seconds apart: same-second starts fail with
-  "database is locked"). A run stops for good when it touches a path outside its worktree; the prompt must name it.
-
-**Merging a job:** `python -I .motor/merge_wt.py <name> "<subject>"` (keep it out of any command that mentions
-`.claude/araclar`: the hook refuses the mix), then check union hunks: locale JSON (script now adds the comma; still
-look for duplicate keys), `locations.rs` rows and test functions in `tests/detect.rs` can be cut in half; a job may
-edit NOW.md (keep ours). Then kontrol rust, kontrol web, `cargo deny check` as separate commands; regenerate notices
-(`bash scripts/third-party-notices/generate.sh`) when a crate was added; commit locally.
+**Waiting on the user:** Gwent layout A (tiles, faction tabs) or B (dense list + decks card). Set `GWENT_LAYOUT` in
+`apps/desktop/src/editor/gwent.ts` (now "a"), delete the other layout's code and its strings, kontrol web, commit.
 
 **Broken / not checked**
-- Every new format since wave 2 is tested only with synthetic files; no real Terraria/BioWare/AGS/etc. save.
-- "Copy file report" not clicked in the running app; the new header S mark seen only in the vite preview.
-- Any unknown file of 16·n bytes opens the ES3 password dialog; wrong password empties the field.
+- The `0453533` fixes are checked only by unit tests, not in the running app.
+- Design leftovers from the visual check are in NOW.md "Known gaps" (light-theme read-only contrast, Ask AI missing
+  for grouped values, cut long strings, `raw:` Witcher values).
+- `.claude/worktrees/agent-a5b61daf70f35e62e` could not be deleted (path too long; the hook blocks `rmdir /s`); the
+  user can delete it by hand. Old `.claude/worktrees/agent-a945e990b19f4bff1` is also stale.
+- Every new format is tested on synthetic files only, except Witcher 3/Gwent, ES3, GVAS (real saves).
+- Not possible (no public layout): Smile Game Builder, LiveMaker, Visionaire, Construct Classic, Aoi, Easy Save 2;
+  Oodle/Kraken (no permissive decoder); "SSSoftware Serialize" unknown.
 
-**Next step:** merge `kvdb` and `ser` when their reports appear; then write and run the last wave 3 briefs: vn3
-(Artemis, Smile Game Builder/YUKAR `.sgs`, LiveMaker, AliceSoft, Visionaire, Construct Classic, Aoi/SofthouseChara)
-and the Witcher 3 Gwent collection view (UI: design-heavy, Claude subagent + A/B screenshots to the user). After that
-one CDP visual check of everything new, then the proof steps (install for real, real saves, real AI client).
+**Next step:** apply the user's Gwent pick. Then the proof steps from NOW.md todo 5/6: install the MSI for real (with the
+user present: it changes the PC), open real saves in the installed app, a real AI client over MCP. Ask about
+publishing only after those pass.
+
+**How jobs ran this session:** EVREN (`opencode run -m evren/deepseek-v4.1-flash --agent build`, `< /dev/null | cat >
+log`) in `../saveprism-wt/<name>` worktrees from `HEAD`, briefs `.motor/w3-<name>.md` + `w2-common.md` copied in,
+real saves copied into the worktree's git-ignored `fixtures/external` when needed; merged with
+`python -I .motor/merge_wt.py <name> "<subject>"`, then `cargo fmt --all` if module order changed. Watch out: `*.log`
+is git-ignored (the LevelDB `.log` fixture needed `!fixtures/synthetic/**/*.log`); a run stops for good when it touches
+a path outside its worktree (resume with `--session <id>` naming the bad path). UI work: Claude subagent with
+`isolation: "worktree"`; visual checks: sonnet subagent over CDP (snapshot/restore `saveprism.*` localStorage).
 
 **User decisions:** do not ask about publishing until install + real saves + real AI client pass; no value finder;
-quiet backend UX; at most 2 EVREN jobs at once (quota ran out at 14:51 TR with 4); no pushes while CI minutes are out.
+quiet backend UX; at most 2 EVREN jobs at once; no pushes while CI minutes are out.

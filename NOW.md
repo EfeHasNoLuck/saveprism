@@ -164,8 +164,11 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
      `.motor/gwent-ab/`), then delete the other layout.
    - GVAS struct type hints found automatically (`e91ee3d`; bounded search, kept only with an exact round trip): the
      real UE 4.27 save opens. Of the 88 local real saves only the deliberately corrupted RPG Maker MZ file fails.
-   - Running: visual check over CDP of every format added since 2026-10-25, plus "Copy file report" and the header S
-     mark (Claude subagent; screenshots in `.motor/vcheck-1027/`).
+   - 2026-10-27 visual check over CDP of every format added since 2026-10-25 (dark/light, EN/TR; screenshots in
+     `.motor/vcheck-1027/`): all open. Fixed (`0453533`): floats showed a codec marker (`sii:original`) instead of the
+     number (SCS, Godot, YAML/TOML, KAG); LiteDB `.db` and AGS `agssave.000` had wrong engine labels; Turkish badge
+     uppercased to "SQLİTE"; `.srm` size was editable. Fixes not re-checked in the app (unit tests only).
+     "Copy file report" works with a real click (no path in the report); the S mark is crisp (pale in light theme).
      Left from `/formats` after these: Easy Save 2 (no public layout), Oodle/Kraken (no permissive decoder),
      "SSSoftware Serialize" (unknown format).
    - Wave 2, first: auto-unlock (user idea, 2026-10-24): every layer tried by content whatever the extension; simple XOR
@@ -200,7 +203,11 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
 - Any unknown file whose size is a multiple of 16 bytes opens the "This file is encrypted" password dialog (it could be
   Easy Save 3 AES); a cut-off copy of a known format says "SavePrism does not know this file yet" (visual check,
   2026-10-25). After a wrong password the field is emptied.
-- "Copy file report" (`585479e`) is tested only in Rust and vitest, not yet clicked in the running app.
+- Visual check 2026-10-27 leftovers (design, not bugs): in light theme read-only and editable fields differ only by
+  slightly paler text; long strings are cut in fixed-width inputs (tooltip exists); empty containers show as `{0}`/`[0]`
+  in some views and "0 items" in others; "Ask AI" is missing when every value sits inside a group (protobuf, SII,
+  Godot, SQLite/LiteDB, GVAS, Adventure Creator); Witcher 3 untyped values show as `raw:00008f42`; LiteDB gives no
+  hint why `_id`/indexed fields are locked.
 - Light theme: the Compare "only here/there" chips barely differ from the row background (text contrast is fine).
 - Ask AI on the Values card copies only the top-level values (as its search does), not values inside groups.
 - An MCP edit does not reach a SavePrism window with the same file open; that window refuses to save over it
