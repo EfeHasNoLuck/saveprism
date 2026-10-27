@@ -350,3 +350,10 @@ path = "fuzz_targets/emu.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "satisfactory"
+path = "fuzz_targets/satisfactory.rs"
+test = false
+doc = false
+bench = false
