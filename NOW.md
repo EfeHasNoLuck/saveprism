@@ -159,9 +159,11 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
      all 88 local real saves showed no regression (3 ES3 files went from semantic to exact).
    - Gwent collection view merged in two layouts (`6092cc4`; checked in the running app on a copy of a real save:
      139 cards, 13 leaders, 5 decks, edit + undo, folder pick, TR, dark/light). Repeated Witcher 3 record names are
-     now numbered (`Name#2`), so every card count (and repeated inventory record) is editable. Waiting for the
-     user's A/B pick (`GWENT_LAYOUT` in `apps/desktop/src/editor/gwent.ts`, now "a"; screenshots in
-     `.motor/gwent-ab/`), then delete the other layout.
+     now numbered (`Name#2`), so every card count (and repeated inventory record) is editable. 2026-10-27 the user
+     picked layout A and asked for deck tabs like the faction tabs; done in `c0e711d` (deck tabs with leader first,
+     copies per deck read-only, Selected/Locked marks; layout B deleted). Same commit: while a file is open the header
+     shows one "Close file" button instead of Paste code / Open file (asks through the discard dialog when there are
+     pending changes). Checked in the running app by the subagent (screenshots `.motor/gwent-decks/`).
    - GVAS struct type hints found automatically (`e91ee3d`; bounded search, kept only with an exact round trip): the
      real UE 4.27 save opens. Of the 88 local real saves only the deliberately corrupted RPG Maker MZ file fails.
    - 2026-10-27 visual check over CDP of every format added since 2026-10-25 (dark/light, EN/TR; screenshots in
