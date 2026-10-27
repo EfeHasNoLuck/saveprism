@@ -5,9 +5,102 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="light dark" />
     <title>SavePrism</title>
+    <style>
+      /*
+       * The opening cover is painted by index.html, before the React bundle runs. It shows the
+       * logo drawing itself with a plain SVG stroke animation (no library). React removes it
+       * after its first commit (see src/shell/boot.ts).
+       */
+      html,
+      body {
+        margin: 0;
+      }
+      #boot-cover {
+        position: fixed;
+        inset: 0;
+        z-index: 2147483647;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #eff4ff;
+        pointer-events: none;
+        opacity: 1;
+        transition: opacity 150ms ease-out;
+      }
+      html.dark #boot-cover {
+        background: #031427;
+      }
+      #boot-cover.is-done {
+        opacity: 0;
+      }
+      #boot-cover svg {
+        width: 132px;
+        height: 132px;
+        overflow: visible;
+      }
+      #boot-cover .boot-outline {
+        fill: none;
+        stroke: #4a7fd6;
+        stroke-width: 5;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-dasharray: 1;
+        stroke-dashoffset: 1;
+        animation: boot-draw 700ms ease-out forwards;
+      }
+      html.dark #boot-cover .boot-outline {
+        stroke: #8fc0f7;
+      }
+      #boot-cover .boot-face {
+        opacity: 0;
+        animation: boot-fade 220ms ease-out 520ms forwards;
+      }
+      @keyframes boot-draw {
+        to {
+          stroke-dashoffset: 0;
+        }
+      }
+      @keyframes boot-fade {
+        to {
+          opacity: 1;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #boot-cover {
+          transition: none;
+        }
+        #boot-cover .boot-outline {
+          animation: none;
+          stroke-dashoffset: 0;
+        }
+        #boot-cover .boot-face {
+          animation: none;
+          opacity: 1;
+        }
+      }
+    </style>
+    <script src="/boot.js"></script>
   </head>
 
   <body>
+    <div id="boot-cover" aria-hidden="true">
+      <svg viewBox="-21 0 142 142" xmlns="http://www.w3.org/2000/svg">
+        <path
+          class="boot-outline"
+          pathLength="1"
+          d="M56 0 100 25V50L74 65V39L56 29 28 45 100 85V110L44 142 0 117V92L26 77V103L44 113 72 97 0 57V32Z"
+        />
+        <g class="boot-face">
+          <path
+            d="M56 0 100 25V50L74 65V39L56 29 28 45 100 85V110L44 142 0 117V92L26 77V103L44 113 72 97 0 57V32Z"
+            fill="#ABC7FF"
+          />
+          <path d="M56 29 82 14 100 25 74 40Z" fill="#5D90E8" />
+          <path d="M74 39 100 25V50L74 65Z" fill="#4CD7F6" />
+          <path d="M0 92 26 77V103L0 117Z" fill="#5D90E8" />
+        </g>
+      </svg>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

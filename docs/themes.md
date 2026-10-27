@@ -28,10 +28,11 @@ The groups:
 - `apps/desktop/src/theme/theme.ts` is the pure part: `ThemePreference` (`light`, `dark`,
   `system`), `parseStoredPreference` and `resolveTheme` (follows the OS for `system`).
 - `apps/desktop/src/theme/index.tsx` reads and writes the preference under the localStorage key
-  `saveprism.theme`. `applyStoredTheme()` runs in `main.tsx` before the first render; the
-  provider keeps `<html>` in sync: it toggles `.dark` and sets `style.colorScheme`.
-- The header `ThemeToggle` flips between light and dark with one click. The Settings dialog
-  (`shell/SettingsDialog.tsx`) offers `system`, `light` and `dark` with `useTheme()`.
+  `saveprism.theme`. `applyStoredTheme()` runs in `main.tsx` before the first render (and
+  `public/boot.js` applies the same choice to the opening cover); the provider keeps `<html>` in
+  sync: it toggles `.dark` and sets `style.colorScheme`.
+- The theme is chosen in Settings → General, which offers `system`, `light` and `dark` with
+  `useTheme()`. There is no theme switch in the header.
 
 ## Colour presets
 
@@ -41,6 +42,37 @@ blocks; the defaults write nothing and leave `index.css` as it is. `shell/appear
 `applyColors` puts that CSS into a `<style id="saveprism-colors">` element, at startup and on
 every settings change.
 
+## Theme files
+
+Settings → Appearance can export the current look as a file and import one made by someone else
+("Community themes" links to the GitHub Discussions). A theme file is data only — no code, no
+image — and is validated before anything changes.
+
+- `shell/themeFile.ts` holds the schema, `buildThemeFile`, `parseThemeFile` and
+  `themeSettingsPatch`; `shell/themeFile.test.ts` covers every refusal.
+- `session/theme_file.rs` writes and reads the file with the same checks as "Export .json": never
+  over the open save, never a folder, a name ending in `.saveprism-theme.json`, a temporary file
+  renamed into place, and at most 64 KB.
+- Import applies a photo theme to the photo already in the app folder; with no photo it falls back
+  to the Default pattern (the image itself is not part of the file in v0.1).
+
+```json
+{
+  "format": "saveprism-theme",
+  "version": 1,
+  "name": "Blue night",
+  "colors": { "changed": "violet", "accent": "#123abc", "error": "red" },
+  "textSize": 110,
+  "background": { "kind": "pattern", "pattern": "dots", "strength": 70 }
+}
+```
+
+A photo background uses
+`{ "kind": "photo", "fit": "fit" | "fill", "blur": 0..100, "darken": 0..100 }`. Colors are a
+preset id of their group (`violet`, `rose`, `cyan`, …) or a `#rrggbb` value; `textSize` is an
+integer percent from 80 to 140. Unknown keys are ignored; a wrong type, an unknown preset or a
+value outside its range refuses the whole file with a short reason.
+
 ## Adding a high-contrast theme
 
 1. `index.css`: add a block such as `.contrast { … }` with the stronger values. Decide how it
@@ -48,8 +80,8 @@ every settings change.
 2. `theme/theme.ts`: add `"contrast"` to `ThemePreference` and accept it in
    `parseStoredPreference`; extend `resolveTheme` if the theme needs both a light and a dark mode.
 3. `theme/index.tsx`: toggle the new class in `applyToDocument` (remove it when another theme is
-   chosen) and update `ThemeToggle` if it should cycle through it.
-4. `shell/SettingsDialog.tsx`: add it to `THEMES`, and add `theme.contrast` to
+   chosen).
+4. `shell/SettingsPage.tsx`: add it to `THEMES`, and add `theme.contrast` to
    `locales/en/common.json` and `locales/tr/common.json`.
 5. Contrast: keep text at 4.5:1 or more on every surface and row tint it can sit on.
    `shell/colors.test.ts` computes WCAG luminance and contrast for each preset in both themes:

@@ -15,6 +15,7 @@ const EN: Record<string, string> = {
   "settings.photoFit": "Photo fit",
   "settings.blur": "Blur",
   "settings.darken": "Darken",
+  "settings.themeFile.label": "Theme file",
   "settings.defaultAction": "Default save action",
   "settings.keepBackups": "Backups to keep",
   "settings.keepDays": "Keep backups for",
@@ -49,7 +50,10 @@ describe("searchSettings", () => {
   });
 
   it("ignores case, surrounding spaces and empty text", () => {
-    expect(searchSettings("  THEME ", en).map((entry) => entry.id)).toEqual(["general.theme"]);
+    expect(searchSettings("  THEME ", en).map((entry) => entry.id)).toEqual([
+      "general.theme",
+      "appearance.themeFile",
+    ]);
     expect(searchSettings("   ", en)).toEqual([]);
     expect(searchSettings("nothing like this", en)).toEqual([]);
   });

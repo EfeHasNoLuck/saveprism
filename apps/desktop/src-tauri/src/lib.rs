@@ -6,6 +6,7 @@
 pub mod mcp;
 pub mod session;
 
+use std::ffi::OsString;
 use std::path::{Path as FsPath, PathBuf};
 use std::sync::{Mutex, MutexGuard, PoisonError};
 
@@ -15,13 +16,32 @@ use session::{
     HistoryResult, HistoryState, NodeRow, OpenInfo, Page, SaveLocation, SaveResult, Session,
     ValueChild, ValueHits, W3CardsView, app_codes, read_file_report, save_locations,
 };
-use tauri::{AppHandle, State};
+use tauri::{AppHandle, Emitter, Manager, State};
 use tauri_plugin_opener::OpenerExt;
 
 /// The one open document (v0.1 keeps a single document at a time).
 #[derive(Default)]
 pub struct AppState {
     session: Mutex<Option<Session>>,
+    /// A file a second instance (or this start) asked to open; the window takes it once.
+    pending_file: Mutex<Option<String>>,
+}
+
+/// The file path in the start arguments: the first argument after the executable, unless it is
+/// `mcp` (that starts the MCP server on stdio, see `main.rs`).
+fn file_argument<I, S>(args: I) -> Option<String>
+where
+    I: IntoIterator<Item = S>,
+    S: Into<OsString>,
+{
+    let mut args = args.into_iter();
+    args.next()?;
+    let argument: OsString = args.next()?.into();
+    let text = argument.to_string_lossy();
+    if text.is_empty() || text == "mcp" {
+        return None;
+    }
+    Some(text.into_owned())
 }
 
 /// The backup folders the window passed, as file system paths (empty keeps the default).
@@ -60,12 +80,35 @@ impl AppState {
             None => Err(ApiError::no_document()),
         }
     }
+
+    /// Takes the file path a start (this one or a second instance) handed over, if any.
+    fn take_pending_file(&self) -> Option<String> {
+        self.pending_file
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .take()
+    }
+
+    /// Hands a file path to the window; it opens it through the same checks as a dropped file.
+    fn set_pending_file(&self, path: String) {
+        *self
+            .pending_file
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner) = Some(path);
+    }
 }
 
 /// Returns the version of the SavePrism core crate.
 #[tauri::command]
 fn core_version() -> &'static str {
     saveprism_core::VERSION
+}
+
+/// The file a start handed over ("Decode with SavePrism" or a second instance), once. The window
+/// opens it through the same checks and guard as a file dropped on the window.
+#[tauri::command]
+fn take_pending_file(state: State<'_, AppState>) -> Option<String> {
+    state.take_pending_file()
 }
 
 /// Opens a file (replacing the open document). `password` is only used for encrypted files and is
@@ -312,6 +355,24 @@ async fn apply_json(state: State<'_, AppState>, text: String) -> Result<usize, A
     state.with_session(|session| session.apply_json(&text))
 }
 
+/// Writes a theme file. Same checks as "Export .json": never over the open save, never a folder,
+/// a name ending in `.saveprism-theme.json`, and a temporary file renamed into place.
+#[tauri::command]
+async fn export_theme_file(
+    state: State<'_, AppState>,
+    target: String,
+    text: String,
+) -> Result<String, ApiError> {
+    let save = save_path(&state);
+    session::theme_file::write(&target, &text, save.as_deref())
+}
+
+/// Reads a theme file (at most 64 KB). The window validates the JSON before applying anything.
+#[tauri::command]
+async fn import_theme_file(source: String) -> Result<String, ApiError> {
+    session::theme_file::read(&source)
+}
+
 /// Takes back the last action (one edit, "Undo all" or one JSON Apply).
 #[tauri::command]
 async fn undo(state: State<'_, AppState>) -> Result<HistoryResult, ApiError> {
@@ -519,12 +580,28 @@ fn background_image(app_folder: Option<String>) -> Result<Option<BackgroundImage
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let startup_file = file_argument(std::env::args_os());
     let result = tauri::Builder::default()
+        // Must be the first plugin: a second start hands its file path to this window and exits.
+        .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
+            if let Some(path) = file_argument(argv) {
+                app.state::<AppState>().set_pending_file(path);
+                let _ = app.emit("open-path", ());
+            }
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.unminimize();
+                let _ = window.set_focus();
+            }
+        }))
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
-        .manage(AppState::default())
+        .manage(AppState {
+            session: Mutex::new(None),
+            pending_file: Mutex::new(startup_file),
+        })
         .invoke_handler(tauri::generate_handler![
             core_version,
+            take_pending_file,
             open_file,
             open_file_with_game_folder,
             open_code,
@@ -549,6 +626,8 @@ pub fn run() {
             save,
             export_json,
             export_json_file,
+            export_theme_file,
+            import_theme_file,
             apply_json,
             undo,
             redo,
@@ -572,5 +651,38 @@ pub fn run() {
     if let Err(err) = result {
         eprintln!("SP-APP-001: failed to start SavePrism: {err}");
         std::process::exit(1);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::file_argument;
+
+    #[test]
+    fn start_arguments_pick_the_file_after_the_exe() {
+        assert_eq!(
+            file_argument(["saveprism-desktop.exe", r"C:\Saves\slot1.dat"]).as_deref(),
+            Some(r"C:\Saves\slot1.dat")
+        );
+        assert_eq!(
+            file_argument(["saveprism-desktop.exe", "/home/ann/slot1.sav"]).as_deref(),
+            Some("/home/ann/slot1.sav")
+        );
+    }
+
+    #[test]
+    fn start_arguments_ignore_mcp_and_missing_arguments() {
+        assert_eq!(file_argument(["saveprism-desktop.exe", "mcp"]), None);
+        assert_eq!(file_argument(["saveprism-desktop.exe"]), None);
+        assert_eq!(file_argument(Vec::<String>::new()), None);
+    }
+
+    #[test]
+    fn a_second_instance_uses_its_own_exe_as_the_first_argument() {
+        let args = vec![
+            r"C:\Program Files\SavePrism\saveprism-desktop.exe".to_string(),
+            r"D:\game\save.json".to_string(),
+        ];
+        assert_eq!(file_argument(args).as_deref(), Some(r"D:\game\save.json"));
     }
 }

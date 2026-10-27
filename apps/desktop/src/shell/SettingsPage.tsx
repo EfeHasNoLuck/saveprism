@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { getVersion } from "@tauri-apps/api/app";
-import { open as openDialog } from "@tauri-apps/plugin-dialog";
+import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import {
   ArrowLeft,
@@ -10,6 +10,7 @@ import {
   ChevronDown,
   ChevronRight,
   Copy,
+  Download,
   ExternalLink,
   FileText,
   FolderOpen,
@@ -29,6 +30,7 @@ import {
   SlidersHorizontal,
   Sparkles,
   Users,
+  Upload,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import licenseText from "../../../../LICENSE?raw";
@@ -37,6 +39,8 @@ import {
   chooseBackground,
   coreVersion,
   defaultPaths,
+  exportThemeFile,
+  importThemeFile,
   mcpCommand,
   openFolder,
   setAppFolder,
@@ -83,6 +87,15 @@ import {
 import { searchSettings, type SettingsTab } from "./settingsSearch";
 import { MCP_CLIENTS, mcpSnippet, type McpClient } from "./setup";
 import { ShortcutSettings } from "./ShortcutSettings";
+import {
+  buildThemeFile,
+  DEFAULT_THEME_NAME,
+  defaultThemeFileName,
+  ensureThemeFileName,
+  parseThemeFile,
+  serializeThemeFile,
+  themeSettingsPatch,
+} from "./themeFile";
 import { WhatsNewDialog } from "./WhatsNewDialog";
 
 const REPO_URL = "https://github.com/huseyincancalti/saveprism";
@@ -259,6 +272,7 @@ export function SettingsPage({
   const [paths, setPaths] = useState<DefaultPaths | null>(null);
   const [photo, setPhoto] = useState<BackgroundImageData | null>(null);
   const [busy, setBusy] = useState<FolderPicker | "photo" | null>(null);
+  const [themeBusy, setThemeBusy] = useState(false);
   const [version, setVersion] = useState("—");
   const [core, setCore] = useState("—");
   const [exePath, setExePath] = useState<string | null>(null);
@@ -431,6 +445,59 @@ export function SettingsPage({
       setBusy(null);
     }
   }, [busy, notify, reportError, settings.appFolder, t, update]);
+
+  const exportTheme = useCallback(async () => {
+    if (themeBusy) return;
+    setThemeBusy(true);
+    try {
+      const theme = buildThemeFile(settings, DEFAULT_THEME_NAME);
+      const picked = await saveDialog({
+        defaultPath: defaultThemeFileName(theme.name),
+        filters: [{ name: t("settings.themeFile.filterName"), extensions: ["json"] }],
+        title: t("settings.themeFile.exportTitle"),
+      });
+      if (typeof picked !== "string") return;
+      await exportThemeFile(ensureThemeFileName(picked), serializeThemeFile(theme));
+      notify({ kind: "saved", title: t("settings.themeFile.exported") });
+    } catch (error) {
+      reportError(t("settings.themeFile.exportFailed"), error);
+    } finally {
+      setThemeBusy(false);
+    }
+  }, [notify, reportError, settings, t, themeBusy]);
+
+  const importTheme = useCallback(async () => {
+    if (themeBusy) return;
+    setThemeBusy(true);
+    try {
+      const picked = await openDialog({
+        multiple: false,
+        directory: false,
+        title: t("settings.themeFile.importTitle"),
+        filters: [{ name: t("settings.themeFile.filterName"), extensions: ["json"] }],
+      });
+      if (typeof picked !== "string") return;
+      const text = await importThemeFile(picked);
+      const result = parseThemeFile(text);
+      if (!result.ok) {
+        notify({
+          kind: "error",
+          title: t("settings.themeFile.invalid"),
+          detail: t(`settings.themeFile.reasons.${result.reason}`),
+        });
+        return;
+      }
+      update(themeSettingsPatch(result.theme, settings));
+      notify({
+        kind: "saved",
+        title: t("settings.themeFile.imported", { name: result.theme.name }),
+      });
+    } catch (error) {
+      reportError(t("settings.themeFile.importFailed"), error);
+    } finally {
+      setThemeBusy(false);
+    }
+  }, [notify, reportError, settings, t, themeBusy, update]);
 
   const mcpClient = settings.mcpClient;
   const snippet = mcpSnippet(mcpClient, exePath ?? "saveprism-desktop.exe");
@@ -907,6 +974,49 @@ export function SettingsPage({
                       />
                     </BackgroundCard>
                   </div>
+                </Section>
+
+                <Section
+                  title={t("settings.themeFile.title")}
+                  aside={
+                    <Button
+                      variant="ghost"
+                      size="xs"
+                      className="text-foreground-variant"
+                      onClick={() => void openExternal(COMMUNITY_URL)}
+                    >
+                      <ExternalLink className="size-3" />
+                      {t("settings.themeFile.share")}
+                    </Button>
+                  }
+                >
+                  <Group>
+                    <Row
+                      id="appearance.themeFile"
+                      label={t("settings.themeFile.label")}
+                      description={t("settings.themeFile.hint")}
+                      highlight={highlight === "appearance.themeFile"}
+                    >
+                      <Button
+                        variant="secondary"
+                        size="xs"
+                        disabled={themeBusy}
+                        onClick={() => void exportTheme()}
+                      >
+                        <Download className="size-3" />
+                        {t("settings.themeFile.export")}
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="xs"
+                        disabled={themeBusy}
+                        onClick={() => void importTheme()}
+                      >
+                        <Upload className="size-3" />
+                        {t("settings.themeFile.import")}
+                      </Button>
+                    </Row>
+                  </Group>
                 </Section>
               </div>
 

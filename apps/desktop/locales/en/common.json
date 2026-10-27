@@ -618,6 +618,10 @@
       "SP-RENPY-004": {
         "reason": "the Ren'Py key file could not be read",
         "fix": "Check that security_keys.txt exists and has a signing-key line, then open the save again."
+      },
+      "SP-APP-030": {
+        "reason": "the theme file cannot be used",
+        "fix": "Pick a SavePrism theme file of at most 64 KB."
       }
     }
   },
@@ -804,6 +808,32 @@
       "ai": "Two ways to get help from AI. SavePrism never sends anything by itself.",
       "shortcuts": "Click a shortcut, then press the new keys. Up to 2 shortcuts per action.",
       "about": "Version and license."
+    },
+    "themeFile": {
+      "title": "Theme file",
+      "filterName": "SavePrism theme",
+      "label": "Share your look",
+      "hint": "Export saves your colors, text size and background as a file. Import applies a file someone else made.",
+      "export": "Export theme…",
+      "import": "Import theme…",
+      "share": "Share it in Community themes",
+      "exportTitle": "Export theme",
+      "importTitle": "Import theme",
+      "exported": "Theme exported",
+      "imported": "Theme \"{{name}}\" imported",
+      "invalid": "The theme file is not valid",
+      "exportFailed": "The theme could not be exported",
+      "importFailed": "The theme could not be imported",
+      "reasons": {
+        "tooBig": "The file is larger than 64 KB.",
+        "json": "It is not valid JSON.",
+        "format": "It is not a SavePrism theme file.",
+        "version": "Its version is not supported.",
+        "name": "Its name is missing or too long.",
+        "colors": "One of its colors is not a preset id or a #rrggbb value.",
+        "textSize": "Its text size is outside 80–140%.",
+        "background": "Its background settings are not valid."
+      }
     }
   },
   "shortcuts": {
