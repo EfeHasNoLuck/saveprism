@@ -49,6 +49,7 @@ mod naninovel;
 mod renpy;
 mod report;
 mod rgss;
+mod satisfactory;
 mod structure;
 mod sugarcube;
 mod w3cards;
@@ -71,6 +72,7 @@ pub use renpy::{
     NOTICE_KEY_SIGNED, NOTICE_KEY_SIGNED_PERSISTENT, NOTICE_SIGNED_PERSISTENT, NOTICE_SIGNED_SAVE,
 };
 pub use report::{EntropyClass, FileReport, read_file_report};
+pub use satisfactory::{InventoryKind, SatisfactoryInventory, SatisfactoryStack, SatisfactoryView};
 pub use sugarcube::SugarCubeView;
 pub use w3cards::W3CardsView;
 

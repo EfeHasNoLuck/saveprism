@@ -203,7 +203,7 @@ function useCollection(gwent: GwentView, cards: W3Card[] | null, pageSize: numbe
 type Collection = ReturnType<typeof useCollection>;
 
 /** A small radio group in the Settings style: the chosen option is tinted blue. */
-function Choice<T extends string>({
+export function Choice<T extends string>({
   label,
   value,
   options,

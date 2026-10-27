@@ -11,7 +11,8 @@ use serde::Serialize;
 use serde_json::{Map, Value, json};
 
 use crate::session::{
-    ApiError, Entry, FieldKind, GameView, GwentCard, NamedId, Session, ValueRow, app_codes,
+    ApiError, Entry, FieldKind, GameView, GwentCard, InventoryKind, NamedId, SatisfactoryInventory,
+    Session, ValueRow, app_codes,
 };
 
 use super::{CallError, RpcError, ServerState, bad_arguments, bad_value};
@@ -702,6 +703,54 @@ fn summarize(
                 "kind": "witcher3",
                 "addParent": view.add_parent,
                 "gwentCards": view.gwent.as_ref().map(|gwent| gwent.cards.len()),
+                "total": total,
+                "offset": offset,
+                "rows": rows
+            }))
+        }
+        GameView::Satisfactory { view } => {
+            if section == Some("inventories") {
+                let filtered: Vec<&SatisfactoryInventory> = view
+                    .inventories
+                    .iter()
+                    .filter(|inventory| {
+                        filter.is_none_or(|filter| {
+                            let needle = filter.to_lowercase();
+                            inventory.label.to_lowercase().contains(&needle)
+                                || match inventory.kind {
+                                    InventoryKind::Player => needle == "player",
+                                    InventoryKind::Storage => needle == "storage",
+                                    InventoryKind::Other => needle == "other",
+                                }
+                                || inventory
+                                    .stacks
+                                    .iter()
+                                    .any(|stack| stack.name.to_lowercase().contains(&needle))
+                        })
+                    })
+                    .collect();
+                let total = filtered.len();
+                let inventories = rows_value(filtered.into_iter().skip(offset).take(limit))?;
+                return Ok(json!({
+                    "kind": "satisfactory",
+                    "section": "inventories",
+                    "total": total,
+                    "offset": offset,
+                    "inventories": inventories
+                }));
+            }
+            let filtered: Vec<&ValueRow> = view
+                .rows
+                .iter()
+                .filter(|row| filter.is_none_or(|filter| row_matches(row, filter)))
+                .collect();
+            let total = filtered.len();
+            let rows = rows_value(filtered.into_iter().skip(offset).take(limit))?;
+            Ok(json!({
+                "kind": "satisfactory",
+                "addParent": view.add_parent,
+                "inventories": view.inventories.len(),
+                "stacks": view.inventories.iter().map(|inventory| inventory.stacks.len()).sum::<usize>(),
                 "total": total,
                 "offset": offset,
                 "rows": rows

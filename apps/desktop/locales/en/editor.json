@@ -267,5 +267,19 @@
     "deckLocked": "This deck is locked and holds no cards.",
     "locked": "Locked",
     "selected": "Selected"
+  },
+  "satisfactory": {
+    "title": "Inventories",
+    "info": "Only the stack counts can be changed. 500 is the largest stack size.",
+    "playerInventory": "Player inventory",
+    "playerNInventory": "Player {{n}} inventory",
+    "pick": "Inventory",
+    "kinds": "Inventory kind",
+    "kind": {
+      "player": "Player",
+      "storage": "Storage",
+      "other": "Other"
+    },
+    "empty": "This save has no non-empty inventories."
   }
 }

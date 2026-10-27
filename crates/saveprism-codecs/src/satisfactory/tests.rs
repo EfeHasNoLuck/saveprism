@@ -138,7 +138,7 @@ fn body_has_levels_classes_properties_and_inventory_stacks() {
     let decoded = decode(&fixture());
     let doc = &decoded.doc;
     assert_eq!(int_at(doc, "Body/LevelCount"), 1);
-    assert_eq!(int_at(doc, "Body/ObjectCount"), 2);
+    assert_eq!(int_at(doc, "Body/ObjectCount"), 6);
     assert_eq!(text_at(doc, "Body/Levels/0/Name"), "SubLevel");
     assert_eq!(text_at(doc, "Body/Levels/1/Name"), "Persistent_Level");
     assert_eq!(
@@ -181,6 +181,26 @@ fn body_has_levels_classes_properties_and_inventory_stacks() {
     let mut leaves = Vec::new();
     walk(doc, doc.root(), "", &mut leaves);
     assert!(leaves.iter().any(|(path, _)| path.ends_with("/NumItems")));
+}
+
+#[test]
+fn inventory_items_name_their_class_and_keep_the_state_raw() {
+    let decoded = decode(&fixture());
+    let base = "Body/Levels/1/Classes/InventedActor_C/0/Properties/mInventoryStacks/0/Item";
+    assert_eq!(
+        text_at(&decoded.doc, &format!("{base}/ItemClass")),
+        "Persistent_Level:/Game/FactoryGame/Resource/Parts/InventedPlate/Desc_InventedPlate.Desc_InventedPlate_C"
+    );
+    assert!(
+        at(&decoded.doc, &format!("{base}/ItemClass"))
+            .flags
+            .contains(NodeFlags::READ_ONLY)
+    );
+    assert!(matches!(
+        at(&decoded.doc, &format!("{base}/ItemState")).value,
+        Value::Bytes(_)
+    ));
+    assert_eq!(hinted(&decoded, base), "SAT:StructProperty:InventoryItem");
 }
 
 #[test]

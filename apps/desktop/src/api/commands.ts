@@ -422,10 +422,39 @@ export interface Witcher3View {
   addParent: string | null;
 }
 
+/** What a Satisfactory inventory belongs to. */
+export type InventoryKind = "player" | "storage" | "other";
+
+/** One non-empty stack of a Satisfactory inventory. */
+export interface SatisfactoryStack {
+  /** The item name built from its class path. */
+  name: string;
+  /** The stack count (`NumItems`), editable from 0 to 500. */
+  count: Field;
+}
+
+/** One non-empty inventory component of a Satisfactory save. */
+export interface SatisfactoryInventory {
+  /** Stable id (the component's instance name). */
+  id: string;
+  kind: InventoryKind;
+  /** "Player inventory", "Storage Container #3", ... */
+  label: string;
+  stacks: SatisfactoryStack[];
+}
+
+/** A Satisfactory save: its inventories above the Values list. */
+export interface SatisfactoryView {
+  inventories: SatisfactoryInventory[];
+  rows: ValueRow[];
+  addParent: string | null;
+}
+
 export type GameView =
   | { kind: "rpgmaker"; view: RpgMakerView }
   | { kind: "sugarcube"; view: SugarCubeView }
   | { kind: "witcher3"; view: Witcher3View }
+  | { kind: "satisfactory"; view: SatisfactoryView }
   | { kind: "values"; rows: ValueRow[]; addParent: string | null };
 
 /**
