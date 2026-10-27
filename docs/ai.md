@@ -23,8 +23,8 @@ input and output and opens no window. It does not listen on a network port.
 
 ### Setup
 
-Open SavePrism, go to **Settings → AI tools** and press **Copy setup**. It copies this, with the real path of your
-SavePrism program filled in:
+Open SavePrism, go to **Settings → AI connection**, pick your AI app and press **Copy setup**. The code box shows exactly
+what is copied, with the real path of your SavePrism program filled in:
 
 ```json
 {
@@ -39,10 +39,15 @@ SavePrism program filled in:
 
 - **Claude Desktop:** Settings → Developer → Edit Config. Paste the `saveprism` entry into `mcpServers` of
   `claude_desktop_config.json` and restart Claude Desktop.
-- **Claude Code:** `claude mcp add saveprism -- "C:\Program Files\SavePrism\saveprism-desktop.exe" mcp` (use the path from **Copy setup**)
-- **Cursor:** Settings → MCP → Add new MCP server, or paste the entry into `%USERPROFILE%\.cursor\mcp.json`.
+- **Claude Code:** `claude mcp add saveprism -- "C:\Program Files\SavePrism\saveprism-desktop.exe" mcp` (use the path
+  from **Copy setup**), then restart Claude Code.
+- **Cursor:** Customize → MCP, or paste the entry into `%USERPROFILE%\.cursor\mcp.json`.
 - **VS Code:** add it to `.vscode/mcp.json` under `servers` (VS Code calls the key `servers`, not `mcpServers`, and wants
-  `"type": "stdio"` in the entry).
+  `"type": "stdio"` in the entry). The setup SavePrism copies already has this shape.
+- **Other MCP apps:** the Claude Desktop JSON is the common local-server shape; paste it into your app's MCP settings.
+
+The JSON for Claude Desktop, Claude Code (as a command line), Cursor and VS Code is prepared by the tab; **Copy setup**
+copies the one for the app you picked. Saving always makes a backup first.
 
 ### Tools
 

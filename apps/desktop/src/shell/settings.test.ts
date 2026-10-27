@@ -130,6 +130,14 @@ describe("parseSettings", () => {
   it("rejects an unknown save default", () => {
     expect(parseSettings(JSON.stringify({ saveDefault: "delete" })).saveDefault).toBe("saveAs");
   });
+
+  it("remembers a known AI app and falls back to Claude Desktop", () => {
+    expect(parseSettings(null).mcpClient).toBe("claudeDesktop");
+    expect(parseSettings(JSON.stringify({ mcpClient: "vscode" })).mcpClient).toBe("vscode");
+    expect(parseSettings(JSON.stringify({ mcpClient: "unknown" })).mcpClient).toBe(
+      "claudeDesktop",
+    );
+  });
 });
 
 describe("loadSettings and saveSettings", () => {

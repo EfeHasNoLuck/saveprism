@@ -9,6 +9,7 @@ import {
   Check,
   ChevronDown,
   ChevronRight,
+  Copy,
   ExternalLink,
   FileText,
   FolderOpen,
@@ -54,6 +55,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Stepper } from "@/components/ui/stepper";
 import { Switch } from "@/components/ui/switch";
 import { SUPPORTED_LANGUAGES, type Language } from "@/i18n";
 import { LanguageFlag } from "@/i18n/flags";
@@ -71,7 +73,7 @@ import {
   type SaveDefault,
 } from "./settings";
 import { searchSettings, type SettingsTab } from "./settingsSearch";
-import { mcpSetupJson } from "./setup";
+import { MCP_CLIENTS, mcpSnippet, type McpClient } from "./setup";
 
 const COMMUNITY_URL = "https://github.com/huseyincancalti/saveprism/discussions";
 
@@ -252,6 +254,8 @@ export function SettingsPage({ onClose }: { onClose: () => void }) {
   const [version, setVersion] = useState("—");
   const [core, setCore] = useState("—");
   const [notices, setNotices] = useState(false);
+  const [exePath, setExePath] = useState<string | null>(null);
+  const [copiedClient, setCopiedClient] = useState<McpClient | null>(null);
   const pageRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -284,6 +288,17 @@ export function SettingsPage({ onClose }: { onClose: () => void }) {
     pageRef.current?.focus();
     return () => window.removeEventListener("keydown", listener);
   }, [onClose]);
+
+  useEffect(() => {
+    if (tab !== "ai" || exePath !== null) return;
+    let cancelled = false;
+    mcpCommand()
+      .then((value) => !cancelled && setExePath(value))
+      .catch(() => !cancelled && setExePath("saveprism-desktop.exe"));
+    return () => {
+      cancelled = true;
+    };
+  }, [tab, exePath]);
 
   useEffect(() => {
     if (settings.backgroundMode !== "photo") return;
@@ -392,15 +407,18 @@ export function SettingsPage({ onClose }: { onClose: () => void }) {
     }
   }, [busy, notify, reportError, settings.appFolder, t, update]);
 
+  const mcpClient = settings.mcpClient;
+  const snippet = mcpSnippet(mcpClient, exePath ?? "saveprism-desktop.exe");
+
   const copySetup = useCallback(async () => {
     try {
-      const exe = await mcpCommand();
-      await navigator.clipboard.writeText(mcpSetupJson(exe));
+      await navigator.clipboard.writeText(snippet);
+      setCopiedClient(mcpClient);
       notify({ kind: "saved", title: t("toast.setupCopied") });
     } catch {
       notify({ kind: "error", title: t("toast.copySetupFailed") });
     }
-  }, [notify, t]);
+  }, [mcpClient, notify, snippet, t]);
 
   const openCommunity = useCallback(async () => {
     try {
@@ -897,35 +915,132 @@ export function SettingsPage({ onClose }: { onClose: () => void }) {
 
           {tab === "ai" ? (
             <div className="mt-4 flex flex-col gap-3">
-              <div className="rounded-lg border border-border bg-card p-4 dark:border-[#1d2d42]">
+              <div className="rounded-lg border border-border bg-card px-4 py-3.5 dark:border-[#1d2d42]">
                 <div className="flex items-start gap-3">
-                  <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-surface-high text-primary">
-                    <MessageSquare className="size-4" />
+                  <span className="flex size-[34px] shrink-0 items-center justify-center rounded-lg bg-surface-high text-primary">
+                    <MessageSquare className="size-[18px]" />
                   </span>
                   <div>
-                    <b className="block text-sm font-semibold">{t("settings.aiTools")}</b>
-                    <p className="mt-1 text-xs leading-[17px] text-muted-foreground">
-                      {t("settings.aiToolsInfo")}
+                    <b className="block text-sm leading-[19px] font-semibold">
+                      {t("settings.aiChatTitle")}
+                      <span className="ml-1.5 rounded-full bg-surface-high px-1.5 py-px align-[1px] text-[11px] font-semibold text-foreground-variant">
+                        {t("settings.aiChatTag")}
+                      </span>
+                    </b>
+                    <p className="mt-px text-xs leading-[17px] text-muted-foreground">
+                      {t("settings.aiChatInfo")}
                     </p>
                   </div>
                 </div>
-                <Button variant="secondary" size="sm" className="mt-3" onClick={() => void copySetup()}>
-                  {t("settings.copySetup")}
-                </Button>
+                <Stepper
+                  current={-1}
+                  label={t("settings.aiChatTitle")}
+                  steps={[
+                    {
+                      title: t("settings.aiChatStep1"),
+                      description: t("settings.aiChatStep1Info"),
+                    },
+                    {
+                      title: t("settings.aiChatStep2"),
+                      description: t("settings.aiChatStep2Info"),
+                    },
+                    {
+                      title: t("settings.aiChatStep3"),
+                      description: t("settings.aiChatStep3Info"),
+                    },
+                  ]}
+                />
               </div>
-              <div className="rounded-lg border border-border bg-card p-4 dark:border-[#1d2d42]">
+              <div className="rounded-lg border border-border bg-card px-4 py-3.5 dark:border-[#1d2d42]">
                 <div className="flex items-start gap-3">
-                  <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-surface-high text-primary">
-                    <Bot className="size-4" />
+                  <span className="flex size-[34px] shrink-0 items-center justify-center rounded-lg bg-surface-high text-primary">
+                    <Bot className="size-[18px]" />
                   </span>
                   <div>
-                    <b className="block text-sm font-semibold">{t("settings.mcpTitle")}</b>
-                    <p className="mt-1 text-xs leading-[17px] text-muted-foreground">
+                    <b className="block text-sm leading-[19px] font-semibold">
+                      {t("settings.mcpTitle")}
+                    </b>
+                    <p className="mt-px text-xs leading-[17px] text-muted-foreground">
                       {t("settings.mcpHint")}
                     </p>
                   </div>
                 </div>
+                <Stepper
+                  current={copiedClient === mcpClient ? 2 : 1}
+                  done={[true, copiedClient === mcpClient, false, false]}
+                  label={t("settings.mcpTitle")}
+                  steps={[
+                    {
+                      title: t("settings.mcpStep1"),
+                      description: t(`settings.mcpClients.${mcpClient}`),
+                    },
+                    {
+                      title: t("settings.mcpStep2"),
+                      description: t("settings.mcpStep2Info"),
+                    },
+                    {
+                      title: t("settings.mcpStep3"),
+                      description: t("settings.mcpStep3Info"),
+                    },
+                    {
+                      title: t("settings.mcpStep4"),
+                      description: t("settings.mcpStep4Info"),
+                    },
+                  ]}
+                />
+                <div className="mt-3 border-t border-border pt-3 dark:border-[#1d2d42]">
+                  <div
+                    role="radiogroup"
+                    aria-label={t("settings.mcpYourApp")}
+                    className="mb-2.5 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground"
+                  >
+                    <span className="mr-0.5">{t("settings.mcpYourApp")}</span>
+                    {MCP_CLIENTS.map((client) => {
+                      const selected = client === mcpClient;
+                      return (
+                        <button
+                          key={client}
+                          type="button"
+                          role="radio"
+                          aria-checked={selected}
+                          onClick={() => {
+                            update({ mcpClient: client });
+                            setCopiedClient(null);
+                          }}
+                          className={
+                            selected
+                              ? "inline-flex h-[26px] items-center gap-1.5 rounded-full border border-primary bg-primary/12 px-2.5 text-xs font-semibold text-primary outline-none transition-colors duration-150 ease-out focus-visible:ring-2 focus-visible:ring-ring/60 motion-reduce:transition-none"
+                              : "inline-flex h-[26px] items-center gap-1.5 rounded-full border border-border bg-card px-2.5 text-xs text-foreground-variant outline-none transition-colors duration-150 ease-out hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60 motion-reduce:transition-none dark:border-[#26364a] dark:bg-[#0b1c30]"
+                          }
+                        >
+                          {selected ? <Check className="size-3" strokeWidth={3} /> : null}
+                          {t(`settings.mcpClients.${client}`)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="relative">
+                    <pre className="overflow-x-auto rounded-md border border-border bg-field py-2.5 pr-32 pl-3 font-mono text-[11.5px] leading-4 whitespace-pre text-foreground-variant dark:border-[#26364a]">
+                      {snippet}
+                    </pre>
+                    <Button
+                      size="sm"
+                      className="absolute top-2 right-2"
+                      onClick={() => void copySetup()}
+                    >
+                      <Copy />
+                      {t("settings.copySetup")}
+                    </Button>
+                  </div>
+                  <p className="mt-2.5 flex items-center gap-2 text-xs text-foreground-variant">
+                    <Info className="size-3.5 shrink-0" />
+                    <span>{t(`settings.mcpHowTo.${mcpClient}`)}</span>
+                  </p>
+                </div>
               </div>
+              <p className="text-xs leading-[17px] text-muted-foreground">
+                {t("settings.aiPrivacyNote")} {t("settings.aiWriteNote")}
+              </p>
             </div>
           ) : null}
 

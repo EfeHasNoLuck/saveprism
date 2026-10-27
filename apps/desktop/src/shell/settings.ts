@@ -4,6 +4,7 @@
  */
 
 import { DEFAULT_COLORS, isColorChoice, type ColorChoices, type ColorGroup } from "./colors";
+import { DEFAULT_MCP_CLIENT, isMcpClient, type McpClient } from "./setup";
 
 export type SaveDefault = "saveAs" | "overwrite";
 
@@ -54,6 +55,8 @@ export interface Settings {
   backupFolders: string[];
   /** The app folder the player picked, or null for the default. */
   appFolder: string | null;
+  /** The AI app the MCP setup is prepared for. */
+  mcpClient: McpClient;
 }
 
 export const SETTINGS_KEY = "saveprism.settings";
@@ -74,6 +77,7 @@ export const DEFAULT_SETTINGS: Settings = {
   photoName: null,
   backupFolders: [],
   appFolder: null,
+  mcpClient: DEFAULT_MCP_CLIENT,
 };
 
 /** The two methods of `Storage` that settings need. */
@@ -209,6 +213,7 @@ export function parseSettings(raw: string | null): Settings {
       typeof record.appFolder === "string" && record.appFolder.trim() !== ""
         ? record.appFolder
         : null,
+    mcpClient: isMcpClient(record.mcpClient) ? record.mcpClient : DEFAULT_MCP_CLIENT,
   };
 }
 
