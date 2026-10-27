@@ -618,6 +618,10 @@
       "SP-RENPY-004": {
         "reason": "Ren'Py anahtar dosyası okunamadı",
         "fix": "security_keys.txt dosyasının var olduğunu ve bir imzalama anahtarı satırı içerdiğini kontrol edip kaydı yeniden aç."
+      },
+      "SP-APP-030": {
+        "reason": "tema dosyası kullanılamıyor",
+        "fix": "En fazla 64 KB boyutunda bir SavePrism tema dosyası seç."
       }
     }
   },
@@ -785,6 +789,32 @@
       "ai": "AI'dan yardım almanın iki yolu. SavePrism kendiliğinden hiçbir şey göndermez.",
       "shortcuts": "Bir kısayola tıkla, sonra yeni tuşlara bas.",
       "about": "Sürüm ve lisans."
+    },
+    "themeFile": {
+      "title": "Tema dosyası",
+      "filterName": "SavePrism teması",
+      "label": "Görünümünü paylaş",
+      "hint": "Dışa aktarma renklerini, yazı boyutunu ve arka planını bir dosyaya kaydeder. İçe aktarma, başkasının hazırladığı dosyayı uygular.",
+      "export": "Temayı dışa aktar…",
+      "import": "Temayı içe aktar…",
+      "share": "Topluluk temalarında paylaş",
+      "exportTitle": "Temayı dışa aktar",
+      "importTitle": "Temayı içe aktar",
+      "exported": "Tema dışa aktarıldı",
+      "imported": "\"{{name}}\" teması içe aktarıldı",
+      "invalid": "Tema dosyası geçerli değil",
+      "exportFailed": "Tema dışa aktarılamadı",
+      "importFailed": "Tema içe aktarılamadı",
+      "reasons": {
+        "tooBig": "Dosya 64 KB'dan büyük.",
+        "json": "Geçerli JSON değil.",
+        "format": "Bu bir SavePrism tema dosyası değil.",
+        "version": "Sürümü desteklenmiyor.",
+        "name": "Adı eksik ya da çok uzun.",
+        "colors": "Renklerden biri bir hazır ayar kimliği ya da #rrggbb değeri değil.",
+        "textSize": "Yazı boyutu %80–140 aralığının dışında.",
+        "background": "Arka plan ayarları geçerli değil."
+      }
     }
   },
   "shortcuts": {

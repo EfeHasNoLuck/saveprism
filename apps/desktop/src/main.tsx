@@ -5,6 +5,7 @@ import App from "./App";
 import { applyStoredTheme, ThemeProvider } from "@/theme";
 import { initI18n } from "@/i18n";
 import { applyStoredAppearance } from "./shell/appearance";
+import { BootGate } from "./shell/BootGate";
 import { NotifyProvider } from "./shell/NotifyProvider";
 import { SettingsProvider } from "./shell/SettingsProvider";
 
@@ -21,6 +22,7 @@ if (!container) {
 
 createRoot(container).render(
   <StrictMode>
+    <BootGate />
     <ThemeProvider>
       <SettingsProvider>
         <NotifyProvider>

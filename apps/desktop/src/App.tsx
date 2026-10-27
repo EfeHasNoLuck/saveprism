@@ -4,6 +4,7 @@ import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialo
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { listen } from "@tauri-apps/api/event";
 import { Info, TriangleAlert } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import {
@@ -21,6 +22,7 @@ import {
   redo,
   restoreBackup,
   save,
+  takePendingFile,
   undo,
   type Change,
   type HistoryResult,
@@ -376,6 +378,31 @@ function App() {
     return () => {
       disposed = true;
       if (handle.stop) handle.stop();
+    };
+  }, []);
+
+  // A file handed over by the start ("Decode with SavePrism") or by a second instance. The host
+  // keeps it until the window takes it, so an early second start is not lost.
+  useEffect(() => {
+    let disposed = false;
+    let stop: (() => void) | null = null;
+    const openPending = () => {
+      void takePendingFile()
+        .then((path) => {
+          if (!disposed && path) openPathRef.current(path);
+        })
+        .catch(() => undefined);
+    };
+    openPending();
+    void listen("open-path", openPending)
+      .then((unlisten) => {
+        if (disposed) unlisten();
+        else stop = unlisten;
+      })
+      .catch(() => undefined);
+    return () => {
+      disposed = true;
+      if (stop) stop();
     };
   }, []);
 

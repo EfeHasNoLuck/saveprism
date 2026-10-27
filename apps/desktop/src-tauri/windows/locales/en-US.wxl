@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<WixLocalization Culture="en-US" xmlns="http://schemas.microsoft.com/wix/2006/localization">
+  <String Id="LaunchApp">Launch SavePrism</String>
+  <String Id="DowngradeErrorMessage">A newer version of SavePrism is already installed.</String>
+  <String Id="PathEnvVarFeature">Add the install location of SavePrism to the PATH system environment variable. This allows SavePrism to be called from any location.</String>
+  <String Id="InstallAppFeature">Installs SavePrism.</String>
+  <String Id="DecodeWithSavePrism">Decode with SavePrism</String>
+</WixLocalization>

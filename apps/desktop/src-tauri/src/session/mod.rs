@@ -54,6 +54,7 @@ mod rgss;
 mod satisfactory;
 mod structure;
 mod sugarcube;
+pub(crate) mod theme_file;
 mod values;
 mod w3cards;
 
@@ -176,6 +177,8 @@ pub mod app_codes {
     pub const FOLDER: &str = "SP-APP-028";
     /// The background image cannot be used (not a PNG/JPEG/WebP, too large, or unreadable).
     pub const BACKGROUND: &str = "SP-APP-029";
+    /// A theme file cannot be written or read (wrong name, too large, or the open save).
+    pub const THEME_FILE: &str = "SP-APP-030";
 }
 
 /// An error as the UI receives it.

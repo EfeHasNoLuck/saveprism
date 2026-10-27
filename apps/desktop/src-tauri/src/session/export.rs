@@ -153,7 +153,7 @@ fn export_doc(doc: &SaveDoc, max_bytes: usize) -> Result<String, ApiError> {
 
 /// Writes `bytes` to `target` through a temporary file in the same folder and a rename, so a
 /// failed write leaves neither a partial target nor the temporary file behind.
-fn write_atomic(target: &FsPath, bytes: &[u8]) -> Result<(), ApiError> {
+pub(super) fn write_atomic(target: &FsPath, bytes: &[u8]) -> Result<(), ApiError> {
     let dir = match target.parent() {
         Some(parent) if !parent.as_os_str().is_empty() => parent,
         _ => FsPath::new("."),

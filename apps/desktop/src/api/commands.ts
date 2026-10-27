@@ -863,3 +863,21 @@ export function backgroundImage(
     appFolder: appFolder ?? null,
   });
 }
+
+/**
+ * The file a start handed over ("Decode with SavePrism" or a second instance), once. The window
+ * opens it through the same checks and guard as a dropped file.
+ */
+export function takePendingFile(): Promise<string | null> {
+  return invoke<string | null>("take_pending_file");
+}
+
+/** Writes a theme file (same checks as the JSON export: not the open save, not a folder). */
+export function exportThemeFile(target: string, text: string): Promise<string> {
+  return invoke<string>("export_theme_file", { target, text });
+}
+
+/** Reads a theme file (at most 64 KB); the caller validates the JSON before applying it. */
+export function importThemeFile(source: string): Promise<string> {
+  return invoke<string>("import_theme_file", { source });
+}
