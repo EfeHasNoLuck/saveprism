@@ -89,7 +89,11 @@
   "values": {
     "more": "Show more",
     "items_one": "{{count}} item",
-    "items_other": "{{count}} items"
+    "items_other": "{{count}} items",
+    "found_one": "{{shown}} found",
+    "found_other": "{{shown}} found",
+    "details": "File details",
+    "detailsTip": "What describes the file rather than the game (engine version, save type). Read-only: the game needs it as it is."
   },
   "problem": {
     "empty": "Enter a value.",
@@ -151,7 +155,7 @@
     "values": "Values ({{count}}):",
     "valuesFirst": "Values (first {{shown}} of {{total}}):",
     "valuesSome": "Values (first {{shown}}; the file has more):",
-    "row": "- {{subject}} = {{value}}{{detail}} [{{path}}]",
+    "row": "- {{subject}} = {{value}}{{detail}}",
     "subjectName": "{{name}} #{{id}}",
     "subjectId": "#{{id}}",
     "subjectValue": "this value",

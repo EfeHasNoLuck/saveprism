@@ -32,7 +32,7 @@ import { countChangeKinds } from "@/editor/helpers";
 import { AboutDialog } from "./shell/AboutDialog";
 import { BackgroundPattern } from "./shell/BackgroundPattern";
 import { BackupsDialog } from "./shell/BackupsDialog";
-import { BottomBar } from "./shell/BottomBar";
+import { BottomBar, type LabeledChange } from "./shell/BottomBar";
 import { copyCodePlace, pastedText, saveAsDefaultPath } from "./shell/code";
 import { CodeTextDialog, PasteCodeDialog, type OpenCodeResult } from "./shell/CodeDialogs";
 import { CompareDialog } from "./shell/CompareDialog";
@@ -630,14 +630,23 @@ function App() {
     [notify, notifyError, resetChanges, settings.keepBackups, t],
   );
 
-  const loadChanges = useCallback(async (): Promise<Change[]> => {
+  /** The names a player reads for paths, from the open editor (the path itself without one). */
+  const labelPaths = useCallback(
+    async (paths: readonly string[]): Promise<ReadonlyMap<string, string>> =>
+      (await editorRef.current?.labels(paths)) ?? new Map<string, string>(),
+    [],
+  );
+
+  const loadChanges = useCallback(async (): Promise<LabeledChange[]> => {
     try {
-      return await pendingChanges();
+      const changes = await pendingChanges();
+      const labels = await labelPaths(changes.map((change) => change.path));
+      return changes.map((change) => ({ ...change, label: labels.get(change.path) ?? change.path }));
     } catch (error) {
       notifyError(t("toast.changesFailed"), error);
       return [];
     }
-  }, [notifyError, t]);
+  }, [labelPaths, notifyError, t]);
 
   const openJson = useCallback(() => {
     setJsonState({ status: "loading" });
@@ -933,6 +942,7 @@ function App() {
             fileName={baseName(comparePath)}
             onClose={() => setComparePath(null)}
             onReveal={revealCompareRow}
+            labels={labelPaths}
           />
         ) : null}
         {locationsOpen ? (

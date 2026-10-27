@@ -3873,7 +3873,9 @@ fn a_real_mz_named_switch_grows_and_undoes() {
 
 fn values_view(session: &Session) -> (Vec<ValueRow>, Option<String>) {
     match session.game_view().unwrap() {
-        GameView::Values { rows, add_parent } => (rows, add_parent),
+        GameView::Values {
+            rows, add_parent, ..
+        } => (rows, add_parent),
         _ => panic!("not a Values list"),
     }
 }

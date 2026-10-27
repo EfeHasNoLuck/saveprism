@@ -110,7 +110,8 @@ impl Ctx<'_> {
 
         let mut rows = variables;
         let room = MAX_VALUE_ROWS.saturating_sub(rows.len());
-        rows.extend(self.value_rows(false, shaper).into_iter().take(room));
+        let root = (self.doc.root(), Path::root());
+        rows.extend(self.value_rows(&root, false, shaper).into_iter().take(room));
         rows
     }
 }

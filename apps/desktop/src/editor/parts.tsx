@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { InfoTip } from "@/components/ui/info-tip";
 import { cn } from "@/lib/utils";
 import { useFormatNumber } from "./context";
-import { clampPage, pageCount, pagerLabel } from "./helpers";
+import { clampPage, COLUMN_GAP, MAX_COLUMN, pageCount, pagerLabel } from "./helpers";
 
 /**
  * A titled card. The header line holds the title, the record count, the number of changed values
@@ -143,7 +143,8 @@ export function Pager({
 
 /**
  * Entries in `columns` columns, filled top to bottom and then left to right, so numbered entries
- * read down a column like a list.
+ * read down a column like a list. Fewer entries than columns take one column each, as wide as
+ * the row allows up to `MAX_COLUMN`, so their names are not cut while the row stays empty.
  */
 export function DenseGrid({
   columns,
@@ -157,13 +158,16 @@ export function DenseGrid({
   className?: string;
   children: ReactNode;
 }) {
-  const rows = Math.max(1, Math.ceil(count / Math.max(1, columns)));
+  const used = Math.max(1, Math.min(columns, count));
+  const rows = Math.max(1, Math.ceil(count / used));
   return (
     <div
       className={cn("grid grid-flow-col gap-x-3 gap-y-0.5", className)}
       style={{
-        gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
+        gridTemplateColumns: `repeat(${used}, minmax(0, 1fr))`,
         gridTemplateRows: `repeat(${rows}, auto)`,
+        maxWidth:
+          used < columns ? `${(used * MAX_COLUMN + (used - 1) * COLUMN_GAP) / 16}rem` : undefined,
       }}
     >
       {children}

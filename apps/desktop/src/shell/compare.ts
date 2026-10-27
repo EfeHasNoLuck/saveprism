@@ -3,14 +3,18 @@
 import type { CompareKind, CompareRow } from "@/api/commands";
 
 /**
- * Rows whose path, value here or value there contains `query` (case-insensitive). An empty query
- * keeps every row.
+ * Rows whose name (from `labels`), path, value here or value there contains `query`
+ * (case-insensitive). An empty query keeps every row.
  */
-export function filterCompareRows(rows: readonly CompareRow[], query: string): CompareRow[] {
+export function filterCompareRows(
+  rows: readonly CompareRow[],
+  query: string,
+  labels?: ReadonlyMap<string, string>,
+): CompareRow[] {
   const q = query.trim().toLowerCase();
   if (q === "") return [...rows];
   return rows.filter((row) =>
-    [row.path, row.here ?? "", row.there ?? ""].some((text) =>
+    [labels?.get(row.path) ?? "", row.path, row.here ?? "", row.there ?? ""].some((text) =>
       text.toLowerCase().includes(q),
     ),
   );

@@ -31,6 +31,11 @@ describe("filterCompareRows", () => {
   it("gives no rows when nothing matches", () => {
     expect(filterCompareRows(ROWS, "missing")).toEqual([]);
   });
+
+  it("matches the name a row shows", () => {
+    const labels = new Map([["/items/1", "Item #1 Potion"]]);
+    expect(filterCompareRows(ROWS, "potion", labels).map((row) => row.path)).toEqual(["/items/1"]);
+  });
 });
 
 describe("row helpers", () => {

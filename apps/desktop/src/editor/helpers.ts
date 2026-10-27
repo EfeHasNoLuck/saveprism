@@ -234,10 +234,20 @@ export function pagerLabel(page: number, total: number, size: number): string {
 }
 
 /**
- * Narrowest column of the entry grids, in pixels. These sizes are pixels at the default 16px text
- * size; callers scale them with the Text size setting (`rootScale` in `grid.ts`).
+ * Narrowest name of an entry before the grid adds another column, in pixels: about nine wide
+ * characters (CJK), so a name stays readable at every window width. These sizes are pixels at the
+ * default 16px text size; callers scale them with the Text size setting (`rootScale` in `grid.ts`).
  */
-export const MIN_COLUMN = 232;
+export const MIN_NAME = 120;
+/**
+ * What a cell holds beside its name, in pixels: "#id", the value box (or the true/false choice),
+ * undo and remove, with the gaps and padding (measured on RPG Maker lists).
+ */
+export const CELL_CONTROLS = 168;
+/** Narrowest column of the entry grids, in pixels: a readable name and its controls. */
+export const MIN_COLUMN = MIN_NAME + CELL_CONTROLS;
+/** Widest column when a list has fewer entries than columns fit, in pixels. */
+export const MAX_COLUMN = 2 * MIN_COLUMN;
 /** Space between the columns, in pixels (Tailwind `gap-x-3`). */
 export const COLUMN_GAP = 12;
 /** Rows on one page of a list; a page holds this many entries per column. */
@@ -291,6 +301,33 @@ export function allocateColumns(width: number, counts: readonly number[]): numbe
 export function cardWidth(columns: number): number {
   if (columns <= 0) return EMPTY_CARD;
   return columns * MIN_COLUMN + (columns - 1) * COLUMN_GAP + CARD_EDGES;
+}
+
+/**
+ * The paths a search found with every group above them (`covered`), and only the groups above
+ * them (`inside`, the groups that hold something found). Paths are JSON Pointers; the root ("")
+ * is left out.
+ */
+export function searchCover(paths: readonly string[]): {
+  covered: Set<string>;
+  inside: Set<string>;
+} {
+  const covered = new Set<string>();
+  const inside = new Set<string>();
+  for (const path of paths) {
+    covered.add(path);
+    let current = path;
+    for (;;) {
+      const cut = current.lastIndexOf("/");
+      if (cut <= 0) break;
+      current = current.slice(0, cut);
+      // The groups above one already in were added with it.
+      if (inside.has(current)) break;
+      inside.add(current);
+      covered.add(current);
+    }
+  }
+  return { covered, inside };
 }
 
 /** What a read-only row of the story view holds (mirrors `RowNote` of the host). */

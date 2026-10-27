@@ -89,7 +89,11 @@
   "values": {
     "more": "Daha fazla göster",
     "items_one": "{{count}} öğe",
-    "items_other": "{{count}} öğe"
+    "items_other": "{{count}} öğe",
+    "found_one": "{{shown}} bulundu",
+    "found_other": "{{shown}} bulundu",
+    "details": "Dosya ayrıntıları",
+    "detailsTip": "Oyunu değil dosyayı tanımlayan bilgiler (motor sürümü, kayıt türü). Salt okunur: oyun bunları olduğu gibi bekler."
   },
   "problem": {
     "empty": "Bir değer girin.",
@@ -151,7 +155,7 @@
     "values": "Değerler ({{count}}):",
     "valuesFirst": "Değerler ({{total}} değerden ilk {{shown}}):",
     "valuesSome": "Değerler (ilk {{shown}}; dosyada daha fazlası var):",
-    "row": "- {{subject}} = {{value}}{{detail}} [{{path}}]",
+    "row": "- {{subject}} = {{value}}{{detail}}",
     "subjectName": "{{name}} #{{id}}",
     "subjectId": "#{{id}}",
     "subjectValue": "bu değer",

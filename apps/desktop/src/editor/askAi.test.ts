@@ -66,9 +66,9 @@ describe("buildAskAiText", () => {
         "File: Save1.rpgsave (RPG Maker MV)",
         'List: Items, search "potion"',
         "Values (3):",
-        "- Potion #1 = 12 (Whole number, 0 to 99) [/party/_items/1]",
-        "- #7 = 0 (Whole number, 0 to 99) [/party/_items/7]",
-        "- Gold = 500 [/party/_gold]",
+        "- Potion #1 = 12 (Whole number, 0 to 99)",
+        "- #7 = 0 (Whole number, 0 to 99)",
+        "- Gold = 500",
         "Tell me which values to change and to what, by name. Keep each value inside its limits.",
       ].join("\n"),
     );
@@ -91,9 +91,9 @@ describe("buildAskAiText", () => {
         "Dosya: Save1.rpgsave (RPG Maker MV)",
         'Liste: Eşyalar, arama "potion"',
         "Değerler (3):",
-        "- Potion #1 = 12 (Tam sayı, 0 ile 99 arası) [/party/_items/1]",
-        "- #7 = 0 (Tam sayı, 0 ile 99 arası) [/party/_items/7]",
-        "- Gold = 500 [/party/_gold]",
+        "- Potion #1 = 12 (Tam sayı, 0 ile 99 arası)",
+        "- #7 = 0 (Tam sayı, 0 ile 99 arası)",
+        "- Gold = 500",
         "Hangi değerleri neye değiştireceğimi isimle söyle. Her değeri sınırları içinde tut.",
       ].join("\n"),
     );
@@ -129,8 +129,8 @@ describe("buildAskAiText", () => {
       ],
       total: 2,
     });
-    expect(text).toContain("- Switch #1 = true (True/false) [/switches/1]");
-    expect(text).toContain("- Motto = Hello (Text) [/motto]");
+    expect(text).toContain("- Switch #1 = true (True/false)");
+    expect(text).toContain("- Motto = Hello (Text)");
   });
 
   it("leaves out the limits of a plain JSON number", () => {
@@ -144,7 +144,7 @@ describe("buildAskAiText", () => {
       rows: [{ name: "level", path: "/level", value: "3", kind: "int", min: -edge, max: edge }],
       total: 1,
     });
-    expect(text).toContain("- level = 3 [/level]");
+    expect(text).toContain("- level = 3");
   });
 
   it("copies only the first 300 values and says how many there are", () => {
@@ -230,6 +230,10 @@ function fakeSource(tree: Record<string, unknown>, pageSize = 2) {
 }
 
 describe("collectAskAiRows", () => {
+  const GROUPS = [
+    { path: "/player", name: "Player" },
+    { path: "/world", name: "World" },
+  ];
   const tree = {
     player: {
       name: "Aria",
@@ -244,23 +248,25 @@ describe("collectAskAiRows", () => {
   it("reads the values inside groups in the order the card shows them", async () => {
     const own: AskAiRow = { name: "version", path: "/version", value: "2", kind: "int", min: null, max: null };
     const { source } = fakeSource(tree);
-    const result = await collectAskAiRows([own], ["/player", "/world"], "", source);
+    const result = await collectAskAiRows([own], GROUPS, "", source);
     expect(result.rows.map((row) => `${row.name}=${row.value} ${row.path}`)).toEqual([
       "version=2 /version",
-      "name=Aria /player/name",
-      "gold=1250 /player/gold",
-      "hp=10 /player/stats/hp",
-      "mp=4 /player/stats/mp",
-      "day=3 /world/day",
+      "Player · name=Aria /player/name",
+      "Player · gold=1250 /player/gold",
+      "Player · stats · hp=10 /player/stats/hp",
+      "Player · stats · mp=4 /player/stats/mp",
+      "World · day=3 /world/day",
     ]);
     expect(result.total).toBe(6);
   });
 
-  it("keeps only the values whose name or value holds the search", async () => {
+  it("keeps only the values whose name, a group's name on the way, or value holds the search", async () => {
     const { source } = fakeSource(tree);
-    const byName = await collectAskAiRows([], ["/player", "/world"], " HP ", source);
+    const byName = await collectAskAiRows([], GROUPS, " HP ", source);
     expect(byName.rows.map((row) => row.path)).toEqual(["/player/stats/hp"]);
-    const byValue = await collectAskAiRows([], ["/player", "/world"], "aria", source);
+    const byGroup = await collectAskAiRows([], GROUPS, "stats", source);
+    expect(byGroup.rows.map((row) => row.path)).toEqual(["/player/stats/hp", "/player/stats/mp"]);
+    const byValue = await collectAskAiRows([], GROUPS, "aria", source);
     expect(byValue.rows.map((row) => row.path)).toEqual(["/player/name"]);
     expect(byValue.total).toBe(1);
   });
@@ -268,7 +274,7 @@ describe("collectAskAiRows", () => {
   it("stops one value past the note's limit and leaves the total unknown", async () => {
     const big = { list: Object.fromEntries(Array.from({ length: 500 }, (_, i) => [`v${i}`, i])) };
     const { source, listed } = fakeSource(big, 200);
-    const result = await collectAskAiRows([], ["/list"], "", source);
+    const result = await collectAskAiRows([], [{ path: "/list", name: "list" }], "", source);
     expect(result.rows).toHaveLength(MAX_ASK_AI_VALUES + 1);
     expect(result.total).toBeNull();
     expect(listed()).toBeLessThanOrEqual(400);
@@ -291,7 +297,7 @@ describe("collectAskAiRows", () => {
       groups: Object.fromEntries(Array.from({ length: MAX_ASK_AI_VISITS + 50 }, (_, i) => [`g${i}`, {}])),
     };
     const many = fakeSource(wide, 500);
-    const result = await collectAskAiRows([], ["/groups"], "", many.source);
+    const result = await collectAskAiRows([], [{ path: "/groups", name: "groups" }], "", many.source);
     expect(result.total).toBeNull();
     expect(many.listed()).toBeLessThanOrEqual(MAX_ASK_AI_VISITS + 500);
 
@@ -299,7 +305,7 @@ describe("collectAskAiRows", () => {
     let deep: Record<string, unknown> = { leaf: 1 };
     for (let i = 0; i < MAX_ASK_AI_DEPTH + 2; i += 1) deep = { next: deep };
     const chain = fakeSource({ root: deep });
-    const below = await collectAskAiRows([], ["/root"], "", chain.source);
+    const below = await collectAskAiRows([], [{ path: "/root", name: "root" }], "", chain.source);
     expect(below.rows).toHaveLength(0);
     expect(below.total).toBeNull();
   });
@@ -310,7 +316,32 @@ describe("collectAskAiRows", () => {
       ...source,
       children: (path, offset) => (path === "/player" ? Promise.resolve(null) : source.children(path, offset)),
     };
-    const result = await collectAskAiRows([], ["/player", "/world"], "", refusing);
+    const result = await collectAskAiRows([], GROUPS, "", refusing);
     expect(result.rows.map((row) => row.path)).toEqual(["/world/day"]);
+  });
+
+  it("takes a value the host listed with its child instead of asking again", async () => {
+    let asked = 0;
+    const source: AskAiSource = {
+      children: () =>
+        Promise.resolve({
+          items: [
+            {
+              key: "Gold",
+              path: "/p/0/value",
+              kind: "int",
+              field: { path: "/p/0/value", value: "7", kind: "int", min: null, max: null },
+            },
+          ],
+          total: 1,
+        }),
+      field: () => {
+        asked += 1;
+        return Promise.resolve(null);
+      },
+    };
+    const result = await collectAskAiRows([], [{ path: "/p", name: "Purse" }], "", source);
+    expect(result.rows.map((row) => `${row.name}=${row.value}`)).toEqual(["Purse · Gold=7"]);
+    expect(asked).toBe(0);
   });
 });

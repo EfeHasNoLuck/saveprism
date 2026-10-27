@@ -82,8 +82,8 @@ function subjectText(row: AskAiRow, t: Translate): string {
 
 /**
  * The text "Ask AI" copies: the file, the card and its search, then at most `MAX_ASK_AI_VALUES`
- * values with their type, limits and path, then a short request. Every sentence comes from `t`;
- * names, values and paths are written as they are.
+ * values by the names the player sees, with their type and limits, then a short request. Every
+ * sentence comes from `t`; names and values are written as they are. Internal paths stay out.
  */
 export function buildAskAiText(input: AskAiInput): string {
   const { t, fileName, format, list, query, rows, total } = input;
@@ -113,7 +113,6 @@ export function buildAskAiText(input: AskAiInput): string {
         subject: subjectText(row, t),
         value: row.value,
         detail: detailText(row, t),
-        path: row.path,
       }),
     );
   }
@@ -128,11 +127,23 @@ export function askAiValueCount(rows: readonly AskAiRow[]): number {
 
 /** A child of a group as the host lists it (only what collecting needs). */
 export interface AskAiChild {
+  /** The name the card shows for the child. */
   key: string;
   path: string;
   /** `object` and `array` are groups; `string`, `int`, `float` and `bool` are values. */
   kind: string;
+  /** The value, when the host listed it with the child (else it is asked for); null for none. */
+  field?: Omit<AskAiRow, "name" | "id"> | null;
 }
+
+/** A group of a card, by its path and the name the card shows. */
+export interface AskAiGroup {
+  path: string;
+  name: string;
+}
+
+/** Joins the names on the way to a value ("Player · Stats · HP"), like the pending changes do. */
+const NAME_SEPARATOR = " · ";
 
 /** Where the values inside groups come from (the host, or a test). */
 export interface AskAiSource {
@@ -149,14 +160,15 @@ const SCALARS = new Set(["string", "int", "float", "bool"]);
 
 /**
  * The values "Ask AI" copies from a card that has groups: `rows` (the card's own values) first,
- * then each group's values in the order the card shows them (its values, then its groups), keeping
- * those whose name or value holds the search. It stops once it has one value more than the note
- * lists, after `MAX_ASK_AI_VISITS` children or below `MAX_ASK_AI_DEPTH` levels; `total` is then
- * null, since the file holds more than were read.
+ * then each group's values in the order the card shows them (its values, then its groups), named
+ * by the names on the way ("Player · Stats · HP") and kept when that name or the value holds the
+ * search. It stops once it has one value more than the note lists, after `MAX_ASK_AI_VISITS`
+ * children or below `MAX_ASK_AI_DEPTH` levels; `total` is then null, since the file holds more
+ * than were read.
  */
 export async function collectAskAiRows(
   rows: readonly AskAiRow[],
-  groups: readonly string[],
+  groups: readonly AskAiGroup[],
   query: string,
   source: AskAiSource,
 ): Promise<{ rows: AskAiRow[]; total: number | null }> {
@@ -166,12 +178,12 @@ export async function collectAskAiRows(
   let stopped = false;
   const full = () => out.length > MAX_ASK_AI_VALUES;
 
-  async function walk(path: string, depth: number): Promise<void> {
+  async function walk(path: string, name: string, depth: number): Promise<void> {
     if (depth > MAX_ASK_AI_DEPTH) {
       stopped = true;
       return;
     }
-    const inner: string[] = [];
+    const inner: AskAiGroup[] = [];
     let offset = 0;
     for (;;) {
       const page = await source.children(path, offset);
@@ -182,15 +194,16 @@ export async function collectAskAiRows(
           return;
         }
         visits += 1;
+        const childName = `${name}${NAME_SEPARATOR}${child.key}`;
         if (child.kind === "object" || child.kind === "array") {
-          inner.push(child.path);
+          inner.push({ path: child.path, name: childName });
           continue;
         }
         if (!SCALARS.has(child.kind)) continue;
-        const field = await source.field(child.path);
+        const field = child.field !== undefined ? child.field : await source.field(child.path);
         if (field === null) continue;
-        if (q === "" || child.key.toLowerCase().includes(q) || field.value.toLowerCase().includes(q)) {
-          out.push({ name: child.key, ...field });
+        if (q === "" || childName.toLowerCase().includes(q) || field.value.toLowerCase().includes(q)) {
+          out.push({ name: childName, ...field });
         }
       }
       offset += page.items.length;
@@ -198,13 +211,13 @@ export async function collectAskAiRows(
     }
     for (const next of inner) {
       if (stopped) return;
-      await walk(next, depth + 1);
+      await walk(next.path, next.name, depth + 1);
     }
   }
 
   for (const group of groups) {
     if (stopped || full()) break;
-    await walk(group, 1);
+    await walk(group.path, group.name, 1);
   }
   return { rows: out, total: stopped || full() ? null : out.length };
 }

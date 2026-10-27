@@ -222,21 +222,26 @@ export function UndoButton({ edit }: { edit: FieldEdit }) {
 
 /**
  * The value in the file followed by an arrow ("1,250 →"), placed in front of the box that holds
- * the new value, so the pair reads "old → new". Nothing while the value is unchanged.
+ * the new value, so the pair reads "old → new". Nothing while the value is unchanged. A number is
+ * never cut (the name gives way instead); text is already shortened by `changeValue`.
  */
 export function ChangeFrom({ edit, className }: { edit: FieldEdit; className?: string }) {
   const format = useFormatNumber();
   if (!edit.changed) return null;
   const { field } = edit;
+  const text = field.kind === "string";
   return (
     <span
       className={cn(
-        "flex min-w-0 shrink items-center gap-1 font-mono text-[0.6875rem] text-changed-foreground tabular-nums",
-        className,
+        "flex items-center gap-1 font-mono text-[0.6875rem] text-changed-foreground tabular-nums",
+        text ? "min-w-0 shrink" : "shrink-0",
+        text && className,
       )}
       title={edit.change ?? undefined}
     >
-      <span className="min-w-0 truncate">{changeValue(field.kind, field.original, format)}</span>
+      <span className={text ? "min-w-0 truncate" : undefined}>
+        {changeValue(field.kind, field.original, format)}
+      </span>
       <span aria-hidden="true" className="shrink-0">
         →
       </span>
