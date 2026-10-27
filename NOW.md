@@ -177,6 +177,15 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
      "Copy file report" works with a real click (no path in the report); the S mark is crisp (pale in light theme).
      Left from `/formats` after these: Easy Save 2 (no public layout), Oodle/Kraken (no permissive decoder),
      "SSSoftware Serialize" (unknown format).
+   - Polish from that visual check (`dc1459c`, Claude subagent, checked in the running app over CDP, dark/light,
+     EN/TR; screenshots `.motor/polish-1027/`): read-only values are plain text after a lock (no box); long strings
+     wrap; Ask AI also on cards with only groups and copies grouped values (300 values cap); empty containers say
+     "empty" everywhere; LiteDB `_id`/indexed fields explain the lock (`NodeFlags::INDEXED`). Witcher 3 `raw:` was
+     already fixed by `0453533`. Rust 3/3, web 3/3 on main.
+   - Satisfactory `.sav` (user request, 2026-10-27; EVREN, merged `fd83c4c`; rust 3/3, web 3/3, cargo deny ok):
+     header v13/v14, 1.x zlib body, objects grouped by level and class; scalar properties and inventory `NumItems`
+     editable, strings/references/maps/structs read-only. The user's 3 local saves open with an exact round trip and
+     pass an edit test (CLI ~1 s each in release; about 1.1 million property leaves each).
    - Wave 2, first: auto-unlock (user idea, 2026-10-24): every layer tried by content whatever the extension; simple XOR
      obfuscation broken automatically from the expected start of the inner format (`{`, `<?xml`, `PK`...); a key finder
      that reads candidate passwords from the game's own files (Unity `Assembly-CSharp.dll` strings, IL2CPP
@@ -209,13 +218,7 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
 - Any unknown file whose size is a multiple of 16 bytes opens the "This file is encrypted" password dialog (it could be
   Easy Save 3 AES); a cut-off copy of a known format says "SavePrism does not know this file yet" (visual check,
   2026-10-25). After a wrong password the field is emptied.
-- Visual check 2026-10-27 leftovers (design, not bugs): in light theme read-only and editable fields differ only by
-  slightly paler text; long strings are cut in fixed-width inputs (tooltip exists); empty containers show as `{0}`/`[0]`
-  in some views and "0 items" in others; "Ask AI" is missing when every value sits inside a group (protobuf, SII,
-  Godot, SQLite/LiteDB, GVAS, Adventure Creator); Witcher 3 untyped values show as `raw:00008f42`; LiteDB gives no
-  hint why `_id`/indexed fields are locked.
 - Light theme: the Compare "only here/there" chips barely differ from the row background (text contrast is fine).
-- Ask AI on the Values card copies only the top-level values (as its search does), not values inside groups.
 - An MCP edit does not reach a SavePrism window with the same file open; that window refuses to save over it
   (SP-APP-023) until the file is opened again.
 
