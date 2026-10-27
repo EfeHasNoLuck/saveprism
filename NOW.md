@@ -185,7 +185,21 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
    - Satisfactory `.sav` (user request, 2026-10-27; EVREN, merged `fd83c4c`; rust 3/3, web 3/3, cargo deny ok):
      header v13/v14, 1.x zlib body, objects grouped by level and class; scalar properties and inventory `NumItems`
      editable, strings/references/maps/structs read-only. The user's 3 local saves open with an exact round trip and
-     pass an edit test (CLI ~1 s each in release; about 1.1 million property leaves each).
+     pass an edit test (CLI ~1 s each in release; about 1.1 million property leaves each). The user opened a copy:
+     only the raw Header/Body tree, so a Satisfactory view followed (`138f316`): item names in every inventory stack,
+     player/storage/other inventories with editable counts (0-500), raw tree below; all 3 saves, view ~120 ms.
+   - Focus (user, 2026-10-27): Unreal, Unity, RPG Maker and Ren'Py first; other engines only through issues.
+   - Player audit of those four with real saves over CDP (2026-10-27; `.motor/audit-1027/REPORT.md`, triaged; the
+     audit ran on an old build, 8 items were already fixed). Fixed the same day, rust 3/3 + web 3/3 + real-save tests
+     after each merge: RPG Maker MV/MZ Level edit sets the class EXP (MIT core-script formula), stat grid labelled as
+     bonuses, every switch/variable named in System.json listed (missing ones grow the array) (`7c08d0d`); GVAS/ES3
+     floats are 32-bit (16777217 → 16777216, out of range refused at once), XP/VX sections found by class (real
+     Essentials save shows variables/switches) (`a6f0d90`); GVAS/Palworld open on their properties with a locked
+     "File details" group, folded one-item arrays/ES3 wrappers/map rows, player-facing labels in pending changes,
+     Compare and Ask AI, search at any depth, 120 px names before more columns (`e6ee338`, Claude subagent, checked
+     in the running app; screenshots `.motor/polish2-1027/`); small fixes: "Where is my save?" in the header, data
+     folder line, missing-file message, TR toggles, recent files removed, distinct error colors, Ren'Py "same as"
+     (EVREN, next commit; not checked in the running app).
    - Wave 2, first: auto-unlock (user idea, 2026-10-24): every layer tried by content whatever the extension; simple XOR
      obfuscation broken automatically from the expected start of the inner format (`{`, `<?xml`, `PK`...); a key finder
      that reads candidate passwords from the game's own files (Unity `Assembly-CSharp.dll` strings, IL2CPP
@@ -219,6 +233,10 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
   Easy Save 3 AES); a cut-off copy of a known format says "SavePrism does not know this file yet" (visual check,
   2026-10-25). After a wrong password the field is emptied.
 - Light theme: the Compare "only here/there" chips barely differ from the row background (text contrast is fine).
+- Audit leftovers (2026-10-27): Set all only for RPG Maker lists (not ES3/Ren'Py/GVAS); trash icon beside every
+  ES3 top-level value; Ren'Py engine internals (`_window`, history) next to story variables, huge numbers cut in
+  their box; ES3 top-level one-item lists still one click deep; Palworld `PlayerUId` editable; Palworld `Level.sav`
+  falls back to raw in the debug build (GVAS inference 3 s limit; release decodes in ~2 s).
 - An MCP edit does not reach a SavePrism window with the same file open; that window refuses to save over it
   (SP-APP-023) until the file is opened again.
 
