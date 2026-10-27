@@ -3889,3 +3889,32 @@ fn a_float_shows_its_number_not_a_codec_marker() {
     assert_eq!(float(Some("12.50")), "12.50");
     assert_eq!(float(None), "12.5");
 }
+
+#[test]
+fn a_witcher3_float_kept_as_original_bytes_shows_its_number() {
+    let env = self::env();
+    let path = copy_in(&env, WITCHER3_SAVE);
+    let session = open(&env, &path, None).unwrap();
+    let weight = session.field_info("/Variables/W3Player/weight").unwrap();
+    assert_eq!(weight.kind, FieldKind::Float);
+    assert_eq!(weight.value, "71.5");
+    assert!(weight.editable);
+}
+
+#[test]
+fn litedb_fields_kept_by_an_index_say_so() {
+    let env = self::env();
+    let path = copy_in(&env, "synthetic/litedb/game.db");
+    let session = open(&env, &path, None).unwrap();
+    for (field, reason, editable) in [
+        ("/player/0/_id", Some(ReadOnlyReason::Index), false),
+        ("/player/0/gold", Some(ReadOnlyReason::Index), false),
+        ("/player/0/level", None, true),
+        // Text is read-only for its length, not for an index.
+        ("/player/0/name", None, false),
+    ] {
+        let info = session.field_info(field).unwrap();
+        assert_eq!(info.read_only_reason, reason, "{field}");
+        assert_eq!(info.editable, editable, "{field}");
+    }
+}

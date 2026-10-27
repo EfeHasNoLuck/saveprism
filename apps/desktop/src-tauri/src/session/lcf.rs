@@ -215,6 +215,7 @@ fn absent_gold(path: Path) -> Field {
         max: Some(999_999),
         hint: "Not stored in this save (0); the game writes gold once the party has some".into(),
         editable: false,
+        read_only_reason: None,
         added: false,
     }
 }

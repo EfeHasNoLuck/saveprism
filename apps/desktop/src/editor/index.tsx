@@ -219,7 +219,7 @@ export function EditorView({
         const element = elements.get(target);
         if (element !== undefined) {
           element.scrollIntoView({ block: "center", behavior: "smooth" });
-          const control = element.querySelector<HTMLElement>("input, button");
+          const control = element.querySelector<HTMLElement>("input, textarea, button");
           control?.focus({ preventScroll: true });
           return;
         }

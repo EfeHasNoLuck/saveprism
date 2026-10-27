@@ -51,7 +51,8 @@
     "decrease": "Decrease",
     "new": "new",
     "removeAdded": "Remove (added)",
-    "readOnly": "read-only in this file"
+    "readOnly": "read-only in this file",
+    "readOnlyIndex": "read-only: the database index keeps a copy of this value, so changing it would break the index"
   },
   "search": {
     "list": "Search name, #id or value",
@@ -147,6 +148,7 @@
     "listSearch": "List: {{list}}, search \"{{query}}\"",
     "values": "Values ({{count}}):",
     "valuesFirst": "Values (first {{shown}} of {{total}}):",
+    "valuesSome": "Values (first {{shown}}; the file has more):",
     "row": "- {{subject}} = {{value}}{{detail}} [{{path}}]",
     "subjectName": "{{name}} #{{id}}",
     "subjectId": "#{{id}}",

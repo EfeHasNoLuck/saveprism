@@ -18,7 +18,14 @@ import { countPendingUnder, useEditorContext, useFormatNumber } from "./context"
 import { RemoveValueButton } from "./RemoveValue";
 import { FieldCell } from "./FieldEditor";
 import { useGridColumns } from "./grid";
-import { noteText, pageCount, pageItems, ROWS_PER_PAGE } from "./helpers";
+import {
+  isEmptyContainerPreview,
+  noteText,
+  pageCount,
+  pageItems,
+  readOnlyText,
+  ROWS_PER_PAGE,
+} from "./helpers";
 import { DenseGrid, EmptyText, Pager, SearchBox, Section } from "./parts";
 
 const CHILD_PAGE = 200;
@@ -39,6 +46,8 @@ interface ValueNode {
   /** The row can be removed from the file. */
   removable: boolean;
   isGroup: boolean;
+  /** An empty list or object that takes no values: shown as "empty", like an empty group. */
+  empty: boolean;
 }
 
 function fromRow(row: ValueRow): ValueNode {
@@ -52,13 +61,16 @@ function fromRow(row: ValueRow): ValueNode {
     addable: row.addable,
     removable: row.removable,
     isGroup: row.field === null && (row.children > 0 || row.addable),
+    empty: row.field === null && !row.addable && isEmptyContainerPreview(row.preview),
   };
 }
 
 async function describeChild(row: NodeRow): Promise<ValueNode> {
-  const isGroup = row.kind === "object" || row.kind === "array";
+  const container = row.kind === "object" || row.kind === "array";
+  // An empty container that takes no values has nothing to open: it is a row that says "empty".
+  const isGroup = container && (row.childCount > 0 || row.addable);
   let field: Field | null = null;
-  if (!isGroup) {
+  if (!container) {
     try {
       field = await fieldInfo(row.path);
     } catch {
@@ -75,6 +87,7 @@ async function describeChild(row: NodeRow): Promise<ValueNode> {
     addable: row.addable,
     removable: row.removable,
     isGroup,
+    empty: container && !isGroup,
   };
 }
 
@@ -108,7 +121,7 @@ function LeafCell({ node }: { node: ValueNode }) {
     return (
       <div
         data-field-path={node.path}
-        className="flex h-7 min-w-0 items-center gap-1.5 rounded-sm pr-2 pl-2 text-xs"
+        className="flex min-h-7 min-w-0 items-center gap-1.5 rounded-sm pr-2 pl-2 text-xs"
         title={`${node.name} · ${tip}`}
       >
         <span className="min-w-0 truncate">{node.name}</span>
@@ -123,7 +136,7 @@ function LeafCell({ node }: { node: ValueNode }) {
     const typeName = node.field.typeName;
     const tip = [
       typeName ? t("type.source", { name: typeName }) : null,
-      node.field.editable ? null : t("field.readOnly"),
+      node.field.editable ? null : readOnlyText(node.field.readOnlyReason, t),
     ].filter((part) => part !== null);
     return (
       <FieldCell
@@ -141,17 +154,27 @@ function LeafCell({ node }: { node: ValueNode }) {
   return (
     <div
       data-field-path={node.path}
-      className="flex h-7 min-w-0 items-center gap-1.5 rounded-sm pr-2 pl-2 text-xs"
+      className={cn(
+        "flex min-h-7 min-w-0 items-center gap-1.5 rounded-sm pl-2 text-xs",
+        node.removable ? "pr-0.5" : "pr-2",
+      )}
     >
       <span className="min-w-0 truncate" title={node.name}>
         {node.name}
       </span>
-      <span
-        className="ml-auto min-w-0 truncate font-mono text-[0.6875rem] text-muted-foreground"
-        title={node.preview}
-      >
-        {node.preview}
-      </span>
+      {node.empty ? (
+        <span className="ml-auto shrink-0 text-[0.6875rem] text-muted-foreground">
+          {t("note.empty")}
+        </span>
+      ) : (
+        <span
+          className="ml-auto min-w-0 truncate font-mono text-[0.6875rem] text-muted-foreground"
+          title={node.preview}
+        >
+          {node.preview}
+        </span>
+      )}
+      {node.removable ? <RemoveValueButton path={node.path} name={node.name} /> : null}
     </div>
   );
 }
@@ -310,7 +333,7 @@ function GroupBlock({
             {node.name}
           </span>
           <span className="shrink-0 text-[0.6875rem] text-muted-foreground tabular-nums">
-            {t("values.items", { count: node.children })}
+            {node.children === 0 ? t("note.empty") : t("values.items", { count: node.children })}
           </span>
           {changed > 0 ? (
             <span className="shrink-0 text-[0.6875rem] font-medium text-changed-foreground tabular-nums">
@@ -394,6 +417,8 @@ export function ValuesCard({
     return () => window.cancelAnimationFrame(handle);
   }, [reveal, leaves, size]);
   const shown = pageItems(filtered, page, size);
+  // "Ask AI" also reads the values inside the groups, when it is pressed.
+  const groupPaths = useMemo(() => groups.map((g) => g.path), [groups]);
   // A file with one group and nothing else opens it right away.
   const openFirst = leaves.length === 0 && groups.length === 1;
   const count = q === "" ? format(rows.length) : `${format(filtered.length)} / ${format(leaves.length)}`;
@@ -427,6 +452,7 @@ export function ValuesCard({
               query={query}
               rows={askRows}
               total={askRows.length}
+              groups={groupPaths}
             />
           </>
         )

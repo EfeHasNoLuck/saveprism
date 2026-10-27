@@ -24,6 +24,7 @@ function copies(path: string, value: string): Field {
     max: 2147483647,
     hint: "",
     editable: true,
+    readOnlyReason: null,
     added: false,
   };
 }

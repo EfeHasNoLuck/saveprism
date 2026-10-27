@@ -51,7 +51,8 @@
     "decrease": "Azalt",
     "new": "yeni",
     "removeAdded": "Kaldır (eklendi)",
-    "readOnly": "bu dosyada salt okunur"
+    "readOnly": "bu dosyada salt okunur",
+    "readOnlyIndex": "salt okunur: veritabanı dizini bu değerin bir kopyasını tutar, değiştirmek dizini bozar"
   },
   "search": {
     "list": "İsim, #id veya değer ara",
@@ -147,6 +148,7 @@
     "listSearch": "Liste: {{list}}, arama \"{{query}}\"",
     "values": "Değerler ({{count}}):",
     "valuesFirst": "Değerler ({{total}} değerden ilk {{shown}}):",
+    "valuesSome": "Değerler (ilk {{shown}}; dosyada daha fazlası var):",
     "row": "- {{subject}} = {{value}}{{detail}} [{{path}}]",
     "subjectName": "{{name}} #{{id}}",
     "subjectId": "#{{id}}",

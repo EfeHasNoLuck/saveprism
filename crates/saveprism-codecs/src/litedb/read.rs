@@ -232,6 +232,7 @@ fn mark_subtree(doc: &mut SaveDoc, root: NodeId) -> Result<()> {
         };
         let mut flags = node.flags;
         flags.insert(NodeFlags::READ_ONLY);
+        flags.insert(NodeFlags::INDEXED);
         let children: Vec<NodeId> = match &node.value {
             Value::Array(items) => items.clone(),
             Value::Object(entries) => entries.iter().map(|(_, child)| *child).collect(),

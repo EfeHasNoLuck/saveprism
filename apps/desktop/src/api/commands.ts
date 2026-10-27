@@ -258,6 +258,8 @@ export interface Field {
   /** English description for logs; the UI builds its own text from `kind`, `min` and `max`. */
   hint: string;
   editable: boolean;
+  /** Why the file keeps the value read-only (`index`: a database index keeps a copy), else null. */
+  readOnlyReason: "index" | null;
   /** Added since the file was opened (or last saved); `original` is then empty. */
   added: boolean;
 }

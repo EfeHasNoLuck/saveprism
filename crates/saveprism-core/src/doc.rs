@@ -119,6 +119,10 @@ impl NodeFlags {
     /// it, and `Remove` may take out an entry that an edit added (`SYNTHETIC`). Its other entries,
     /// its keys and the container itself stay read-only.
     pub const GROWABLE: NodeFlags = NodeFlags(4);
+    /// Set with `READ_ONLY` when the reason is an index of the file that keeps its own copy of the
+    /// value (a database key or indexed field): changing it would leave the index stale. It only
+    /// tells the reason; `READ_ONLY` alone decides what can be edited.
+    pub const INDEXED: NodeFlags = NodeFlags(8);
 
     /// A flag set with no flag.
     pub const fn empty() -> Self {

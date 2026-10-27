@@ -338,6 +338,19 @@ export function noteText(
   }
 }
 
+/** Why a value cannot be changed, in words: the file's own reason when it gives one (`index`). */
+export function readOnlyText(reason: string | null, t: Translate): string {
+  return reason === "index" ? t("field.readOnlyIndex") : t("field.readOnly");
+}
+
+/**
+ * True for the preview the host gives an empty list or object (`[0]`, `{0}`); only containers get
+ * such a preview, since text and numbers have a field instead.
+ */
+export function isEmptyContainerPreview(preview: string): boolean {
+  return preview === "[0]" || preview === "{0}";
+}
+
 /** A game database entry for the "Add" picker (mirrors `NamedId` of the host). */
 export interface CatalogEntryLike {
   id: number;

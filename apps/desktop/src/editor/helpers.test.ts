@@ -17,10 +17,12 @@ import {
   formatDateTime,
   formatValue,
   hintLine,
+  isEmptyContainerPreview,
   noteText,
   pageCount,
   pageItems,
   pagerLabel,
+  readOnlyText,
   sameValue,
   stepValue,
 } from "./helpers";
@@ -307,6 +309,19 @@ describe("story notes", () => {
     });
     expect(noteText({ kind: "code", count: null, text: null }, t, format, "en").tip).toBe("note.specialTip");
     expect(noteText({ kind: "empty", count: null, text: null }, t, format, "en").tip).toBe("note.emptyTip");
+  });
+
+  it("says why a value is read-only", () => {
+    expect(readOnlyText("index", t)).toBe("field.readOnlyIndex");
+    expect(readOnlyText(null, t)).toBe("field.readOnly");
+  });
+
+  it("knows the preview of an empty list or object", () => {
+    expect(isEmptyContainerPreview("[0]")).toBe(true);
+    expect(isEmptyContainerPreview("{0}")).toBe(true);
+    expect(isEmptyContainerPreview("[3]")).toBe(false);
+    expect(isEmptyContainerPreview("<0 bytes>")).toBe(false);
+    expect(isEmptyContainerPreview("null")).toBe(false);
   });
 });
 

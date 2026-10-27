@@ -2,7 +2,17 @@
 import { describe, expect, it } from "vitest";
 import en from "../../locales/en/editor.json";
 import tr from "../../locales/tr/editor.json";
-import { askAiValueCount, buildAskAiText, MAX_ASK_AI_VALUES, type AskAiRow } from "./askAi";
+import {
+  askAiValueCount,
+  buildAskAiText,
+  collectAskAiRows,
+  MAX_ASK_AI_DEPTH,
+  MAX_ASK_AI_VALUES,
+  MAX_ASK_AI_VISITS,
+  type AskAiChild,
+  type AskAiRow,
+  type AskAiSource,
+} from "./askAi";
 import type { Translate } from "./helpers";
 
 function flatten(obj: Record<string, unknown>, prefix = ""): Record<string, string> {
@@ -159,5 +169,148 @@ describe("buildAskAiText", () => {
     expect(text).toContain(`Values (first ${MAX_ASK_AI_VALUES} of 1,234):`);
     expect(text.match(/^- /gm)).toHaveLength(MAX_ASK_AI_VALUES);
     expect(askAiValueCount(many)).toBe(MAX_ASK_AI_VALUES);
+  });
+
+  it("says the file has more when the total is not known", () => {
+    const one: AskAiRow[] = [
+      { name: "hp", path: "/player/0/hp", value: "10", kind: "int", min: null, max: null },
+    ];
+    const input = { fileName: "game.db", format: null, list: "Values", query: "", rows: one, total: null };
+    expect(buildAskAiText({ ...input, t: tEn })).toContain("Values (first 1; the file has more):\n");
+    expect(buildAskAiText({ ...input, t: tTr })).toContain(
+      "Değerler (ilk 1; dosyada daha fazlası var):\n",
+    );
+  });
+});
+
+/**
+ * A fake host over a nested object: objects and arrays are groups, numbers are whole-number values,
+ * text is text. Counts the children it hands out.
+ */
+function fakeSource(tree: Record<string, unknown>, pageSize = 2) {
+  const at = (path: string): unknown =>
+    path
+      .split("/")
+      .slice(1)
+      .reduce<unknown>((node, key) => (node as Record<string, unknown>)[key], tree);
+  let listed = 0;
+  const source: AskAiSource = {
+    children: (path, offset) => {
+      const node = at(path) as Record<string, unknown>;
+      const all: AskAiChild[] = Object.entries(node).map(([key, value]) => ({
+        key,
+        path: `${path}/${key}`,
+        kind:
+          typeof value === "object" && value !== null
+            ? Array.isArray(value)
+              ? "array"
+              : "object"
+            : typeof value === "number"
+              ? "int"
+              : typeof value === "string"
+                ? "string"
+                : "null",
+      }));
+      const items = all.slice(offset, offset + pageSize);
+      listed += items.length;
+      return Promise.resolve({ items, total: all.length });
+    },
+    field: (path) => {
+      const value = at(path);
+      return Promise.resolve({
+        path,
+        value: String(value),
+        kind: typeof value === "number" ? "int" : "string",
+        min: null,
+        max: null,
+      });
+    },
+  };
+  return { source, listed: () => listed };
+}
+
+describe("collectAskAiRows", () => {
+  const tree = {
+    player: {
+      name: "Aria",
+      stats: { hp: 10, mp: 4 },
+      gold: 1250,
+      tags: [],
+      nothing: null,
+    },
+    world: { day: 3 },
+  };
+
+  it("reads the values inside groups in the order the card shows them", async () => {
+    const own: AskAiRow = { name: "version", path: "/version", value: "2", kind: "int", min: null, max: null };
+    const { source } = fakeSource(tree);
+    const result = await collectAskAiRows([own], ["/player", "/world"], "", source);
+    expect(result.rows.map((row) => `${row.name}=${row.value} ${row.path}`)).toEqual([
+      "version=2 /version",
+      "name=Aria /player/name",
+      "gold=1250 /player/gold",
+      "hp=10 /player/stats/hp",
+      "mp=4 /player/stats/mp",
+      "day=3 /world/day",
+    ]);
+    expect(result.total).toBe(6);
+  });
+
+  it("keeps only the values whose name or value holds the search", async () => {
+    const { source } = fakeSource(tree);
+    const byName = await collectAskAiRows([], ["/player", "/world"], " HP ", source);
+    expect(byName.rows.map((row) => row.path)).toEqual(["/player/stats/hp"]);
+    const byValue = await collectAskAiRows([], ["/player", "/world"], "aria", source);
+    expect(byValue.rows.map((row) => row.path)).toEqual(["/player/name"]);
+    expect(byValue.total).toBe(1);
+  });
+
+  it("stops one value past the note's limit and leaves the total unknown", async () => {
+    const big = { list: Object.fromEntries(Array.from({ length: 500 }, (_, i) => [`v${i}`, i])) };
+    const { source, listed } = fakeSource(big, 200);
+    const result = await collectAskAiRows([], ["/list"], "", source);
+    expect(result.rows).toHaveLength(MAX_ASK_AI_VALUES + 1);
+    expect(result.total).toBeNull();
+    expect(listed()).toBeLessThanOrEqual(400);
+    const text = buildAskAiText({
+      t: tEn,
+      fileName: "big.json",
+      format: null,
+      list: "Values",
+      query: "",
+      rows: result.rows,
+      total: result.total,
+    });
+    expect(text).toContain(`Values (first ${MAX_ASK_AI_VALUES}; the file has more):`);
+    expect(text.match(/^- /gm)).toHaveLength(MAX_ASK_AI_VALUES);
+  });
+
+  it("reads at most a bounded number of children and levels", async () => {
+    // Many groups with no values: the walk gives up after MAX_ASK_AI_VISITS children.
+    const wide = {
+      groups: Object.fromEntries(Array.from({ length: MAX_ASK_AI_VISITS + 50 }, (_, i) => [`g${i}`, {}])),
+    };
+    const many = fakeSource(wide, 500);
+    const result = await collectAskAiRows([], ["/groups"], "", many.source);
+    expect(result.total).toBeNull();
+    expect(many.listed()).toBeLessThanOrEqual(MAX_ASK_AI_VISITS + 500);
+
+    // A chain deeper than MAX_ASK_AI_DEPTH: the values below it are not read.
+    let deep: Record<string, unknown> = { leaf: 1 };
+    for (let i = 0; i < MAX_ASK_AI_DEPTH + 2; i += 1) deep = { next: deep };
+    const chain = fakeSource({ root: deep });
+    const below = await collectAskAiRows([], ["/root"], "", chain.source);
+    expect(below.rows).toHaveLength(0);
+    expect(below.total).toBeNull();
+  });
+
+  it("skips a group the host refuses", async () => {
+    const { source } = fakeSource(tree);
+    const refusing: AskAiSource = {
+      ...source,
+      children: (path, offset) => (path === "/player" ? Promise.resolve(null) : source.children(path, offset)),
+    };
+    const result = await collectAskAiRows([], ["/player", "/world"], "", refusing);
+    expect(result.rows.map((row) => row.path)).toEqual(["/world/day"]);
   });
 });

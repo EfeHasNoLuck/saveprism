@@ -1,4 +1,4 @@
-import { Minus, Plus, Undo2 } from "lucide-react";
+import { Lock, Minus, Plus, Undo2 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { Field } from "@/api/commands";
@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { RemoveValueButton } from "./RemoveValue";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useFormatNumber } from "./context";
-import { changeValue } from "./helpers";
+import { changeValue, readOnlyText } from "./helpers";
 import { BoolChoice } from "./BoolChoice";
 import {
   fieldState,
@@ -30,13 +30,56 @@ export function StateBar({ state }: { state: FieldState }) {
   );
 }
 
+/** Text longer than this (in characters) is shown under its name, across the whole cell. */
+const LONG_TEXT = 24;
+
 const STEP =
   "inline-flex h-6.5 w-6 items-center justify-center text-muted-foreground outline-none hover:bg-surface-container hover:text-foreground focus-visible:bg-surface-container focus-visible:text-foreground disabled:pointer-events-none";
 
 /**
- * The value control of a field: a text box or the `true | false` choice. A changed value is
- * violet, a value that cannot be saved is red. Arrow up and down step a number by one; `steppers`
- * adds − and + buttons for whole numbers (Gold).
+ * A value that cannot be changed: its text after a small lock, with no box, so it never looks like
+ * something to type into. Long text wraps (up to five lines, then it scrolls); the lock's hover
+ * text says why the value is locked.
+ */
+function LockedValue({
+  field,
+  label,
+  className,
+}: {
+  field: Field;
+  label: string;
+  className?: string;
+}) {
+  const { t } = useTranslation("editor");
+  const isNumber = field.kind === "int" || field.kind === "float";
+  const reason = readOnlyText(field.readOnlyReason, t);
+  return (
+    <div className={cn("flex min-w-0 items-center gap-1", isNumber && "justify-end", className)}>
+      <span title={reason} className="inline-flex shrink-0 text-muted-foreground">
+        <Lock aria-hidden="true" className="size-3" />
+      </span>
+      <span
+        role="textbox"
+        aria-readonly="true"
+        aria-label={label}
+        aria-description={reason}
+        className={cn(
+          "max-h-24 min-w-0 overflow-y-auto py-1 pr-1.5 text-xs leading-4 whitespace-pre-wrap text-foreground-variant [overflow-wrap:anywhere]",
+          isNumber && "text-right font-mono tabular-nums",
+          field.kind === "bool" && "font-mono",
+        )}
+      >
+        {field.value}
+      </span>
+    </div>
+  );
+}
+
+/**
+ * The value control of a field: a text box or the `true | false` choice; a value that cannot be
+ * changed is plain text with a lock. A changed value is violet, a value that cannot be saved is
+ * red. Text wraps in its box as it grows. Arrow up and down step a number by one; `steppers` adds
+ * − and + buttons for whole numbers (Gold).
  */
 export function ValueInput({
   edit,
@@ -57,55 +100,79 @@ export function ValueInput({
   const { field, disabled, changed, invalid } = edit;
   const isNumber = field.kind === "int" || field.kind === "float";
 
+  if (disabled) {
+    return <LockedValue field={field} label={label} className={className} />;
+  }
+
   if (field.kind === "bool") {
     return (
       <BoolChoice
         label={label}
         value={field.value.toLowerCase() === "true"}
-        disabled={disabled}
         changed={changed}
         onChange={(next) => edit.commit(next ? "true" : "false")}
       />
     );
   }
 
+  const box = cn(
+    "w-full min-w-0 rounded-sm border border-input/70 bg-field px-1.5 text-xs text-foreground outline-none transition-colors focus-visible:border-ring dark:border-transparent dark:focus-visible:border-ring",
+    isNumber && "text-right font-mono tabular-nums",
+    inputClassName,
+    changed && !invalid && "font-semibold text-changed-foreground",
+    invalid &&
+      "border-destructive bg-error-container font-semibold text-destructive dark:border-destructive",
+  );
+  const common = {
+    "aria-label": label,
+    "aria-invalid": invalid || undefined,
+    value: edit.draft,
+    // Ctrl+Z undoes the edit (not the typing) while the box shows the committed value.
+    "data-committed": field.value,
+    onFocus: () => edit.setFocused(true),
+    onBlur: () => {
+      edit.setFocused(false);
+      edit.commit(edit.draft);
+    },
+  };
+
   return (
     <div className={cn("flex min-w-0 items-center gap-1", className)}>
-      <input
-        type="text"
-        inputMode={field.kind === "int" ? "numeric" : isNumber ? "decimal" : "text"}
-        aria-label={label}
-        aria-invalid={invalid || undefined}
-        disabled={disabled}
-        value={edit.draft}
-        // Ctrl+Z undoes the edit (not the typing) while the box shows the committed value.
-        data-committed={field.value}
-        // A locked box leaves the hover text to its row (which says why it is locked).
-        title={field.kind === "string" && !disabled ? edit.draft : undefined}
-        onChange={(e) => edit.setDraft(e.target.value)}
-        onFocus={() => edit.setFocused(true)}
-        onBlur={() => {
-          edit.setFocused(false);
-          edit.commit(edit.draft);
-        }}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") edit.commit(edit.draft);
-          else if (e.key === "Escape") edit.reset();
-          else if (isNumber && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
-            e.preventDefault();
-            edit.step(e.key === "ArrowUp" ? 1 : -1);
-          }
-        }}
-        className={cn(
-          "h-6.5 w-full min-w-0 rounded-sm border border-input/70 bg-field px-1.5 text-xs text-foreground outline-none transition-colors focus-visible:border-ring dark:border-transparent dark:focus-visible:border-ring",
-          isNumber && "text-right font-mono tabular-nums",
-          "disabled:cursor-not-allowed disabled:text-muted-foreground",
-          inputClassName,
-          changed && !invalid && "font-semibold text-changed-foreground",
-          invalid &&
-            "border-destructive bg-error-container font-semibold text-destructive dark:border-destructive",
-        )}
-      />
+      {field.kind === "string" ? (
+        // One line that grows to five as the text wraps, then scrolls; Enter saves the text.
+        <textarea
+          {...common}
+          rows={1}
+          spellCheck={false}
+          onChange={(e) => edit.setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              edit.commit(edit.draft);
+            } else if (e.key === "Escape") edit.reset();
+          }}
+          className={cn(
+            box,
+            "block field-sizing-content min-h-6.5 max-h-24 resize-none py-1 leading-4 [overflow-wrap:anywhere]",
+          )}
+        />
+      ) : (
+        <input
+          {...common}
+          type="text"
+          inputMode={field.kind === "int" ? "numeric" : "decimal"}
+          onChange={(e) => edit.setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") edit.commit(edit.draft);
+            else if (e.key === "Escape") edit.reset();
+            else if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+              e.preventDefault();
+              edit.step(e.key === "ArrowUp" ? 1 : -1);
+            }
+          }}
+          className={cn(box, "h-6.5")}
+        />
+      )}
       {steppers && field.kind === "int" ? (
         <div className="flex shrink-0 overflow-hidden rounded-sm bg-surface-highest">
           <button
@@ -179,9 +246,9 @@ export function ChangeFrom({ edit, className }: { edit: FieldEdit; className?: s
 
 /**
  * One value in a dense grid: name (and #id), "old →" when changed, the value box and undo, on one
- * 28 px line. A changed value is tinted violet with a violet bar, a value that cannot be saved is
- * tinted red; the type and limits (or why the value cannot be saved) float under it while it is
- * focused or wrong, so nothing moves.
+ * 28 px line; long text drops under its name and wraps there. A changed value is tinted violet with
+ * a violet bar, a value that cannot be saved is tinted red; the type and limits (or why the value
+ * cannot be saved) float under it while it is focused or wrong, so nothing moves.
  */
 export function FieldCell({
   field,
@@ -212,6 +279,13 @@ export function FieldCell({
   const kind = edit.field.kind;
   const line = edit.line;
   const floating = line !== null && (edit.focused || edit.invalid) && !line.change ? line : null;
+  // Long text gets the whole width of the cell: the name takes its own line above it.
+  const stacked =
+    kind === "string" &&
+    !fixedLabel &&
+    nameNode === undefined &&
+    id === undefined &&
+    edit.field.value.length > LONG_TEXT;
 
   return (
     <Tooltip open={floating !== null}>
@@ -219,7 +293,8 @@ export function FieldCell({
         <div
           data-field-path={field.path}
           className={cn(
-            "group relative flex h-7 min-w-0 items-center gap-1 rounded-sm pr-0.5 pl-2 text-xs",
+            "group relative flex min-h-7 min-w-0 items-center gap-1 rounded-sm pr-0.5 pl-2 text-xs",
+            stacked && "flex-wrap gap-y-0.5 py-1",
             stateTone(state),
           )}
           // A locked box has no hover text of its own; the row's (which says why) shows over it.
@@ -231,7 +306,7 @@ export function FieldCell({
               className={cn(
                 "truncate",
                 fixedLabel ? "w-[4.5rem] shrink-0 text-muted-foreground" : "min-w-14",
-                kind === "string" && !fixedLabel && "max-w-[45%]",
+                kind === "string" && !fixedLabel && (stacked ? "basis-full" : "max-w-[45%]"),
               )}
               title={title ?? name}
             >

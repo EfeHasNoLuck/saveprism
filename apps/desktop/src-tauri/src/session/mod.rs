@@ -58,8 +58,8 @@ pub use code::MAX_PASTED;
 pub use compare::{CompareKind, CompareResult, CompareRow};
 use game::check_bounds_in;
 pub use game::{
-    Actor, AddLists, Bonus, Catalog, Entry, Field, FieldKind, GameView, NamedId, NoteKind, RowNote,
-    RpgMakerView, ValueRow, Witcher3View,
+    Actor, AddLists, Bonus, Catalog, Entry, Field, FieldKind, GameView, NamedId, NoteKind,
+    ReadOnlyReason, RowNote, RpgMakerView, ValueRow, Witcher3View,
 };
 pub use gwent::{GwentCard, GwentDeck, GwentView};
 use history::{DocStep, History, MAX_VALUES, Mutation, scalar_owned};

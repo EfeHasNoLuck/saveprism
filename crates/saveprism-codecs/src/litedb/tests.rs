@@ -118,6 +118,19 @@ fn the_v5_fixture_reads_as_collections_and_documents() {
             .flags
             .contains(NodeFlags::READ_ONLY)
     );
+    // The index is the reason only for `_id` and `gold`; text is read-only for its length.
+    for (path, indexed) in [
+        ("/player/0/_id", true),
+        ("/player/0/gold", true),
+        ("/player/0/level", false),
+        ("/player/0/name", false),
+    ] {
+        assert_eq!(
+            at(doc, path).flags.contains(NodeFlags::INDEXED),
+            indexed,
+            "{path}"
+        );
+    }
 }
 
 #[test]

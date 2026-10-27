@@ -81,9 +81,20 @@ pub struct Field {
     pub hint: String,
     /// True when the value can be changed.
     pub editable: bool,
+    /// Why the file keeps the value read-only, when the format tells; `None` otherwise.
+    pub read_only_reason: Option<ReadOnlyReason>,
     /// True when the value was added since the file was opened (or last saved); `original` is
     /// then empty. Taking it back means removing it (`remove_value`).
     pub added: bool,
+}
+
+/// Why a value is read-only in the file; the UI translates it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ReadOnlyReason {
+    /// A database index keeps its own copy of the value (LiteDB `_id` and indexed fields), so a
+    /// change would break the index.
+    Index,
 }
 
 /// An item, weapon, armor, variable or switch.
@@ -740,6 +751,10 @@ impl Ctx<'_> {
             max: bounds.max.filter(|_| numeric).map(clamp_i64),
             hint: hint_text(kind, bounds),
             editable,
+            read_only_reason: node
+                .flags
+                .contains(NodeFlags::INDEXED)
+                .then_some(ReadOnlyReason::Index),
             added,
         })
     }

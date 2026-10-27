@@ -52,9 +52,8 @@ const TEXT_INPUT_TYPES = new Set(["", "text", "search", "email", "url", "tel", "
 export function isTextEditing(target: Element | null): boolean {
   if (target === null) return false;
   if (target.closest(".cm-editor") !== null) return true;
-  if (target instanceof HTMLTextAreaElement) return true;
-  if (target instanceof HTMLInputElement) {
-    if (!TEXT_INPUT_TYPES.has(target.type)) return false;
+  if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
+    if (target instanceof HTMLInputElement && !TEXT_INPUT_TYPES.has(target.type)) return false;
     const committed = target.dataset.committed;
     return committed === undefined || committed !== target.value;
   }
