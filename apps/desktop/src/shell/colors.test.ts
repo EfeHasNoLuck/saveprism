@@ -24,6 +24,25 @@ function contrast(a: string, b: string): number {
   return (brighter + 0.05) / (darker + 0.05);
 }
 
+/** Hue of a `#rrggbb` colour in degrees (0–360). */
+function hue(hex: string): number {
+  const value = Number.parseInt(hex.slice(1), 16);
+  const [r, g, b] = [value >> 16, (value >> 8) & 0xff, value & 0xff].map((byte) => byte / 255);
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const delta = max - min;
+  if (delta === 0) return 0;
+  const sector =
+    max === r ? ((g - b) / delta) % 6 : max === g ? (b - r) / delta + 2 : (r - g) / delta + 4;
+  return (sector * 60 + 360) % 360;
+}
+
+/** The smaller distance between two hues around the colour wheel. */
+function hueDistance(a: number, b: number): number {
+  const distance = Math.abs(a - b) % 360;
+  return Math.min(distance, 360 - distance);
+}
+
 /** `fg` laid over `bg` at `alpha`, as `color-mix(in srgb, fg alpha, transparent)` on `bg` looks. */
 function over(fg: string, alpha: number, bg: string): string {
   const parse = (hex: string) => {
@@ -68,6 +87,20 @@ describe("colour presets", () => {
             expect(contrast(MUTED[theme], row), `${at} row label`).toBeGreaterThanOrEqual(4.5);
             expect(contrast(main, row), `${at} row text`).toBeGreaterThanOrEqual(4.5);
           }
+        }
+      }
+    }
+  });
+
+  it("keeps every error preset on a clearly different hue", () => {
+    for (const theme of ["light", "dark"] as const) {
+      const hues = COLOR_PRESETS.error.map((preset) => hue(preset[theme].main));
+      for (let i = 0; i < hues.length; i += 1) {
+        for (let j = i + 1; j < hues.length; j += 1) {
+          expect(
+            hueDistance(hues[i], hues[j]),
+            `error/${COLOR_PRESETS.error[i].id} vs error/${COLOR_PRESETS.error[j].id} ${theme}`,
+          ).toBeGreaterThanOrEqual(15);
         }
       }
     }

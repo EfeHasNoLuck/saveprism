@@ -49,9 +49,9 @@ export const COLOR_PRESETS: Record<ColorGroup, readonly ColorPreset[]> = {
   ],
   error: [
     { id: "red", light: t("#ba1a1a", "#ffdad6", "#410002"), dark: t("#ffb4ab", "#93000a", "#ffdad6") },
-    { id: "orange", light: t("#aa3606", "#fedbce", "#311300"), dark: t("#feb599", "#832600", "#fedbce") },
+    { id: "orange", light: t("#aa3606", "#fedbce", "#311300"), dark: t("#ffc078", "#832600", "#fedbce") },
     { id: "pink", light: t("#b51a59", "#ffd9e1", "#3f0019"), dark: t("#ffb1c3", "#8f0042", "#ffd9e1") },
-    { id: "brown", light: t("#984725", "#ffdbcd", "#311300"), dark: t("#feb698", "#7b2f0f", "#ffdbcd") },
+    { id: "purple", light: t("#7a2f9c", "#f3d9ff", "#2b0042"), dark: t("#e2b0ff", "#792c9c", "#f8e5ff") },
   ],
 };
 

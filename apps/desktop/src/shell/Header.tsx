@@ -1,4 +1,11 @@
-import { ClipboardPaste, FileText, FolderOpen, Settings as SettingsIcon, X } from "lucide-react";
+import {
+  ClipboardPaste,
+  FileText,
+  FolderOpen,
+  FolderSearch,
+  Settings as SettingsIcon,
+  X,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { OpenInfo } from "@/api/commands";
 import { Button } from "@/components/ui/button";
@@ -16,6 +23,8 @@ interface HeaderProps {
   onPasteCode: () => void;
   /** Closes the open file (or pasted code) and goes back to the start screen. */
   onCloseFile: () => void;
+  /** Opens the dialog that lists the usual save folders of each engine. */
+  onWhereSaves: () => void;
   onOpenSettings: () => void;
 }
 
@@ -28,6 +37,7 @@ export function Header({
   onOpenFile,
   onPasteCode,
   onCloseFile,
+  onWhereSaves,
   onOpenSettings,
 }: HeaderProps) {
   const { t } = useTranslation();
@@ -69,16 +79,28 @@ export function Header({
       </div>
       <div className="flex shrink-0 items-center gap-0.5">
         {file ? (
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={onCloseFile}
-            title={t("header.closeFileTip")}
-            className="mr-1.5 bg-surface-container hover:bg-surface-high"
-          >
-            <X />
-            {t("header.closeFile")}
-          </Button>
+          <>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={onCloseFile}
+              title={t("header.closeFileTip")}
+              className="mr-1 bg-surface-container hover:bg-surface-high"
+            >
+              <X />
+              {t("header.closeFile")}
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label={t("start.whereLink")}
+              title={t("start.whereLink")}
+              onClick={onWhereSaves}
+              className="mr-1.5 text-foreground-variant"
+            >
+              <FolderSearch />
+            </Button>
+          </>
         ) : (
           <>
             <Button

@@ -90,8 +90,8 @@ function ListRow({ lists }: { lists: Omit<EntryListProps, "style" | "className">
 }
 
 /**
- * Where the names come from: the folder found next to the save, or one the player picks by hand.
- * A long path is cut short; its tooltip holds the whole path.
+ * Where the names come from: the data folder found next to the save, or one the player picks by
+ * hand. The line names the folder instead of showing its whole path; the tooltip holds the path.
  */
 function DataFolderLine({ view }: { view: RpgMakerView }) {
   const { t } = useTranslation("editor");
@@ -119,8 +119,8 @@ function DataFolderLine({ view }: { view: RpgMakerView }) {
       {view.namesFolder === null ? (
         <span className="truncate">{t("dataFolder.none")}</span>
       ) : (
-        <span className="min-w-0 truncate font-mono text-[0.6875rem]" title={view.namesFolder}>
-          {view.namesFolder}
+        <span className="min-w-0 truncate" title={view.namesFolder}>
+          {t("dataFolder.namesFrom")}
         </span>
       )}
       <span aria-hidden="true">·</span>
@@ -172,6 +172,7 @@ export function RpgMaker({
             info: namesInfo,
             canAdd: view.canAdd.items,
             catalog: view.catalog.items,
+            folderFound: view.namesFolder !== null,
           },
           {
             title: t("sections.weapons"),
@@ -179,6 +180,7 @@ export function RpgMaker({
             entries: view.weapons,
             canAdd: view.canAdd.weapons,
             catalog: view.catalog.weapons,
+            folderFound: view.namesFolder !== null,
           },
           {
             title: t("sections.armors"),
@@ -186,6 +188,7 @@ export function RpgMaker({
             entries: view.armors,
             canAdd: view.canAdd.armors,
             catalog: view.catalog.armors,
+            folderFound: view.namesFolder !== null,
           },
         ]}
       />

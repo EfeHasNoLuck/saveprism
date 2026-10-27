@@ -52,11 +52,6 @@
     "dropActive": "Release to open",
     "openFile": "Open file",
     "privacy": "Files stay on this computer. A backup is made before every save.",
-    "recent": "Recent files",
-    "faqLink": "FAQ: where are save files?",
-    "faqRpgMaker": "RPG Maker: the game's save/ folder, or www/save/",
-    "faqUnity": "Unity: %USERPROFILE%\\AppData\\LocalLow\\<Company>\\<Game>",
-    "faqUnreal": "Unreal: %LOCALAPPDATA%\\<Game>\\Saved\\SaveGames",
     "pasteCode": "Paste code",
     "pasteHint": "Browser game? Paste the save code it gave you (Ctrl+V).",
     "whereLink": "Where is my save?"
@@ -227,7 +222,7 @@
       "rpgmaker-mv": "MV uses www/save; MZ uses save.",
       "rpgmaker-classic": "The save can be in the game's folder or in its Save folder.",
       "wolf-rpg": "Saves are in the Save folder inside the game's folder.",
-      "unity": "PlayerPrefs live in the Windows registry: export them with regedit.",
+      "unity": "PlayerPrefs live in the Windows registry: export them with regedit. Easy Save files are under %USERPROFILE%\\AppData\\LocalLow\\<company>\\<game>\\.",
       "unreal": "The project name is the game's folder name.",
       "renpy": "Saves can also be in game/saves inside the game's folder.",
       "godot": "The user:// folder.",
@@ -586,7 +581,7 @@
         "red": "Red",
         "orange": "Orange",
         "pink": "Pink",
-        "brown": "Brown"
+        "purple": "Lilac"
       }
     },
     "language": "Language",
@@ -597,9 +592,6 @@
     "overwriteOriginal": "Overwrite original",
     "keepBackups": "Backups to keep",
     "keepBackupsInfo": "How many backups of the file you save are kept (1 to 50), for up to 30 days. Older ones of that file are removed on the next save; the newest is always kept.",
-    "recentSection": "Recent files",
-    "showRecent": "Show recent files",
-    "showRecentInfo": "Shows the last 5 files on the start screen. The list is stored on this computer only.",
     "aiTools": "AI tools",
     "aiToolsInfo": "AI apps such as Claude Desktop, Claude Code or Cursor can open and edit saves through SavePrism. Saving always makes a backup first. Chat sites such as ChatGPT cannot connect: use Ask AI on any list to copy its values for them.",
     "copySetup": "Copy setup",

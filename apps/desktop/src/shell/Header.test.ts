@@ -18,6 +18,7 @@ function header(file: OpenInfo | null): string {
     onOpenFile: noop,
     onPasteCode: noop,
     onCloseFile: noop,
+    onWhereSaves: noop,
     onOpenSettings: noop,
   });
   return renderToStaticMarkup(
@@ -53,6 +54,7 @@ describe("Header", () => {
   it("shows one Close file button in their place while a file is open", () => {
     const html = header(FILE);
     expect(html).toContain("Close file");
+    expect(html).toContain("Where is my save?");
     expect(html).not.toContain("Paste code");
     expect(html).not.toContain("Open file");
   });

@@ -1,4 +1,5 @@
 import { RadioGroup } from "radix-ui";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 
 const OPTIONS = ["true", "false"] as const;
@@ -20,10 +21,11 @@ interface Props {
 }
 
 /**
- * A boolean as two segments with the words the file stores, `true` and `false`. It is a radio
- * group: Tab reaches the selected segment, the arrow keys switch it.
+ * A boolean as two segments with the words the file stores, `true` and `false` (translated for
+ * display). It is a radio group: Tab reaches the selected segment, the arrow keys switch it.
  */
 export function BoolChoice({ value, onChange, label, disabled = false, changed = false }: Props) {
+  const { t } = useTranslation("editor");
   const current = value ? "true" : "false";
   return (
     <RadioGroup.Root
@@ -44,7 +46,7 @@ export function BoolChoice({ value, onChange, label, disabled = false, changed =
           value={option}
           className={option !== current ? IDLE : changed ? SELECTED_CHANGED : SELECTED}
         >
-          {option}
+          {t(`bool.${option}`)}
         </RadioGroup.Item>
       ))}
     </RadioGroup.Root>

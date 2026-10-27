@@ -1,4 +1,8 @@
 {
+  "bool": {
+    "true": "true",
+    "false": "false"
+  },
   "loading": "Loading values…",
   "loadFailed": "The values could not be read. {{message}} {{hint}}",
   "sections": {
@@ -192,6 +196,7 @@
     "id": "Database id",
     "idPlaceholder": "For example 12",
     "noCatalog": "No game data folder was found, so type the id.",
+    "missingFile": "{{file}} is missing from the game's data folder, so type the id.",
     "count": "Count",
     "submit": "Add"
   },
@@ -219,6 +224,7 @@
   "dataFolder": {
     "title": "Choose the game's data folder",
     "none": "No game data folder found",
+    "namesFrom": "Names from the game's data folder",
     "choose": "Choose data folder…",
     "change": "Change…",
     "picking": "Opening…"

@@ -25,3 +25,13 @@ export function translatePathPlaceholders(path: string, labels: PlaceholderLabel
   }
   return out;
 }
+
+/**
+ * True when the host path still holds one of its placeholders (`<game folder>`, `<game>`,
+ * `<company>`). Such a path depends on the game, so the host cannot say whether it exists.
+ */
+export function hasPathPlaceholder(path: string): boolean {
+  return ["<game folder>", "<game>", "<company>"].some((placeholder) =>
+    path.includes(placeholder),
+  );
+}
