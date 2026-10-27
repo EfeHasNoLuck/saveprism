@@ -217,6 +217,13 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
 7. The maintainer's polish list (2026-10-27): `docs/design/polish-v0.1.md` (start screen + FAQ, header, tabbed
    Settings, backgrounds, shortcuts, AI connection, About, "Where is my save?" search, opening animation, Explorer
    right-click entry). Mockups first, then build in parts. Publishing waits until this is done.
+   - Done 2026-10-28 (local, checks pass, not yet seen in the running app): start screen + FAQ + slogan, slimmer header,
+     "Where is my save?" search/filter, scrollbar (`ce44aca`); Settings page with General, Appearance (text size %,
+     custom colors, pattern or photo), Saving & backups (age, folders) (`c649106`).
+   - Building (EVREN): AI connection tab (`w5-ai`); About + in-app notices + What's new + first-launch tour
+     (`w5-about`). Briefs ready next: `w6-shortcuts`, `w6-extras` (opening logo, Explorer entry, theme files).
+   - Gap for the MCP follow-up: a backup folder changed in Settings is not known to the MCP server (it always uses
+     `%LOCALAPPDATA%\SavePrism\backups`).
 
 ## Known gaps
 - A zip save with several JSON entries opens only the largest (Shapez 2: `local-player.json`, not `research.json` or
