@@ -45,6 +45,9 @@ pub struct GwentDeck {
     pub leader: Option<u32>,
     /// The number of cards in the deck.
     pub card_count: u32,
+    /// The card index of every card record in the deck, in save order; a card the deck holds
+    /// twice is listed twice. The leader is not among them.
+    pub cards: Vec<u32>,
 }
 
 /// The Gwent state of a Witcher 3 save.
@@ -135,10 +138,17 @@ impl Ctx<'_> {
             .and_then(|at| self.int_at(&at))
             .and_then(|value| u32::try_from(value).ok())
             .unwrap_or(0);
+        let cards = self
+            .children(deck)
+            .into_iter()
+            .filter_map(|(_, card)| self.hint(card.0)?.strip_prefix(HINT_CARD)?.parse().ok())
+            .take(MAX_CARDS)
+            .collect();
         GwentDeck {
             unlocked,
             leader,
             card_count,
+            cards,
         }
     }
 

@@ -211,6 +211,13 @@ async fn discard_changes(state: State<'_, AppState>) -> Result<(), ApiError> {
     state.with_session(|session| session.discard_changes())
 }
 
+/// Closes the open document; its pending edits are dropped and nothing is written.
+#[tauri::command]
+async fn close_file(state: State<'_, AppState>) -> Result<(), ApiError> {
+    *state.lock() = None;
+    Ok(())
+}
+
 /// Saves to `target` (the open file = overwrite with backup; another path = save as).
 /// `keep_backups` is the number of backups to keep for the file (1 to 50, 10 when missing).
 #[tauri::command]
@@ -409,6 +416,7 @@ pub fn run() {
             field_info,
             pending_changes,
             discard_changes,
+            close_file,
             save,
             export_json,
             export_json_file,

@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
-import type { Field, GwentCard, W3Card } from "@/api/commands";
+import type { Field, GwentCard, GwentDeck, W3Card } from "@/api/commands";
 import {
   buildCollection,
+  buildDeck,
   collectionSummary,
   deckRows,
   factionCounts,
@@ -162,24 +163,61 @@ describe("tileColumns", () => {
 });
 
 describe("deckRows", () => {
-  const decks = [
-    { unlocked: true, leader: 2001, cardCount: 25 },
-    { unlocked: true, leader: 1001, cardCount: 29 },
-    { unlocked: false, leader: 5002, cardCount: 0 },
+  const decks: GwentDeck[] = [
+    { unlocked: true, leader: 2001, cardCount: 25, cards: [] },
+    { unlocked: true, leader: 1001, cardCount: 29, cards: [] },
+    { unlocked: false, leader: 5002, cardCount: 0, cards: [] },
   ];
 
-  it("names the leaders and marks the selected faction's deck", () => {
+  it("takes the faction from the leader and marks the selected faction's deck", () => {
     const rows = deckRows(decks, CATALOG, "GwintFaction_NothernKingdom");
-    expect(rows.map((row) => [row.number, row.leaderName, row.faction, row.selected])).toEqual([
-      [1, "Lady of Dusk", "nilfgaard", false],
-      [2, "Lord of Ash", "northern", true],
-      [3, null, null, false],
+    expect(rows.map((row) => [row.number, row.faction, row.selected])).toEqual([
+      [1, "nilfgaard", false],
+      [2, "northern", true],
+      [3, null, false],
     ]);
   });
 
   it("without the game's files knows no factions and selects nothing", () => {
     const rows = deckRows(decks, null, "GwintFaction_NothernKingdom");
     expect(rows.every((row) => row.faction === null && !row.selected)).toBe(true);
-    expect(rows[2]).toMatchObject({ unlocked: false, cardCount: 0, leader: 5002 });
+    expect(rows[2]).toMatchObject({ number: 3, unlocked: false, cardCount: 0 });
+  });
+});
+
+describe("buildDeck", () => {
+  const deck: GwentDeck = { unlocked: true, leader: 1001, cardCount: 5, cards: [4, 9, 4, 5, 3] };
+
+  it("lists the leader first, then each card once with its copies in the deck", () => {
+    const rows = buildDeck(deck, SAVE, CATALOG);
+    expect(rows.map((row) => [row.index, row.inDeck, row.copies?.value ?? null])).toEqual([
+      [1001, 1, "1"],
+      [3, 1, "1"],
+      [4, 2, "2"],
+      [5, 1, null],
+      [9, 1, "3"],
+    ]);
+    expect(rows[0]).toMatchObject({ leader: true, name: "Lord of Ash", faction: "northern" });
+  });
+
+  it("keeps the owned count editable and marks a card the save does not hold as missing", () => {
+    const rows = buildDeck(deck, SAVE, CATALOG);
+    expect(rows.find((row) => row.index === 4)?.copies?.path).toBe("/c/4");
+    const all = { faction: "all" as const, show: "missing" as const, query: "" };
+    expect(filterCollection(rows, all, nameOf).map((row) => row.index)).toEqual([5]);
+    expect(
+      filterCollection(rows, { ...all, show: "all", query: "bard" }, nameOf).map((row) => row.index),
+    ).toEqual([4]);
+  });
+
+  it("works without the game's files and without a leader", () => {
+    const rows = buildDeck({ ...deck, leader: null }, SAVE, null);
+    expect(rows.map((row) => row.index)).toEqual([3, 4, 5, 9]);
+    expect(rows.every((row) => row.name === null && row.faction === null)).toBe(true);
+  });
+
+  it("an empty deck holds only its leader", () => {
+    const rows = buildDeck({ unlocked: false, leader: 2001, cardCount: 0, cards: [] }, SAVE, CATALOG);
+    expect(rows.map((row) => [row.index, row.copies])).toEqual([[2001, null]]);
   });
 });

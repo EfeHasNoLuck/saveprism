@@ -223,7 +223,7 @@
   },
   "gwent": {
     "title": "Gwent koleksiyonu",
-    "info": "Bu kayıttaki Gwent kartları. Yalnızca kopya sayısı değiştirilebilir; kayıtta olmayan bir kart buradan eklenemez.",
+    "info": "Bu kayıttaki Gwent kartları ve desteleri. Yalnızca sahip olunan kopya sayısı değiştirilebilir. Desteler salt okunurdur (değiştirmek deste listelerini yeniden yazmayı gerektirir) ve kayıtta olmayan bir kart buradan eklenemez.",
     "cards_one": "{{n}} kart",
     "cards_other": "{{n}} kart",
     "leaders_one": "{{n}} lider",
@@ -257,14 +257,13 @@
     "pickFailed": "Bu klasörde Gwent kartı bulunamadı.",
     "picking": "Açılıyor…",
     "empty": "Eşleşen kart yok.",
-    "decks": "Desteler",
-    "decksInfo": "Desteler burada salt okunur: değiştirmek deste listelerini yeniden yazmayı gerektirir.",
+    "view": "Koleksiyon veya deste",
+    "collection": "Koleksiyon",
     "deck": "Deste {{number}}",
-    "deckCards_one": "{{n}} kart",
-    "deckCards_other": "{{n}} kart",
+    "inDeck": "destede {{n}}",
+    "deckEmpty": "Bu destede kart yok.",
+    "deckLocked": "Bu deste kilitli ve kart içermiyor.",
     "locked": "Kilitli",
-    "selected": "Seçili",
-    "selectedFaction": "Seçili taraf",
-    "noLeader": "Lider yok"
+    "selected": "Seçili"
   }
 }

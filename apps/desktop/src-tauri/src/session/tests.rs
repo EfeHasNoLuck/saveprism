@@ -3841,6 +3841,9 @@ fn witcher3_saves_list_the_gwent_cards_and_decks() {
     assert_eq!(gwent.decks.len(), 2);
     assert_eq!(gwent.decks[0].leader, Some(4001));
     assert_eq!(gwent.decks[1].leader, Some(2001));
+    assert!(gwent.decks[0].cards.is_empty());
+    assert_eq!(gwent.decks[1].cards, vec![3, 4]);
+    assert_eq!(gwent.decks[1].card_count, 2);
 }
 
 #[test]

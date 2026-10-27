@@ -29,6 +29,8 @@
   },
   "header": {
     "openFile": "Dosya aç",
+    "closeFile": "Dosyayı kapat",
+    "closeFileTip": "Bu dosyayı kapat ve başlangıç ekranına dön",
     "notifications": "Bildirimler",
     "settings": "Ayarlar",
     "engineUnknown": "Bilinmeyen biçim",

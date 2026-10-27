@@ -29,6 +29,8 @@
   },
   "header": {
     "openFile": "Open file",
+    "closeFile": "Close file",
+    "closeFileTip": "Close this file and go back to the start screen",
     "notifications": "Notifications",
     "settings": "Settings",
     "engineUnknown": "Unknown format",

@@ -401,6 +401,8 @@ export interface GwentDeck {
   /** Card index of the deck's leader, or null. */
   leader: number | null;
   cardCount: number;
+  /** The card index of every card in the deck, in save order (a card held twice is listed twice; not the leader). */
+  cards: number[];
 }
 
 export interface GwentView {
@@ -510,6 +512,11 @@ export function pendingChanges(): Promise<Change[]> {
 
 export function discardChanges(): Promise<void> {
   return invoke<void>("discard_changes");
+}
+
+/** Closes the open document; its pending edits are dropped and nothing is written. */
+export function closeFile(): Promise<void> {
+  return invoke<void>("close_file");
 }
 
 /** Takes back the last action (one edit, "Undo all" or one JSON Apply). */

@@ -8,25 +8,25 @@ import { cn } from "@/lib/utils";
 import { AskAiButton } from "./AskAiButton";
 import type { AskAiRow } from "./askAi";
 import { countPending, useEditorContext, useFormatNumber } from "./context";
-import { FieldCell, StateBar, UndoButton, ValueInput } from "./FieldEditor";
-import { rootScale, useElementWidth, useGridColumns } from "./grid";
+import { StateBar, UndoButton, ValueInput } from "./FieldEditor";
+import { rootScale, useElementWidth } from "./grid";
 import {
   buildCollection,
+  buildDeck,
   collectionSummary,
   deckRows,
   factionCounts,
-  factionKey,
   filterCollection,
   groupByFaction,
-  GWENT_LAYOUT,
   tileColumns,
   TILE_ROWS,
   type CollectionRow,
+  type DeckRow,
   type FactionKey,
   type ShowFilter,
 } from "./gwent";
-import { pageCount, pageItems, ROWS_PER_PAGE } from "./helpers";
-import { DenseGrid, EmptyText, Pager, SearchBox, Section } from "./parts";
+import { pageCount, pageItems } from "./helpers";
+import { EmptyText, Pager, SearchBox, Section } from "./parts";
 import { fieldState, useFieldEdit } from "./useFieldEdit";
 import { ValuesCard } from "./ValuesCard";
 
@@ -91,19 +91,31 @@ function useCatalog() {
   return { catalog, picking, pick };
 }
 
-/** The filters, search and page of the collection, and the rows they leave. */
+/**
+ * The deck on show (or the whole collection), its filters, search and page, and the rows they
+ * leave.
+ */
 function useCollection(gwent: GwentView, cards: W3Card[] | null, pageSize: number) {
   const { t } = useTranslation("editor");
   const { reveal, fields, pending } = useEditorContext();
+  /** The deck on show (1-based), or null for the whole collection. */
+  const [deckChoice, setDeck] = useState<number | null>(null);
   const [factionChoice, setFaction] = useState<FactionKey | "all">("all");
   const [showChoice, setShow] = useState<ShowFilter>("all");
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(0);
-  // Without the game's list there are no factions and nothing missing to filter by.
-  const faction = cards === null ? "all" : factionChoice;
+  const chosenDeck = deckChoice === null ? undefined : gwent.decks[deckChoice - 1];
+  const deck = chosenDeck === undefined ? null : deckChoice;
+  // Without the game's list there are no factions and nothing missing to filter by; a deck has
+  // no faction tabs.
+  const faction = cards === null || deck !== null ? "all" : factionChoice;
   const show = cards === null ? "all" : showChoice;
 
-  const rows = useMemo(() => buildCollection(gwent.cards, cards), [gwent.cards, cards]);
+  const collectionRows = useMemo(() => buildCollection(gwent.cards, cards), [gwent.cards, cards]);
+  const rows = useMemo(
+    () => (chosenDeck === undefined ? collectionRows : buildDeck(chosenDeck, gwent.cards, cards)),
+    [cards, chosenDeck, collectionRows, gwent.cards],
+  );
   const nameOf = useMemo(
     () => (row: CollectionRow) => row.name ?? t("gwent.fallback", { index: row.index }),
     [t],
@@ -114,19 +126,21 @@ function useCollection(gwent: GwentView, cards: W3Card[] | null, pageSize: numbe
   );
   const shown = pageItems(filtered, page, pageSize);
 
-  // A compare row that is a copy count: drop the filters and turn to its page.
+  // A compare row that is a copy count: back to the collection, drop the filters and turn to its
+  // page.
   useEffect(() => {
     if (reveal === null) return;
-    const index = rows.findIndex((row) => row.copies?.path === reveal.path);
+    const index = collectionRows.findIndex((row) => row.copies?.path === reveal.path);
     if (index < 0) return;
     const handle = window.requestAnimationFrame(() => {
+      setDeck(null);
       setFaction("all");
       setShow("all");
       setQuery("");
       setPage(Math.floor(index / pageSize));
     });
     return () => window.cancelAnimationFrame(handle);
-  }, [reveal, rows, pageSize]);
+  }, [reveal, collectionRows, pageSize]);
 
   const ownedPaths = useMemo(
     () => gwent.cards.map((card) => card.copies.path),
@@ -155,10 +169,15 @@ function useCollection(gwent: GwentView, cards: W3Card[] | null, pageSize: numbe
   );
 
   return {
-    rows,
+    collectionRows,
     filtered,
     shown,
     nameOf,
+    deck,
+    setDeck: (value: number | null) => {
+      setDeck(value);
+      setPage(0);
+    },
     faction,
     setFaction: (value: FactionKey | "all") => {
       setFaction(value);
@@ -222,9 +241,8 @@ function Choice<T extends string>({
   );
 }
 
-/** "Leader" after a leader card's name, in the cyan accent. */
-function LeaderMark({ muted = false }: { muted?: boolean }) {
-  const { t } = useTranslation("editor");
+/** A small uppercase mark ("Leader", "Selected") in the cyan accent, or muted ("Locked"). */
+function Mark({ label, muted = false }: { label: string; muted?: boolean }) {
   return (
     <span
       className={cn(
@@ -232,8 +250,33 @@ function LeaderMark({ muted = false }: { muted?: boolean }) {
         muted ? "text-muted-foreground ring-1 ring-border" : "bg-tertiary/12 text-tertiary",
       )}
     >
-      {t("gwent.leader")}
+      {label}
     </span>
+  );
+}
+
+/** "Leader" after a leader card's name. */
+function LeaderMark({ muted = false }: { muted?: boolean }) {
+  const { t } = useTranslation("editor");
+  return <Mark label={t("gwent.leader")} muted={muted} />;
+}
+
+/** The copies a deck holds (read-only), after the card's index when it shows one. */
+function InDeck({ count, afterIndex }: { count: number | undefined; afterIndex: boolean }) {
+  const { t } = useTranslation("editor");
+  const format = useFormatNumber();
+  if (count === undefined) return null;
+  return (
+    <>
+      {afterIndex ? (
+        <span aria-hidden="true" className="shrink-0 text-[0.6875rem] text-muted-foreground">
+          ·
+        </span>
+      ) : null}
+      <span className="min-w-0 truncate text-[0.6875rem] text-muted-foreground tabular-nums">
+        {t("gwent.inDeck", { n: format(count) })}
+      </span>
+    </>
   );
 }
 
@@ -261,7 +304,7 @@ function SummaryLine({
 }) {
   const { t } = useTranslation("editor");
   const format = useFormatNumber();
-  const { cards, leaders } = collectionSummary(collection.rows);
+  const { cards, leaders } = collectionSummary(collection.collectionRows);
   const ready = catalog.status === "ready";
   const parts = ready
     ? [
@@ -384,8 +427,6 @@ function GroupHeading({
   );
 }
 
-// Layout A: tiles.
-
 /**
  * An owned card as a tile: its name (and the leader mark) on top, the index, "old → new" when
  * changed, and the copy count with − and + below. The type and limits show while the box has focus.
@@ -433,6 +474,7 @@ function OwnedTile({ row, name, field }: { row: CollectionRow; name: string; fie
                 #{row.index}
               </span>
             ) : null}
+            <InDeck count={row.inDeck} afterIndex={row.name !== null} />
             <span aria-hidden="true" className="min-w-1 flex-1" />
             <ValueInput
               edit={edit}
@@ -471,7 +513,10 @@ function MissingTile({ row, name }: { row: CollectionRow; name: string }) {
         {row.leader ? <LeaderMark muted /> : null}
       </div>
       <div className="flex h-6.5 min-w-0 items-center gap-1 text-[0.6875rem]">
-        <span className="shrink-0 font-mono tabular-nums">#{row.index}</span>
+        {row.name !== null ? (
+          <span className="shrink-0 font-mono tabular-nums">#{row.index}</span>
+        ) : null}
+        <InDeck count={row.inDeck} afterIndex={row.name !== null} />
         <span aria-hidden="true" className="min-w-1 flex-1" />
         <span className="shrink-0">{t("gwent.missing")}</span>
       </div>
@@ -479,8 +524,30 @@ function MissingTile({ row, name }: { row: CollectionRow; name: string }) {
   );
 }
 
-/** Layout A: faction tabs, then the cards as tiles in as many columns as fit, a page at a time. */
-function GwentTiles({ gwent, catalog, picking, onPick }: GwentLayoutProps) {
+/** A deck's tab: its faction (or number), card count and the Selected or Locked mark. */
+function DeckOption({ deck, name }: { deck: DeckRow; name: string }) {
+  const { t } = useTranslation("editor");
+  const format = useFormatNumber();
+  return (
+    <span className="inline-flex items-center gap-1">
+      {name}
+      <span className="font-mono text-[0.6875rem] font-normal text-muted-foreground tabular-nums">
+        {format(deck.cardCount)}
+      </span>
+      {deck.selected ? (
+        <Mark label={t("gwent.selected")} />
+      ) : !deck.unlocked ? (
+        <Mark label={t("gwent.locked")} muted />
+      ) : null}
+    </span>
+  );
+}
+
+/**
+ * The Gwent card: the collection or one deck (tabs), the faction tabs of the collection, then the
+ * cards as tiles in as many columns as fit, a page at a time.
+ */
+function GwentTiles({ gwent, catalog, picking, onPick }: GwentProps) {
   const { t } = useTranslation("editor");
   const format = useFormatNumber();
   const label = useFactionLabel();
@@ -489,15 +556,77 @@ function GwentTiles({ gwent, catalog, picking, onPick }: GwentLayoutProps) {
   const pageSize = columns * TILE_ROWS;
   const cards = catalog.status === "ready" ? catalog.cards : null;
   const collection = useCollection(gwent, cards, pageSize);
-  const counts = useMemo(() => factionCounts(collection.rows), [collection.rows]);
+  const counts = useMemo(
+    () => factionCounts(collection.collectionRows),
+    [collection.collectionRows],
+  );
   const countMap = useMemo(
     () => new Map(counts.map((count) => [count.faction, count] as const)),
     [counts],
   );
+  const decks = useMemo(
+    () => deckRows(gwent.decks, cards, gwent.selected),
+    [cards, gwent.decks, gwent.selected],
+  );
+  const deckName = (deck: DeckRow) =>
+    deck.faction !== null ? label(deck.faction) : t("gwent.deck", { number: deck.number });
+  const deck = collection.deck === null ? null : (decks[collection.deck - 1] ?? null);
+  const deckCards = collection.deck === null ? null : gwent.decks[collection.deck - 1]?.cards;
   const title = t("gwent.title");
-  const all = collectionSummary(collection.rows);
+  const all = collectionSummary(collection.collectionRows);
   const groups = groupByFaction(collection.shown);
-  const showHeadings = collection.faction === "all" && cards !== null;
+  const showHeadings = collection.faction === "all" && collection.deck === null && cards !== null;
+
+  const deckTabs =
+    decks.length > 0 ? (
+      <Choice<string>
+        label={t("gwent.view")}
+        value={collection.deck === null ? "collection" : String(collection.deck)}
+        onChange={(value) => collection.setDeck(value === "collection" ? null : Number(value))}
+        options={[
+          { value: "collection", label: t("gwent.collection") },
+          ...decks.map((row) => ({
+            value: String(row.number),
+            label: <DeckOption deck={row} name={deckName(row)} />,
+          })),
+        ]}
+      />
+    ) : null;
+  const factionTabs =
+    collection.deck === null && counts.length > 0 ? (
+      <Choice<FactionKey | "all">
+        label={t("gwent.factions")}
+        value={collection.faction}
+        onChange={collection.setFaction}
+        options={[
+          {
+            value: "all",
+            label: (
+              <>
+                {t("gwent.allFactions")}{" "}
+                <span className="font-mono text-[0.6875rem] font-normal text-muted-foreground tabular-nums">
+                  {format(all.cards.owned + all.leaders.owned)}
+                </span>
+              </>
+            ),
+          },
+          ...counts.map((count) => ({
+            value: count.faction,
+            label: (
+              <>
+                {label(count.faction)}{" "}
+                <span className="font-mono text-[0.6875rem] font-normal text-muted-foreground tabular-nums">
+                  {format(count.owned)}
+                </span>
+              </>
+            ),
+          })),
+        ]}
+      />
+    ) : null;
+  // The deck tabs keep their place; the faction tabs sit under them (beside the summary when the
+  // save has no decks) and leave while a deck is on show.
+  const firstTabs = deckTabs ?? factionTabs;
 
   return (
     <Section
@@ -509,54 +638,25 @@ function GwentTiles({ gwent, catalog, picking, onPick }: GwentLayoutProps) {
           collection={collection}
           catalog={catalog}
           pageSize={pageSize}
-          title={title}
+          title={deck === null ? title : `${title} · ${deckName(deck)}`}
         />
       }
     >
       <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5">
-        {counts.length > 0 ? (
-          <Choice<FactionKey | "all">
-            label={t("gwent.factions")}
-            value={collection.faction}
-            onChange={collection.setFaction}
-            options={[
-              {
-                value: "all",
-                label: (
-                  <>
-                    {t("gwent.allFactions")}{" "}
-                    <span className="font-mono text-[0.6875rem] font-normal text-muted-foreground tabular-nums">
-                      {format(all.cards.owned + all.leaders.owned)}
-                    </span>
-                  </>
-                ),
-              },
-              ...counts.map((count) => ({
-                value: count.faction,
-                label: (
-                  <>
-                    {label(count.faction)}{" "}
-                    <span className="font-mono text-[0.6875rem] font-normal text-muted-foreground tabular-nums">
-                      {format(count.owned)}
-                    </span>
-                  </>
-                ),
-              })),
-            ]}
-          />
-        ) : null}
+        {firstTabs}
         <SummaryLine
           collection={collection}
           catalog={catalog}
           picking={picking}
           onPick={onPick}
-          className={counts.length > 0 ? "ml-auto" : undefined}
+          className={firstTabs !== null ? "ml-auto" : undefined}
         />
       </div>
-      <div ref={ref} className="min-w-0">
-        {collection.shown.length === 0 ? (
-          <EmptyText>{t("gwent.empty")}</EmptyText>
-        ) : (
+      {deckTabs !== null && factionTabs !== null ? (
+        <div className="flex min-w-0">{factionTabs}</div>
+      ) : null}
+      <div ref={ref} className="flex min-w-0 flex-col gap-2">
+        {collection.shown.length > 0 ? (
           <div
             className="grid gap-2"
             style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
@@ -578,7 +678,12 @@ function GwentTiles({ gwent, catalog, picking, onPick }: GwentLayoutProps) {
               />
             ))}
           </div>
+        ) : deckCards?.length === 0 ? null : (
+          <EmptyText>{t("gwent.empty")}</EmptyText>
         )}
+        {deck !== null && deckCards?.length === 0 ? (
+          <EmptyText>{deck.unlocked ? t("gwent.deckEmpty") : t("gwent.deckLocked")}</EmptyText>
+        ) : null}
       </div>
     </Section>
   );
@@ -607,188 +712,25 @@ function TileGroup({
   );
 }
 
-// Layout B: a dense list and the decks.
-
-/** A card the save does not hold, as a muted row of the dense list. */
-function MissingRow({ row, name }: { row: CollectionRow; name: string }) {
-  const { t } = useTranslation("editor");
-  return (
-    <div className="flex h-7 min-w-0 items-center gap-1 rounded-sm pr-2 pl-2 text-xs text-muted-foreground">
-      <span className="min-w-14 truncate" title={name}>
-        {name}
-      </span>
-      {row.leader ? <LeaderMark muted /> : null}
-      <span className="shrink-0 font-mono text-[0.6875rem] tabular-nums">#{row.index}</span>
-      <span aria-hidden="true" className="min-w-1 flex-1" />
-      <span className="shrink-0 text-[0.6875rem]">{t("gwent.missing")}</span>
-    </div>
-  );
-}
-
-/** Layout B: the cards grouped by faction in dense columns, a page at a time. */
-function GwentList({ gwent, catalog, picking, onPick }: GwentLayoutProps) {
-  const { t } = useTranslation("editor");
-  const { ref, columns } = useGridColumns();
-  const pageSize = columns * ROWS_PER_PAGE;
-  const cards = catalog.status === "ready" ? catalog.cards : null;
-  const collection = useCollection(gwent, cards, pageSize);
-  const counts = useMemo(
-    () => new Map(factionCounts(collection.rows).map((count) => [count.faction, count] as const)),
-    [collection.rows],
-  );
-  const title = t("gwent.title");
-  const groups = groupByFaction(collection.shown);
-
-  return (
-    <div className="grid items-start gap-2.5 lg:grid-cols-[minmax(0,1fr)_16rem]">
-      <Section
-        title={title}
-        changed={collection.changed}
-        info={t("gwent.info")}
-        aside={
-          <HeaderControls
-            collection={collection}
-            catalog={catalog}
-            pageSize={pageSize}
-            title={title}
-          />
-        }
-      >
-        <SummaryLine collection={collection} catalog={catalog} picking={picking} onPick={onPick} />
-        <div ref={ref} className="flex min-w-0 flex-col gap-2">
-          {collection.shown.length === 0 ? (
-            <EmptyText>{t("gwent.empty")}</EmptyText>
-          ) : (
-            groups.map((group, index) => (
-              <div key={`${group.faction ?? "none"}-${index}`} className="flex flex-col gap-1">
-                {group.faction !== null ? (
-                  <GroupHeading faction={group.faction} counts={counts} className="pl-2" />
-                ) : null}
-                <DenseGrid columns={columns} count={group.rows.length}>
-                  {group.rows.map((row) => {
-                    const name = collection.nameOf(row);
-                    return row.copies === null ? (
-                      <MissingRow key={`missing-${row.index}`} row={row} name={name} />
-                    ) : (
-                      <FieldCell
-                        key={row.copies.path}
-                        field={row.copies}
-                        name={name}
-                        id={row.name !== null ? row.index : undefined}
-                        nameNode={
-                          row.leader ? (
-                            <>
-                              <span className="min-w-14 truncate" title={name}>
-                                {name}
-                              </span>
-                              <LeaderMark />
-                            </>
-                          ) : undefined
-                        }
-                      />
-                    );
-                  })}
-                </DenseGrid>
-              </div>
-            ))
-          )}
-        </div>
-      </Section>
-      <DecksCard gwent={gwent} cards={cards} />
-    </div>
-  );
-}
-
-/** The five decks (read-only): faction or number, leader, card count; the selected one in cyan. */
-function DecksCard({ gwent, cards }: { gwent: GwentView; cards: W3Card[] | null }) {
-  const { t } = useTranslation("editor");
-  const format = useFormatNumber();
-  const label = useFactionLabel();
-  const decks = deckRows(gwent.decks, cards, gwent.selected);
-  const selected = factionKey(gwent.selected);
-  return (
-    <Section title={t("gwent.decks")} count={format(decks.length)} info={t("gwent.decksInfo")}>
-      {selected !== null ? (
-        <div className="flex h-6 min-w-0 items-center gap-3 text-xs">
-          <span className="shrink-0 text-muted-foreground">{t("gwent.selectedFaction")}</span>
-          <span className="ml-auto min-w-0 truncate font-medium text-tertiary">
-            {label(selected)}
-          </span>
-        </div>
-      ) : null}
-      <ul className="flex flex-col gap-1">
-        {decks.map((deck) => {
-          const leader =
-            deck.leaderName ??
-            (deck.leader === null
-              ? t("gwent.noLeader")
-              : t("gwent.fallback", { index: deck.leader }));
-          return (
-            <li
-              key={deck.number}
-              className={cn(
-                "relative flex flex-col rounded-sm py-1 pr-2 pl-2.5",
-                deck.selected ? "bg-surface-container" : "hover:bg-surface-container/60",
-              )}
-            >
-              {deck.selected ? (
-                <span
-                  aria-hidden="true"
-                  className="absolute inset-y-0 left-0 w-[3px] rounded-l-sm bg-tertiary"
-                />
-              ) : null}
-              <div className="flex h-5 min-w-0 items-center gap-2 text-xs">
-                <span
-                  className={cn(
-                    "min-w-0 truncate font-medium",
-                    !deck.unlocked && "text-muted-foreground",
-                  )}
-                >
-                  {deck.faction !== null
-                    ? label(deck.faction)
-                    : t("gwent.deck", { number: deck.number })}
-                </span>
-                <span className="ml-auto shrink-0 text-[0.6875rem]">
-                  {deck.selected ? (
-                    <span className="font-medium text-tertiary">{t("gwent.selected")}</span>
-                  ) : !deck.unlocked ? (
-                    <span className="text-muted-foreground">{t("gwent.locked")}</span>
-                  ) : null}
-                </span>
-              </div>
-              <div className="flex h-5 min-w-0 items-center gap-2 text-[0.6875rem] text-muted-foreground">
-                <span className="min-w-0 truncate" title={leader}>
-                  {leader}
-                </span>
-                <span className="ml-auto shrink-0 tabular-nums">
-                  {t("gwent.deckCards", { count: deck.cardCount, n: format(deck.cardCount) })}
-                </span>
-              </div>
-            </li>
-          );
-        })}
-      </ul>
-    </Section>
-  );
-}
-
-interface GwentLayoutProps {
+interface GwentProps {
   gwent: GwentView;
   catalog: Catalog;
   picking: boolean;
   onPick: () => void;
 }
 
-/** Witcher 3 saves: the Gwent collection above the Values list of the whole save. */
+/** Witcher 3 saves: the Gwent collection and decks above the Values list of the whole save. */
 export function Witcher3({ view }: { view: Witcher3View }) {
   const { catalog, picking, pick } = useCatalog();
-  const props = { catalog, picking, onPick: () => void pick() };
   return (
     <div className="flex flex-col gap-2.5">
-      {view.gwent === null ? null : GWENT_LAYOUT === "a" ? (
-        <GwentTiles gwent={view.gwent} {...props} />
-      ) : (
-        <GwentList gwent={view.gwent} {...props} />
+      {view.gwent === null ? null : (
+        <GwentTiles
+          gwent={view.gwent}
+          catalog={catalog}
+          picking={picking}
+          onPick={() => void pick()}
+        />
       )}
       <ValuesCard rows={view.rows} addParent={view.addParent} />
     </div>

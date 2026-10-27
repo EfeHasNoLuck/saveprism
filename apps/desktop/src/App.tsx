@@ -6,6 +6,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Info, TriangleAlert } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import {
+  closeFile,
   copyCode,
   discardChanges,
   editValues,
@@ -103,6 +104,8 @@ function App() {
   const [exporting, setExporting] = useState(false);
   /** The window's close button was pressed while there were unsaved changes. */
   const [closeAsked, setCloseAsked] = useState(false);
+  /** "Close file" was pressed while there were unsaved changes. */
+  const [closeFileAsked, setCloseFileAsked] = useState(false);
   /** The "Paste code" dialog is open, with the text it starts with. */
   const [pasteRequest, setPasteRequest] = useState<{ text: string } | null>(null);
   /** A copied code the clipboard refused, shown to copy by hand. */
@@ -421,6 +424,35 @@ function App() {
       .catch((error: unknown) => notifyError(t("toast.closeFailed"), error));
   }, [notifyError, t]);
 
+  /** Closes the open file (its pending edits are dropped) and goes back to the start screen. */
+  const closeOpenFile = useCallback(async () => {
+    setCloseFileAsked(false);
+    setBusy(true);
+    try {
+      // Nothing is written; the host only lets go of the document.
+      await closeFile();
+    } catch {
+      // The host keeps it until the next file replaces it; the start screen shows either way.
+    } finally {
+      setBusy(false);
+    }
+    setFile(null);
+    resetChanges();
+    setHistory(NO_HISTORY);
+    setInvalid(false);
+    setJsonDirty(false);
+  }, [resetChanges]);
+
+  /** "Close file": with unsaved changes it asks first. Ignored while another action runs. */
+  const requestCloseFile = useCallback(() => {
+    if (busy || jsonOpen || file === null) return;
+    if (changeCount > 0) {
+      setCloseFileAsked(true);
+      return;
+    }
+    void closeOpenFile();
+  }, [busy, changeCount, closeOpenFile, file, jsonOpen]);
+
   const afterSave = useCallback(
     async (target: string, overwrite: boolean) => {
       setBusy(true);
@@ -714,6 +746,7 @@ function App() {
         passwordRequest !== null ||
         pendingOpen !== null ||
         closeAsked ||
+        closeFileAsked ||
         document.querySelector('[role="menu"]') !== null;
       if (modal || busy) return;
       if (action === "open") {
@@ -779,6 +812,7 @@ function App() {
           file={file}
           onOpenFile={() => void chooseAndOpen()}
           onPasteCode={() => requestPaste()}
+          onCloseFile={requestCloseFile}
           onOpenSettings={() => setSettingsOpen(true)}
         />
 
@@ -954,6 +988,14 @@ function App() {
             count={changeCount + (jsonDirty ? 1 : 0)}
             onCancel={() => setCloseAsked(false)}
             onDiscard={closeWithoutSaving}
+          />
+        ) : null}
+        {closeFileAsked ? (
+          <ConfirmDiscardDialog
+            reason="close"
+            count={changeCount}
+            onCancel={() => setCloseFileAsked(false)}
+            onDiscard={() => void closeOpenFile()}
           />
         ) : null}
         <Toasts />

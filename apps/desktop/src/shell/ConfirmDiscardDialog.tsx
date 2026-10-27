@@ -11,13 +11,13 @@ import {
 
 interface ConfirmDiscardDialogProps {
   count: number;
-  /** What happens after the discard: another file opens (default) or the window closes. */
+  /** What happens after the discard: another file opens (default), or the file or window closes. */
   reason?: "open" | "close";
   onDiscard: () => void;
   onCancel: () => void;
 }
 
-/** Asks before unsaved changes are thrown away to open another file or to close the window. */
+/** Asks before unsaved changes are lost to open another file or to close the file or window. */
 export function ConfirmDiscardDialog({
   count,
   reason = "open",

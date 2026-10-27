@@ -2,12 +2,6 @@
 
 import type { Field, GwentCard, GwentDeck, W3Card } from "@/api/commands";
 
-/**
- * The Gwent layout on show: "a" card tiles under faction tabs, "b" a dense list grouped by faction
- * beside a deck summary. One of them is removed once the maintainer has picked.
- */
-export const GWENT_LAYOUT: "a" | "b" = "a";
-
 /** The factions the view groups by; `other` holds a faction the view does not know. */
 export type FactionKey =
   | "northern"
@@ -55,6 +49,8 @@ export interface CollectionRow {
   leader: boolean;
   /** The copy count when the save has the card, else null (missing). */
   copies: Field | null;
+  /** In a deck's rows: the copies the deck holds (read-only). */
+  inDeck?: number;
 }
 
 function factionRank(faction: FactionKey | null): number {
@@ -70,6 +66,32 @@ export function compareRows(a: CollectionRow, b: CollectionRow): number {
   );
 }
 
+function catalogMap(catalog: readonly W3Card[] | null): Map<number, W3Card> {
+  const known = new Map<number, W3Card>();
+  for (const card of catalog ?? []) known.set(card.index, card);
+  return known;
+}
+
+/**
+ * The row of card `index`: its name and faction from the game's list (an index the list does not
+ * have goes under "other"; without the list there are no factions) and the save's copy count.
+ */
+function cardRow(
+  index: number,
+  card: GwentCard | undefined,
+  definition: W3Card | undefined,
+  hasCatalog: boolean,
+): CollectionRow {
+  return {
+    index,
+    name: definition?.name ?? null,
+    faction:
+      definition !== undefined ? factionKey(definition.faction) : hasCatalog ? "other" : null,
+    leader: card?.leader === true || definition?.leader === true,
+    copies: card?.copies ?? null,
+  };
+}
+
 /**
  * The owned cards of the save with their names, plus every card of the game's list the save does
  * not hold (missing). Without the game's list (`catalog` null) only the owned cards are listed.
@@ -78,20 +100,11 @@ export function buildCollection(
   owned: readonly GwentCard[],
   catalog: readonly W3Card[] | null,
 ): CollectionRow[] {
-  const known = new Map<number, W3Card>();
-  for (const card of catalog ?? []) known.set(card.index, card);
+  const known = catalogMap(catalog);
   const ownedIndexes = new Set<number>();
   const rows: CollectionRow[] = owned.map((card) => {
     ownedIndexes.add(card.index);
-    const definition = known.get(card.index);
-    return {
-      index: card.index,
-      name: definition?.name ?? null,
-      faction:
-        definition !== undefined ? factionKey(definition.faction) : catalog === null ? null : "other",
-      leader: card.leader || definition?.leader === true,
-      copies: card.copies,
-    };
+    return cardRow(card.index, card, known.get(card.index), catalog !== null);
   });
   for (const definition of catalog ?? []) {
     if (ownedIndexes.has(definition.index)) continue;
@@ -176,7 +189,7 @@ export function factionCounts(
   });
 }
 
-/** Rows split into runs of one faction, in their order (for the grouped list). */
+/** Rows split into runs of one faction, in their order (for the faction headings). */
 export function groupByFaction(
   rows: readonly CollectionRow[],
 ): { faction: FactionKey | null; rows: CollectionRow[] }[] {
@@ -201,29 +214,25 @@ export function tileColumns(width: number): number {
   return Math.max(1, Math.floor((width + TILE_GAP) / (MIN_TILE + TILE_GAP)));
 }
 
-/** One deck as the deck card shows it. */
+/** One deck as its tab shows it. */
 export interface DeckRow {
   /** 1-based position in the save. */
   number: number;
   unlocked: boolean;
   cardCount: number;
-  leader: number | null;
-  /** The leader's name from the game's files, or null. */
-  leaderName: string | null;
   /** The deck's faction (its leader's), or null without the game's files. */
   faction: FactionKey | null;
   /** The deck of the selected faction. */
   selected: boolean;
 }
 
-/** The decks with their leader names and factions, and which one is selected. */
+/** The decks with their factions, and which one is selected. */
 export function deckRows(
   decks: readonly GwentDeck[],
   catalog: readonly W3Card[] | null,
   selected: string | null,
 ): DeckRow[] {
-  const known = new Map<number, W3Card>();
-  for (const card of catalog ?? []) known.set(card.index, card);
+  const known = catalogMap(catalog);
   const selectedFaction = factionKey(selected);
   return decks.map((deck, position) => {
     const leader = deck.leader === null ? undefined : known.get(deck.leader);
@@ -232,10 +241,31 @@ export function deckRows(
       number: position + 1,
       unlocked: deck.unlocked,
       cardCount: deck.cardCount,
-      leader: deck.leader,
-      leaderName: leader?.name ?? null,
       faction,
       selected: faction !== null && faction === selectedFaction,
     };
   });
+}
+
+/**
+ * The cards of one deck: its leader first, then each card once in collection order, with the
+ * copies the deck holds (`inDeck`) and the save's owned count (`copies`, null when not owned).
+ */
+export function buildDeck(
+  deck: GwentDeck,
+  owned: readonly GwentCard[],
+  catalog: readonly W3Card[] | null,
+): CollectionRow[] {
+  const known = catalogMap(catalog);
+  const ownedByIndex = new Map<number, GwentCard>();
+  for (const card of owned) if (!ownedByIndex.has(card.index)) ownedByIndex.set(card.index, card);
+  const counts = new Map<number, number>();
+  for (const index of deck.cards) counts.set(index, (counts.get(index) ?? 0) + 1);
+  const row = (index: number, inDeck: number): CollectionRow => ({
+    ...cardRow(index, ownedByIndex.get(index), known.get(index), catalog !== null),
+    inDeck,
+  });
+  const cards = [...counts].map(([index, count]) => row(index, count)).sort(compareRows);
+  if (deck.leader === null) return cards;
+  return [{ ...row(deck.leader, 1), leader: true }, ...cards];
 }

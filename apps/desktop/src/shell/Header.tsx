@@ -1,4 +1,4 @@
-import { ClipboardPaste, FileText, FolderOpen, Settings as SettingsIcon } from "lucide-react";
+import { ClipboardPaste, FileText, FolderOpen, Settings as SettingsIcon, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { OpenInfo } from "@/api/commands";
 import { Button } from "@/components/ui/button";
@@ -14,10 +14,22 @@ interface HeaderProps {
   onOpenFile: () => void;
   /** Opens the dialog that takes a pasted save code. */
   onPasteCode: () => void;
+  /** Closes the open file (or pasted code) and goes back to the start screen. */
+  onCloseFile: () => void;
   onOpenSettings: () => void;
 }
 
-export function Header({ file, onOpenFile, onPasteCode, onOpenSettings }: HeaderProps) {
+/**
+ * The top bar. With no file open it offers Paste code and Open file; while a file is open, one
+ * Close file button takes their place (the start screen offers them again).
+ */
+export function Header({
+  file,
+  onOpenFile,
+  onPasteCode,
+  onCloseFile,
+  onOpenSettings,
+}: HeaderProps) {
   const { t } = useTranslation();
   const { settings } = useSettings();
   const known = file ? engineLabel(file.fileName, file.codec, file.engine) : null;
@@ -56,25 +68,40 @@ export function Header({ file, onOpenFile, onPasteCode, onOpenSettings }: Header
         ) : null}
       </div>
       <div className="flex shrink-0 items-center gap-0.5">
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={onPasteCode}
-          title={t("header.pasteCodeTip")}
-          className="mr-1 bg-surface-container hover:bg-surface-high"
-        >
-          <ClipboardPaste />
-          {t("header.pasteCode")}
-        </Button>
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={onOpenFile}
-          className="mr-1.5 bg-surface-container hover:bg-surface-high"
-        >
-          <FolderOpen />
-          {t("header.openFile")}
-        </Button>
+        {file ? (
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={onCloseFile}
+            title={t("header.closeFileTip")}
+            className="mr-1.5 bg-surface-container hover:bg-surface-high"
+          >
+            <X />
+            {t("header.closeFile")}
+          </Button>
+        ) : (
+          <>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={onPasteCode}
+              title={t("header.pasteCodeTip")}
+              className="mr-1 bg-surface-container hover:bg-surface-high"
+            >
+              <ClipboardPaste />
+              {t("header.pasteCode")}
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={onOpenFile}
+              className="mr-1.5 bg-surface-container hover:bg-surface-high"
+            >
+              <FolderOpen />
+              {t("header.openFile")}
+            </Button>
+          </>
+        )}
         <LanguageSwitcher />
         <ThemeToggle />
         {settings.showNotifications ? <Bell /> : null}

@@ -223,7 +223,7 @@
   },
   "gwent": {
     "title": "Gwent collection",
-    "info": "The Gwent cards this save holds. Only the number of copies can be changed; a card the save does not hold cannot be added here.",
+    "info": "The Gwent cards this save holds and its decks. Only the number of copies owned can be changed. The decks are read-only (changing them would rewrite the deck lists), and a card the save does not hold cannot be added here.",
     "cards_one": "{{n}} card",
     "cards_other": "{{n}} cards",
     "leaders_one": "{{n}} leader",
@@ -257,14 +257,13 @@
     "pickFailed": "No Gwent cards were found in that folder.",
     "picking": "Opening…",
     "empty": "No cards match.",
-    "decks": "Decks",
-    "decksInfo": "The decks are read-only here: changing them would rewrite the deck lists.",
+    "view": "Collection or deck",
+    "collection": "Collection",
     "deck": "Deck {{number}}",
-    "deckCards_one": "{{n}} card",
-    "deckCards_other": "{{n}} cards",
+    "inDeck": "{{n}} in deck",
+    "deckEmpty": "This deck holds no cards.",
+    "deckLocked": "This deck is locked and holds no cards.",
     "locked": "Locked",
-    "selected": "Selected",
-    "selectedFaction": "Selected faction",
-    "noLeader": "No leader"
+    "selected": "Selected"
   }
 }
