@@ -220,8 +220,11 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
    - Done 2026-10-28 (local, checks pass, not yet seen in the running app): start screen + FAQ + slogan, slimmer header,
      "Where is my save?" search/filter, scrollbar (`ce44aca`); Settings page with General, Appearance (text size %,
      custom colors, pattern or photo), Saving & backups (age, folders) (`c649106`).
-   - Building (EVREN): AI connection tab (`w5-ai`); About + in-app notices + What's new + first-launch tour
-     (`w5-about`). Briefs ready next: `w6-shortcuts`, `w6-extras` (opening logo, Explorer entry, theme files).
+   - Done 2026-10-28 (local, checks pass): AI connection tab (`f04f7d7`); About + in-app notices + What's new
+     (`CHANGELOG.md`) + first-launch tour (`5a5db1d`); rebindable shortcuts (`7f89bad`); opening logo, Explorer
+     "Decode with SavePrism" entry (NSIS + MSI) with single-instance file hand-off, theme file export/import
+     (`01027c7`). Visual check of all of it in the running app: brief `.motor/vcheck-1028.md`, running.
+     The Explorer entry is not tested on an installed app yet (the next MSI test).
    - Gap for the MCP follow-up: a backup folder changed in Settings is not known to the MCP server (it always uses
      `%LOCALAPPDATA%\SavePrism\backups`).
 
