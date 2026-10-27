@@ -324,7 +324,8 @@ export interface Actor {
 
 export interface RpgMakerView {
   engine: "mv" | "mz" | "xp" | "vx" | "vxace" | "2k" | "2k3";
-  gold: Field;
+  /** The party's gold, or null when the save has no Game_Party (Pokémon Essentials). */
+  gold: Field | null;
   actors: Actor[];
   items: Entry[];
   weapons: Entry[];

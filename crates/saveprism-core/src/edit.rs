@@ -223,7 +223,7 @@ fn float_for_width(v: f64, width: FloatWidth, path: &Path) -> Result<f64> {
             let narrowed = f64::from(v as f32);
             if v.is_finite() && !narrowed.is_finite() {
                 return Err(edit_error(format!(
-                    "value {v} is too large for the 32-bit float at '{path}'"
+                    "value {v} at '{path}' is outside the 32-bit float range (-3.4028235e38 to 3.4028235e38)"
                 )));
             }
             Ok(narrowed)

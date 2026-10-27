@@ -15,8 +15,8 @@
 use std::collections::{HashMap, HashSet};
 
 use saveprism_core::{
-    Codec, DecodeCtx, Decoded, Error, Node, NodeFlags, NodeId, Params, Result, SaveDoc, TypeHint,
-    Value,
+    Codec, DecodeCtx, Decoded, Error, FloatWidth, Node, NodeFlags, NodeId, Params, Result, SaveDoc,
+    TypeHint, Value,
 };
 
 use super::{ES3_ROOT, ES3_UNSUPPORTED};
@@ -204,6 +204,12 @@ fn copy_node(
     match mode {
         Mode::Annotate => {
             if let Some(hint) = hints.get(&id) {
+                if is_single(hint)
+                    && let Value::Float { v, width } = &mut copy.value
+                {
+                    *v = f64::from(*v as f32);
+                    *width = FloatWidth::F32;
+                }
                 copy.type_hint = Some(TypeHint::new(hint.as_str()));
             }
             if read_only.contains(&id) || is_bare_key_object(&copy) {
@@ -221,6 +227,14 @@ fn copy_node(
         }
     }
     copy
+}
+
+/// True for an Easy Save 3 number type stored as a 32-bit float.
+fn is_single(hint: &str) -> bool {
+    matches!(
+        hint.strip_prefix("ES3:"),
+        Some("float" | "System.Single" | "Single")
+    )
 }
 
 /// True for an object whose keys were written bare (a dictionary whose key type is not a string).

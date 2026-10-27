@@ -223,6 +223,43 @@ mod tests {
     }
 
     #[test]
+    fn float_values_have_the_32_bit_width_and_narrow_on_edit() {
+        let decoded = decode(&fixture("settings.es3")).unwrap();
+        let id = decoded
+            .doc
+            .resolve(&Path::parse("/volume/value").unwrap())
+            .unwrap();
+        assert_eq!(
+            decoded.doc.get(id).unwrap().value,
+            saveprism_core::Value::Float {
+                v: 0.75,
+                width: saveprism_core::FloatWidth::F32
+            }
+        );
+
+        let mut doc = decoded.doc.clone();
+        apply_edits(
+            &mut doc,
+            &[Edit::Set {
+                path: Path::parse("/volume/value").unwrap(),
+                value: OwnedValue::Float(16_777_217.0),
+            }],
+            &Limits::default(),
+        )
+        .unwrap();
+        let id = doc.resolve(&Path::parse("/volume/value").unwrap()).unwrap();
+        assert_eq!(
+            doc.get(id).unwrap().value,
+            saveprism_core::Value::Float {
+                v: 16_777_216.0,
+                width: saveprism_core::FloatWidth::F32
+            }
+        );
+        let text = String::from_utf8(Es3Codec.encode(&doc, &decoded.params).unwrap()).unwrap();
+        assert!(text.contains("\"value\": 16777216.0"), "{text}");
+    }
+
+    #[test]
     fn json_without_type_opens_without_hints() {
         let decoded = decode(br#"{"a":1,"b":{"value":2}}"#).unwrap();
         assert_eq!(hint_at(&decoded, "/a").as_deref(), Some("JSON:int"));

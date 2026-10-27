@@ -375,7 +375,7 @@ mod tests {
         let mut second = open(&edited);
         let gold = second.game_view().unwrap();
         let gold = match gold {
-            crate::session::GameView::Rpgmaker { view } => view.gold,
+            crate::session::GameView::Rpgmaker { view } => view.gold.unwrap(),
             _ => panic!("the MV fixture must open as an RPG Maker save"),
         };
         let old = gold.value.parse::<i64>().unwrap();

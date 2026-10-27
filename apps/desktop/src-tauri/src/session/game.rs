@@ -176,8 +176,9 @@ pub struct Actor {
 pub struct RpgMakerView {
     /// "mv", "mz", "xp", "vx", "vxace", "2k" or "2k3".
     pub engine: String,
-    /// The party's gold.
-    pub gold: Field,
+    /// The party's gold, `None` when the save has no `Game_Party` (Pokémon Essentials keeps its
+    /// money in its own trainer object).
+    pub gold: Option<Field>,
     /// Party members.
     pub actors: Vec<Actor>,
     /// Items in the inventory.
@@ -1020,7 +1021,7 @@ impl Ctx<'_> {
         };
         Some(RpgMakerView {
             engine: engine.to_string(),
-            gold,
+            gold: Some(gold),
             actors: self.actors(&root, &party),
             items: self.counts(&party, "_items", &names.items),
             weapons: self.counts(&party, "_weapons", &names.weapons),

@@ -29,8 +29,9 @@ use saveprism_core::detect::{DetectOptions, detect};
 use saveprism_core::guard::{Verdict, check_round_trip};
 use saveprism_core::io::{WriteOptions, default_backup_root, safe_write};
 use saveprism_core::{
-    Confidence, DecodeOutput, Edit, Error, ErrorCode, Limits, NodeFlags, NodeId, OwnedValue,
-    Params, Path, Recipe, Registry, SaveDoc, SniffCtx, Step, Value, apply_edits, codes, pipeline,
+    Confidence, DecodeOutput, Edit, Error, ErrorCode, FloatWidth, Limits, NodeFlags, NodeId,
+    OwnedValue, Params, Path, Recipe, Registry, SaveDoc, SniffCtx, Step, Value, apply_edits, codes,
+    pipeline,
 };
 use serde::Serialize;
 
@@ -796,8 +797,19 @@ fn parse_input(current: &Value, text: &str) -> Result<OwnedValue, ApiError> {
             }
             Ok(OwnedValue::Int(value))
         }
-        Value::Float { .. } => match trimmed.parse::<f64>() {
-            Ok(value) if value.is_finite() => Ok(OwnedValue::Float(value)),
+        Value::Float { width, .. } => match trimmed.parse::<f64>() {
+            Ok(value) if value.is_finite() => {
+                if *width == FloatWidth::F32 && !(value as f32).is_finite() {
+                    return Err(ApiError::new(
+                        app_codes::OUT_OF_RANGE,
+                        format!(
+                            "{value} is outside the range of this 32-bit value (-3.4028235e38 to 3.4028235e38)"
+                        ),
+                        "Type a number from -3.4028235e38 to 3.4028235e38.",
+                    ));
+                }
+                Ok(OwnedValue::Float(value))
+            }
             _ => Err(ApiError::new(
                 app_codes::BAD_VALUE,
                 format!("\"{}\" is not a finite number", quote(text)),

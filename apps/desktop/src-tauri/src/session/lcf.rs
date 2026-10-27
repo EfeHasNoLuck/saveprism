@@ -405,7 +405,7 @@ impl Ctx<'_> {
         let [items, weapons, armors] = self.lcf_items(&inventory, names);
         Some(RpgMakerView {
             engine: self.lcf_engine(names).to_string(),
-            gold,
+            gold: Some(gold),
             actors: self.lcf_actors(&root, &inventory, names),
             items,
             weapons,

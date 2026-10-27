@@ -23,10 +23,12 @@ use std::sync::Arc;
 
 use saveprism_core::limits::len_u64;
 use saveprism_core::{
-    Codec, Confidence, DecodeCtx, Decoded, Error, ErrorCode, ParamValue, Params, Registry, Result,
-    SaveDoc, SniffCtx, codes,
+    Codec, Confidence, DecodeCtx, Decoded, Error, ErrorCode, FloatWidth, NodeId, ParamValue,
+    Params, Path, Registry, Result, SaveDoc, SniffCtx, Value, codes,
 };
-use uesave::{Save, SaveReader, Types};
+use uesave::{
+    PropertySchemas, PropertyTagDataPartial, PropertyType as GvasType, Save, SaveReader, Types,
+};
 
 use crate::json::JsonCodec;
 
@@ -129,6 +131,92 @@ fn write_save(save: &Save) -> Result<Vec<u8>> {
     })
 }
 
+/// The property name without the `_<index>` suffix `uesave` adds to each key.
+fn property_name(key: &str) -> &str {
+    match key.rsplit_once('_') {
+        Some((name, index))
+            if !index.is_empty() && index.bytes().all(|byte| byte.is_ascii_digit()) =>
+        {
+            name
+        }
+        _ => key,
+    }
+}
+
+/// Collects the nodes whose schema says `FloatProperty`, so they get the 32-bit width of the file
+/// instead of the default 64-bit width of JSON numbers.
+fn collect_f32(
+    doc: &SaveDoc,
+    schemas: &PropertySchemas,
+    id: NodeId,
+    data: &PropertyTagDataPartial,
+    prefix: &str,
+    out: &mut Vec<NodeId>,
+) {
+    let Some(node) = doc.get(id) else {
+        return;
+    };
+    match (data, &node.value) {
+        (PropertyTagDataPartial::Other(GvasType::FloatProperty), Value::Float { .. }) => {
+            out.push(id);
+        }
+        (PropertyTagDataPartial::Array(inner), Value::Array(items)) => {
+            for child in items {
+                collect_f32(doc, schemas, *child, inner, prefix, out);
+            }
+        }
+        (PropertyTagDataPartial::Set { key_type }, Value::Array(items)) => {
+            for child in items {
+                collect_f32(doc, schemas, *child, key_type, prefix, out);
+            }
+        }
+        (PropertyTagDataPartial::Struct { .. }, Value::Object(entries)) => {
+            for (key, child) in entries {
+                let name = property_name(key);
+                let path = format!("{prefix}.{name}");
+                if let Some(tag) = schemas.get(&path) {
+                    collect_f32(doc, schemas, *child, &tag.data, &path, out);
+                }
+            }
+        }
+        _ => {}
+    }
+}
+
+/// Gives every `FloatProperty` node of a decoded save the `F32` width, with its value narrowed to
+/// the nearest 32-bit float. The lexeme stays, so an unchanged save still writes byte for byte.
+fn mark_float32(doc: &mut SaveDoc, schemas: &PropertySchemas) -> Result<()> {
+    let Ok(path) = Path::parse("/root/properties") else {
+        return Ok(());
+    };
+    let Some(root) = doc.resolve(&path) else {
+        return Ok(());
+    };
+    let Some(Value::Object(entries)) = doc.get(root).map(|node| node.value.clone()) else {
+        return Ok(());
+    };
+    let mut marked = Vec::new();
+    for (key, child) in entries {
+        let name = property_name(&key);
+        if let Some(tag) = schemas.get(&key).or_else(|| schemas.get(name)) {
+            collect_f32(doc, schemas, child, &tag.data, name, &mut marked);
+        }
+    }
+    for id in marked {
+        let Some(Value::Float { v, .. }) = doc.get(id).map(|node| node.value.clone()) else {
+            continue;
+        };
+        doc.set_value_keep_lexeme(
+            id,
+            Value::Float {
+                v: f64::from(v as f32),
+                width: FloatWidth::F32,
+            },
+        )?;
+    }
+    Ok(())
+}
+
 impl Codec for GvasCodec {
     fn id(&self) -> &'static str {
         "format.gvas"
@@ -158,6 +246,7 @@ impl Codec for GvasCodec {
         ctx.check_output(input_len, len_u64(json.len()))?;
 
         let mut decoded = JsonCodec.decode(json.as_bytes(), ctx)?;
+        mark_float32(&mut decoded.doc, &save.schemas)?;
         decoded.params.set(TYPES_KEY, stored);
         Ok(decoded)
     }
@@ -172,5 +261,123 @@ impl Codec for GvasCodec {
             .with_source(source)
         })?;
         write_save(&save)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use saveprism_core::edit::build_doc;
+    use saveprism_core::{FloatWidth, Limits, OwnedValue, Value};
+    use uesave::{PropertySchemas, PropertyTagDataPartial, PropertyTagPartial, PropertyType};
+
+    use super::mark_float32;
+
+    fn tag(data: PropertyTagDataPartial) -> PropertyTagPartial {
+        PropertyTagPartial { id: None, data }
+    }
+
+    #[test]
+    fn float_properties_get_the_32_bit_width_and_narrow_their_value() {
+        let mut schemas = PropertySchemas::new();
+        schemas.record(
+            "f_property".to_string(),
+            tag(PropertyTagDataPartial::Other(PropertyType::FloatProperty)),
+        );
+        schemas.record(
+            "d_property".to_string(),
+            tag(PropertyTagDataPartial::Other(PropertyType::DoubleProperty)),
+        );
+        schemas.record(
+            "floats".to_string(),
+            tag(PropertyTagDataPartial::Array(Box::new(
+                PropertyTagDataPartial::Other(PropertyType::FloatProperty),
+            ))),
+        );
+
+        let value = OwnedValue::Object(vec![(
+            "root".to_string(),
+            OwnedValue::Object(vec![(
+                "properties".to_string(),
+                OwnedValue::Object(vec![
+                    ("f_property_0".to_string(), OwnedValue::Float(0.1)),
+                    ("d_property_0".to_string(), OwnedValue::Float(0.1)),
+                    (
+                        "floats_0".to_string(),
+                        OwnedValue::Array(vec![OwnedValue::Float(0.1), OwnedValue::Float(2.5)]),
+                    ),
+                ]),
+            )]),
+        )]);
+        let mut doc = build_doc(&value, &Limits::default()).unwrap();
+        mark_float32(&mut doc, &schemas).unwrap();
+
+        let float = doc
+            .resolve(&saveprism_core::Path::parse("/root/properties/f_property_0").unwrap())
+            .unwrap();
+        assert_eq!(
+            doc.get(float).unwrap().value,
+            Value::Float {
+                v: f64::from(0.1_f32),
+                width: FloatWidth::F32
+            }
+        );
+        let double = doc
+            .resolve(&saveprism_core::Path::parse("/root/properties/d_property_0").unwrap())
+            .unwrap();
+        assert_eq!(
+            doc.get(double).unwrap().value,
+            Value::Float {
+                v: 0.1,
+                width: FloatWidth::F64
+            }
+        );
+        let first = doc
+            .resolve(&saveprism_core::Path::parse("/root/properties/floats_0/0").unwrap())
+            .unwrap();
+        assert_eq!(
+            doc.get(first).unwrap().value,
+            Value::Float {
+                v: f64::from(0.1_f32),
+                width: FloatWidth::F32
+            }
+        );
+    }
+}
+
+#[cfg(test)]
+mod real_tests {
+    use std::path::Path as FsPath;
+
+    use saveprism_core::{Codec, DecodeCtx, FloatWidth, Limits, Path, Value};
+
+    use super::GvasCodec;
+
+    #[test]
+    #[ignore = "reads the local, git-ignored fixtures/external/unreal-gvas saves"]
+    fn real_options_save_round_trips_and_a_float_property_is_32_bit() {
+        let path = FsPath::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../fixtures/external/unreal-gvas/gvas-crate-tests/Options.sav");
+        let Ok(input) = std::fs::read(&path) else {
+            eprintln!("no real GVAS save at {}", path.display());
+            return;
+        };
+        let limits = Limits::default();
+        let mut ctx = DecodeCtx::new(&limits);
+        let decoded = GvasCodec.decode(&input, &mut ctx).unwrap();
+        let id = decoded
+            .doc
+            .resolve(&Path::parse("/root/properties/Slider1_0").unwrap())
+            .unwrap();
+        assert!(matches!(
+            decoded.doc.get(id).unwrap().value,
+            Value::Float {
+                width: FloatWidth::F32,
+                ..
+            }
+        ));
+        assert_eq!(
+            GvasCodec.encode(&decoded.doc, &decoded.params).unwrap(),
+            input
+        );
     }
 }

@@ -580,7 +580,7 @@ fn apply_json_checks_the_gold_limit_and_applies_nothing_on_error() {
     let path = copy_in(&env, "synthetic/rpgmaker-mz/file1.rmmzsave");
     let mut session = open(&env, &path, None).unwrap();
     let view = rpg_view(&session).unwrap();
-    let gold = view.gold.path.clone();
+    let gold = view.gold.as_ref().unwrap().path.clone();
     let hp = view.actors[0].hp.path.clone();
 
     let text = edited(&session, |json| {
@@ -596,13 +596,13 @@ fn apply_json_checks_the_gold_limit_and_applies_nothing_on_error() {
     );
     assert!(error.message.contains("99,999,999"));
     assert!(session.pending_changes().is_empty());
-    assert_eq!(rpg_view(&session).unwrap().gold.value, "1250");
+    assert_eq!(rpg_view(&session).unwrap().gold.unwrap().value, "1250");
 
     let text = edited(&session, |json| {
         *json.pointer_mut(&gold).unwrap() = 2601.into();
     });
     assert_eq!(session.apply_json(&text).unwrap(), 1);
-    let field = rpg_view(&session).unwrap().gold;
+    let field = rpg_view(&session).unwrap().gold.unwrap();
     assert_eq!(
         (field.value.as_str(), field.original.as_str()),
         ("2601", "1250")
@@ -824,13 +824,16 @@ fn mz_save_becomes_rpg_maker_sections() {
     let view = rpg_view(&session).unwrap();
 
     assert_eq!(view.engine, "mz");
-    assert_eq!(view.gold.value, "1250");
-    assert_eq!(view.gold.original, "1250");
-    assert_eq!(view.gold.kind, FieldKind::Int);
-    assert_eq!(view.gold.min, Some(0));
-    assert_eq!(view.gold.max, Some(99_999_999));
-    assert_eq!(view.gold.hint, "Whole number \u{b7} 0 to 99,999,999");
-    assert!(view.gold.editable);
+    assert_eq!(view.gold.as_ref().unwrap().value, "1250");
+    assert_eq!(view.gold.as_ref().unwrap().original, "1250");
+    assert_eq!(view.gold.as_ref().unwrap().kind, FieldKind::Int);
+    assert_eq!(view.gold.as_ref().unwrap().min, Some(0));
+    assert_eq!(view.gold.as_ref().unwrap().max, Some(99_999_999));
+    assert_eq!(
+        view.gold.as_ref().unwrap().hint,
+        "Whole number \u{b7} 0 to 99,999,999"
+    );
+    assert!(view.gold.as_ref().unwrap().editable);
 
     assert_eq!(view.actors.len(), 1);
     let actor = &view.actors[0];
@@ -869,7 +872,7 @@ fn mv_save_becomes_rpg_maker_sections() {
     let session = open(&env, &path, None).unwrap();
     let view = rpg_view(&session).unwrap();
     assert_eq!(view.engine, "mv");
-    assert!(!view.gold.value.is_empty());
+    assert!(!view.gold.as_ref().unwrap().value.is_empty());
     assert!(!view.actors.is_empty());
     assert!(!view.actors[0].level.value.is_empty());
     assert!(!view.actors[0].hp.value.is_empty());
@@ -968,15 +971,15 @@ fn gold_edit_respects_the_rpg_maker_limit_and_keeps_the_original() {
     let env = env();
     let path = copy_in(&env, "synthetic/rpgmaker-mz/file1.rmmzsave");
     let mut session = open(&env, &path, None).unwrap();
-    let gold_path = rpg_view(&session).unwrap().gold.path;
+    let gold_path = rpg_view(&session).unwrap().gold.unwrap().path;
 
     let error = session.edit_value(&gold_path, "100000000").unwrap_err();
     assert_eq!(error.code, app_codes::OUT_OF_RANGE);
     assert!(error.hint.contains("99,999,999"));
-    assert_eq!(rpg_view(&session).unwrap().gold.value, "1250");
+    assert_eq!(rpg_view(&session).unwrap().gold.unwrap().value, "1250");
 
     session.edit_value(&gold_path, "500").unwrap();
-    let gold = rpg_view(&session).unwrap().gold;
+    let gold = rpg_view(&session).unwrap().gold.unwrap();
     assert_eq!(gold.value, "500");
     assert_eq!(gold.original, "1250");
     assert_eq!(
@@ -990,7 +993,8 @@ fn a_decimal_gold_value_is_checked_against_the_limit_too() {
     let env = env();
     let path = copy_in(&env, "synthetic/rpgmaker-mz/file1.rmmzsave");
     let session = open(&env, &path, None).unwrap();
-    let gold_path = saveprism_core::Path::parse(&rpg_view(&session).unwrap().gold.path).unwrap();
+    let gold_path =
+        saveprism_core::Path::parse(&rpg_view(&session).unwrap().gold.unwrap().path).unwrap();
     // A node as the codec would give it if the game had saved gold as 1250.0.
     let node = saveprism_core::Node::new(Value::Float {
         v: 1250.0,
@@ -1939,7 +1943,7 @@ fn a_pasted_mv_code_is_edited_and_copied_back_as_a_code() {
     // Unchanged, the code comes back as it was pasted.
     assert_eq!(session.copy_code().unwrap(), text.trim());
 
-    let gold = rpg_view(&session).unwrap().gold.path;
+    let gold = rpg_view(&session).unwrap().gold.unwrap().path;
     session.edit_value(&gold, "4321").unwrap();
     let copied = session.copy_code().unwrap();
     assert_ne!(copied, text.trim());
@@ -1952,7 +1956,7 @@ fn a_pasted_mv_code_is_edited_and_copied_back_as_a_code() {
 
     // The copied code pastes again with the new gold.
     let again = paste(&env, &copied).unwrap();
-    assert_eq!(rpg_view(&again).unwrap().gold.value, "4321");
+    assert_eq!(rpg_view(&again).unwrap().gold.unwrap().value, "4321");
 }
 
 #[test]
@@ -2047,7 +2051,7 @@ fn text_files_opened_normally_can_be_copied_as_a_code() {
     assert!(!info.pasted);
     // A file's own name tells the engine; only pasted codes get it from the layers.
     assert_eq!(info.engine, None);
-    let gold = rpg_view(&session).unwrap().gold.path;
+    let gold = rpg_view(&session).unwrap().gold.unwrap().path;
     session.edit_value(&gold, "55").unwrap();
     assert_eq!(decoded_value(&session.copy_code().unwrap(), &gold), "55");
     assert_eq!(session.pending_changes().len(), 1);
@@ -2204,10 +2208,13 @@ fn xp_save_becomes_rpg_maker_sections() {
     let view = rpg_view(&open_rgss(&env, XP_SAVE)).unwrap();
 
     assert_eq!(view.engine, "xp");
-    assert_eq!(view.gold.value, "5000");
-    assert_eq!(view.gold.max, Some(9_999_999));
-    assert_eq!(view.gold.hint, "Whole number \u{b7} 0 to 9,999,999");
-    assert!(view.gold.editable);
+    assert_eq!(view.gold.as_ref().unwrap().value, "5000");
+    assert_eq!(view.gold.as_ref().unwrap().max, Some(9_999_999));
+    assert_eq!(
+        view.gold.as_ref().unwrap().hint,
+        "Whole number \u{b7} 0 to 9,999,999"
+    );
+    assert!(view.gold.as_ref().unwrap().editable);
 
     assert_eq!(actor_names(&view), ["Aluxes", "Basil"]);
     let actor = &view.actors[0];
@@ -2256,8 +2263,8 @@ fn vx_save_becomes_rpg_maker_sections() {
     let view = rpg_view(&open_rgss(&env, VX_SAVE)).unwrap();
 
     assert_eq!(view.engine, "vx");
-    assert_eq!(view.gold.value, "9000");
-    assert_eq!(view.gold.max, Some(9_999_999));
+    assert_eq!(view.gold.as_ref().unwrap().value, "9000");
+    assert_eq!(view.gold.as_ref().unwrap().max, Some(9_999_999));
 
     // The party keeps actor ids (1 and 3); the name of actor 3 is not UTF-8.
     assert_eq!(actor_names(&view), ["Ralph", "Benn\u{fffd}tt"]);
@@ -2296,8 +2303,8 @@ fn vxace_save_becomes_rpg_maker_sections() {
     let view = rpg_view(&open_rgss(&env, VXACE_SAVE)).unwrap();
 
     assert_eq!(view.engine, "vxace");
-    assert_eq!(view.gold.value, "1250");
-    assert_eq!(view.gold.max, Some(99_999_999));
+    assert_eq!(view.gold.as_ref().unwrap().value, "1250");
+    assert_eq!(view.gold.as_ref().unwrap().max, Some(99_999_999));
 
     assert_eq!(actor_names(&view), ["Eric", "Natalie"]);
     let eric = &view.actors[0];
@@ -2415,6 +2422,107 @@ fn rgss_names_also_come_from_the_folder_above_and_only_for_the_same_engine() {
 }
 
 #[test]
+fn rgss_finds_the_sections_by_class_wherever_they_are_in_the_list() {
+    let env = env();
+    let normal = rpg_view(&open_rgss(&env, XP_SAVE)).unwrap();
+    let reordered = rpg_view(&open_rgss(&env, "synthetic/rpgmaker-xp/Save2.rxdata")).unwrap();
+    assert_eq!(reordered.engine, "xp");
+    assert_eq!(
+        reordered.gold.as_ref().map(|gold| gold.value.as_str()),
+        normal.gold.as_ref().map(|gold| gold.value.as_str())
+    );
+    assert_eq!(actor_names(&reordered), actor_names(&normal));
+    assert_eq!(ids(&reordered.items), ids(&normal.items));
+    assert_eq!(values(&reordered.items), values(&normal.items));
+    assert_eq!(ids(&reordered.weapons), ids(&normal.weapons));
+    assert_eq!(ids(&reordered.variables), ids(&normal.variables));
+    assert_eq!(values(&reordered.variables), values(&normal.variables));
+    assert_eq!(ids(&reordered.switches), ids(&normal.switches));
+    assert_eq!(values(&reordered.switches), values(&normal.switches));
+    assert_eq!(reordered.can_add, normal.can_add);
+}
+
+#[test]
+fn es3_float_edit_stores_the_32_bit_value() {
+    let env = env();
+    let path = copy_in(&env, "synthetic/es3/settings.es3");
+    let mut session = open(&env, &path, None).unwrap();
+    let row = session.edit_value("/volume/value", "16777217").unwrap();
+    assert!(
+        row.preview.contains("16777216"),
+        "the field must show the stored 32-bit value: {}",
+        row.preview
+    );
+    session.save(path.to_str().unwrap(), false, None).unwrap();
+    let mut reopened = open(&env, &path, None).unwrap();
+    let field = reopened.field_info("/volume/value").unwrap();
+    assert!(field.value.contains("16777216"), "{}", field.value);
+    let error = reopened.edit_value("/volume/value", "1e40").unwrap_err();
+    assert_eq!(error.code, app_codes::OUT_OF_RANGE);
+    assert!(error.hint.contains("3.4028235e38"), "{}", error.hint);
+}
+
+#[test]
+#[ignore = "reads the local, git-ignored fixtures/external/rgss save"]
+fn external_pokemon_essentials_xp_save_shows_the_sections_it_has() {
+    let env = env();
+    let source = fixture("external/rgss/pkmnz-save-editor/test/fixtures/save.rxdata");
+    if !source.exists() {
+        eprintln!("no real XP save at {}", source.display());
+        return;
+    }
+    let path = env.work.join("save.rxdata");
+    fs::copy(&source, &path).unwrap();
+    let session = open(&env, &path, None).unwrap();
+    assert_eq!(session.info().guard, GuardLevel::Exact);
+    let view = match session.game_view().unwrap() {
+        GameView::Rpgmaker { view } => *view,
+        _ => panic!("the real XP save must open as RPG Maker sections"),
+    };
+    assert_eq!(view.engine, "xp");
+    // Essentials keeps money, items and its Pokémon party in its own objects.
+    assert!(view.gold.is_none());
+    assert!(view.actors.is_empty());
+    assert!(view.items.is_empty());
+    assert!(view.weapons.is_empty());
+    assert!(view.armors.is_empty());
+    // The RPG Maker objects it does keep still show.
+    assert!(!view.variables.is_empty());
+    assert!(!view.switches.is_empty());
+    eprintln!(
+        "real XP sections: variables {}, switches {}",
+        view.variables.len(),
+        view.switches.len()
+    );
+}
+
+#[test]
+#[ignore = "reads the local, git-ignored fixtures/external/unreal-gvas save"]
+fn gvas_float_edit_stores_the_32_bit_value() {
+    let env = env();
+    let source = fixture("external/unreal-gvas/gvas-crate-tests/Options.sav");
+    if !source.exists() {
+        eprintln!("no real GVAS save at {}", source.display());
+        return;
+    }
+    let path = env.work.join("Options.sav");
+    fs::copy(&source, &path).unwrap();
+    let mut session = open(&env, &path, None).unwrap();
+    let row = session
+        .edit_value("/root/properties/Slider1_0", "16777217")
+        .unwrap();
+    assert!(
+        row.preview.contains("16777216"),
+        "the field must show the stored 32-bit value: {}",
+        row.preview
+    );
+    session.save(path.to_str().unwrap(), false, None).unwrap();
+    let reopened = open(&env, &path, None).unwrap();
+    let field = reopened.field_info("/root/properties/Slider1_0").unwrap();
+    assert!(field.value.contains("16777216"), "{}", field.value);
+}
+
+#[test]
 fn rgss_edits_through_the_view_survive_a_save() {
     for relative in [XP_SAVE, VX_SAVE, VXACE_SAVE] {
         let env = env();
@@ -2422,7 +2530,9 @@ fn rgss_edits_through_the_view_survive_a_save() {
         let mut session = open(&env, &path, None).unwrap();
         let view = rpg_view(&session).unwrap();
         let last = view.actors.len() - 1;
-        session.edit_value(&view.gold.path, "4321").unwrap();
+        session
+            .edit_value(&view.gold.as_ref().unwrap().path, "4321")
+            .unwrap();
         session.edit_value(&view.items[0].field.path, "42").unwrap();
         session
             .edit_value(&view.actors[last].hp.path, "999")
@@ -2434,7 +2544,7 @@ fn rgss_edits_through_the_view_survive_a_save() {
         assert_eq!(info.guard, GuardLevel::Exact, "{relative}");
         assert!(info.editable, "{relative}");
         let again = rpg_view(&reopened).unwrap();
-        assert_eq!(again.gold.value, "4321", "{relative}");
+        assert_eq!(again.gold.as_ref().unwrap().value, "4321", "{relative}");
         assert_eq!(again.items[0].field.value, "42", "{relative}");
         assert_eq!(again.actors[last].hp.value, "999", "{relative}");
         assert_eq!(again.actors[last].hp.path, view.actors[last].hp.path);
@@ -2451,7 +2561,7 @@ fn rgss_limits_are_enforced() {
         let env = env();
         let mut session = open_rgss(&env, relative);
         let view = rpg_view(&session).unwrap();
-        let gold = view.gold.path.clone();
+        let gold = view.gold.as_ref().unwrap().path.clone();
 
         let error = session.edit_value(&gold, over).unwrap_err();
         assert_eq!(error.code, app_codes::OUT_OF_RANGE, "{relative}");
@@ -2469,7 +2579,7 @@ fn rgss_limits_are_enforced() {
     // JSON Apply checks the same limit.
     let env = env();
     let mut session = open_rgss(&env, XP_SAVE);
-    let gold = rpg_view(&session).unwrap().gold.path;
+    let gold = rpg_view(&session).unwrap().gold.unwrap().path;
     let text = edited(&session, |json| {
         *json.pointer_mut(&gold).unwrap() = 10_000_000.into();
     });
@@ -2520,10 +2630,10 @@ fn a_2k_save_becomes_rpg_maker_sections() {
     let view = rpg_view(&open_lcf(&env, SAVE_2K, None)).unwrap();
 
     assert_eq!(view.engine, "2k");
-    assert_eq!(view.gold.value, "5000");
-    assert_eq!(view.gold.path, "/inventory/gold");
-    assert_eq!(view.gold.max, Some(999_999));
-    assert!(view.gold.editable);
+    assert_eq!(view.gold.as_ref().unwrap().value, "5000");
+    assert_eq!(view.gold.as_ref().unwrap().path, "/inventory/gold");
+    assert_eq!(view.gold.as_ref().unwrap().max, Some(999_999));
+    assert!(view.gold.as_ref().unwrap().editable);
 
     // Actor 1 uses its database name, which is unknown without RPG_RT.ldb.
     assert_eq!(actor_names(&view), ["Actor #1", "Mira"]);
@@ -2600,8 +2710,8 @@ fn a_2k3_save_without_gold_shows_zero_read_only() {
     let session = open_lcf(&env, SAVE_2K3, Some(DB_2K3));
     let view = rpg_view(&session).unwrap();
     assert_eq!(view.engine, "2k3");
-    assert_eq!(view.gold.value, "0");
-    assert!(!view.gold.editable);
+    assert_eq!(view.gold.as_ref().unwrap().value, "0");
+    assert!(!view.gold.as_ref().unwrap().editable);
     // The party is actors 3 and 1; actor 1 takes its name from the database.
     assert_eq!(actor_names(&view), ["Kai", "Alex"]);
     assert_eq!(view.actors[0].level.value, "20");
@@ -2624,7 +2734,9 @@ fn lcf_edits_through_the_view_survive_a_save() {
     let env = env();
     let mut session = open_lcf(&env, SAVE_2K, Some(DB_2K));
     let view = rpg_view(&session).unwrap();
-    session.edit_value(&view.gold.path, "999999").unwrap();
+    session
+        .edit_value(&view.gold.as_ref().unwrap().path, "999999")
+        .unwrap();
     session.edit_value(&view.items[0].field.path, "42").unwrap();
     session
         .edit_value(&view.variables[0].field.path, "16777300")
@@ -2644,7 +2756,7 @@ fn lcf_edits_through_the_view_survive_a_save() {
     assert_eq!(info.guard, GuardLevel::Exact);
     assert!(info.editable);
     let again = rpg_view(&reopened).unwrap();
-    assert_eq!(again.gold.value, "999999");
+    assert_eq!(again.gold.as_ref().unwrap().value, "999999");
     assert_eq!(again.items[0].field.value, "42");
     assert_eq!(again.variables[0].field.value, "16777300");
     assert_eq!(again.switches[1].field.value, "true");
@@ -2658,7 +2770,7 @@ fn lcf_limits_are_enforced() {
     let env = env();
     let mut session = open_lcf(&env, SAVE_2K, None);
     let view = rpg_view(&session).unwrap();
-    let gold = view.gold.path.clone();
+    let gold = view.gold.as_ref().unwrap().path.clone();
     let error = session.edit_value(&gold, "1000000").unwrap_err();
     assert_eq!(error.code, app_codes::OUT_OF_RANGE);
     assert_eq!(session.field_info(&gold).unwrap().max, Some(999_999));
