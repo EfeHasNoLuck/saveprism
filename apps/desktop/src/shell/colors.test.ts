@@ -1,6 +1,14 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
-import { COLOR_GROUPS, COLOR_PRESETS, colorCss, DEFAULT_COLORS } from "./colors";
+import {
+  COLOR_GROUPS,
+  COLOR_PRESETS,
+  colorCss,
+  DEFAULT_COLORS,
+  isColorChoice,
+  textColorFor,
+  tonesFor,
+} from "./colors";
 
 /** The card background and the muted label colour of each theme (`index.css`). */
 const CARD = { light: "#ffffff", dark: "#0b1c30" };
@@ -116,5 +124,33 @@ describe("colour presets", () => {
     expect(css).toContain("--changed-tag: #8b015a;");
     expect(css).toContain("--tertiary: #146c45;");
     expect(css).not.toContain("--destructive:");
+  });
+});
+
+describe("custom colours", () => {
+  it("accepts a #rrggbb colour as a choice next to the presets", () => {
+    expect(isColorChoice("changed", "#12ab34")).toBe(true);
+    expect(isColorChoice("changed", "rose")).toBe(true);
+    expect(isColorChoice("changed", "#12345")).toBe(false);
+    expect(isColorChoice("changed", "nope")).toBe(false);
+  });
+
+  it("picks dark text on a light colour and white text on a dark one", () => {
+    expect(textColorFor("#ffffff")).toBe("#061428");
+    expect(textColorFor("#f9f871")).toBe("#061428");
+    expect(textColorFor("#000000")).toBe("#ffffff");
+    expect(textColorFor("#6b38d4")).toBe("#ffffff");
+  });
+
+  it("uses a custom colour for both tones and writes it into the CSS", () => {
+    expect(tonesFor("accent", "#12ab34", false)).toEqual({
+      main: "#12ab34",
+      container: "#12ab34",
+      onContainer: textColorFor("#12ab34"),
+    });
+    const css = colorCss({ ...DEFAULT_COLORS, accent: "#12ab34" });
+    expect(css).toContain("--tertiary: #12ab34;");
+    expect(css).toContain("--tertiary-container: #12ab34;");
+    expect(css).toContain(`--tertiary-container-foreground: ${textColorFor("#12ab34")};`);
   });
 });

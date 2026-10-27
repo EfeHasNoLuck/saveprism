@@ -51,7 +51,7 @@ export function BackupsDialog({
 
   useEffect(() => {
     let cancelled = false;
-    listBackups()
+    listBackups(settings.backupFolders)
       .then((rows) => !cancelled && setList({ status: "ready", rows, now: Date.now() }))
       .catch((error: unknown) => {
         if (cancelled) return;
@@ -64,7 +64,7 @@ export function BackupsDialog({
     return () => {
       cancelled = true;
     };
-  }, [t]);
+  }, [settings.backupFolders, t]);
 
   const askingWhen = asking ? dateTimeText(asking.createdMs, language) : "";
 

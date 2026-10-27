@@ -527,6 +527,38 @@ mod tests {
     use super::*;
 
     #[test]
+    fn age_cleanup_never_removes_the_newest_backup() {
+        let dir = tempfile::tempdir().unwrap();
+        let ancient = dir.path().join("1000.bak");
+        let newest = dir.path().join("2000.bak");
+        std::fs::write(&ancient, b"old").unwrap();
+        std::fs::write(&newest, b"new").unwrap();
+        // One hour of age, "now" is far after both files: both are older than the limit, but the
+        // newest backup of the file always stays.
+        let removed = prune_folder(
+            dir.path(),
+            usize::MAX,
+            Some(Duration::from_secs(3600)),
+            None,
+            10_000_000,
+        );
+        assert_eq!(removed, 1);
+        assert!(!ancient.exists());
+        assert!(newest.exists());
+    }
+
+    #[test]
+    fn count_cleanup_keeps_at_least_the_newest_backup() {
+        let dir = tempfile::tempdir().unwrap();
+        for (index, name) in ["1000.bak", "2000.bak", "3000.bak"].iter().enumerate() {
+            std::fs::write(dir.path().join(name), [index as u8]).unwrap();
+        }
+        let removed = prune_folder(dir.path(), 1, None, None, 4_000);
+        assert_eq!(removed, 2);
+        assert!(dir.path().join("3000.bak").exists());
+    }
+
+    #[test]
     fn write_options_defaults() {
         let opts = WriteOptions::new(PathBuf::from("backups"));
         assert_eq!(opts.keep_last, 10);

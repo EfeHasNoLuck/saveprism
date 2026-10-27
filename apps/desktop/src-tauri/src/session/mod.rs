@@ -39,6 +39,7 @@ mod backups;
 mod code;
 mod compare;
 mod export;
+pub mod folders;
 mod game;
 mod gwent;
 mod history;
@@ -88,6 +89,10 @@ pub const MAX_PAGE: usize = 500;
 pub const DEFAULT_KEEP_BACKUPS: usize = 10;
 /// Highest number of backups the settings may ask for.
 pub const MAX_KEEP_BACKUPS: usize = 50;
+/// Days backups are kept when the settings do not say.
+pub const DEFAULT_KEEP_DAYS: u32 = 30;
+/// Longest time backups may be kept, in days.
+pub const MAX_KEEP_DAYS: u32 = 365;
 /// Most hits one search collects.
 pub const MAX_SEARCH_HITS: usize = 10_000;
 /// Longest value preview, in characters.
@@ -106,6 +111,11 @@ pub(crate) fn clamp_keep_backups(value: Option<usize>) -> usize {
     value
         .unwrap_or(DEFAULT_KEEP_BACKUPS)
         .clamp(1, MAX_KEEP_BACKUPS)
+}
+
+/// The days backups are kept: the setting, clamped to 1..=365, or 30 when it is missing.
+pub(crate) fn clamp_keep_days(value: Option<u32>) -> u32 {
+    value.unwrap_or(DEFAULT_KEEP_DAYS).clamp(1, MAX_KEEP_DAYS)
 }
 
 /// Error codes of the desktop app itself (the core and the codecs keep their own).
@@ -162,6 +172,10 @@ pub mod app_codes {
     pub const LOCATION_OPEN: &str = "SP-APP-026";
     /// A file report was asked for something that is not a regular file (a folder, a link).
     pub const FILE_REPORT: &str = "SP-APP-027";
+    /// A folder picked in Settings cannot be used (missing, not writable, or the save's folder).
+    pub const FOLDER: &str = "SP-APP-028";
+    /// The background image cannot be used (not a PNG/JPEG/WebP, too large, or unreadable).
+    pub const BACKGROUND: &str = "SP-APP-029";
 }
 
 /// An error as the UI receives it.
@@ -423,6 +437,9 @@ pub struct Session {
     reg: Registry,
     limits: Limits,
     backup_root: Option<PathBuf>,
+    /// Older backup folders the player used before changing the setting; their backups are still
+    /// listed and restorable.
+    extra_backup_roots: Vec<PathBuf>,
     path: PathBuf,
     /// Recipe returned by the decode (no password).
     recipe: Recipe,
@@ -991,6 +1008,7 @@ impl Session {
             reg,
             limits,
             backup_root,
+            extra_backup_roots: Vec::new(),
             path,
             recipe: out.recipe,
             password,
@@ -1611,6 +1629,17 @@ impl Session {
         overwrite: bool,
         keep_backups: Option<usize>,
     ) -> Result<SaveResult, ApiError> {
+        self.save_inner(target, overwrite, keep_backups, None)
+    }
+
+    /// [`Session::save`] with the age of the backups the player chose.
+    fn save_inner(
+        &mut self,
+        target: &str,
+        overwrite: bool,
+        keep_backups: Option<usize>,
+        keep_days: Option<u32>,
+    ) -> Result<SaveResult, ApiError> {
         if !self.editable {
             return Err(self.read_only_error());
         }
@@ -1645,6 +1674,9 @@ impl Session {
         let bytes = pipeline::encode(&self.doc, &recipe, &self.reg)?;
         let mut opts = WriteOptions::new(self.backup_root()?);
         opts.keep_last = clamp_keep_backups(keep_backups);
+        opts.max_age = Some(std::time::Duration::from_secs(
+            u64::from(clamp_keep_days(keep_days)) * 24 * 60 * 60,
+        ));
 
         let verify = |written: &[u8]| self.verify_edits(&recipe, written);
         let report = safe_write(&target_path, &bytes, &opts, &verify)?;
@@ -1699,6 +1731,11 @@ impl Session {
         Ok(())
     }
 
+    /// The file the open document belongs to (SavePrism's own copy for a pasted code).
+    pub fn file_path(&self) -> &FsPath {
+        &self.path
+    }
+
     /// The backup folder: the one given to [`Session::open`], else the app's default.
     fn backup_root(&self) -> Result<PathBuf, ApiError> {
         self.backup_root
@@ -1711,5 +1748,48 @@ impl Session {
                 )
                 .into()
             })
+    }
+
+    /// Sets the backup folders the player chose: the first one is written to, every one is listed
+    /// and searched when a backup is restored. An empty list keeps the folder given to
+    /// [`Session::open`] (or the default).
+    pub fn set_backup_roots(&mut self, roots: &[PathBuf]) {
+        let mut unique: Vec<PathBuf> = Vec::new();
+        for root in roots {
+            if !unique.iter().any(|seen| seen == root) {
+                unique.push(root.clone());
+            }
+        }
+        if unique.is_empty() {
+            return;
+        }
+        self.backup_root = Some(unique.remove(0));
+        self.extra_backup_roots = unique;
+    }
+
+    /// Every backup folder that is searched, newest choice first.
+    pub(crate) fn all_backup_roots(&self) -> Vec<PathBuf> {
+        let mut roots = Vec::new();
+        if let Some(root) = &self.backup_root {
+            roots.push(root.clone());
+        }
+        roots.extend(self.extra_backup_roots.iter().cloned());
+        if roots.is_empty()
+            && let Some(root) = default_backup_root()
+        {
+            roots.push(root);
+        }
+        roots
+    }
+
+    /// Saves with the player's age setting. [`Session::save`] keeps this module's default.
+    pub fn save_with_days(
+        &mut self,
+        target: &str,
+        overwrite: bool,
+        keep_backups: Option<usize>,
+        keep_days: Option<u32>,
+    ) -> Result<SaveResult, ApiError> {
+        self.save_inner(target, overwrite, keep_backups, keep_days)
     }
 }

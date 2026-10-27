@@ -29,7 +29,6 @@ import {
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { EditorView, type EditorHandle } from "@/editor";
 import { countChangeKinds } from "@/editor/helpers";
-import { AboutDialog } from "./shell/AboutDialog";
 import { BackgroundPattern } from "./shell/BackgroundPattern";
 import { BackupsDialog } from "./shell/BackupsDialog";
 import { BottomBar, type LabeledChange } from "./shell/BottomBar";
@@ -48,7 +47,7 @@ import { OpeningOverlay } from "./shell/OpeningOverlay";
 import { gameFolder } from "./shell/names";
 import { PasswordDialog } from "./shell/PasswordDialog";
 import { SaveLocationsDialog } from "./shell/SaveLocationsDialog";
-import { SettingsDialog } from "./shell/SettingsDialog";
+import { SettingsPage } from "./shell/SettingsPage";
 import { firstListSearch, isTextEditing, shortcutFor } from "./shell/shortcuts";
 import { StartScreen } from "./shell/StartScreen";
 import { Toasts } from "./shell/Toasts";
@@ -81,7 +80,6 @@ function App() {
   const [busy, setBusy] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [aboutOpen, setAboutOpen] = useState(false);
   const [backupsOpen, setBackupsOpen] = useState(false);
   /** Path of the second save of a comparison, while its dialog is open. */
   const [comparePath, setComparePath] = useState<string | null>(null);
@@ -165,8 +163,8 @@ function App() {
       const cover = window.setTimeout(() => setOpening(baseName(path)), OPEN_COVER_DELAY_MS);
       try {
         const info = gameFolder
-          ? await openFileWithGameFolder(path, gameFolder)
-          : await openFile(path, password);
+          ? await openFileWithGameFolder(path, gameFolder, settings.backupFolders)
+          : await openFile(path, password, settings.backupFolders);
         setFile(info);
         resetChanges();
         setHistory(NO_HISTORY);
@@ -207,7 +205,7 @@ function App() {
         setBusy(false);
       }
     },
-    [copyFileReport, notify, notifyError, resetChanges, t],
+    [copyFileReport, notify, notifyError, resetChanges, settings.backupFolders, t],
   );
 
   /**
@@ -249,7 +247,7 @@ function App() {
     async (text: string): Promise<OpenCodeResult> => {
       setBusy(true);
       try {
-        const info = await openCode(text);
+        const info = await openCode(text, settings.appFolder, settings.backupFolders);
         setFile(info);
         resetChanges();
         setHistory(NO_HISTORY);
@@ -264,7 +262,7 @@ function App() {
         setBusy(false);
       }
     },
-    [notify, resetChanges, t],
+    [notify, resetChanges, settings.appFolder, settings.backupFolders, t],
   );
 
   /** Opens the paste dialog, unless another action runs or the JSON editor is open. */
@@ -437,7 +435,13 @@ function App() {
     async (target: string, overwrite: boolean) => {
       setBusy(true);
       try {
-        const result = await save(target, overwrite, settings.keepBackups);
+        const result = await save(
+          target,
+          overwrite,
+          settings.keepBackups,
+          settings.keepBackupDays,
+          settings.backupFolders,
+        );
         if (!result.verified) {
           notify({
             kind: "error",
@@ -487,7 +491,15 @@ function App() {
         setBusy(false);
       }
     },
-    [notify, notifyError, resetChanges, settings.keepBackups, t],
+    [
+      notify,
+      notifyError,
+      resetChanges,
+      settings.keepBackups,
+      settings.keepBackupDays,
+      settings.backupFolders,
+      t,
+    ],
   );
 
   const saveAsNew = useCallback(async () => {
@@ -589,7 +601,12 @@ function App() {
     async (name: string, when: string) => {
       setBusy(true);
       try {
-        const info = await restoreBackup(name, settings.keepBackups);
+        const info = await restoreBackup(
+          name,
+          settings.keepBackups,
+          settings.keepBackupDays,
+          settings.backupFolders,
+        );
         setFile(info);
         resetChanges();
         setHistory(NO_HISTORY);
@@ -607,7 +624,15 @@ function App() {
         setBusy(false);
       }
     },
-    [notify, notifyError, resetChanges, settings.keepBackups, t],
+    [
+      notify,
+      notifyError,
+      resetChanges,
+      settings.keepBackups,
+      settings.keepBackupDays,
+      settings.backupFolders,
+      t,
+    ],
   );
 
   /** The names a player reads for paths, from the open editor (the path itself without one). */
@@ -725,7 +750,6 @@ function App() {
       // Nothing happens behind a dialog or an open menu, or while another action runs.
       const modal =
         settingsOpen ||
-        aboutOpen ||
         backupsOpen ||
         comparePath !== null ||
         locationsOpen ||
@@ -778,7 +802,7 @@ function App() {
   const pasteHandler = useRef<(event: ClipboardEvent) => void>(() => undefined);
   useEffect(() => {
     pasteHandler.current = (event) => {
-      if (file !== null || busy || settingsOpen || aboutOpen || pasteRequest !== null) return;
+      if (file !== null || busy || settingsOpen || pasteRequest !== null) return;
       const target = event.target instanceof Element ? event.target : null;
       if (isTextEditing(target) || document.querySelector('[role="dialog"]') !== null) return;
       const text = pastedText(event.clipboardData);
@@ -804,7 +828,11 @@ function App() {
           onOpenSettings={() => setSettingsOpen(true)}
         />
 
-        {readOnly ? (
+        {settingsOpen ? (
+          <SettingsPage onClose={() => setSettingsOpen(false)} />
+        ) : (
+          <>
+            {readOnly ? (
           <div
             role="status"
             className="relative z-10 flex h-8 shrink-0 items-center gap-2 border-b border-warning/40 bg-chrome px-3 text-xs font-medium text-warning"
@@ -894,16 +922,8 @@ function App() {
             onCopyCode={() => void copyAsCode()}
           />
         ) : null}
-
-        <SettingsDialog
-          open={settingsOpen}
-          onOpenChange={setSettingsOpen}
-          onOpenAbout={() => {
-            setSettingsOpen(false);
-            setAboutOpen(true);
-          }}
-        />
-        <AboutDialog open={aboutOpen} onOpenChange={setAboutOpen} />
+          </>
+        )}
         {file && backupsOpen ? (
           <BackupsDialog
             fileName={file.fileName}

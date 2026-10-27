@@ -5,6 +5,9 @@
 //! atomic replace, and checks that the written bytes are the backup's bytes. A backup that does not
 //! open as a save is never written. The file is then opened again, so pending edits and the edit
 //! history are gone; the UI asks before it restores over unsaved edits.
+//!
+//! Backups are searched in every folder the player used, so changing the backup folder keeps the
+//! older backups listed and restorable; new backups go to the first (current) folder.
 
 use std::fs;
 
@@ -12,7 +15,9 @@ use saveprism_core::io::{WriteOptions, find_backup, list_backups, safe_write};
 use saveprism_core::{Error, codes};
 use serde::Serialize;
 
-use super::{ApiError, Session, app_codes, clamp_keep_backups, decode_file, io_error, quote};
+use super::{
+    ApiError, Session, app_codes, clamp_keep_backups, clamp_keep_days, decode_file, io_error, quote,
+};
 
 /// One backup of the open file, newest first in the list.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
@@ -29,15 +34,21 @@ pub struct BackupRow {
 impl Session {
     /// The backups of the open file, newest first (empty when it was never saved over).
     pub fn backups(&self) -> Result<Vec<BackupRow>, ApiError> {
-        let root = self.backup_root()?;
-        Ok(list_backups(&root, &self.path)
-            .into_iter()
-            .map(|backup| BackupRow {
-                name: backup.name,
-                created_ms: backup.created_ms,
-                byte_size: backup.byte_size,
-            })
-            .collect())
+        let mut rows: Vec<BackupRow> = Vec::new();
+        for root in self.all_backup_roots() {
+            rows.extend(
+                list_backups(&root, &self.path)
+                    .into_iter()
+                    .map(|backup| BackupRow {
+                        name: backup.name,
+                        created_ms: backup.created_ms,
+                        byte_size: backup.byte_size,
+                    }),
+            );
+        }
+        rows.sort_by_key(|row| std::cmp::Reverse(row.created_ms));
+        rows.dedup_by(|a, b| a.name == b.name);
+        Ok(rows)
     }
 
     /// Puts the backup `name` of the open file back in place of the file and returns the file opened
@@ -49,14 +60,28 @@ impl Session {
         name: &str,
         keep_backups: Option<usize>,
     ) -> Result<Session, ApiError> {
+        self.restore_backup_with_days(name, keep_backups, None)
+    }
+
+    /// [`Session::restore_backup`] with the age of the backups the player chose.
+    pub fn restore_backup_with_days(
+        &self,
+        name: &str,
+        keep_backups: Option<usize>,
+        keep_days: Option<u32>,
+    ) -> Result<Session, ApiError> {
         let root = self.backup_root()?;
-        let backup = find_backup(&root, &self.path, name).ok_or_else(|| {
-            ApiError::new(
-                app_codes::BACKUP_NOT_FOUND,
-                format!("there is no backup \"{}\" of this file", quote(name)),
-                "Open the backups list again. Old backups are removed after 30 days or when a file has more backups than the setting keeps.",
-            )
-        })?;
+        let backup = self
+            .all_backup_roots()
+            .into_iter()
+            .find_map(|folder| find_backup(&folder, &self.path, name))
+            .ok_or_else(|| {
+                ApiError::new(
+                    app_codes::BACKUP_NOT_FOUND,
+                    format!("there is no backup \"{}\" of this file", quote(name)),
+                    "Open the backups list again. Old backups are removed after the days you set or when a file has more backups than the setting keeps.",
+                )
+            })?;
         let meta = fs::metadata(&backup).map_err(|error| io_error(&backup, error))?;
         self.limits
             .check_input(meta.len())
@@ -83,6 +108,9 @@ impl Session {
 
         let mut opts = WriteOptions::new(root);
         opts.keep_last = clamp_keep_backups(keep_backups);
+        opts.max_age = Some(std::time::Duration::from_secs(
+            u64::from(clamp_keep_days(keep_days)) * 24 * 60 * 60,
+        ));
         let verify = |written: &[u8]| -> saveprism_core::Result<()> {
             if written == bytes.as_slice() {
                 Ok(())
@@ -101,6 +129,7 @@ impl Session {
             self.renpy_keys.clone(),
             None,
         )?;
+        restored.extra_backup_roots = self.extra_backup_roots.clone();
         restored.pasted = self.pasted;
         Ok(restored)
     }
