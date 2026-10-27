@@ -3630,6 +3630,7 @@ dependencies = [
 name = "saveprism-desktop"
 version = "0.1.0"
 dependencies = [
+ "base64 0.23.1",
  "saveprism-codecs",
  "saveprism-core",
  "serde",

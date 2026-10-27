@@ -4,9 +4,9 @@
  * renders `LanguageSwitcher`.
  */
 import i18next from "i18next";
-import { Languages } from "lucide-react";
 import { initReactI18next, useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import { RoundFlag } from "@/shell/RoundFlag";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -114,7 +114,7 @@ export function LanguageSwitcher() {
           title={t("language.label")}
           className="gap-1 px-1.5 font-mono text-[0.6875rem] text-foreground-variant uppercase"
         >
-          <Languages />
+          <RoundFlag language={current} />
           {current}
         </Button>
       </DropdownMenuTrigger>
@@ -130,7 +130,8 @@ export function LanguageSwitcher() {
           }}
         >
           {SUPPORTED_LANGUAGES.map((lang) => (
-            <DropdownMenuRadioItem key={lang} value={lang}>
+            <DropdownMenuRadioItem key={lang} value={lang} className="gap-2">
+              <RoundFlag language={lang} />
               {LANGUAGE_NAMES[lang]}
             </DropdownMenuRadioItem>
           ))}

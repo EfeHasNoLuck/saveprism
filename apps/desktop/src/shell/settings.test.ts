@@ -2,12 +2,16 @@
 import { describe, expect, it } from "vitest";
 import {
   clampKeepBackups,
+  clampKeepDays,
   DEFAULT_SETTINGS,
   loadSettings,
   parseSettings,
+  parseTextScale,
   patternOpacity,
+  photoBlurPx,
   saveSettings,
   SETTINGS_KEY,
+  textScalePx,
 } from "./settings";
 
 describe("parseSettings", () => {
@@ -22,19 +26,16 @@ describe("parseSettings", () => {
   it("keeps valid fields and replaces invalid ones one by one", () => {
     const parsed = parseSettings(
       JSON.stringify({
-        patternOn: false,
-        patternStrength: "loud",
         saveDefault: "overwrite",
         showNotifications: false,
+        keepBackups: 12,
       }),
     );
-    expect(parsed).toEqual({
-      patternOn: false,
-      patternStrength: DEFAULT_SETTINGS.patternStrength,
+    expect(parsed).toMatchObject({
       saveDefault: "overwrite",
       showNotifications: false,
-      keepBackups: DEFAULT_SETTINGS.keepBackups,
-      textSize: DEFAULT_SETTINGS.textSize,
+      keepBackups: 12,
+      textScale: DEFAULT_SETTINGS.textScale,
       colors: DEFAULT_SETTINGS.colors,
     });
   });
@@ -48,31 +49,82 @@ describe("parseSettings", () => {
     expect(clampKeepBackups(Number.NaN)).toBe(10);
   });
 
-  it("accepts the three text sizes and replaces anything else", () => {
-    for (const textSize of ["small", "normal", "large"] as const) {
-      expect(parseSettings(JSON.stringify({ textSize })).textSize).toBe(textSize);
-    }
-    expect(parseSettings(JSON.stringify({ textSize: "huge" })).textSize).toBe("normal");
+  it("keeps backups 30 days by default and clamps the days to 1..365", () => {
+    expect(DEFAULT_SETTINGS.keepBackupDays).toBe(30);
+    expect(parseSettings(JSON.stringify({ keepBackupDays: 0 })).keepBackupDays).toBe(1);
+    expect(parseSettings(JSON.stringify({ keepBackupDays: 999 })).keepBackupDays).toBe(365);
+    expect(parseSettings(JSON.stringify({ keepBackupDays: 12.6 })).keepBackupDays).toBe(13);
+    expect(parseSettings(JSON.stringify({ keepBackupDays: "many" })).keepBackupDays).toBe(30);
+    expect(clampKeepDays(Number.NaN)).toBe(30);
   });
 
-  it("keeps valid colour presets and replaces unknown ones one by one", () => {
+  it("migrates the old Small/Normal/Large text size to percentages", () => {
+    expect(parseSettings(JSON.stringify({ textSize: "small" })).textScale).toBe(90);
+    expect(parseSettings(JSON.stringify({ textSize: "normal" })).textScale).toBe(100);
+    expect(parseSettings(JSON.stringify({ textSize: "large" })).textScale).toBe(115);
+    // Old files also carry the old fields; they must not break loading.
+    expect(
+      parseSettings(JSON.stringify({ textSize: "large", patternOn: true })).textScale,
+    ).toBe(115);
+  });
+
+  it("snaps a text scale to 5 % steps and clamps it to 80..140", () => {
+    expect(parseTextScale(102)).toBe(100);
+    expect(parseTextScale(103)).toBe(105);
+    expect(parseTextScale(10)).toBe(80);
+    expect(parseTextScale(900)).toBe(140);
+    expect(parseTextScale("huge")).toBe(100);
+    expect(parseTextScale(Number.NaN)).toBe(100);
+  });
+
+  it("keeps valid colour choices and replaces unknown ones one by one", () => {
     const parsed = parseSettings(
       JSON.stringify({
-        colors: { changed: "rose", accent: "green", error: "nope" },
+        colors: { changed: "rose", accent: "#12ab34", error: "nope" },
       }),
     );
-    expect(parsed.colors).toEqual({ changed: "rose", accent: "green", error: "red" });
+    expect(parsed.colors).toEqual({ changed: "rose", accent: "#12ab34", error: "red" });
     expect(
-      parseSettings(JSON.stringify({ colors: { changed: "nope" } })).colors,
-    ).toEqual({ changed: "violet", accent: "cyan", error: "red" });
+      parseSettings(JSON.stringify({ colors: { changed: "#012345" } })).colors,
+    ).toEqual({ changed: "#012345", accent: "cyan", error: "red" });
     expect(parseSettings(JSON.stringify({ colors: "blue" })).colors).toEqual(
       DEFAULT_SETTINGS.colors,
     );
   });
 
-  it("clamps the pattern strength to 0..100", () => {
+  it("clamps the pattern strength and photo sliders to 0..100", () => {
     expect(parseSettings(JSON.stringify({ patternStrength: 900 })).patternStrength).toBe(100);
     expect(parseSettings(JSON.stringify({ patternStrength: -5 })).patternStrength).toBe(0);
+    expect(parseSettings(JSON.stringify({ photoBlur: 900 })).photoBlur).toBe(100);
+    expect(parseSettings(JSON.stringify({ photoDarken: -5 })).photoDarken).toBe(0);
+  });
+
+  it("turns the old off pattern into the faintest pattern", () => {
+    expect(
+      parseSettings(JSON.stringify({ patternOn: false, patternStrength: 50 })).patternStrength,
+    ).toBe(0);
+  });
+
+  it("accepts the background modes, pattern kinds and photo fits", () => {
+    expect(
+      parseSettings(JSON.stringify({ backgroundMode: "photo" })).backgroundMode,
+    ).toBe("photo");
+    expect(parseSettings(JSON.stringify({ patternKind: "grid" })).patternKind).toBe("grid");
+    expect(parseSettings(JSON.stringify({ patternKind: "dots" })).patternKind).toBe("dots");
+    expect(parseSettings(JSON.stringify({ photoFit: "fit" })).photoFit).toBe("fit");
+    expect(parseSettings(JSON.stringify({ patternKind: "star" })).patternKind).toBe("default");
+    expect(parseSettings(JSON.stringify({ backgroundMode: "video" })).backgroundMode).toBe(
+      "pattern",
+    );
+  });
+
+  it("keeps folder lists and drops nonsense entries", () => {
+    expect(
+      parseSettings(JSON.stringify({ backupFolders: ["C:/a", "", "C:/a", 12] })).backupFolders,
+    ).toEqual(["C:/a"]);
+    expect(parseSettings(JSON.stringify({ backupFolders: "C:/a" })).backupFolders).toEqual([]);
+    expect(parseSettings(JSON.stringify({ appFolder: "  " })).appFolder).toBeNull();
+    expect(parseSettings(JSON.stringify({ appFolder: "C:/app" })).appFolder).toBe("C:/app");
   });
 
   it("rejects an unknown save default", () => {
@@ -112,16 +164,23 @@ describe("loadSettings and saveSettings", () => {
   });
 });
 
-describe("patternOpacity", () => {
+describe("scales", () => {
+  it("maps the text percentage to the root font size", () => {
+    expect(textScalePx(100)).toBe(16);
+    expect(textScalePx(80)).toBeCloseTo(12.8);
+    expect(textScalePx(115)).toBeCloseTo(18.4);
+    expect(textScalePx(140)).toBeCloseTo(22.4);
+  });
+
   it("is about 12 % in dark and 14 % in light at the default strength", () => {
     expect(patternOpacity(50, true)).toBeCloseTo(0.12);
     expect(patternOpacity(50, false)).toBeCloseTo(0.14);
+    expect(patternOpacity(0, true)).toBe(0);
   });
 
-  it("is 0 at strength 0 and scales up to twice the default", () => {
-    expect(patternOpacity(0, true)).toBe(0);
-    expect(patternOpacity(100, true)).toBeCloseTo(0.24);
-    expect(patternOpacity(1000, false)).toBeCloseTo(0.28);
-    expect(patternOpacity(Number.NaN, true)).toBeCloseTo(0.12);
+  it("maps the photo blur percentage to a CSS radius", () => {
+    expect(photoBlurPx(0)).toBe(0);
+    expect(photoBlurPx(30)).toBeCloseTo(6);
+    expect(photoBlurPx(100)).toBeCloseTo(20);
   });
 });

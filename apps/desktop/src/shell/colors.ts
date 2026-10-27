@@ -69,9 +69,53 @@ export function isColorPreset(group: ColorGroup, id: unknown): id is string {
   );
 }
 
+/** True when `value` is a `#rrggbb` colour (the custom choice of a group). */
+export function isHexColor(value: unknown): value is string {
+  return typeof value === "string" && /^#[0-9a-fA-F]{6}$/.test(value);
+}
+
+/** True when `value` is a preset id of `group` or a custom `#rrggbb` colour. */
+export function isColorChoice(group: ColorGroup, value: unknown): value is string {
+  return isColorPreset(group, value) || isHexColor(value);
+}
+
+/** WCAG relative luminance of a `#rrggbb` colour (0 is black, 1 is white). */
+export function luminance(hex: string): number {
+  const value = Number.parseInt(hex.slice(1), 16);
+  const channels = [value >> 16, (value >> 8) & 0xff, value & 0xff].map((byte) => {
+    const c = byte / 255;
+    return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
+}
+
+/**
+ * The text colour that reads on `hex`: near-black on a light colour, white on a dark one. The
+ * app's own dark text token is used, so custom chips look like the rest of the interface.
+ */
+export function textColorFor(hex: string): "#061428" | "#ffffff" {
+  return luminance(hex) > 0.45 ? "#061428" : "#ffffff";
+}
+
 /** The preset of `group` with `id`; an unknown id falls back to the group's first preset. */
 export function presetFor(group: ColorGroup, id: string): ColorPreset {
   return COLOR_PRESETS[group].find((preset) => preset.id === id) ?? COLOR_PRESETS[group][0];
+}
+
+/**
+ * The three tones of one choice in one theme. A custom `#rrggbb` colour is used as it is for the
+ * text and the container, and the text on it picks dark or light by the colour's luminance.
+ */
+export function tonesFor(
+  group: ColorGroup,
+  choice: string,
+  dark: boolean,
+): PresetTones {
+  if (isHexColor(choice)) {
+    return { main: choice, container: choice, onContainer: textColorFor(choice) };
+  }
+  const preset = presetFor(group, choice);
+  return dark ? preset.dark : preset.light;
 }
 
 /**
@@ -79,8 +123,8 @@ export function presetFor(group: ColorGroup, id: string): ColorPreset {
  * `index.css` builds the originals (dark rows are tinted with the container, light rows with the
  * text colour).
  */
-function declarations(group: ColorGroup, preset: ColorPreset, dark: boolean): string[] {
-  const { main, container, onContainer } = dark ? preset.dark : preset.light;
+function declarations(group: ColorGroup, choice: string, dark: boolean): string[] {
+  const { main, container, onContainer } = tonesFor(group, choice, dark);
   if (group === "changed") {
     return [
       `--changed: ${main};`,
@@ -115,7 +159,7 @@ export function colorCss(choices: ColorChoices): string {
   for (const dark of [false, true]) {
     const lines = COLOR_GROUPS.flatMap((group) => {
       if (choices[group] === DEFAULT_COLORS[group]) return [];
-      return declarations(group, presetFor(group, choices[group]), dark);
+      return declarations(group, choices[group], dark);
     });
     if (lines.length > 0) {
       blocks.push(`${dark ? ".dark" : ":root"} {\n  ${lines.join("\n  ")}\n}`);

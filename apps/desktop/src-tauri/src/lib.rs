@@ -6,9 +6,10 @@
 pub mod mcp;
 pub mod session;
 
-use std::path::PathBuf;
+use std::path::{Path as FsPath, PathBuf};
 use std::sync::{Mutex, MutexGuard, PoisonError};
 
+use session::folders::{self, BackgroundImage, DefaultPaths};
 use session::{
     ApiError, BackupRow, Change, CompareResult, Field, FieldKind, FileReport, GameView,
     HistoryResult, HistoryState, NodeRow, OpenInfo, Page, SaveLocation, SaveResult, Session,
@@ -21,6 +22,24 @@ use tauri_plugin_opener::OpenerExt;
 #[derive(Default)]
 pub struct AppState {
     session: Mutex<Option<Session>>,
+}
+
+/// The backup folders the window passed, as file system paths (empty keeps the default).
+fn backup_paths(folders: Option<Vec<String>>) -> Vec<PathBuf> {
+    folders
+        .unwrap_or_default()
+        .into_iter()
+        .filter(|folder| !folder.trim().is_empty())
+        .map(PathBuf::from)
+        .collect()
+}
+
+/// The open save's path, when a document is open (for the folder checks).
+fn save_path(state: &AppState) -> Option<PathBuf> {
+    state
+        .lock()
+        .as_ref()
+        .map(|session| session.file_path().to_path_buf())
 }
 
 impl AppState {
@@ -56,8 +75,10 @@ async fn open_file(
     state: State<'_, AppState>,
     path: String,
     password: Option<String>,
+    backup_folders: Option<Vec<String>>,
 ) -> Result<OpenInfo, ApiError> {
-    let session = Session::open(&path, password, None)?;
+    let mut session = Session::open(&path, password, None)?;
+    session.set_backup_roots(&backup_paths(backup_folders));
     let info = session.info();
     *state.lock() = Some(session);
     Ok(info)
@@ -70,8 +91,11 @@ async fn open_file_with_game_folder(
     state: State<'_, AppState>,
     path: String,
     game_folder: String,
+    backup_folders: Option<Vec<String>>,
 ) -> Result<OpenInfo, ApiError> {
-    let session = Session::open_with_game_folder(&path, None, None, PathBuf::from(game_folder))?;
+    let mut session =
+        Session::open_with_game_folder(&path, None, None, PathBuf::from(game_folder))?;
+    session.set_backup_roots(&backup_paths(backup_folders));
     let info = session.info();
     *state.lock() = Some(session);
     Ok(info)
@@ -80,8 +104,14 @@ async fn open_file_with_game_folder(
 /// Opens a pasted save code (replacing the open document). The text is kept as SavePrism's own file
 /// in the app data folder; a code that does not open leaves no file behind.
 #[tauri::command]
-async fn open_code(state: State<'_, AppState>, text: String) -> Result<OpenInfo, ApiError> {
-    let session = Session::open_code(&text, None)?;
+async fn open_code(
+    state: State<'_, AppState>,
+    text: String,
+    app_folder: Option<String>,
+    backup_folders: Option<Vec<String>>,
+) -> Result<OpenInfo, ApiError> {
+    let roots = backup_paths(backup_folders);
+    let session = Session::open_code_in(&text, app_folder.map(PathBuf::from), &roots)?;
     let info = session.info();
     *state.lock() = Some(session);
     Ok(info)
@@ -253,8 +283,13 @@ async fn save(
     target: String,
     overwrite: Option<bool>,
     keep_backups: Option<usize>,
+    keep_days: Option<u32>,
+    backup_folders: Option<Vec<String>>,
 ) -> Result<SaveResult, ApiError> {
-    state.with_session(|session| session.save(&target, overwrite.unwrap_or(false), keep_backups))
+    state.with_session(|session| {
+        session.set_backup_roots(&backup_paths(backup_folders));
+        session.save_with_days(&target, overwrite.unwrap_or(false), keep_backups, keep_days)
+    })
 }
 
 /// Pretty JSON text of the open document (the view the JSON editor edits; at most 50 MB).
@@ -336,8 +371,14 @@ async fn compare_with(state: State<'_, AppState>, path: String) -> Result<Compar
 
 /// The backups of the open file, newest first.
 #[tauri::command]
-async fn list_backups(state: State<'_, AppState>) -> Result<Vec<BackupRow>, ApiError> {
-    state.with_session(|session| session.backups())
+async fn list_backups(
+    state: State<'_, AppState>,
+    backup_folders: Option<Vec<String>>,
+) -> Result<Vec<BackupRow>, ApiError> {
+    state.with_session(|session| {
+        session.set_backup_roots(&backup_paths(backup_folders));
+        session.backups()
+    })
 }
 
 /// Puts the backup `name` back in place of the open file (the current file is backed up first) and
@@ -348,10 +389,13 @@ async fn restore_backup(
     state: State<'_, AppState>,
     name: String,
     keep_backups: Option<usize>,
+    keep_days: Option<u32>,
+    backup_folders: Option<Vec<String>>,
 ) -> Result<OpenInfo, ApiError> {
     let mut guard = state.lock();
-    let session = guard.as_ref().ok_or_else(ApiError::no_document)?;
-    let restored = session.restore_backup(&name, keep_backups)?;
+    let session = guard.as_mut().ok_or_else(ApiError::no_document)?;
+    session.set_backup_roots(&backup_paths(backup_folders));
+    let restored = session.restore_backup_with_days(&name, keep_backups, keep_days)?;
     let info = restored.info();
     *guard = Some(restored);
     Ok(info)
@@ -389,6 +433,106 @@ fn mcp_command() -> Result<String, ApiError> {
     std::env::current_exe()
         .map(|path| path.to_string_lossy().into_owned())
         .map_err(|_| ApiError::internal())
+}
+
+/// The folders SavePrism uses before the player changes them.
+#[tauri::command]
+fn default_paths() -> Result<DefaultPaths, ApiError> {
+    folders::default_paths()
+}
+
+/// Checks a folder picked for the backups and returns the folder list to store: the new folder
+/// first, then every folder used before (and the default), so older backups stay listed.
+#[tauri::command]
+fn set_backup_folder(
+    state: State<'_, AppState>,
+    folder: String,
+    current: Option<Vec<String>>,
+) -> Result<Vec<String>, ApiError> {
+    let save = save_path(&state);
+    let picked = folders::check_folder(FsPath::new(&folder), save.as_deref())?;
+    let mut roots = vec![picked.to_string_lossy().into_owned()];
+    let mut before = current.unwrap_or_default();
+    if before.is_empty()
+        && let Ok(default) = folders::default_paths()
+    {
+        before.push(default.backup_dir);
+    }
+    for root in before {
+        if !root.trim().is_empty() && !roots.iter().any(|seen| seen == &root) {
+            roots.push(root);
+        }
+    }
+    Ok(roots)
+}
+
+/// Checks a folder picked for the app's own files and moves the pasted codes and the background
+/// photo there. Returns the new folder.
+#[tauri::command]
+fn set_app_folder(
+    state: State<'_, AppState>,
+    folder: String,
+    old_folder: Option<String>,
+) -> Result<String, ApiError> {
+    let save = save_path(&state);
+    let old = old_folder
+        .filter(|path| !path.trim().is_empty())
+        .map(PathBuf::from)
+        .or_else(|| {
+            folders::default_paths()
+                .ok()
+                .map(|paths| PathBuf::from(paths.app_dir))
+        });
+    let picked = folders::set_app_folder(FsPath::new(&folder), old.as_deref(), save.as_deref())?;
+    Ok(picked.to_string_lossy().into_owned())
+}
+
+/// Opens an existing folder in the file manager (a folder the player picked in Settings).
+#[tauri::command]
+fn open_folder(app: AppHandle, folder: String) -> Result<(), ApiError> {
+    let path = PathBuf::from(&folder);
+    if !path.is_dir() {
+        return Err(ApiError::new(
+            session::app_codes::FOLDER,
+            format!("\"{}\" is not a folder", path.display()),
+            "Open it by hand in File Explorer.",
+        ));
+    }
+    app.opener()
+        .open_path(path.to_string_lossy(), None::<&str>)
+        .map_err(|error| {
+            ApiError::new(
+                session::app_codes::FOLDER,
+                format!("the folder could not be opened: {error}"),
+                "Open it by hand in File Explorer.",
+            )
+        })
+}
+
+/// The app folder used by the background commands (the player's choice, else the default).
+fn app_dir_of(app_folder: Option<String>) -> Result<PathBuf, ApiError> {
+    match app_folder.filter(|path| !path.trim().is_empty()) {
+        Some(path) => Ok(PathBuf::from(path)),
+        None => folders::default_paths().map(|paths| PathBuf::from(paths.app_dir)),
+    }
+}
+
+/// Copies the picked image into the app folder as the background photo (replacing the previous
+/// one) and returns it for the Preview and the whole window.
+#[tauri::command]
+fn choose_background(
+    source: String,
+    app_folder: Option<String>,
+) -> Result<BackgroundImage, ApiError> {
+    let app = app_dir_of(app_folder)?;
+    folders::import_background(FsPath::new(&source), &app)
+}
+
+/// The background photo stored in the app folder, when there is one.
+#[tauri::command]
+fn background_image(app_folder: Option<String>) -> Result<Option<BackgroundImage>, ApiError> {
+    let app = app_dir_of(app_folder)?;
+    folders::load_background(&app)
 }
 
 /// True when the third-party notices are bundled with this build.
@@ -463,6 +607,12 @@ pub fn run() {
             notices_available,
             open_notices,
             mcp_command,
+            default_paths,
+            set_backup_folder,
+            set_app_folder,
+            open_folder,
+            choose_background,
+            background_image,
         ])
         .run(tauri::generate_context!());
 

@@ -181,9 +181,20 @@ export function coreVersion(): Promise<string> {
   return invoke<string>("core_version");
 }
 
-/** Opens a file. `password` is only needed for encrypted Easy Save 3 files. */
-export function openFile(path: string, password?: string): Promise<OpenInfo> {
-  return invoke<OpenInfo>("open_file", { path, password: password ?? null });
+/**
+ * Opens a file. `password` is only needed for encrypted Easy Save 3 files. `backupFolders` are the
+ * folders the player used in Settings: the first gets the new backups, all are listed.
+ */
+export function openFile(
+  path: string,
+  password?: string,
+  backupFolders?: string[],
+): Promise<OpenInfo> {
+  return invoke<OpenInfo>("open_file", {
+    path,
+    password: password ?? null,
+    backupFolders: backupFolders ?? null,
+  });
 }
 
 /**
@@ -193,8 +204,13 @@ export function openFile(path: string, password?: string): Promise<OpenInfo> {
 export function openFileWithGameFolder(
   path: string,
   gameFolder: string,
+  backupFolders?: string[],
 ): Promise<OpenInfo> {
-  return invoke<OpenInfo>("open_file_with_game_folder", { path, gameFolder });
+  return invoke<OpenInfo>("open_file_with_game_folder", {
+    path,
+    gameFolder,
+    backupFolders: backupFolders ?? null,
+  });
 }
 
 /**
@@ -202,8 +218,16 @@ export function openFileWithGameFolder(
  * in the app data folder; a code that does not open leaves no file behind and its error has a hint
  * for pasted codes. Empty text fails with `ErrorCodes.emptyCode`.
  */
-export function openCode(text: string): Promise<OpenInfo> {
-  return invoke<OpenInfo>("open_code", { text });
+export function openCode(
+  text: string,
+  appFolder?: string | null,
+  backupFolders?: string[],
+): Promise<OpenInfo> {
+  return invoke<OpenInfo>("open_code", {
+    text,
+    appFolder: appFolder ?? null,
+    backupFolders: backupFolders ?? null,
+  });
 }
 
 /**
@@ -696,9 +720,12 @@ export function compareWith(path: string): Promise<CompareResult> {
   return invoke<CompareResult>("compare_with", { path });
 }
 
-/** The backups of the open file, newest first (empty when it was never saved over). */
-export function listBackups(): Promise<BackupRow[]> {
-  return invoke<BackupRow[]>("list_backups");
+/**
+ * The backups of the open file, newest first (empty when it was never saved over). Every folder the
+ * player used is searched, so older backups stay listed after the folder changed.
+ */
+export function listBackups(backupFolders?: string[]): Promise<BackupRow[]> {
+  return invoke<BackupRow[]>("list_backups", { backupFolders: backupFolders ?? null });
 }
 
 /**
@@ -706,8 +733,18 @@ export function listBackups(): Promise<BackupRow[]> {
  * backed up first, so it shows up in the list as the newest backup. Pending edits are lost.
  * `keepBackups` is the number of backups to keep for the file (1 to 50, 10 when missing).
  */
-export function restoreBackup(name: string, keepBackups?: number): Promise<OpenInfo> {
-  return invoke<OpenInfo>("restore_backup", { name, keepBackups: keepBackups ?? null });
+export function restoreBackup(
+  name: string,
+  keepBackups?: number,
+  keepDays?: number,
+  backupFolders?: string[],
+): Promise<OpenInfo> {
+  return invoke<OpenInfo>("restore_backup", {
+    name,
+    keepBackups: keepBackups ?? null,
+    keepDays: keepDays ?? null,
+    backupFolders: backupFolders ?? null,
+  });
 }
 
 /** A rough guess at what the first bytes of a file are. */
@@ -760,6 +797,79 @@ export function mcpCommand(): Promise<string> {
  * path is "save as" and fails with `ErrorCodes.targetExists` unless `overwrite` is true.
  * `keepBackups` is the number of backups to keep for the file (1 to 50, 10 when missing).
  */
-export function save(target: string, overwrite = false, keepBackups?: number): Promise<SaveResult> {
-  return invoke<SaveResult>("save", { target, overwrite, keepBackups: keepBackups ?? null });
+export function save(
+  target: string,
+  overwrite = false,
+  keepBackups?: number,
+  keepDays?: number,
+  backupFolders?: string[],
+): Promise<SaveResult> {
+  return invoke<SaveResult>("save", {
+    target,
+    overwrite,
+    keepBackups: keepBackups ?? null,
+    keepDays: keepDays ?? null,
+    backupFolders: backupFolders ?? null,
+  });
+}
+
+/** The folders SavePrism uses before the player changes them. */
+export interface DefaultPaths {
+  appDir: string;
+  backupDir: string;
+}
+
+export function defaultPaths(): Promise<DefaultPaths> {
+  return invoke<DefaultPaths>("default_paths");
+}
+
+/**
+ * Checks a folder picked for the backups and returns the folder list to store: the new folder
+ * first, then the folders used before, so older backups stay listed and restorable.
+ */
+export function setBackupFolder(folder: string, current?: string[]): Promise<string[]> {
+  return invoke<string[]>("set_backup_folder", { folder, current: current ?? null });
+}
+
+/** Checks a folder picked for the app's own files and moves them there. Returns the new folder. */
+export function setAppFolder(
+  folder: string,
+  oldFolder?: string | null,
+): Promise<string> {
+  return invoke<string>("set_app_folder", {
+    folder,
+    oldFolder: oldFolder ?? null,
+  });
+}
+
+/** Opens an existing folder in the file manager. */
+export function openFolder(folder: string): Promise<void> {
+  return invoke<void>("open_folder", { folder });
+}
+
+/** The background photo as the window shows it (a data URL). */
+export interface BackgroundImage {
+  name: string;
+  mime: string;
+  dataUrl: string;
+}
+
+/** Copies the picked image into the app folder, replacing the previous background photo. */
+export function chooseBackground(
+  source: string,
+  appFolder?: string | null,
+): Promise<BackgroundImage> {
+  return invoke<BackgroundImage>("choose_background", {
+    source,
+    appFolder: appFolder ?? null,
+  });
+}
+
+/** The background photo stored in the app folder, when there is one. */
+export function backgroundImage(
+  appFolder?: string | null,
+): Promise<BackgroundImage | null> {
+  return invoke<BackgroundImage | null>("background_image", {
+    appFolder: appFolder ?? null,
+  });
 }

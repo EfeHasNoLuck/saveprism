@@ -179,11 +179,72 @@ impl Session {
         Session::open_code_with_source(text, backup_root, super::RenpyKeySource::Default)
     }
 
+    /// Opens a pasted save code with the app folder and backup folders the player chose in
+    /// Settings: the code's file goes into `<app folder>/pasted`, and the session keeps every
+    /// backup folder for listing. Missing values keep the defaults.
+    pub fn open_code_in(
+        text: &str,
+        app_dir: Option<PathBuf>,
+        backup_roots: &[PathBuf],
+    ) -> Result<Session, ApiError> {
+        let dir = match app_dir {
+            Some(app) => app.join(PASTED_DIR),
+            None => {
+                // The pasted codes live in the app folder, not next to a backup folder the
+                // player picked.
+                let app = default_backup_root().and_then(|root| root.parent().map(PathBuf::from));
+                match app {
+                    Some(app) => app.join(PASTED_DIR),
+                    None => {
+                        let root = backup_roots
+                            .first()
+                            .cloned()
+                            .or_else(default_backup_root)
+                            .ok_or_else(|| {
+                                ApiError::from(Error::new(
+                                    codes::IO_NO_BACKUP_ROOT,
+                                    "no app data folder is known for this system",
+                                ))
+                            })?;
+                        pasted_dir(&root)?
+                    }
+                }
+            }
+        };
+        Session::open_code_at(
+            text,
+            dir,
+            backup_roots.first().cloned(),
+            backup_roots,
+            super::RenpyKeySource::Default,
+        )
+    }
+
     /// [`Session::open_code`] with an explicit Ren'Py key source, so tests never read the player's
     /// real `security_keys.txt`.
     pub(super) fn open_code_with_source(
         text: &str,
         backup_root: Option<PathBuf>,
+        keys: super::RenpyKeySource,
+    ) -> Result<Session, ApiError> {
+        let root = backup_root
+            .clone()
+            .or_else(default_backup_root)
+            .ok_or_else(|| {
+                ApiError::from(Error::new(
+                    codes::IO_NO_BACKUP_ROOT,
+                    "no app data folder is known for this system",
+                ))
+            })?;
+        let dir = pasted_dir(&root)?;
+        Session::open_code_at(text, dir, backup_root, &[], keys)
+    }
+
+    fn open_code_at(
+        text: &str,
+        dir: PathBuf,
+        backup_root: Option<PathBuf>,
+        backup_roots: &[PathBuf],
         keys: super::RenpyKeySource,
     ) -> Result<Session, ApiError> {
         let code = text.trim();
@@ -197,19 +258,10 @@ impl Session {
         Limits::default()
             .check_input(u64::try_from(code.len()).unwrap_or(u64::MAX))
             .map_err(|error| error.context("while reading a pasted code"))?;
-        let root = backup_root
-            .clone()
-            .or_else(default_backup_root)
-            .ok_or_else(|| {
-                ApiError::from(Error::new(
-                    codes::IO_NO_BACKUP_ROOT,
-                    "no app data folder is known for this system",
-                ))
-            })?;
-        let dir = pasted_dir(&root)?;
         let path = write_new_code(&dir, code.as_bytes())?;
         match Session::open_path(path.clone(), None, backup_root, keys, None) {
             Ok(mut session) => {
+                session.set_backup_roots(backup_roots);
                 session.pasted = true;
                 prune_codes(&dir, &path);
                 Ok(session)
