@@ -176,14 +176,16 @@ impl Ctx<'_> {
         if self.contents().is_some() {
             return Engine::VxAce;
         }
-        let has_sp = self
-            .dump_of("Game_Actors")
-            .and_then(|actors| self.entry(&actors, "@data"))
-            .is_some_and(|data| {
-                self.items(&data)
-                    .into_iter()
-                    .any(|(_, slot)| self.entry(&self.follow(slot), "@sp").is_some())
-            });
+        let Some(actors) = self.dump_of("Game_Actors") else {
+            // Neither a contents hash nor actors: a game that keeps its own party (Pokémon
+            // Essentials is XP) or a pasted fragment. XP is the safer default.
+            return Engine::Xp;
+        };
+        let has_sp = self.entry(&actors, "@data").is_some_and(|data| {
+            self.items(&data)
+                .into_iter()
+                .any(|(_, slot)| self.entry(&self.follow(slot), "@sp").is_some())
+        });
         if has_sp { Engine::Xp } else { Engine::Vx }
     }
 
@@ -377,23 +379,41 @@ impl Ctx<'_> {
         out
     }
 
-    /// The RPG Maker sections of an XP, VX or VX Ace save, or `None` when there is no
-    /// `Game_Party` with `@gold`.
+    /// The RPG Maker sections of an XP, VX or VX Ace save, or `None` when the file has none of the
+    /// game objects (it then stays a plain Values list). `Game_Party` may be missing: Pokémon
+    /// Essentials keeps money and items in its own objects, but still has `Game_Switches`,
+    /// `Game_Variables` and the other RPG Maker objects.
     pub(super) fn rgss_view(&self, engine: Engine, names: &GameNames) -> Option<RpgMakerView> {
         let objects = self.objects(engine);
-        let party = objects.party?;
-        let gold = self.field(&self.entry(&party, "@gold")?, engine.gold())?;
+        let party = objects.party.as_ref();
+        if party.is_none()
+            && objects.actors.is_none()
+            && objects.variables.is_none()
+            && objects.switches.is_none()
+        {
+            return None;
+        }
+        let gold = party
+            .and_then(|party| self.entry(party, "@gold"))
+            .and_then(|at| self.field(&at, engine.gold()));
         let section = |at: Option<At>, names: &HashMap<u32, String>| {
             at.map(|at| self.indexed(&at, "@data", names))
+                .unwrap_or_default()
+        };
+        let empty = |party: Option<&At>, key: &str, names: &HashMap<u32, String>| {
+            party
+                .map(|party| self.rgss_counts(party, key, names))
                 .unwrap_or_default()
         };
         Some(RpgMakerView {
             engine: engine.id().to_string(),
             gold,
-            actors: self.rgss_actors(engine, &party, objects.actors.as_ref()),
-            items: self.rgss_counts(&party, "@items", &names.items),
-            weapons: self.rgss_counts(&party, "@weapons", &names.weapons),
-            armors: self.rgss_counts(&party, "@armors", &names.armors),
+            actors: party
+                .map(|party| self.rgss_actors(engine, party, objects.actors.as_ref()))
+                .unwrap_or_default(),
+            items: empty(party, "@items", &names.items),
+            weapons: empty(party, "@weapons", &names.weapons),
+            armors: empty(party, "@armors", &names.armors),
             variables: section(objects.variables, &names.variables),
             switches: section(objects.switches, &names.switches),
             names_folder: names
@@ -402,9 +422,9 @@ impl Ctx<'_> {
                 .map(|folder| folder.to_string_lossy().into_owned()),
             catalog: names.catalog(),
             can_add: AddLists {
-                items: self.takes_entries(&party, "@items"),
-                weapons: self.takes_entries(&party, "@weapons"),
-                armors: self.takes_entries(&party, "@armors"),
+                items: party.is_some_and(|party| self.takes_entries(party, "@items")),
+                weapons: party.is_some_and(|party| self.takes_entries(party, "@weapons")),
+                armors: party.is_some_and(|party| self.takes_entries(party, "@armors")),
             },
         })
     }
@@ -566,15 +586,28 @@ pub(super) fn data_hint(engine: Engine) -> String {
     )
 }
 
+/// The engine an extension belongs to, when the file name says it.
+fn engine_from_path(path: &FsPath) -> Option<Engine> {
+    let extension = path.extension()?.to_string_lossy().to_ascii_lowercase();
+    match extension.as_str() {
+        "rxdata" => Some(Engine::Xp),
+        "rvdata" => Some(Engine::Vx),
+        "rvdata2" => Some(Engine::VxAce),
+        _ => None,
+    }
+}
+
 impl Session {
-    /// The RPG Maker version of a Ruby Marshal save, read from the tree; `None` for other formats.
+    /// The RPG Maker version of a Ruby Marshal save; `None` for other formats. The extension is
+    /// the most reliable sign (`.rxdata` is XP even when a game keeps its own classes and no
+    /// `Game_Actors`); without one the tree decides.
     pub(super) fn rgss_engine(&self, ctx: &Ctx<'_>) -> Option<Engine> {
         let marshal = self
             .recipe
             .steps
             .iter()
             .any(|step| step.kind == "format.ruby-marshal");
-        marshal.then(|| ctx.rgss_engine())
+        marshal.then(|| engine_from_path(&self.path).unwrap_or_else(|| ctx.rgss_engine()))
     }
 
     /// The RPG Maker sections of an XP, VX or VX Ace save, with names from the game's `Data`

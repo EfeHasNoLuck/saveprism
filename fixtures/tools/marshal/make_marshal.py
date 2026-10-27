@@ -13,6 +13,8 @@ writes
     fixtures/synthetic/rpgmaker-vxace/Save03.rvdata2  stat bonuses (@param_plus), experience of two
                                                       classes, an actor slot that is an object link
     fixtures/synthetic/rpgmaker-xp/Save1.rxdata       an XP save (one dump per game object, Ruby 1.8)
+    fixtures/synthetic/rpgmaker-xp/Save2.rxdata       the same objects in another order (Game_Party
+                                                      before Game_Actors, Game_System last)
     fixtures/synthetic/rpgmaker-vx/Save1.rvdata       a VX save (one dump per game object, Ruby 1.8)
     fixtures/synthetic/rpgmaker-*/Data/               a small game database for each engine (Items,
                                                       Weapons, Armors, System): the names of the saves
@@ -805,6 +807,20 @@ def xp_dumps():
     ]
 
 
+def xp_dumps_reordered():
+    """The XP objects of `xp_dumps` with `Game_Party` before `Game_Actors` and `Game_System` last,
+    the way a game that adds its own classes can write the top-level list."""
+    dumps = xp_dumps()
+    header, objects = dumps[:2], dumps[2:]
+    priority = ["Game_Party", "Game_Actors", "Game_Variables", "Game_Switches", "Game_System"]
+    return header + sorted(
+        objects,
+        key=lambda value: priority.index(value.cls)
+        if isinstance(value, Obj) and value.cls in priority
+        else len(priority),
+    )
+
+
 def xp_base_item(cls, item_id, name):
     return Obj(
         cls,
@@ -1046,6 +1062,11 @@ def main():
     for value in xp_dumps():
         xp.dump(value)
     write(os.path.join("synthetic", "rpgmaker-xp", "Save1.rxdata"), bytes(xp.out))
+
+    xp = Dumper(ruby18_float)
+    for value in xp_dumps_reordered():
+        xp.dump(value)
+    write(os.path.join("synthetic", "rpgmaker-xp", "Save2.rxdata"), bytes(xp.out))
 
     vx = Dumper(ruby18_float)
     for value in vx_dumps():

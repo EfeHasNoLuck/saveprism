@@ -159,8 +159,13 @@ export function RpgMaker({
   return (
     <div className="flex flex-col gap-2.5">
       <DataFolderLine view={view} />
-      <div className="grid gap-2.5 md:grid-cols-[14rem_minmax(0,1fr)]">
-        <Gold field={view.gold} />
+      <div
+        className={cn(
+          "grid gap-2.5",
+          view.gold === null ? "md:grid-cols-1" : "md:grid-cols-[14rem_minmax(0,1fr)]",
+        )}
+      >
+        {view.gold === null ? null : <Gold field={view.gold} />}
         <Characters actors={view.actors} namesFolder={view.namesFolder} />
       </div>
       <ListRow

@@ -410,6 +410,21 @@ impl SaveDoc {
         Ok(())
     }
 
+    /// Replaces the value of a node but keeps its `lexeme`, for a codec that narrows a decoded
+    /// value to the width the file stores while keeping the original text for an exact write.
+    /// Fails with `CORE_READ_ONLY` on read-only nodes.
+    pub fn set_value_keep_lexeme(&mut self, id: NodeId, value: Value) -> Result<()> {
+        let node = self.node_mut(id).ok_or_else(|| missing_node(id))?;
+        if node.flags.contains(NodeFlags::READ_ONLY) {
+            return Err(Error::new(
+                codes::CORE_READ_ONLY,
+                format!("node {} is read-only", id.index()),
+            ));
+        }
+        node.value = value;
+        Ok(())
+    }
+
     /// Replaces the flags of a node.
     pub fn set_flags(&mut self, id: NodeId, flags: NodeFlags) -> Result<()> {
         let node = self.node_mut(id).ok_or_else(|| missing_node(id))?;
