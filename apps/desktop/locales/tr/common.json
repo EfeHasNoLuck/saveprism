@@ -768,6 +768,25 @@
     "change": "Değiştir…",
     "action": "Eylem",
     "shortcutsColumn": "Kısayollar",
+    "resetAllShortcuts": "Tümünü varsayılana döndür",
+    "resetShortcut": "{{action}} için varsayılana dön",
+    "addShortcut": "Kısayol ekle",
+    "removeShortcut": "{{keys}} kısayolunu kaldır",
+    "editShortcut": "Bu kısayolu değiştir",
+    "shortcutNotSet": "Ayarlanmadı",
+    "shortcutsNote": "Windows tuşuyla yapılan kısayollar ve Alt+F4 ya da Ctrl+Alt+Del gibi sistem tuşları Windows tarafından ayrılmıştır. Windows bunları SavePrism görmeden önce işler, bu yüzden burada kullanılamazlar.",
+    "shortcutDialog": {
+      "title": "{{action}} için yeni tuşlara bas",
+      "hint": "Enter kaydeder, Esc iptal eder.",
+      "waiting": "Tuşlara bas…",
+      "threeKeys": "En fazla 3 tuş: Ctrl, Shift ve Alt'tan en fazla ikisi ve bir başka tuş.",
+      "needCtrlOrAlt": "Ctrl ya da Alt ekle veya bir fonksiyon tuşu (F1–F12) kullan.",
+      "ctrlAlt": "Ctrl+Alt kullanılamaz: birçok düzende bu AltGr'dir ve karakter yazar.",
+      "system": "{{keys}} Windows tarafından ayrılmıştır.",
+      "reserved": "Enter ve Esc kullanılamaz.",
+      "unknown": "Bu tuş kullanılamaz.",
+      "conflict": "{{keys}} şu anda {{action}} tarafından kullanılıyor. Buraya taşımak için Enter'a bas."
+    },
     "mcpTitle": "Bir AI ajanı bağla (MCP)",
     "mcpHint": "Claude Desktop, Claude Code, Cursor ve diğer MCP uygulamaları senin için kayıtları açıp düzenleyebilir. Kaydetmeden önce her zaman yedek alınır.",
     "tabs": {
@@ -783,18 +802,28 @@
       "appearance": "Yazı boyutu, renkler ve arka plan.",
       "backups": "Kaydet'in ne yaptığı ve SavePrism'in kaç yedek tuttuğu.",
       "ai": "AI'dan yardım almanın iki yolu. SavePrism kendiliğinden hiçbir şey göndermez.",
-      "shortcuts": "Bir kısayola tıkla, sonra yeni tuşlara bas.",
+      "shortcuts": "Bir kısayola tıkla, sonra yeni tuşlara bas. Her eylem için en fazla 2 kısayol.",
       "about": "Sürüm ve lisans."
     }
   },
   "shortcuts": {
     "title": "Klavye kısayolları",
     "open": "Dosya aç",
+    "pasteCode": "Kod yapıştır",
     "save": "Kaydet",
     "saveAs": "Farklı kaydet…",
+    "closeFile": "Dosyayı kapat",
     "undo": "Geri al",
     "redo": "Yinele",
-    "find": "İlk listede ara"
+    "find": "İlk listede ara",
+    "undoAll": "Tüm değişiklikleri geri al",
+    "openSettings": "Ayarları aç",
+    "whereSaves": "Kaydım nerede?",
+    "groups": {
+      "file": "Dosya",
+      "editing": "Düzenleme",
+      "app": "Uygulama"
+    }
   },
   "about": {
     "title": "SavePrism hakkında",

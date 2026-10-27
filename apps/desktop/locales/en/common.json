@@ -768,6 +768,25 @@
     "change": "Change…",
     "action": "Action",
     "shortcutsColumn": "Shortcuts",
+    "resetAllShortcuts": "Reset all to default",
+    "resetShortcut": "Reset {{action}} to default",
+    "addShortcut": "Add a shortcut",
+    "removeShortcut": "Remove {{keys}}",
+    "editShortcut": "Change this shortcut",
+    "shortcutNotSet": "Not set",
+    "shortcutsNote": "Shortcuts with the Windows key, and system keys such as Alt+F4 or Ctrl+Alt+Del, are reserved by Windows. Windows handles them before SavePrism sees them, so they can't be used here.",
+    "shortcutDialog": {
+      "title": "Press the new keys for {{action}}",
+      "hint": "Enter saves, Esc cancels.",
+      "waiting": "Press the keys…",
+      "threeKeys": "At most 3 keys: up to two of Ctrl, Shift and Alt plus one other key.",
+      "needCtrlOrAlt": "Add Ctrl or Alt, or use a function key (F1–F12).",
+      "ctrlAlt": "Ctrl+Alt can't be used: on many layouts it is AltGr, which types characters.",
+      "system": "{{keys}} is reserved by Windows.",
+      "reserved": "Enter and Esc can't be used.",
+      "unknown": "That key can't be used.",
+      "conflict": "{{keys}} is used by {{action}}. Press Enter to move it here."
+    },
     "mcpTitle": "Connect an AI agent (MCP)",
     "mcpHint": "Claude Desktop, Claude Code, Cursor and other MCP apps can open and edit saves for you. Saving always makes a backup first.",
     "tabs": {
@@ -783,18 +802,28 @@
       "appearance": "Text size, colors and the background.",
       "backups": "What Save does, and how many backups SavePrism keeps.",
       "ai": "Two ways to get help from AI. SavePrism never sends anything by itself.",
-      "shortcuts": "Click a shortcut, then press the new keys.",
+      "shortcuts": "Click a shortcut, then press the new keys. Up to 2 shortcuts per action.",
       "about": "Version and license."
     }
   },
   "shortcuts": {
     "title": "Keyboard shortcuts",
     "open": "Open file",
+    "pasteCode": "Paste code",
     "save": "Save",
     "saveAs": "Save as…",
+    "closeFile": "Close file",
     "undo": "Undo",
     "redo": "Redo",
-    "find": "Search the first list"
+    "find": "Search the first list",
+    "undoAll": "Undo all changes",
+    "openSettings": "Open settings",
+    "whereSaves": "Where is my save?",
+    "groups": {
+      "file": "File",
+      "editing": "Editing",
+      "app": "App"
+    }
   },
   "about": {
     "title": "About SavePrism",

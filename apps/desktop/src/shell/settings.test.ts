@@ -13,6 +13,7 @@ import {
   SETTINGS_KEY,
   textScalePx,
 } from "./settings";
+import { defaultShortcuts } from "./shortcuts";
 
 describe("parseSettings", () => {
   it("gives the defaults for missing or broken text", () => {
@@ -190,5 +191,15 @@ describe("scales", () => {
     expect(photoBlurPx(0)).toBe(0);
     expect(photoBlurPx(30)).toBeCloseTo(6);
     expect(photoBlurPx(100)).toBeCloseTo(20);
+  });
+});
+
+describe("shortcut settings", () => {
+  it("defaults and reads stored bindings per action", () => {
+    expect(parseSettings(null).shortcuts).toEqual(defaultShortcuts());
+    expect(parseSettings("{}").shortcuts).toEqual(defaultShortcuts());
+    expect(
+      parseSettings(JSON.stringify({ shortcuts: { save: [], find: ["alt+f"] } })).shortcuts,
+    ).toMatchObject({ save: [], find: ["Alt+F"], open: ["Ctrl+O"] });
   });
 });

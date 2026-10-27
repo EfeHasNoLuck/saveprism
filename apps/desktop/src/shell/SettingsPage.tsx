@@ -74,6 +74,7 @@ import {
 } from "./settings";
 import { searchSettings, type SettingsTab } from "./settingsSearch";
 import { MCP_CLIENTS, mcpSnippet, type McpClient } from "./setup";
+import { ShortcutSettings } from "./ShortcutSettings";
 
 const COMMUNITY_URL = "https://github.com/huseyincancalti/saveprism/discussions";
 
@@ -86,16 +87,6 @@ const TABS: { id: SettingsTab; icon: typeof SlidersHorizontal; labelKey: string 
   { id: "ai", icon: Sparkles, labelKey: "settings.tabs.ai" },
   { id: "shortcuts", icon: Keyboard, labelKey: "settings.tabs.shortcuts" },
   { id: "about", icon: Info, labelKey: "settings.tabs.about" },
-];
-
-/** The shortcuts of the app (see `shortcuts.ts`); a row lists every key that does the same. */
-const SHORTCUTS: { action: string; keys: string[] }[] = [
-  { action: "open", keys: ["Ctrl+O"] },
-  { action: "save", keys: ["Ctrl+S"] },
-  { action: "saveAs", keys: ["Ctrl+Shift+S"] },
-  { action: "undo", keys: ["Ctrl+Z"] },
-  { action: "redo", keys: ["Ctrl+Y", "Ctrl+Shift+Z"] },
-  { action: "find", keys: ["Ctrl+F"] },
 ];
 
 type FolderPicker = "backup" | "app";
@@ -279,7 +270,7 @@ export function SettingsPage({ onClose }: { onClose: () => void }) {
 
   useEffect(() => {
     const listener = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
+      if (event.key === "Escape" && !event.defaultPrevented) {
         event.preventDefault();
         onClose();
       }
@@ -1044,34 +1035,7 @@ export function SettingsPage({ onClose }: { onClose: () => void }) {
             </div>
           ) : null}
 
-          {tab === "shortcuts" ? (
-            <div className="mt-4">
-              <Group>
-                <div className="flex h-8 items-center border-b border-border px-4 text-[0.6875rem] font-semibold tracking-[0.04em] text-muted-foreground uppercase dark:border-[#1d2d42]">
-                  <span className="w-52">{t("settings.action")}</span>
-                  <span>{t("settings.shortcutsColumn")}</span>
-                </div>
-                {SHORTCUTS.map(({ action, keys }) => (
-                  <div
-                    key={action}
-                    className="flex h-10 items-center border-t border-border px-4 text-[0.8125rem] first:border-t-0 dark:border-[#1d2d42]"
-                  >
-                    <span className="w-52 font-medium">{t(`shortcuts.${action}`)}</span>
-                    <span className="flex flex-1 flex-wrap items-center gap-2">
-                      {keys.map((key) => (
-                        <kbd
-                          key={key}
-                          className="rounded-sm bg-surface-high px-1.5 py-0.5 font-mono text-[0.6875rem] text-foreground-variant"
-                        >
-                          {key}
-                        </kbd>
-                      ))}
-                    </span>
-                  </div>
-                ))}
-              </Group>
-            </div>
-          ) : null}
+          {tab === "shortcuts" ? <ShortcutSettings /> : null}
 
           {tab === "about" ? (
             <div className="mt-5 flex flex-col items-center">

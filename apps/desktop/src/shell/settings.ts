@@ -5,6 +5,7 @@
 
 import { DEFAULT_COLORS, isColorChoice, type ColorChoices, type ColorGroup } from "./colors";
 import { DEFAULT_MCP_CLIENT, isMcpClient, type McpClient } from "./setup";
+import { defaultShortcuts, parseStoredShortcuts, type ShortcutBindings } from "./shortcuts";
 
 export type SaveDefault = "saveAs" | "overwrite";
 
@@ -57,6 +58,8 @@ export interface Settings {
   appFolder: string | null;
   /** The AI app the MCP setup is prepared for. */
   mcpClient: McpClient;
+  /** The keyboard shortcuts of each action. */
+  shortcuts: ShortcutBindings;
 }
 
 export const SETTINGS_KEY = "saveprism.settings";
@@ -78,6 +81,7 @@ export const DEFAULT_SETTINGS: Settings = {
   backupFolders: [],
   appFolder: null,
   mcpClient: DEFAULT_MCP_CLIENT,
+  shortcuts: defaultShortcuts(),
 };
 
 /** The two methods of `Storage` that settings need. */
@@ -214,6 +218,7 @@ export function parseSettings(raw: string | null): Settings {
         ? record.appFolder
         : null,
     mcpClient: isMcpClient(record.mcpClient) ? record.mcpClient : DEFAULT_MCP_CLIENT,
+    shortcuts: parseStoredShortcuts(record.shortcuts),
   };
 }
 
