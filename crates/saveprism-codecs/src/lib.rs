@@ -50,6 +50,7 @@ pub mod reg;
 pub mod renpy;
 pub mod rocksdb;
 pub mod rpgmaker;
+pub mod satisfactory;
 pub mod scs_sii;
 pub mod sol;
 pub mod sqlite;
@@ -93,6 +94,7 @@ pub fn register_all(reg: &mut Registry) {
     litedb::register(reg);
     rocksdb::register(reg);
     rpgmaker::register(reg);
+    satisfactory::register(reg);
     scs_sii::register(reg);
     es3::register(reg);
     gamemaker::register(reg);

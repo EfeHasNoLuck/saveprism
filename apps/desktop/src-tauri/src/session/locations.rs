@@ -85,6 +85,10 @@ const CATALOG: &[(&str, &[&str])] = &[
     ),
     ("palworld", &["%LOCALAPPDATA%\\Pal\\Saved\\SaveGames"]),
     (
+        "satisfactory",
+        &["%LOCALAPPDATA%\\FactoryGame\\Saved\\SaveGames\\<id>"],
+    ),
+    (
         "terraria",
         &[
             "%USERPROFILE%\\Documents\\My Games\\Terraria\\Players",
@@ -212,6 +216,7 @@ mod tests {
             "flash",
             "witcher3",
             "palworld",
+            "satisfactory",
             "terraria",
             "neverwinter-nights",
             "kotor",

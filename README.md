@@ -51,6 +51,7 @@ SavePrism needs Microsoft Edge WebView2, which Windows 10 and 11 already have; t
 | Unity / .NET BinaryFormatter | `.dat`, RAGS `.rsv` | values (read as data, never run) |
 | Unreal Engine | `.sav` (GVAS) | values |
 | Palworld | `.sav` (PlZ) | values (PlM/Oodle not supported) |
+| Satisfactory | `.sav` (1.x, header 13/14) | header numbers, scalar properties and inventory item counts (`NumItems`); strings, maps, sets and unknown object data stay read-only |
 | Godot | ConfigFile text (`.cfg`, `.ini`, `.save`), `store_var` binary, JSON, text resources (`.tres`), binary resources (`.res`, `RSRC` and `RSCC`) | values (references, typed containers, strings in binary resources and encrypted files stay read-only or are refused) |
 | Ren'Py | `.save`, `persistent` | store variables (read as data, never run) |
 | Twine · SugarCube 2 | save files and save codes | story variables |

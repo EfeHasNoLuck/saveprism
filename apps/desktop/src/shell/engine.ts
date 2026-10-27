@@ -106,6 +106,7 @@ const CODEC_LABELS: Record<string, string> = {
   "format.gamemaker-ds-map": "GameMaker",
   "format.naninovel": "Naninovel",
   "format.witcher3": "The Witcher 3",
+  "format.satisfactory": "Satisfactory",
   "format.terraria-player": "Terraria",
   "format.terraria-world": "Terraria",
   "format.xml": "XML",
