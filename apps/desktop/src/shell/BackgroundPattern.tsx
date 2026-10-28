@@ -60,6 +60,17 @@ export function BackgroundPattern() {
     };
   }, [settings.backgroundMode, settings.appFolder, settings.photoName]);
 
+  // Surfaces turn to frosted glass while a photo is shown (see index.css).
+  const glass = settings.backgroundMode === "photo" && photo !== null;
+  useEffect(() => {
+    const root = document.documentElement;
+    if (glass) root.dataset.glass = "";
+    else delete root.dataset.glass;
+    return () => {
+      delete root.dataset.glass;
+    };
+  }, [glass]);
+
   if (settings.backgroundMode === "photo") {
     if (!photo) return null;
     return (
@@ -76,7 +87,9 @@ export function BackgroundPattern() {
         />
         <div
           className="absolute inset-0"
-          style={{ backgroundColor: `rgba(0, 6, 15, ${settings.photoDarken / 100})` }}
+          style={{
+            backgroundColor: `color-mix(in srgb, var(--background) ${settings.photoDarken}%, transparent)`,
+          }}
         />
       </div>
     );

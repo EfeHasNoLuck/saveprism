@@ -88,12 +88,12 @@ export function StartScreen({
           </div>
         </div>
 
-        <p className="mt-3.5 flex items-center justify-center gap-2 text-[0.8125rem] font-medium text-foreground-variant">
+        <p className="on-photo mt-3.5 flex items-center justify-center gap-2 text-[0.8125rem] font-medium text-foreground-variant">
           <ShieldCheck className="size-4 text-success" aria-hidden="true" />
           {t("start.slogan")}
         </p>
 
-        <h2 className="mt-6 mb-2.5 text-[15px] font-semibold tracking-tight">
+        <h2 className="on-photo mt-6 mb-2.5 text-[15px] font-semibold tracking-tight">
           {t("start.faq.title")}
         </h2>
         <div className="overflow-hidden rounded-md border border-border bg-card">

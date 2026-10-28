@@ -201,7 +201,7 @@ function Section({
 }) {
   return (
     <section className="mt-5">
-      <div className="mb-1.5 flex h-6 items-center justify-between gap-3">
+      <div className="on-photo mb-1.5 flex h-6 items-center justify-between gap-3">
         <h3 className="text-[0.6875rem] font-semibold tracking-[0.06em] text-muted-foreground uppercase">
           {title}
         </h3>
@@ -647,7 +647,7 @@ export function SettingsPage({
         <div className="mx-auto max-w-[948px]">
           {noticesPage ? (
             <div>
-              <div className="mb-1 flex items-center gap-1 text-xs text-muted-foreground">
+              <div className="on-photo mb-1 flex items-center gap-1 text-xs text-muted-foreground">
                 <button
                   type="button"
                   onClick={() => setNoticesPage(false)}
@@ -659,10 +659,10 @@ export function SettingsPage({
                 <ChevronRight className="size-3" />
                 <span>{t("about.notices")}</span>
               </div>
-              <h2 className="text-[1.375rem] leading-7 font-semibold tracking-tight">
+              <h2 className="on-photo text-[1.375rem] leading-7 font-semibold tracking-tight">
                 {t("about.notices")}
               </h2>
-              <p className="mt-0.5 text-xs text-muted-foreground">{t("about.noticesSubtitle")}</p>
+              <p className="on-photo mt-0.5 text-xs text-muted-foreground">{t("about.noticesSubtitle")}</p>
 
               <div className="mt-4 flex items-center gap-3">
                 <div className="flex h-8 max-w-xs flex-1 items-center gap-2 rounded-sm border border-input bg-field px-2.5">
@@ -750,16 +750,16 @@ export function SettingsPage({
             </div>
           ) : (
             <>
-          <div className="mb-1 flex items-center gap-1 text-xs text-muted-foreground">
+          <div className="on-photo mb-1 flex items-center gap-1 text-xs text-muted-foreground">
             {t("settings.title")}
             <ChevronRight className="size-3" />
             <span>{t(titleKey)}</span>
           </div>
-          <h2 className="text-[1.375rem] leading-7 font-semibold tracking-tight">
+          <h2 className="on-photo text-[1.375rem] leading-7 font-semibold tracking-tight">
             {t(titleKey)}
           </h2>
           {tab === "about" ? null : (
-            <p className="mt-0.5 text-xs text-muted-foreground">{t(`settings.sub.${tab}`)}</p>
+            <p className="on-photo mt-0.5 text-xs text-muted-foreground">{t(`settings.sub.${tab}`)}</p>
           )}
 
           {tab === "general" ? (
@@ -1953,7 +1953,9 @@ function PreviewCard({ photo }: { photo: BackgroundImageData | null }) {
             />
             <div
               className="absolute inset-0"
-              style={{ backgroundColor: `rgba(0, 6, 15, ${settings.photoDarken / 100})` }}
+              style={{
+                backgroundColor: `color-mix(in srgb, var(--background) ${settings.photoDarken}%, transparent)`,
+              }}
             />
           </>
         ) : (

@@ -222,6 +222,32 @@
 }
 
 /*
+ * Frosted glass over a background photo (`data-glass` on <html>, set by BackgroundPattern).
+ * The photo is already blurred by its own setting, so cards only turn translucent (cheap with
+ * many cards); the header, bottom bar and Settings sidebar also blur what scrolls under them.
+ * Unlayered, so it wins over the Tailwind utilities.
+ */
+:root[data-glass] .bg-card {
+  background-color: color-mix(in srgb, var(--card) 80%, transparent);
+}
+/* Dark text in the light theme needs a denser card over a dark part of the photo. */
+:root[data-glass]:not(.dark) .bg-card {
+  background-color: color-mix(in srgb, var(--card) 88%, transparent);
+}
+/* Text that sits right on the photo (headings, group labels, the slogan) gets a soft halo. */
+:root[data-glass] .on-photo {
+  text-shadow:
+    0 0 2px var(--background),
+    0 0 6px var(--background),
+    0 0 12px var(--background);
+}
+:root[data-glass] .bg-chrome {
+  background-color: color-mix(in srgb, var(--chrome) 70%, transparent);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  backdrop-filter: blur(14px) saturate(1.2);
+}
+
+/*
  * Thin, rounded scrollbars in the theme's tones (WebView2 is Chromium). The standard
  * `scrollbar-width` / `scrollbar-color` win over `::-webkit-scrollbar` in current Chromium, so
  * they are only used where the pseudo-element is not supported: there the browser draws its own

@@ -765,7 +765,7 @@
     "fit": "Fit",
     "fill": "Fill",
     "blur": "Blur",
-    "darken": "Darken",
+    "darken": "Fade",
     "preview": "Preview",
     "previewTip": "Shows your choices before you close Settings. Text on colored rows switches by itself to stay readable.",
     "backupsSection": "Backups",
