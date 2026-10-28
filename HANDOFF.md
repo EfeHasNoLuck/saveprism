@@ -31,46 +31,20 @@ w7-settings-fix,w7-screens-fix,w8-appcolor,w8-photo}` (branches `wt/w8-*` are me
 - App color changeable, customization left to the community (theme files). Glass look in Photo mode (B).
 - "Ben başka bir şey göremiyorum, sonra release düşünürüz", then the README/GitHub showcase (below).
 
-## NEXT: README and GitHub showcase (maintainer's request, 2026-10-28)
-The maintainer's full vision prompt (Turkish, written with Gemini, kept verbatim): `.motor/readme-vision-tr.md`. They
-said: not strict rules; analyze the codebase first, adapt it to our reality, use your own judgment; ready to brainstorm
-inconsistencies. Their structure: centered hero (logo, tech badges, MIT badge, one-paragraph why/what, quick links to
-Quick start · AI & MCP · Report a bug · Add a theme · Add a language, screenshot/GIF) → Download + developer setup →
-AI & MCP first in the details (what, how, config JSON, Mermaid diagram) → features, repo tree (`<details>`), config
-table, theme + language customization → contributing, tests, issue links → license + personal footer. Plus GitHub
-files: LICENSE, issue forms (bug, feature/AI tool, add theme, add language, config.yml), CONTRIBUTING.md.
+## Done: README and GitHub showcase (2026-10-28, `c23e720`, `9d776ec`)
+Vision prompt: `.motor/readme-vision-tr.md`. Brainstorm: footer = GitHub profile only (no e-mail); visuals = "as many as
+fit" (hero GIF, dark/light screenshots per feature, Mermaid). README: hero (logo, badges, paragraph, quick links,
+`docs/images/demo-{dark,light}.gif`), Download, Quick start, build from source, AI and MCP first (no API keys; setup per
+app; tool table; diagram), features with 8 screenshot pairs, save-safety diagram, formats (15 most asked + the rest in
+`<details>`), where SavePrism keeps things, CLI, themes/languages, repo tree, contributing, license, footer. CONTRIBUTING:
+add a language / share a theme / add a format / add an MCP tool. Forms: `add_language.yml`, Discussions
+`community-themes.yml` (needs a "Community themes" category once Discussions is on), feature request with area + AI/MCP
+field, config links to Discussions. Visuals recorded by a subagent: `.motor/gif-1028.md`, scripts `.motor/gif-1028/`.
+Not seen on GitHub yet (nothing pushed). `C:\SavePrismDemo\` (made-up demo files) is left for the maintainer to delete.
+Slime Rancher 2 (maintainer, 2026-10-28): own binary tagged-record format, not encrypted; their saves copied to
+`fixtures/external/slime-rancher-2/`; a "Slime Rancher 2 save support" session card was proposed (not started).
 
-What the codebase already has / where the prompt does not fit (raise these in the brainstorm, one question at a time):
-1. `LICENSE` exists (MIT, "Copyright (c) 2026 Hüseyin Can ÇALTI") and is a LOCKED path: keep it as is.
-2. `.github/` exists: `ISSUE_TEMPLATE/{bug_report,feature_request,game_support,config}.yml`, `PULL_REQUEST_TEMPLATE.md`,
-   `dependabot.yml`, `workflows/`; and `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md` exist. So: update and add,
-   not create. Add `add_language.yml`. Themes were decided to live in GitHub Discussions → "Community themes" (the app
-   links there): suggest a Discussions category form (`.github/DISCUSSION_TEMPLATE/community-themes.yml`) instead of
-   (or besides) an `add_theme.yml` issue. Keep `game_support.yml` (save-format requests matter most here).
-3. No `.env`, no API keys, no models: SavePrism never calls an AI model. "Ask AI" copies text for any chatbot; the MCP
-   server is the app itself (`saveprism-desktop.exe mcp`, stdio, started by the AI app; tools listed in `docs/ai.md`).
-   So the "API keys / models" part becomes "connect your AI app" (per-client setup, same as Settings → AI connection).
-   The "env/config table" becomes a short "Where SavePrism keeps things" table (settings in the app, app folder
-   `%LOCALAPPDATA%\SavePrism` with `backups\`, `pasted\`, `background\`; both folders changeable in Settings).
-4. Personal footer with an e-mail makes the address public: ask the maintainer (suggest the GitHub profile only).
-5. Badges: Rust, Tauri 2, React 19, TypeScript, Tailwind, Vite, pnpm, MIT, Windows; a release badge only after v0.1;
-   no CI badge while Actions minutes are out (it would look broken).
-6. Download: no release yet → "Download" points to Releases once v0.1 ships; until then "build from source".
-   Dev setup facts: Windows 10/11, Node 22, pnpm 11, Rust 1.99 (MSVC), WebView2; `pnpm install`,
-   `pnpm -C apps/desktop tauri dev`, `pnpm -C apps/desktop tauri build`; tests `cargo test`, `pnpm -C apps/desktop test`
-   (our `kontrol.sh` is an internal tool under the locked `.claude/`).
-7. Adding a language: `apps/desktop/locales/<code>/{common,editor}.json` + `CHANGELOG.md`, the language list and flag in
-   `apps/desktop/src/i18n/` (`language.ts`, `flags.tsx`); `src/i18n/keys.test.ts` fails on any missing key. Adding a
-   theme: export from Settings → Appearance → Theme files; format in `docs/themes.md` (w8-appcolor adds `appColor`).
-8. Screenshots: pick from the next visual check, show no real save data, put them in `docs/images/`.
-9. Keep the README's existing "Supported formats" table, the clean-room statement and the "keep your own backups"
-   honesty; English only in the repo (a `README.tr.md` could come later if the maintainer wants).
-10. The repo is private. Making it public needs the maintainer's explicit OK, and real saves were pushed once in
-    `bed2ed9` (history cleanup needs their OK too).
-Plan: write the README/CONTRIBUTING/forms through one EVREN job with a clear brief (docs only), then Claude reviews
-the facts against the code; or Claude writes it directly if the limit allows (it is text-heavy, ~1 file + 3 forms).
-
-## After that (unchanged order)
+## Next (in order)
 1. MCP gaps: `compare_saves`, `save_locations`, `open_code` tools (read-only, same Session code, documented in
    `docs/ai.md`); check `open_save` uses the automatic key finder; the MCP server should use the backup folder chosen in
    Settings (today it always uses `%LOCALAPPDATA%\SavePrism\backups`; the UI keeps folder choices in WebView
