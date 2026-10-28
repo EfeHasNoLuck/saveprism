@@ -223,8 +223,13 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
    - Done 2026-10-28 (local, checks pass): AI connection tab (`f04f7d7`); About + in-app notices + What's new
      (`CHANGELOG.md`) + first-launch tour (`5a5db1d`); rebindable shortcuts (`7f89bad`); opening logo, Explorer
      "Decode with SavePrism" entry (NSIS + MSI) with single-instance file hand-off, theme file export/import
-     (`01027c7`). Visual check of all of it in the running app: brief `.motor/vcheck-1028.md`, running.
-     The Explorer entry is not tested on an installed app yet (the next MSI test).
+     (`01027c7`). Checked in the running app over CDP (dark/light, EN/TR, 1280 and 1024): 11 problems found and fixed
+     (`9c0ea31`, `dff0665`, `e93cac9`), re-checked OK. Screenshots for the maintainer: `.motor/vcheck-1028b/m-*.png`.
+     Not checked: a real background photo, the Copy setup clipboard, real native dialogs; the Explorer entry is not
+     tested on an installed app yet (the next MSI test).
+   - Next (HANDOFF order): the maintainer looks at the screenshots; then MCP tools `compare_saves`, `save_locations`,
+     `open_code` (+ `open_save` uses the key finder; MCP should use the backup folder chosen in Settings) and
+     `docs/ai.md`; then a fresh MSI to install and try.
    - Gap for the MCP follow-up: a backup folder changed in Settings is not known to the MCP server (it always uses
      `%LOCALAPPDATA%\SavePrism\backups`).
 
