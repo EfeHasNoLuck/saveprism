@@ -80,10 +80,14 @@ git clone https://github.com/huseyincancalti/saveprism.git
 cd saveprism
 pnpm install
 pnpm dev      # the app, with hot reload
-pnpm build    # installers in target/release/bundle/ (nsis/ and msi/)
+pnpm build --no-sign    # installers in target/release/bundle/ (nsis/ and msi/)
 ```
 
-There is nothing to configure: no `.env` file, no API keys, no accounts.
+There is nothing to configure: no `.env` file, no API keys, no accounts. `--no-sign` skips the update signature:
+without it, `pnpm build` still makes the installers but then stops with "A public key has been found, but no private
+key". Release builds (maintainer only) run `bash scripts/release/build.sh`, which signs the setup exe with the updater
+key from outside the repo (`%USERPROFILE%\.tauri\saveprism-updater.key`) and writes `latest.json` next to it. Upload the
+setup exe, its `.sig`, the MSI files and `latest.json` to the GitHub release tagged `v<version>`.
 
 ## AI and MCP
 
@@ -361,6 +365,9 @@ online games, anti-cheat and DRM are out of scope.
 | Your background photo | `%LOCALAPPDATA%\SavePrism\background\` | Settings → Saving & backups → App folder |
 | Found keys, with where they came from | `%LOCALAPPDATA%\SavePrism\keys.json` | next to the backup folder |
 | Theme files | wherever you export them (`*.saveprism-theme.json`) | |
+
+The only network request SavePrism makes is the version check to GitHub releases (at start, which you can turn off in
+Settings → General, and when you press **Check for updates** in Settings → About). Save data is never sent.
 
 ## Command line
 

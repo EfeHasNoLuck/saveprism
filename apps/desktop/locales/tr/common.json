@@ -131,7 +131,11 @@
     "closeTitle": "Kaydetmeden kapatılsın mı?",
     "closeBody_one": "{{count}} değişikliğin kaybolacak.",
     "closeBody_other": "{{count}} değişikliğin kaybolacak.",
-    "closeDiscard": "Kaydetmeden kapat"
+    "closeDiscard": "Kaydetmeden kapat",
+    "updateTitle": "Kaydetmeden güncellensin mi?",
+    "updateBody_one": "{{count}} değişikliğin kaybolacak. SavePrism güncellemeden sonra yeniden açılır.",
+    "updateBody_other": "{{count}} değişikliğin kaybolacak. SavePrism güncellemeden sonra yeniden açılır.",
+    "updateDiscard": "Kaydetmeden güncelle"
   },
   "json": {
     "title": "JSON düzenleyici",
@@ -730,6 +734,8 @@
     "notificationsSection": "Bildirimler",
     "showNotifications": "Bildirimleri göster",
     "showNotificationsInfo": "Bu oturumun olaylarını içeren zili gösterir.",
+    "checkUpdatesAtStart": "Açılışta güncellemeleri denetle",
+    "checkUpdatesAtStartInfo": "GitHub'a yeni sürüm var mı diye sorar. Kayıtların asla gönderilmez.",
     "about": "SavePrism hakkında",
     "back": "Geri",
     "searchPlaceholder": "Ayar ara",
@@ -895,6 +901,19 @@
     "noticesCountFiltered": "{{total}} paketten {{shown}}",
     "licenseUnknown": "Bilinmiyor",
     "noticeNoText": "Bildirim dosyasında lisans metni yok."
+  },
+  "update": {
+    "ready": "SavePrism {{version}} kurulmaya hazır",
+    "update": "Güncelle",
+    "check": "Güncellemeleri denetle",
+    "checking": "Denetleniyor…",
+    "current": "En yeni sürümü kullanıyorsun.",
+    "available": "{{version}} sürümü hazır",
+    "checkFailed": "Güncellemeler denetlenemedi.",
+    "dialogTitle": "SavePrism {{version}} sürümüne güncelleniyor",
+    "downloading": "Güncelleme indiriliyor…",
+    "installing": "Kuruluyor. SavePrism kendiliğinden yeniden açılır.",
+    "failed": "Güncelleme kurulamadı."
   },
   "whatsNew": {
     "title": "{{version}} sürümünde yeniler",

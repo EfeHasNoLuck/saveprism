@@ -65,6 +65,9 @@ import { firstListSearch, isTextEditing, shortcutFor } from "./shell/shortcuts";
 import { StartScreen } from "./shell/StartScreen";
 import { Toasts } from "./shell/Toasts";
 import { Tour } from "./shell/TourOverlay";
+import { START_CHECK_DELAY_MS } from "./shell/update";
+import { UpdateDialog } from "./shell/UpdateDialog";
+import { useUpdater } from "./shell/useUpdater";
 import { WhatsNewDialog } from "./shell/WhatsNewDialog";
 
 /** Opening a file shows the loading cover only when it takes longer than this. */
@@ -129,6 +132,10 @@ function App() {
   const [pasteRequest, setPasteRequest] = useState<{ text: string } | null>(null);
   /** A copied code the clipboard refused, shown to copy by hand. */
   const [codeText, setCodeText] = useState<string | null>(null);
+  const updater = useUpdater();
+  const { runCheck: runUpdateCheck, install: installUpdate } = updater;
+  /** "Update" was pressed while there were unsaved changes. */
+  const [updateAsked, setUpdateAsked] = useState(false);
 
   const resetChanges = useCallback(() => {
     setChangeCount(0);
@@ -493,6 +500,44 @@ function App() {
       if (handle.stop) handle.stop();
     };
   }, []);
+
+  /** Downloads and installs the update; the app restarts at the end. A failure shows a toast. */
+  const startUpdate = useCallback(async () => {
+    setUpdateAsked(false);
+    dismissTopic("update");
+    if (!(await installUpdate())) {
+      notify({ kind: "error", title: t("update.failed"), topic: "update" });
+    }
+  }, [dismissTopic, installUpdate, notify, t]);
+
+  /** "Update" (the start notice or Settings → About): with unsaved changes it asks first. */
+  const requestUpdate = useCallback(() => {
+    if (hasChangesRef.current) {
+      setUpdateAsked(true);
+      return;
+    }
+    void startUpdate();
+  }, [startUpdate]);
+
+  // Once per run, a few seconds after the window is ready, a quiet version check. Nothing shows
+  // when this is the newest version or the check fails; a newer version gets one notice.
+  const startCheckDone = useRef(false);
+  useEffect(() => {
+    if (startCheckDone.current || !settings.checkUpdatesAtStart) return;
+    const timer = window.setTimeout(() => {
+      startCheckDone.current = true;
+      void runUpdateCheck(true).then((result) => {
+        if (result.status !== "available") return;
+        notify({
+          kind: "info",
+          title: t("update.ready", { version: result.version }),
+          action: { label: t("update.update"), run: requestUpdate },
+          topic: "update",
+        });
+      });
+    }, START_CHECK_DELAY_MS);
+    return () => window.clearTimeout(timer);
+  }, [notify, requestUpdate, runUpdateCheck, settings.checkUpdatesAtStart, t]);
 
   const closeWithoutSaving = useCallback(() => {
     setCloseAsked(false);
@@ -861,6 +906,8 @@ function App() {
         pendingOpen !== null ||
         closeAsked ||
         closeFileAsked ||
+        updateAsked ||
+        updater.progress !== null ||
         document.querySelector('[role="menu"]') !== null;
       if (modal || busy) return;
       if (action === "open") {
@@ -1001,6 +1048,9 @@ function App() {
               setSettingsOpen(false);
             }}
             onShowTour={showTourAgain}
+            updateCheck={updater.check}
+            onCheckUpdates={() => void runUpdateCheck(false)}
+            onUpdate={requestUpdate}
             photoDropActive={photoDropActive}
             photoVersion={photoVersion}
           />
@@ -1188,6 +1238,15 @@ function App() {
             }}
           />
         ) : null}
+        {updateAsked ? (
+          <ConfirmDiscardDialog
+            reason="update"
+            count={changeCount + (jsonDirty ? 1 : 0)}
+            onCancel={() => setUpdateAsked(false)}
+            onDiscard={() => void startUpdate()}
+          />
+        ) : null}
+        {updater.progress !== null ? <UpdateDialog progress={updater.progress} /> : null}
         {tourRunning ? <Tour onDone={finishTour} /> : null}
         {whatsNewVersion !== null ? (
           <WhatsNewDialog version={whatsNewVersion} onClose={closeWhatsNew} />

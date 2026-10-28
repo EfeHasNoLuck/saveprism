@@ -131,7 +131,11 @@
     "closeTitle": "Close without saving?",
     "closeBody_one": "Your {{count}} change will be lost.",
     "closeBody_other": "Your {{count}} changes will be lost.",
-    "closeDiscard": "Close without saving"
+    "closeDiscard": "Close without saving",
+    "updateTitle": "Update without saving?",
+    "updateBody_one": "Your {{count}} change will be lost. SavePrism restarts after the update.",
+    "updateBody_other": "Your {{count}} changes will be lost. SavePrism restarts after the update.",
+    "updateDiscard": "Update without saving"
   },
   "json": {
     "title": "JSON editor",
@@ -730,6 +734,8 @@
     "notificationsSection": "Notifications",
     "showNotifications": "Show notifications",
     "showNotificationsInfo": "Shows the bell with the events of this session.",
+    "checkUpdatesAtStart": "Check for updates at start",
+    "checkUpdatesAtStartInfo": "Asks GitHub for a newer version. Your saves are never sent.",
     "about": "About SavePrism",
     "back": "Back",
     "searchPlaceholder": "Find a setting",
@@ -895,6 +901,19 @@
     "noticesCountFiltered": "{{shown}} of {{total}} packages",
     "licenseUnknown": "Unknown",
     "noticeNoText": "No license text is included in the notices file."
+  },
+  "update": {
+    "ready": "SavePrism {{version}} is ready to install",
+    "update": "Update",
+    "check": "Check for updates",
+    "checking": "Checking…",
+    "current": "You have the newest version.",
+    "available": "{{version}} is available",
+    "checkFailed": "Could not check for updates.",
+    "dialogTitle": "Updating to SavePrism {{version}}",
+    "downloading": "Downloading the update…",
+    "installing": "Installing. SavePrism restarts by itself.",
+    "failed": "Could not install the update."
   },
   "whatsNew": {
     "title": "What's new in {{version}}",

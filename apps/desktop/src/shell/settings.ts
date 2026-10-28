@@ -31,6 +31,8 @@ export interface Settings {
   saveDefault: SaveDefault;
   /** Show the notifications bell. */
   showNotifications: boolean;
+  /** Ask GitHub for a newer version a few seconds after the start; on by default. */
+  checkUpdatesAtStart: boolean;
   /** Backups kept per file; 1 to 50, 10 by default. */
   keepBackups: number;
   /** Backups older than this many days are removed; 1 to 365, 30 by default. */
@@ -72,6 +74,7 @@ export const SETTINGS_KEY = "saveprism.settings";
 export const DEFAULT_SETTINGS: Settings = {
   saveDefault: "saveAs",
   showNotifications: true,
+  checkUpdatesAtStart: true,
   keepBackups: 10,
   keepBackupDays: 30,
   textScale: DEFAULT_TEXT_SCALE,
@@ -188,6 +191,10 @@ export function parseSettings(raw: string | null): Settings {
       typeof record.showNotifications === "boolean"
         ? record.showNotifications
         : DEFAULT_SETTINGS.showNotifications,
+    checkUpdatesAtStart:
+      typeof record.checkUpdatesAtStart === "boolean"
+        ? record.checkUpdatesAtStart
+        : DEFAULT_SETTINGS.checkUpdatesAtStart,
     keepBackups:
       typeof record.keepBackups === "number"
         ? clampKeepBackups(record.keepBackups)

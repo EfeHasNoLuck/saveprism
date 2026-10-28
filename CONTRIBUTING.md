@@ -28,7 +28,7 @@ Then:
 ```bash
 pnpm install
 pnpm dev      # the app, with hot reload
-pnpm build    # installers in target/release/bundle/
+pnpm build --no-sign    # installers in target/release/bundle/ (unsigned for the updater)
 ```
 
 No `.env` file, API keys or accounts are needed.

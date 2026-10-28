@@ -612,6 +612,10 @@ pub fn run() {
         }))
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
+        // Version check against GitHub releases; the window decides when to ask and shows nothing
+        // when the request fails. The process plugin restarts the app after an update.
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
         .manage(AppState {
             session: Mutex::new(None),
             pending_file: Mutex::new(startup_file),
