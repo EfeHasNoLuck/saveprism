@@ -234,7 +234,7 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
      Checked in the running app over CDP; fixes `5ce3552` (dark borders follow the app color, clearer drop label,
      no blue start with Windows accent) re-checked OK. Frosted glass over a background photo (maintainer picked B
      from A/B screenshots `.motor/vcheck-1028d/ab-*.png`): `09408b6`, `2c24efd`, next commit; photo fades toward the
-     theme color ("Fade"), text right on the photo has a halo; measured ≥ 4.5:1 on the real test photo except the
+     theme color ("Fade"), Card opacity slider (`e30c3c2`), text right on the photo has a thin contour + short shadow; measured ≥ 4.5:1 on the real test photo except the
      light active sidebar tab at the photo's darkest spot (4.0). Not fixed: the Settings Preview red "Health" row is
      4.0:1 in dark (not caused by glass).
      Then the README/GitHub showcase (`HANDOFF.md`, `.motor/readme-vision-tr.md`).
