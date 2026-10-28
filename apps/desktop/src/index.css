@@ -236,12 +236,13 @@
   backdrop-filter: blur(14px) saturate(1.2);
 }
 /*
- * Text that sits right on the photo (headings, group labels, the slogan) gets a thin contour and a
- * tight shadow to the lower right, and muted text there uses the full text colour: muted grey
- * over a bright photo stays unreadable. Buttons reset text-shadow in the browser's own styles, so
- * they inherit it here.
+ * Text that sits right on the photo (headings, group labels, the slogan) uses the full text colour:
+ * muted grey over a bright photo stays unreadable. In the dark theme it also gets a thin contour and
+ * a tight shadow to the lower right; the light theme has none, since a pale shadow under dark text
+ * reads as a stray highlight and Fade already lightens the photo there. Buttons reset text-shadow
+ * in the browser's own styles, so they inherit it here.
  */
-:root[data-glass] .on-photo {
+:root.dark[data-glass] .on-photo {
   text-shadow:
     0 0 1px var(--background),
     1px 1px 1px var(--background);
