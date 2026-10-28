@@ -72,6 +72,7 @@ export function ShortcutSettings() {
   const [recording, setRecording] = useState<Recording | null>(null);
   const [pressed, setPressed] = useState<Pressed | null>(null);
   const [heldCaps, setHeldCaps] = useState<string[]>([]);
+  const [windowsHeld, setWindowsHeld] = useState(false);
   const pressedRef = useRef<Pressed | null>(null);
 
   const save = useCallback(
@@ -83,6 +84,7 @@ export function ShortcutSettings() {
     setPressed(null);
     pressedRef.current = null;
     setHeldCaps([]);
+    setWindowsHeld(false);
     setRecording({ action, replace });
   }, []);
 
@@ -91,6 +93,7 @@ export function ShortcutSettings() {
     setPressed(null);
     pressedRef.current = null;
     setHeldCaps([]);
+    setWindowsHeld(false);
   }, []);
 
   const commit = useCallback(
@@ -121,8 +124,11 @@ export function ShortcutSettings() {
         return;
       }
 
+      setWindowsHeld(event.metaKey);
       const combination = combinationFromInput(event);
       if (combination === null) {
+        setPressed(null);
+        pressedRef.current = null;
         setHeldCaps(modifierCaps(event));
         return;
       }
@@ -171,6 +177,7 @@ export function ShortcutSettings() {
   const actionName = recording ? t(`shortcuts.${recording.action}`) : "";
   const caps = pressed !== null ? formatCombination(pressed.combination).split("+") : heldCaps;
   const message = recording && pressed !== null ? problemMessage(pressed) : null;
+  const windowsMessage = windowsHeld ? t("settings.shortcutDialog.windows") : null;
 
   return (
     <div className="mt-4">
@@ -286,9 +293,9 @@ export function ShortcutSettings() {
               <KeyCaps combination={caps.join("+")} large />
             )}
           </div>
-          {message !== null ? (
+          {message !== null || windowsMessage !== null ? (
             <p role="alert" className="text-center text-xs leading-[17px] text-warning">
-              {message}
+              {message ?? windowsMessage}
             </p>
           ) : null}
         </DialogContent>
@@ -299,7 +306,8 @@ export function ShortcutSettings() {
 
 function modifierCaps(event: KeyboardEvent): string[] {
   const caps: string[] = [];
-  if (event.ctrlKey || event.metaKey) caps.push("Ctrl");
+  if (event.metaKey) caps.push("Win");
+  if (event.ctrlKey) caps.push("Ctrl");
   if (event.shiftKey) caps.push("Shift");
   if (event.altKey) caps.push("Alt");
   return caps;

@@ -724,7 +724,7 @@
     "searchPlaceholder": "Find a setting",
     "searchEmpty": "No setting matches.",
     "communityThemes": "Community themes",
-    "version": "SavePrism {version}",
+    "version": "SavePrism {{version}}",
     "sourceCode": "Source code on GitHub",
     "reportProblem": "Report a problem",
     "folderChanged": "Folder changed",
@@ -767,6 +767,7 @@
     "latestKeptNote": "The latest backup of each save is always kept, so you can always go back.",
     "backupFolder": "Backup folder",
     "appFolderSection": "App folder",
+    "appFolder": "App folder",
     "appFolderHint": "Backups, pasted codes and settings are kept here.",
     "openFolder": "Open folder",
     "change": "Change…",
@@ -789,6 +790,7 @@
       "system": "{{keys}} is reserved by Windows.",
       "reserved": "Enter and Esc can't be used.",
       "unknown": "That key can't be used.",
+      "windows": "Windows keeps the Windows key: it handles Win combinations before SavePrism sees them, so it can't be recorded here.",
       "conflict": "{{keys}} is used by {{action}}. Press Enter to move it here."
     },
     "mcpTitle": "Connect an AI agent (MCP)",
@@ -877,6 +879,7 @@
     "searchPackages": "Search packages",
     "searchEmpty": "No package matches.",
     "noticesCount": "{{total}} packages",
+    "noticesCountFiltered": "{{shown}} of {{total}} packages",
     "licenseUnknown": "Unknown",
     "noticeNoText": "No license text is included in the notices file."
   },

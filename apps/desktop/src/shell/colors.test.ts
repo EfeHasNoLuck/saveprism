@@ -4,9 +4,13 @@ import {
   COLOR_GROUPS,
   COLOR_PRESETS,
   colorCss,
+  contrastRatio,
   DEFAULT_COLORS,
   isColorChoice,
+  readableTone,
   textColorFor,
+  THEME_BACKGROUND,
+  THEME_CARD,
   tonesFor,
 } from "./colors";
 
@@ -142,15 +146,56 @@ describe("custom colours", () => {
     expect(textColorFor("#6b38d4")).toBe("#ffffff");
   });
 
-  it("uses a custom colour for both tones and writes it into the CSS", () => {
-    expect(tonesFor("accent", "#12ab34", false)).toEqual({
-      main: "#12ab34",
-      container: "#12ab34",
-      onContainer: textColorFor("#12ab34"),
-    });
+  it("derives a readable text tone but keeps the custom colour for the container", () => {
+    const tones = tonesFor("accent", "#12ab34", false);
+    expect(tones.main).toBe(readableTone("#12ab34", false));
+    expect(tones.main).not.toBe("#12ab34");
+    expect(tones.container).toBe("#12ab34");
+    expect(tones.onContainer).toBe(textColorFor("#12ab34"));
+  });
+
+  it("writes the derived text tone and the exact custom colour into the CSS", () => {
     const css = colorCss({ ...DEFAULT_COLORS, accent: "#12ab34" });
-    expect(css).toContain("--tertiary: #12ab34;");
+    expect(css).toContain(`--tertiary: ${readableTone("#12ab34", false)};`);
+    expect(css).toContain(`--tertiary: ${readableTone("#12ab34", true)};`);
     expect(css).toContain("--tertiary-container: #12ab34;");
     expect(css).toContain(`--tertiary-container-foreground: ${textColorFor("#12ab34")};`);
+  });
+
+  it("keeps a custom changed/error fill exactly as chosen", () => {
+    const css = colorCss({ ...DEFAULT_COLORS, changed: "#ffff99", error: "#ffff99" });
+    expect(css).toContain("--changed-row: color-mix(in srgb, #ffff99 9%, transparent);");
+    expect(css).toContain("--changed-chip: color-mix(in srgb, #ffff99 14%, transparent);");
+    expect(css).toContain("--error-row: color-mix(in srgb, #ffff99 8%, transparent);");
+    expect(css).toContain("--changed-tag: #ffff99;");
+    expect(css).toContain("--error-container: #ffff99;");
+  });
+});
+
+describe("readable custom tones", () => {
+  it("keeps the custom colour when it already reads on both surfaces", () => {
+    expect(readableTone("#000000", false)).toBe("#000000");
+    expect(readableTone("#ffffff", true)).toBe("#ffffff");
+  });
+
+  it("moves the lightness until the text reads on the page and the card", () => {
+    const samples = ["#000000", "#ffff99", "#d0bcff", "#12ab34", "#ff0000", "#7f7f7f"];
+    for (const dark of [false, true]) {
+      const background = dark ? THEME_BACKGROUND.dark : THEME_BACKGROUND.light;
+      const card = dark ? THEME_CARD.dark : THEME_CARD.light;
+      for (const sample of samples) {
+        const tone = readableTone(sample, dark);
+        expect(contrastRatio(tone, background), `${sample} ${dark}`).toBeGreaterThanOrEqual(4.5);
+        expect(contrastRatio(tone, card), `${sample} ${dark}`).toBeGreaterThanOrEqual(4.5);
+      }
+    }
+  });
+
+  it("keeps the hue of the custom colour", () => {
+    for (const dark of [false, true]) {
+      for (const sample of ["#ffff99", "#12ab34", "#ff0000"]) {
+        expect(hueDistance(hue(readableTone(sample, dark)), hue(sample))).toBeLessThan(1);
+      }
+    }
   });
 });

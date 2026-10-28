@@ -97,14 +97,97 @@ export function textColorFor(hex: string): "#061428" | "#ffffff" {
   return luminance(hex) > 0.45 ? "#061428" : "#ffffff";
 }
 
+/** WCAG contrast ratio of two `#rrggbb` colours. */
+export function contrastRatio(a: string, b: string): number {
+  const [brighter, darker] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  return (brighter + 0.05) / (darker + 0.05);
+}
+
+/** The page and card colours of each theme (`index.css`). */
+export const THEME_BACKGROUND = { light: "#eff4ff", dark: "#031427" } as const;
+export const THEME_CARD = { light: "#ffffff", dark: "#0b1c30" } as const;
+
+const READABLE_CONTRAST = 4.5;
+
+interface Hsl {
+  h: number;
+  s: number;
+  l: number;
+}
+
+function hsl(hex: string): Hsl {
+  const value = Number.parseInt(hex.slice(1), 16);
+  const [r, g, b] = [value >> 16, (value >> 8) & 0xff, value & 0xff].map((byte) => byte / 255);
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const delta = max - min;
+  const l = (max + min) / 2;
+  let h = 0;
+  let s = 0;
+  if (delta !== 0) {
+    s = l > 0.5 ? delta / (2 - max - min) : delta / (max + min);
+    if (max === r) h = ((g - b) / delta) % 6;
+    else if (max === g) h = (b - r) / delta + 2;
+    else h = (r - g) / delta + 4;
+    h = (h * 60 + 360) % 360;
+  }
+  return { h, s, l };
+}
+
+function hslToHex({ h, s, l }: Hsl): string {
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  const m = l - c / 2;
+  const [r, g, b] =
+    h < 60
+      ? [c, x, 0]
+      : h < 120
+        ? [x, c, 0]
+        : h < 180
+          ? [0, c, x]
+          : h < 240
+            ? [0, x, c]
+            : h < 300
+              ? [x, 0, c]
+              : [c, 0, x];
+  return `#${[r + m, g + m, b + m]
+    .map((channel) => Math.round(channel * 255).toString(16).padStart(2, "0"))
+    .join("")}`;
+}
+
+/**
+ * A custom colour that reads as text on `dark` theme's background and card: the same hue and
+ * saturation, with its lightness moved only as far as the 4.5:1 contrast needs. The chosen
+ * colour itself stays untouched for swatches and fills.
+ */
+export function readableTone(hex: string, dark: boolean): string {
+  const background = dark ? THEME_BACKGROUND.dark : THEME_BACKGROUND.light;
+  const card = dark ? THEME_CARD.dark : THEME_CARD.light;
+  const readable = (candidate: string): boolean =>
+    contrastRatio(candidate, background) >= READABLE_CONTRAST &&
+    contrastRatio(candidate, card) >= READABLE_CONTRAST;
+  if (readable(hex)) return hex;
+
+  const { h, s, l } = hsl(hex);
+  const direction = dark ? 1 : -1;
+  for (let step = 1; step <= 100; step += 1) {
+    const lightness = l + (direction * step) / 100;
+    if (lightness < 0 || lightness > 1) break;
+    const candidate = hslToHex({ h, s, l: lightness });
+    if (readable(candidate)) return candidate;
+  }
+  return dark ? "#ffffff" : "#000000";
+}
+
 /** The preset of `group` with `id`; an unknown id falls back to the group's first preset. */
 export function presetFor(group: ColorGroup, id: string): ColorPreset {
   return COLOR_PRESETS[group].find((preset) => preset.id === id) ?? COLOR_PRESETS[group][0];
 }
 
 /**
- * The three tones of one choice in one theme. A custom `#rrggbb` colour is used as it is for the
- * text and the container, and the text on it picks dark or light by the colour's luminance.
+ * The three tones of one choice in one theme. A custom `#rrggbb` colour keeps its exact value in
+ * the container (the swatch and fills) and gets a text tone of the same hue that reads on the
+ * theme's page and card. The text on the container picks dark or light by the colour itself.
  */
 export function tonesFor(
   group: ColorGroup,
@@ -112,7 +195,11 @@ export function tonesFor(
   dark: boolean,
 ): PresetTones {
   if (isHexColor(choice)) {
-    return { main: choice, container: choice, onContainer: textColorFor(choice) };
+    return {
+      main: readableTone(choice, dark),
+      container: choice,
+      onContainer: textColorFor(choice),
+    };
   }
   const preset = presetFor(group, choice);
   return dark ? preset.dark : preset.light;
@@ -125,12 +212,14 @@ export function tonesFor(
  */
 function declarations(group: ColorGroup, choice: string, dark: boolean): string[] {
   const { main, container, onContainer } = tonesFor(group, choice, dark);
+  // A custom colour's fills stay exactly the chosen colour; presets keep their tonal row.
+  const fill = isHexColor(choice) ? container : dark ? container : main;
   if (group === "changed") {
     return [
       `--changed: ${main};`,
       `--changed-foreground: ${main};`,
-      `--changed-row: color-mix(in srgb, ${dark ? container : main} ${dark ? 20 : 9}%, transparent);`,
-      `--changed-chip: color-mix(in srgb, ${main} ${dark ? 20 : 14}%, transparent);`,
+      `--changed-row: color-mix(in srgb, ${fill} ${dark ? 20 : 9}%, transparent);`,
+      `--changed-chip: color-mix(in srgb, ${fill} ${dark ? 20 : 14}%, transparent);`,
       `--changed-tag: ${container};`,
       `--changed-tag-foreground: ${onContainer};`,
     ];
@@ -144,7 +233,7 @@ function declarations(group: ColorGroup, choice: string, dark: boolean): string[
   }
   return [
     `--destructive: ${main};`,
-    `--error-row: color-mix(in srgb, ${dark ? container : main} ${dark ? 30 : 8}%, transparent);`,
+    `--error-row: color-mix(in srgb, ${fill} ${dark ? 30 : 8}%, transparent);`,
     `--error-container: ${container};`,
     `--error-container-foreground: ${onContainer};`,
   ];

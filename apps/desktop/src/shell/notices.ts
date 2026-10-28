@@ -96,7 +96,15 @@ export function parseNotices(source: string): NoticePackage[] {
     }
   }
   flush();
-  return packages;
+  // The same package can be listed twice under one license group; keep one copy. Entries with a
+  // different license text stay separate (one crate can ship more than one notice).
+  const seen = new Set<string>();
+  return packages.filter((entry) => {
+    const key = [entry.name, entry.version, entry.license, entry.url, entry.text, entry.source].join("\u0000");
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 let cached: Promise<NoticePackage[]> | null = null;

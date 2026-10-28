@@ -724,7 +724,7 @@
     "searchPlaceholder": "Ayar ara",
     "searchEmpty": "Eşleşen ayar yok.",
     "communityThemes": "Topluluk temaları",
-    "version": "SavePrism {version}",
+    "version": "SavePrism {{version}}",
     "sourceCode": "GitHub'da kaynak kodu",
     "reportProblem": "Sorun bildir",
     "folderChanged": "Klasör değiştirildi",
@@ -767,6 +767,7 @@
     "latestKeptNote": "Her kaydın en son yedeği her zaman tutulur, böylece istediğin an geri dönebilirsin.",
     "backupFolder": "Yedek klasörü",
     "appFolderSection": "Uygulama klasörü",
+    "appFolder": "Uygulama klasörü",
     "appFolderHint": "Yedekler, yapıştırılan kodlar ve ayarlar burada tutulur.",
     "openFolder": "Klasörü aç",
     "change": "Değiştir…",
@@ -789,6 +790,7 @@
       "system": "{{keys}} Windows tarafından ayrılmıştır.",
       "reserved": "Enter ve Esc kullanılamaz.",
       "unknown": "Bu tuş kullanılamaz.",
+      "windows": "Windows tuşu Windows'a aittir: Win ile başlayan kombinasyonları SavePrism görmeden Windows işler, bu yüzden burada kaydedilemez.",
       "conflict": "{{keys}} şu anda {{action}} tarafından kullanılıyor. Buraya taşımak için Enter'a bas."
     },
     "mcpTitle": "Bir AI ajanı bağla (MCP)",
@@ -877,6 +879,7 @@
     "searchPackages": "Paket ara",
     "searchEmpty": "Eşleşen paket yok.",
     "noticesCount": "{{total}} paket",
+    "noticesCountFiltered": "{{total}} paketten {{shown}}",
     "licenseUnknown": "Bilinmiyor",
     "noticeNoText": "Bildirim dosyasında lisans metni yok."
   },

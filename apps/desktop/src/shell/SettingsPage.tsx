@@ -199,7 +199,7 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <section className="mt-5 first:mt-0">
+    <section className="mt-5">
       <div className="mb-1.5 flex h-6 items-center justify-between gap-3">
         <h3 className="text-[0.6875rem] font-semibold tracking-[0.06em] text-muted-foreground uppercase">
           {title}
@@ -235,11 +235,11 @@ function Row({
   return (
     <div
       data-setting={id}
-      className={`flex min-h-14 items-center gap-4 border-t border-border px-4 py-2.5 first:border-t-0 dark:border-[#1d2d42] ${
+      className={`flex min-h-14 flex-wrap items-center gap-x-4 gap-y-2 border-t border-border px-4 py-2.5 first:border-t-0 dark:border-[#1d2d42] ${
         highlight ? "bg-primary/8" : ""
       }`}
     >
-      <div className="min-w-0 flex-1">
+      <div className="min-w-52 flex-1">
         <b className="block text-[0.84375rem] leading-5 font-medium">{label}</b>
         {description ? (
           <span className="mt-px block text-xs leading-[17px] text-muted-foreground">
@@ -247,7 +247,7 @@ function Row({
           </span>
         ) : null}
       </div>
-      <div className="flex shrink-0 items-center gap-2">{children}</div>
+      <div className="ml-auto flex shrink-0 items-center gap-2">{children}</div>
     </div>
   );
 }
@@ -314,6 +314,11 @@ export function SettingsPage({
     };
   }, [tab]);
 
+  // Focus the page once when it opens; focus must stay on a slider after an arrow key.
+  useEffect(() => {
+    pageRef.current?.focus();
+  }, []);
+
   useEffect(() => {
     const listener = (event: KeyboardEvent) => {
       if (event.key !== "Escape" || event.defaultPrevented) return;
@@ -324,7 +329,6 @@ export function SettingsPage({
       else onClose();
     };
     window.addEventListener("keydown", listener);
-    pageRef.current?.focus();
     return () => window.removeEventListener("keydown", listener);
   }, [licenseOpen, noticesPage, onClose, whatsNewOpen]);
 
@@ -673,7 +677,12 @@ export function SettingsPage({
                     ? t("about.noticesFailed")
                     : noticePackages === null
                       ? t("common.loading")
-                      : t("about.noticesCount", { total: notices.length })}
+                      : noticeSearch === ""
+                        ? t("about.noticesCount", { total: notices.length })
+                        : t("about.noticesCountFiltered", {
+                            shown: visibleNotices.length,
+                            total: notices.length,
+                          })}
                 </span>
               </div>
 
@@ -690,7 +699,9 @@ export function SettingsPage({
                   </p>
                 ) : (
                   visibleNotices.map((item, index) => {
-                    const id = `${item.name}@${item.version}@${item.license}`;
+                    // Same name/version/license can appear with different license texts; the
+                    // index keeps React keys and the expanded rows unique.
+                    const id = `${item.name}@${item.version}@${item.license}@${index}`;
                     const open = expandedNotices.has(id);
                     return (
                       <div
@@ -1461,6 +1472,7 @@ function ColorRow({
   const dark = resolvedTheme === "dark";
   const custom = isHexColor(value);
   const current = tonesFor(group, value, dark).main;
+  const swatch = custom ? value : current;
 
   return (
     <Row id={id} label={title} description={description} highlight={highlight}>
@@ -1506,7 +1518,7 @@ function ColorRow({
           title={t("settings.customColor")}
           style={{
             boxShadow: custom
-              ? `0 0 0 2px var(--card), 0 0 0 4px ${textColorFor(current)}`
+              ? `0 0 0 2px var(--card), 0 0 0 4px ${textColorFor(swatch)}`
               : undefined,
           }}
         >
@@ -1515,12 +1527,12 @@ function ColorRow({
             className="flex size-full items-center justify-center rounded-full"
             style={{
               background: custom
-                ? current
+                ? swatch
                 : "conic-gradient(#ff5f6d, #ffc371, #f9f871, #6fdba8, #4cd7f6, #7b8cff, #d0bcff, #ff5f6d)",
             }}
           >
             {custom ? (
-              <Check className="size-3" style={{ color: textColorFor(current) }} strokeWidth={3.5} />
+              <Check className="size-3" style={{ color: textColorFor(swatch) }} strokeWidth={3.5} />
             ) : (
               <Pipette className="size-2.5 text-[#061428]/70" />
             )}
@@ -1708,6 +1720,10 @@ function PreviewCard({ photo }: { photo: BackgroundImageData | null }) {
   const changed = tonesFor("changed", settings.colors.changed, dark);
   const accent = tonesFor("accent", settings.colors.accent, dark);
   const error = tonesFor("error", settings.colors.error, dark);
+  const changedFill = isHexColor(settings.colors.changed)
+    ? settings.colors.changed
+    : changed.main;
+  const errorFill = isHexColor(settings.colors.error) ? settings.colors.error : error.main;
 
   return (
     <div className="sticky top-0 self-start rounded-lg border border-border bg-card p-3 dark:border-[#1d2d42]">
@@ -1777,13 +1793,13 @@ function PreviewCard({ photo }: { photo: BackgroundImageData | null }) {
           <PreviewRow
             label="Level"
             value="99"
-            background={`color-mix(in srgb, ${changed.main} ${dark ? 20 : 9}%, transparent)`}
+            background={`color-mix(in srgb, ${changedFill} ${dark ? 20 : 9}%, transparent)`}
             color={changed.main}
           />
           <PreviewRow
             label="Health"
             value="-5"
-            background={`color-mix(in srgb, ${error.main} ${dark ? 30 : 8}%, transparent)`}
+            background={`color-mix(in srgb, ${errorFill} ${dark ? 30 : 8}%, transparent)`}
             color={error.main}
           />
           <PreviewRow label="Hero name" value='"Aria"' />

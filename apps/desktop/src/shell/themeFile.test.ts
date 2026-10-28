@@ -219,9 +219,8 @@ describe("theme file names", () => {
     expect(defaultThemeFileName("Blue Night!")).toBe(
       "blue-night.saveprism-theme.json",
     );
-    expect(defaultThemeFileName("   ")).toBe(
-      "saveprism-theme.saveprism-theme.json",
-    );
+    expect(defaultThemeFileName("   ")).toBe("my-theme.saveprism-theme.json");
+    expect(defaultThemeFileName(DEFAULT_THEME_NAME)).toBe("my-theme.saveprism-theme.json");
   });
 
   it("adds the suffix only when it is missing", () => {

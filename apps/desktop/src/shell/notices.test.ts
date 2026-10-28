@@ -12,6 +12,7 @@ const SAMPLE = `# Third-party notices
 
 Used by:
 - alpha 1.2.3 (https://example.com/alpha)
+- alpha 1.2.3 (https://example.com/alpha)
 - beta 0.1.0 (https://example.com/beta)
 
 \`\`\`text
@@ -95,6 +96,34 @@ describe("parseNotices", () => {
         source: "frontend",
       },
     ]);
+  });
+
+  it("merges an entry that is listed twice with the same license text", () => {
+    expect(packages.filter((item) => item.name === "alpha")).toHaveLength(1);
+  });
+
+  it("keeps entries that share a license id but ship different texts", () => {
+    const source = `## Rust crates
+
+### MIT License
+
+Used by:
+- alpha 1.2.3 (https://example.com/alpha)
+
+\`\`\`text
+First notice for the crate
+\`\`\`
+
+### MIT License
+
+Used by:
+- alpha 1.2.3 (https://example.com/alpha)
+
+\`\`\`text
+A second notice for the same crate
+\`\`\`
+`;
+    expect(parseNotices(source).filter((item) => item.name === "alpha")).toHaveLength(2);
   });
 
   it("gives nothing for text without sections", () => {
