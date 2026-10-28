@@ -174,7 +174,7 @@ export function SaveLocationsDialog({ onClose }: SaveLocationsDialogProps) {
           ) : null}
         </div>
 
-        <div className="mx-6 mt-3 flex flex-wrap gap-1.5">
+        <div className="mx-6 mt-3 flex flex-wrap gap-1.5 border-b border-border pb-2.5">
           <FilterChip active={group === "all"} onClick={() => setGroup("all")}>
             {t("locations.all")}
           </FilterChip>
@@ -225,14 +225,11 @@ export function SaveLocationsDialog({ onClose }: SaveLocationsDialogProps) {
                     </span>
                   </div>
                   <span className="ml-auto shrink-0 text-[11.5px] text-muted-foreground">
-                    {t("locations.folders", { count: item.paths.length })}
+                    {item.paths.length === 0
+                      ? t("locations.inBrowser")
+                      : t("locations.folders", { count: item.paths.length })}
                   </span>
                 </div>
-                {item.paths.length === 0 ? (
-                  <div className="flex min-h-10 items-center border-t border-border px-3.5 py-1 pl-[58px] dark:border-[#1d2d42]">
-                    <span className="text-xs text-muted-foreground">{t("locations.inBrowser")}</span>
-                  </div>
-                ) : null}
                 {item.paths.map((path) => {
                   const display = translatePathPlaceholders(path.shown, labels);
                   const registry = isRegistryPath(path.shown);

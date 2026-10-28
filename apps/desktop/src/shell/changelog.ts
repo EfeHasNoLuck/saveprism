@@ -35,3 +35,23 @@ export function changelogFor(source: string, version: string): string[] | null {
   );
   return section ? section.lines : null;
 }
+
+/**
+ * The notes of `version` in the UI language, falling back to English when that language has no
+ * file or no section for the version. Language tags such as `tr-TR` use the base `tr` file.
+ */
+export function changelogForLanguage(
+  sources: Readonly<Record<string, string>>,
+  language: string,
+  version: string,
+  fallback = "en",
+): string[] | null {
+  const code = language.trim().toLowerCase().split(/[-_]/)[0] ?? "";
+  const localized = code === "" ? undefined : sources[code];
+  if (localized !== undefined) {
+    const lines = changelogFor(localized, version);
+    if (lines !== null) return lines;
+  }
+  const base = sources[fallback];
+  return base === undefined ? null : changelogFor(base, version);
+}

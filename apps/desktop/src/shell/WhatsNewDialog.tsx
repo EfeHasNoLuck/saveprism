@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useTranslation } from "react-i18next";
 import changelog from "../../../../CHANGELOG.md?raw";
+import changelogTr from "../../locales/tr/CHANGELOG.md?raw";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,7 +12,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { changelogFor } from "./changelog";
+import { changelogForLanguage } from "./changelog";
+
+/** Release notes per UI language, imported at build time (no network call). */
+const NOTES: Readonly<Record<string, string>> = { en: changelog, tr: changelogTr };
 
 const BOLD = /^\*\*(.+)\*\*$/;
 const LINK = /^\[([^\]]+)\]\(([^)]+)\)$/;
@@ -49,10 +53,10 @@ function Inline({ text }: { text: string }) {
   );
 }
 
-/** The release notes of the running version, read from `CHANGELOG.md` at build time. */
+/** The release notes of the running version in the UI language, read at build time. */
 export function WhatsNewDialog({ version, onClose }: { version: string; onClose: () => void }) {
-  const { t } = useTranslation();
-  const lines = changelogFor(changelog, version) ?? [];
+  const { t, i18n } = useTranslation();
+  const lines = changelogForLanguage(NOTES, i18n.resolvedLanguage ?? i18n.language, version) ?? [];
   const blocks: ReactNode[] = [];
   let bullets: string[] = [];
 

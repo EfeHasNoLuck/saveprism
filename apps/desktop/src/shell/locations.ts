@@ -59,6 +59,27 @@ export function engineGroup(engine: string): string {
   return group ? group.id : "other";
 }
 
+/** A group's place in the chip row; "other" and unknown groups come last. */
+export function groupRank(group: string): number {
+  const index = ENGINE_GROUPS.findIndex((entry) => entry.id === group);
+  return index === -1 ? ENGINE_GROUPS.length : index;
+}
+
+/**
+ * Orders entries the way the chip row does, keeping the host's order inside a group. Used for
+ * both the full list and search results, so a query never changes the grouping.
+ */
+export function orderLocations<T extends { engine: string }>(items: readonly T[]): T[] {
+  return items
+    .map((item, index) => ({ item, index }))
+    .sort(
+      (a, b) =>
+        groupRank(engineGroup(a.item.engine)) - groupRank(engineGroup(b.item.engine)) ||
+        a.index - b.index,
+    )
+    .map((entry) => entry.item);
+}
+
 /** What the search looks at, already translated by the caller. */
 export interface SearchableLocation {
   engine: string;
@@ -78,7 +99,7 @@ export function filterLocations<T extends SearchableLocation>(
   group: string,
 ): T[] {
   const needle = query.trim().toLowerCase();
-  return items.filter((item) => {
+  const matched = items.filter((item) => {
     if (group !== "all" && engineGroup(item.engine) !== group) return false;
     if (needle === "") return true;
     const haystack = [
@@ -90,6 +111,7 @@ export function filterLocations<T extends SearchableLocation>(
       .toLowerCase();
     return haystack.includes(needle);
   });
+  return orderLocations(matched);
 }
 
 /** The two-letter tile in front of an engine card. */

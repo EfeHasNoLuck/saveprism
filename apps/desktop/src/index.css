@@ -221,11 +221,12 @@
   mask-image: var(--pattern-square-mask);
 }
 
-/* Thin, rounded scrollbars in the theme's tones (WebView2 is Chromium). */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: color-mix(in srgb, var(--muted-foreground) 45%, transparent) transparent;
-}
+/*
+ * Thin, rounded scrollbars in the theme's tones (WebView2 is Chromium). The standard
+ * `scrollbar-width` / `scrollbar-color` win over `::-webkit-scrollbar` in current Chromium, so
+ * they are only used where the pseudo-element is not supported: there the browser draws its own
+ * thin scrollbar without arrow buttons.
+ */
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
@@ -246,6 +247,12 @@
 }
 ::-webkit-scrollbar-corner {
   background: transparent;
+}
+@supports not selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--muted-foreground) 45%, transparent) transparent;
+  }
 }
 .dense-scroll {
   scrollbar-gutter: stable;
