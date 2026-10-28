@@ -743,6 +743,8 @@
     "chooseImage": "Choose image…",
     "changeImage": "Change image…",
     "noImage": "No image yet",
+    "dropHint": "Click or drop an image",
+    "dropActive": "Drop to use this image",
     "imageCopied": "Image copied to the app folder",
     "imageCopiedHint": "It is copied to the app folder.",
     "imageFailed": "The image could not be used",
