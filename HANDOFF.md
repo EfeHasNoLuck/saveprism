@@ -55,11 +55,14 @@ The plan and history are in `NOW.md`; this page is only what the next session ne
 
 ## Next step
 1. Release text `scripts/release/notes-0.9.0.md`: approved by the maintainer (2026-10-28).
-2. Going public (asked 2026-10-28; needs the maintainer's yes): rewrite history once with git-filter-repo (not
-   installed: `pip install git-filter-repo`) to drop `fixtures/external/` (added in `a973589`, removed in `4712fe9`:
-   saves from other public repos) and to replace the author e-mail `hsyncalti2@gmail.com` (all 317 commits) with
-   `116316749+huseyincancalti@users.noreply.github.com`; set that address as `user.email` here; `cargo deny check`;
-   force-push; make the repo public. Actions are then free: fix what the Ubuntu/macOS CI runs show.
+2. Going public (maintainer said yes, 2026-10-28; the author e-mail stays as it is, their choice). Done: a history
+   scan found no keys, tokens or passwords; `git-filter-repo` (MIT, pip) removed `fixtures/external/` from every
+   commit in a bare copy (GitHub branches + local main); local `main` now points at that rewritten history (same
+   files; commit ids in NOW/HANDOFF updated); `cargo deny check` ok. The project hook stops agents from force-pushing
+   and the auto-mode classifier refused pausing Actions, so the maintainer runs `go-public.sh` (session scratchpad,
+   next to the rewritten bare copy `rewrite.git`): pause Actions, push main and the 8 `dependabot/*` branches with
+   exact leases, make the repo public, turn Actions back on. If the scratchpad is gone, redo the filter-repo run on a
+   fresh bare clone. After it: check the remote, run `ci` and `deny` by hand, fix what Ubuntu/macOS show.
 3. The secret `TAURI_SIGNING_PRIVATE_KEY` (text of `%USERPROFILE%\.tauri\saveprism-updater.key`): the maintainer adds
    it in GitHub → Settings → Secrets → Actions, or `gh secret set` with their OK (also make sure they keep a backup
    copy of that file). Then Actions → release → Run
