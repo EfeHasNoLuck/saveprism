@@ -3,6 +3,7 @@
 //! The logic lives in [`session`] (no Tauri types). The commands here only lock the shared
 //! `Option<Session>` and call it. They are `async` so a large file does not block the window thread.
 
+pub mod accent;
 pub mod mcp;
 pub mod session;
 
@@ -578,6 +579,13 @@ fn background_image(app_folder: Option<String>) -> Result<Option<BackgroundImage
     folders::load_background(&app)
 }
 
+/// The Windows accent colour as `#rrggbb`, or null when it cannot be read. The window reads it
+/// again whenever it gets focus, so a change in Windows Personalization shows up at once.
+#[tauri::command]
+fn app_accent_color() -> Option<String> {
+    accent::read_accent_color()
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let startup_file = file_argument(std::env::args_os());
@@ -601,6 +609,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             core_version,
+            app_accent_color,
             take_pending_file,
             open_file,
             open_file_with_game_folder,

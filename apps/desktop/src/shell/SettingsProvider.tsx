@@ -1,5 +1,6 @@
-import { useCallback, useLayoutEffect, useMemo, useState, type ReactNode } from "react";
-import { applyColors, applyTextScale } from "./appearance";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useState, type ReactNode } from "react";
+import { appAccentColor } from "@/api/commands";
+import { applyAppColor, applyColors, applyTextScale } from "./appearance";
 import { SettingsContext, type SettingsContextValue } from "./context";
 import {
   browserStorage,
@@ -11,6 +12,7 @@ import {
 /** Holds the user's settings and stores them locally on every change. */
 export function SettingsProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<Settings>(() => loadSettings(browserStorage()));
+  const [accentHex, setAccentHex] = useState<string | null>(null);
 
   const update = useCallback((patch: Partial<Settings>) => {
     setSettings((current) => {
@@ -20,10 +22,35 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  // The Windows accent is read when the system choice becomes active and again whenever the
+  // window gets focus, so a change in Windows shows up without a restart.
+  useEffect(() => {
+    if (settings.appColor.kind !== "system") {
+      return;
+    }
+    let alive = true;
+    const read = () => {
+      appAccentColor()
+        .then((value) => {
+          if (alive) setAccentHex(value);
+        })
+        .catch(() => {
+          if (alive) setAccentHex(null);
+        });
+    };
+    read();
+    window.addEventListener("focus", read);
+    return () => {
+      alive = false;
+      window.removeEventListener("focus", read);
+    };
+  }, [settings.appColor.kind]);
+
   useLayoutEffect(() => {
     applyTextScale(settings.textScale);
+    applyAppColor(settings.appColor, accentHex);
     applyColors(settings.colors);
-  }, [settings.textScale, settings.colors]);
+  }, [settings.textScale, settings.appColor, settings.colors, accentHex]);
 
   const value = useMemo<SettingsContextValue>(() => ({ settings, update }), [settings, update]);
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;

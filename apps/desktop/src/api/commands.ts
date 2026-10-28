@@ -881,3 +881,11 @@ export function exportThemeFile(target: string, text: string): Promise<string> {
 export function importThemeFile(source: string): Promise<string> {
   return invoke<string>("import_theme_file", { source });
 }
+
+/**
+ * The Windows accent colour as `#rrggbb`, or null when it cannot be read (the app then keeps
+ * blue). Read again whenever the window gets focus, so a Windows change shows up at once.
+ */
+export function appAccentColor(): Promise<string | null> {
+  return invoke<string | null>("app_accent_color");
+}

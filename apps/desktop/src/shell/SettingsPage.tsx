@@ -71,6 +71,7 @@ import { SUPPORTED_LANGUAGES, type Language } from "@/i18n";
 import { LanguageFlag } from "@/i18n/flags";
 import { languageName } from "@/i18n/language";
 import { useTheme, type ThemePreference } from "@/theme";
+import { APP_COLOR_PRESETS, appColorSwatch, DEFAULT_APP_COLOR, type AppColor } from "./appColor";
 import { COLOR_PRESETS, DEFAULT_COLORS, isHexColor, textColorFor, tonesFor, type ColorGroup } from "./colors";
 import { useNotify, useSettings } from "./context";
 import { describeError } from "./errors";
@@ -834,6 +835,30 @@ export function SettingsPage({
           {tab === "appearance" ? (
             <div className="grid grid-cols-[minmax(0,1fr)_280px] gap-6">
               <div>
+                <Section
+                  title={t("settings.appColor")}
+                  aside={
+                    <Button
+                      variant="ghost"
+                      size="xs"
+                      className="text-foreground-variant"
+                      onClick={() => update({ appColor: { ...DEFAULT_APP_COLOR } })}
+                    >
+                      <RotateCcw className="size-3" />
+                      {t("settings.resetColors")}
+                    </Button>
+                  }
+                >
+                  <Group>
+                    <AppColorRow
+                      id="appearance.appColor"
+                      value={settings.appColor}
+                      onChange={(appColor) => update({ appColor })}
+                      highlight={highlight === "appearance.appColor"}
+                    />
+                  </Group>
+                </Section>
+
                 <Section title={t("settings.text")}>
                   <Group>
                     <Row
@@ -1549,6 +1574,158 @@ function ColorRow({
           <span className="inline-flex h-6 items-center gap-1.5 rounded-sm border border-input bg-field px-1.5 font-mono text-[0.6875rem]">
             <i aria-hidden className="size-2.5 rounded-[3px]" style={{ backgroundColor: value }} />
             {value.toUpperCase()}
+          </span>
+        ) : null}
+      </div>
+    </Row>
+  );
+}
+
+function AppColorRow({
+  id,
+  value,
+  onChange,
+  highlight,
+}: {
+  id: string;
+  value: AppColor;
+  onChange: (value: AppColor) => void;
+  highlight: boolean;
+}) {
+  const { t } = useTranslation();
+  const { resolvedTheme } = useTheme();
+  const dark = resolvedTheme === "dark";
+  const isSelected = (candidate: AppColor): boolean => {
+    if (candidate.kind !== value.kind) return false;
+    if (candidate.kind === "preset" && value.kind === "preset") {
+      return candidate.id === value.id;
+    }
+    if (candidate.kind === "custom" && value.kind === "custom") {
+      return true;
+    }
+    return true;
+  };
+  const custom = value.kind === "custom" ? value.hex : null;
+  const customSwatch = appColorSwatch(value, dark);
+
+  const swatch = (
+    key: string,
+    selected: boolean,
+    color: string,
+    label: string,
+    onSelect: () => void,
+    background?: string,
+  ) => (
+    <button
+      key={key}
+      type="button"
+      role="radio"
+      aria-checked={selected}
+      aria-label={label}
+      title={label}
+      onClick={onSelect}
+      className="relative size-6 rounded-full p-0.5 outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+      style={{
+        boxShadow: selected
+          ? `0 0 0 2px var(--card), 0 0 0 4px ${textColorFor(color)}`
+          : undefined,
+      }}
+    >
+      <span
+        aria-hidden
+        className="block size-full rounded-full ring-1 ring-black/15"
+        style={{ background: background ?? color }}
+      />
+      {selected ? (
+        <Check
+          className="absolute inset-0 m-auto size-3"
+          style={{ color: textColorFor(color) }}
+          strokeWidth={3.5}
+        />
+      ) : null}
+    </button>
+  );
+
+  return (
+    <Row
+      id={id}
+      label={t("settings.appColor")}
+      description={t("settings.appColorHint")}
+      highlight={highlight}
+    >
+      <div
+        role="radiogroup"
+        aria-label={t("settings.appColor")}
+        className="flex flex-wrap items-center gap-2"
+      >
+        {APP_COLOR_PRESETS.map((preset) => {
+          const choice: AppColor = { kind: "preset", id: preset.id };
+          const color = appColorSwatch(choice, dark);
+          return swatch(
+            preset.id,
+            isSelected(choice),
+            color,
+            t(`settings.appColorPresets.${preset.id}`),
+            () => onChange(choice),
+          );
+        })}
+        <span className="mx-0.5 h-5 w-px bg-border" />
+        {swatch(
+          "system",
+          isSelected({ kind: "system" }),
+          appColorSwatch({ kind: "system" }, dark),
+          t("settings.appColorSystem"),
+          () => onChange({ kind: "system" }),
+          "conic-gradient(#4a7fd6, #4cd7f6, #6fdba8, #ffc27a, #ffafd5, #d0bcff, #4a7fd6)",
+        )}
+        {swatch(
+          "mono",
+          isSelected({ kind: "mono" }),
+          appColorSwatch({ kind: "mono" }, dark),
+          t("settings.appColorMono"),
+          () => onChange({ kind: "mono" }),
+          "linear-gradient(135deg, #f4f4f4 0 50%, #3a3a3a 50% 100%)",
+        )}
+        <label
+          className="relative size-6 cursor-pointer rounded-full p-0.5 outline-none focus-within:ring-2 focus-within:ring-ring/60"
+          title={t("settings.appColorCustom")}
+          style={{
+            boxShadow: custom
+              ? `0 0 0 2px var(--card), 0 0 0 4px ${textColorFor(customSwatch)}`
+              : undefined,
+          }}
+        >
+          <span
+            aria-hidden
+            className="flex size-full items-center justify-center rounded-full"
+            style={{
+              background: custom
+                ? custom
+                : "conic-gradient(#ff5f6d, #ffc371, #f9f871, #6fdba8, #4cd7f6, #7b8cff, #d0bcff, #ff5f6d)",
+            }}
+          >
+            {custom ? (
+              <Check
+                className="size-3"
+                style={{ color: textColorFor(custom) }}
+                strokeWidth={3.5}
+              />
+            ) : (
+              <Pipette className="size-2.5 text-[#061428]/70" />
+            )}
+          </span>
+          <input
+            type="color"
+            value={custom ?? "#4a7fd6"}
+            aria-label={t("settings.appColorCustom")}
+            onChange={(event) => onChange({ kind: "custom", hex: event.target.value })}
+            className="absolute inset-0 size-full cursor-pointer opacity-0"
+          />
+        </label>
+        {custom ? (
+          <span className="inline-flex h-6 items-center gap-1.5 rounded-sm border border-input bg-field px-1.5 font-mono text-[0.6875rem]">
+            <i aria-hidden className="size-2.5 rounded-[3px]" style={{ backgroundColor: custom }} />
+            {custom.toUpperCase()}
           </span>
         ) : null}
       </div>

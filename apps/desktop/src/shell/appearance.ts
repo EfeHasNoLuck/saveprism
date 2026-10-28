@@ -1,12 +1,15 @@
 /**
- * Applies the settings that change how the whole app looks: the root font size and the colour
- * presets. `main.tsx` calls `applyStoredAppearance()` before the first render, like the theme.
+ * Applies the settings that change how the whole app looks: the root font size, the app colour and
+ * the colour presets. `main.tsx` calls `applyStoredAppearance()` before the first render, like the
+ * theme.
  */
 
+import { appColorCss, type AppColor } from "./appColor";
 import { colorCss, type ColorChoices } from "./colors";
 import { browserStorage, loadSettings, textScalePx, type Settings } from "./settings";
 
 const COLOR_STYLE_ID = "saveprism-colors";
+const APP_COLOR_STYLE_ID = "saveprism-appcolor";
 
 /** Sets the root font size; the rem-based Tailwind sizes scale with it. */
 export function applyTextScale(scale: number): void {
@@ -24,9 +27,24 @@ export function applyColors(colors: ColorChoices): void {
   style.textContent = colorCss(colors);
 }
 
+/**
+ * Writes the app-colour palette over the surfaces and action tokens of both themes. The blue
+ * default writes nothing. `accentHex` is the Windows accent while the system choice is active.
+ */
+export function applyAppColor(choice: AppColor, accentHex?: string | null): void {
+  let style = document.getElementById(APP_COLOR_STYLE_ID) as HTMLStyleElement | null;
+  if (!style) {
+    style = document.createElement("style");
+    style.id = APP_COLOR_STYLE_ID;
+    document.head.appendChild(style);
+  }
+  style.textContent = appColorCss(choice, accentHex);
+}
+
 /** Applies the stored text size and colours synchronously, before the first paint. */
 export function applyStoredAppearance(): void {
   const settings: Settings = loadSettings(browserStorage());
   applyTextScale(settings.textScale);
+  applyAppColor(settings.appColor);
   applyColors(settings.colors);
 }

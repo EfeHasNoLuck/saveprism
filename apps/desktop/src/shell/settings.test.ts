@@ -93,6 +93,32 @@ describe("parseSettings", () => {
     );
   });
 
+  it("loads old settings as the blue app colour", () => {
+    expect(parseSettings(JSON.stringify({ colors: { accent: "cyan" } })).appColor).toEqual(
+      { kind: "preset", id: "blue" },
+    );
+    expect(parseSettings(null).appColor).toEqual({ kind: "preset", id: "blue" });
+  });
+
+  it("keeps a valid app colour and replaces an invalid one with blue", () => {
+    expect(
+      parseSettings(
+        JSON.stringify({ appColor: { kind: "custom", hex: "#12AB34" } }),
+      ).appColor,
+    ).toEqual({ kind: "custom", hex: "#12ab34" });
+    expect(
+      parseSettings(JSON.stringify({ appColor: { kind: "preset", id: "teal" } }))
+        .appColor,
+    ).toEqual({ kind: "preset", id: "teal" });
+    expect(
+      parseSettings(JSON.stringify({ appColor: { kind: "preset", id: "nope" } }))
+        .appColor,
+    ).toEqual({ kind: "preset", id: "blue" });
+    expect(parseSettings(JSON.stringify({ appColor: "violet" })).appColor).toEqual(
+      { kind: "preset", id: "blue" },
+    );
+  });
+
   it("clamps the pattern strength and photo sliders to 0..100", () => {
     expect(parseSettings(JSON.stringify({ patternStrength: 900 })).patternStrength).toBe(100);
     expect(parseSettings(JSON.stringify({ patternStrength: -5 })).patternStrength).toBe(0);

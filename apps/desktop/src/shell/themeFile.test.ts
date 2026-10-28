@@ -18,6 +18,7 @@ const valid: ThemeFile = {
   version: 1,
   name: "Blue night",
   colors: { changed: "violet", accent: "#123abc", error: "red" },
+  appColor: { kind: "preset", id: "violet" },
   textSize: 110,
   background: { kind: "pattern", pattern: "dots", strength: 70 },
 };
@@ -65,6 +66,48 @@ describe("parseThemeFile", () => {
       ok: false,
       reason: "version",
     });
+  });
+
+  it("means Blue when the app colour is missing", () => {
+    const without: Record<string, unknown> = { ...valid };
+    delete without.appColor;
+    const result = parse(without);
+    expect(result).toEqual({
+      ok: true,
+      theme: { ...valid, appColor: { kind: "preset", id: "blue" } },
+    });
+  });
+
+  it("accepts every app colour form", () => {
+    for (const appColor of [
+      { kind: "preset", id: "teal" },
+      { kind: "system" },
+      { kind: "mono" },
+      { kind: "custom", hex: "#aabbcc" },
+    ]) {
+      expect(parse({ ...valid, appColor })).toEqual({
+        ok: true,
+        theme: { ...valid, appColor },
+      });
+    }
+    expect(parse({ ...valid, appColor: { kind: "custom", hex: "#AABBCC" } })).toEqual({
+      ok: true,
+      theme: { ...valid, appColor: { kind: "custom", hex: "#aabbcc" } },
+    });
+  });
+
+  it("refuses an invalid app colour", () => {
+    for (const appColor of [
+      "violet",
+      { kind: "other" },
+      { kind: "preset", id: "pink" },
+      { kind: "custom", hex: "#12345" },
+    ]) {
+      expect(parse({ ...valid, appColor })).toEqual({
+        ok: false,
+        reason: "appColor",
+      });
+    }
   });
 
   it("refuses a missing, empty or too long name", () => {
@@ -146,6 +189,7 @@ describe("theme files from settings", () => {
       name: "My theme",
       textSize: 120,
       colors: { changed: "rose", accent: "#abcdef", error: "orange" },
+      appColor: { kind: "preset", id: "blue" },
       background: { kind: "pattern", pattern: "grid", strength: 35 },
     });
     expect(parseThemeFile(serializeThemeFile(theme))).toEqual({ ok: true, theme });
@@ -174,6 +218,7 @@ describe("themeSettingsPatch", () => {
     const patch = themeSettingsPatch(theme, DEFAULT_SETTINGS);
     expect(patch).toEqual({
       colors: valid.colors,
+      appColor: valid.appColor,
       textScale: 115,
       backgroundMode: "pattern",
       patternKind: "grid",
