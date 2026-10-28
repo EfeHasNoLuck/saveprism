@@ -864,7 +864,7 @@
     "versionLine": "Sürüm {{version}}",
     "licenseShort": "MIT",
     "licenseBody": "SavePrism, MIT Lisansı ile yayımlanır. Tam metin aşağıda.",
-    "tagline": "Bilgisayarında çalışan bir kayıt düzenleyici. Hesap yok, yükleme yok.",
+    "tagline": "PC oyunları için kayıt düzenleyici. Unity, Unreal, RPG Maker, Ren'Py ve Godot kayıtlarını çevrimdışı düzenle, yedekler kendiliğinden alınır.",
     "whatsNew": "{{version}} sürümünde yeniler",
     "showTour": "Turu yeniden göster",
     "copyright": "© 2026 SavePrism katkıda bulunanlar",

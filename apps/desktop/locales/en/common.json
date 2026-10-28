@@ -864,7 +864,7 @@
     "versionLine": "Version {{version}}",
     "licenseShort": "MIT",
     "licenseBody": "SavePrism is released under the MIT License. The full text is below.",
-    "tagline": "A save editor that runs on your PC. No account, no upload.",
+    "tagline": "Save editor for PC games. Edit Unity, Unreal, RPG Maker, Ren'Py and Godot saves offline, with automatic backups.",
     "whatsNew": "What's new in {{version}}",
     "showTour": "Show the tour again",
     "copyright": "© 2026 SavePrism contributors",
