@@ -318,8 +318,11 @@ mod tests {
         fs::write(path, text).unwrap();
     }
 
+    /// Opens with a backup folder next to the work folder, so a save never reaches the player's
+    /// real backup folder.
     fn open(path: &std::path::Path) -> Session {
-        Session::open(path.to_str().unwrap(), None, None).unwrap()
+        let backups = path.parent().unwrap().with_file_name("backups");
+        Session::open(path.to_str().unwrap(), None, Some(backups)).unwrap()
     }
 
     #[test]
