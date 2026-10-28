@@ -280,7 +280,12 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
      done (the rest goes to the community); README reviewed by the maintainer ("looks good").
    - 0.9.0 prep 2026-10-28: version 0.9.0; Linux AppImage/deb and macOS dmg targets; CI rust job on all three
      systems again; `release` workflow (draft release with `latest.json`); release text in
-     `scripts/release/notes-0.9.0.md`. Not run yet: needs the repo public (free Actions). Next: HANDOFF Next step.
+     `scripts/release/notes-0.9.0.md` (approved by the maintainer).
+   - Public 2026-10-28: history cleaned of `fixtures/external/` (git-filter-repo; the maintainer force-pushed), repo
+     public, Discussions on with "Community themes", "Protect main" ruleset (no force push, no deletion), GitHub
+     description and 14 topics, secret `TAURI_SIGNING_PRIVATE_KEY` set. CI fixes for Linux (cfg'd GOG constant,
+     LocalLow test paths) and macOS (patched uesave copy in `vendor/uesave`: no huge zeroed buffers in the GVAS hint
+     search). Next: HANDOFF Next step (CI green on macOS, then the release run).
 
 ## Known gaps
 - A zip save with several JSON entries opens only the largest (Shapez 2: `local-player.json`, not `research.json` or

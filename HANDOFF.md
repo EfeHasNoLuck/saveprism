@@ -1,97 +1,61 @@
 # HANDOFF
 
-**State (2026-10-28, ~19:00 TR):** the maintainer's install test is done (what they did not try goes to the community).
-The first public release is now **0.9.0 for Windows, Linux and macOS** (maintainer's decision): version bumped, a
-`release` workflow builds all three into a draft release, README covers all three. The repo is public now and
-Actions are free. Weekly Claude limit 21%
-used (resets 2026-11-04 11:00 UTC).
-The plan and history are in `NOW.md`; this page is only what the next session needs.
+**State (2026-10-28, ~20:15 TR):** the repo `huseyincancalti/saveprism` is public; the first release is **0.9.0 for
+Windows, Linux and macOS** (Linux/macOS are tested by the community). Last work commit `dd3abb6` (patched uesave for
+the macOS CI failures), then this handoff; its `ci` run was still going when this was written. History, plan and
+decisions: `NOW.md`.
 
 ## Works (with evidence)
-- README/GitHub showcase (`8d94e39`, `9eb850e`): both Mermaid diagrams render with mermaid 11.4.1, every form YAML
-  parses, all 18 images in `docs/images/` reviewed (synthetic save, generated photo, no real data, no user name).
-- MCP gaps (`3734bd6`, `82b9b2f`): 20 tools; rust 3/3, web 3/3, cargo deny ok; a real Claude Code round trip on a
-  fixture copy; the running app writes `%LOCALAPPDATA%\SavePrism\settings.json` for the MCP server; a full Rust test
-  run leaves the real backup folder untouched.
-- Auto-update (`b4b1a3b`, `b6732c8`): checked over CDP with a local mock (toast, About "0.2.0 is available", discard
-  guard, progress); the real endpoint stays silent while the repo is private (`.motor/update-1028/`).
-- Crash screen (`5c8884e`): checked over CDP, dark/light, EN/TR; the copied report holds no path (`.motor/crash-1028/`).
-- Slime Rancher 2 (`ad3987e`, `354e444`): the maintainer's 5 saves (`fixtures/external/slime-rancher-2/`) round-trip
-  exactly in the CLI and backend; a money edit saved with a backup and reopened; the current debug CLI detects them as
-  `format.slime-rancher-2`. The maintainer edited a real save in SavePrism; the game loaded it with the
-  change (2026-10-28).
-- Windows installer (`2d12d3e`, built as 0.1.0 before the version bump): setup exe only, no MSI (the updater only
-  serves the exe). Publisher "Hüseyin Can ÇALTI" seen by the maintainer in the installed apps list; the setup exe shows
-  the app logo. It installs per user into `%LOCALAPPDATA%\SavePrism\` next to the backups; Tauri's uninstaller removes
-  only its own files there (non-recursive `RMDir`). The maintainer checked: "Decode with SavePrism" (Turkish label),
-  the first-launch tour, a real Slime Rancher 2 edit loaded by the game.
-- 0.9.0 prep (this commit): version 0.9.0 in Cargo, package.json, tauri.conf, both CHANGELOGs, notices, bug form;
-  bundle targets `nsis, appimage, deb, app, dmg` (Tauri skips the other systems' targets); macOS ad-hoc signing
-  (`signingIdentity: "-"`); CI rust job back on Windows, Ubuntu and macOS; `.github/workflows/release.yml`
-  (tauri-action, manual run, draft release, `latest.json` for all systems); release text draft in
-  `scripts/release/notes-0.9.0.md`. Rust 3/3 and web 3/3 passed on Windows.
+- Windows install test by the maintainer (setup exe only, no MSI): logo on the setup exe, publisher "Hüseyin Can
+  ÇALTI" in the installed apps list, "SavePrism ile çöz" in Explorer, the first-launch tour, a real Slime Rancher 2
+  edit that the game loaded. README reviewed by the maintainer ("güzel gözüküyor"); release text approved ("uygun").
+- Going public: a history scan found no keys, tokens or passwords; git-filter-repo removed `fixtures/external/`
+  from every commit; the maintainer force-pushed main and the 8 `dependabot/*` branches (every `refs/pull/*/head`
+  now points at the clean history) and made the repo public. Checked with `gh repo view` (PUBLIC) and `git ls-remote`.
+- Checked over the GitHub API: Discussions on with category `community-themes`; ruleset "Protect main" active
+  (`deletion`, `non_fast_forward`); description and 14 topics set; secret `TAURI_SIGNING_PRIVATE_KEY` exists.
+- CI: Windows and Ubuntu green from `8b07c46` on. macOS fix `dd3abb6`: a counting allocator showed uesave
+  allocating 5.3 GB of zeroed buffers (largest 1.8 GB) while the GVAS hint search tried wrong guesses on a 379-byte
+  save; with `vendor/uesave` (uesave 0.7.1, MIT, `COPYING`, two read fixes in `PATCHES.md`, wired through
+  `[patch.crates-io]`) the same save makes no allocation over 1 MiB. Local `kontrol.sh rust` 3/3, `cargo deny` ok.
 
 ## Broken / not checked
-- macOS GVAS fix (2026-10-28): a counting allocator showed uesave allocating 5.3 GB of zeroed buffers (3 blocks,
-  up to 1.8 GB) while the hint search tried wrong guesses on a 379-byte save; macOS zeroes reused large blocks, so
-  the 3 s search budget ran out there. `vendor/uesave` is uesave 0.7.1 (MIT, `COPYING`) with two read fixes
-  (`PATCHES.md`), used through `[patch.crates-io]`; the same save now makes no allocation over 1 MiB. Rust 3/3 and
-  cargo deny ok on Windows; macOS CI result after the push decides.
-- Left to the community (maintainer, 2026-10-28; public text must invite feedback warmly, never "you test it"):
-  About → Check for updates against the real release, a real AI app over MCP, a second file handed to the open window.
-- Explorer label language: the installer has no language picker; NSIS runs it in the Windows display language
-  (checked in the NSIS docs), so Turkish Windows gets "SavePrism ile çöz", every other language "Decode with
-  SavePrism". Someone who changes the Windows language later keeps the old label until the next install or update.
-  The maintainer questioned this rule; explained, no change asked yet.
-- Slime Rancher 2: the one-row-per-slot layout is not seen in the running app; `slimerancher.cfg`/`.prf` do not open;
-  Slime Rancher 1 not checked (no sample); its fuzz target is not in `.github/workflows/fuzz.yml`; cargo-fuzz is not
-  installed here, so no fuzz target ran locally.
-- Auto-update: a real download → install → restart needs a public release.
-- README and forms not seen on GitHub; the Discussions "Community themes" category does not exist yet.
-- Known, not blocking: Settings Preview red "Health" row 4.0:1 in dark; light active sidebar tab 4.0:1 at the photo's
-  darkest spot; crash screen buttons plain; an MCP edit is not seen by a window with the same file open (it refuses to
-  save over it, SP-APP-023); no code signing, so SmartScreen warns.
-- Folders the project hook stops agents from deleting; the maintainer deletes them in their own PowerShell:
-  `C:\SavePrismDemo\` (made-up demo files), `.claude\worktrees\agent-*` (7) and
-  `..\saveprism-wt\{satisfactory,w4-settings,w6-shortcuts,w7-screens-fix,w7-settings-fix}`. Use the `\\?\` prefix
-  (long paths): `Remove-Item -LiteralPath "\\?\<full path>" -Recurse -Force`.
+- macOS CI after `dd3abb6`: not seen yet (`gh run list -R huseyincancalti/saveprism -b main`). Before the fix, 7
+  GVAS tests failed on macOS only (hint search over its 3 s budget).
+- The `release` workflow has never run; the Linux and macOS builds have never been built or opened.
+- Auto-update end to end (download → install → restart) needs the published release.
+- Left to the community (maintainer's choice; public text must invite feedback warmly, never "you test it"): the
+  update check, a real AI app over MCP, a second file handed to the open window, Linux and macOS in general.
+- Dependabot's 8 pull requests are stale (based on the old history); some fail CI. Close or let Dependabot rebase.
+- Known, not blocking: Explorer label stays in the old language if Windows' language changes after install (until
+  the next update); SmartScreen and macOS warn (no code signing).
+- Leftovers the project hook stops agents from deleting (the maintainer deletes them in PowerShell with the `\\?\`
+  prefix): `C:\SavePrismDemo\`, `.claude\worktrees\agent-*` (7), `..\saveprism-wt\{satisfactory,w4-settings,
+  w6-shortcuts,w7-screens-fix,w7-settings-fix}`. Old MSI files in `target/release/bundle/msi/` are stale.
 
 ## Next step
-1. Release text `scripts/release/notes-0.9.0.md`: approved by the maintainer (2026-10-28).
-2. Public since 2026-10-28 ~19:05 TR. A history scan found no keys, tokens or passwords; `git-filter-repo` (MIT,
-   pip) removed `fixtures/external/` from every commit; the maintainer pushed main and the 8 `dependabot/*` branches
-   with exact leases (the project hook stops agents from force-pushing), made the repo public and turned Actions back
-   on; every `refs/pull/*/head` now points at the rewritten history. The author e-mail stays (maintainer's choice).
-   Commit ids in NOW/HANDOFF were updated to the new history. Next: fix what the Ubuntu/macOS CI runs show.
-3. The secret `TAURI_SIGNING_PRIVATE_KEY` (text of `%USERPROFILE%\.tauri\saveprism-updater.key`): the maintainer adds
-   it in GitHub → Settings → Secrets → Actions, or `gh secret set` with their OK (also make sure they keep a backup
-   copy of that file). Then Actions → release → Run
-   workflow; check the draft has the setup exe, dmg, AppImage, deb, their `.sig` files and `latest.json`; put the
-   approved text on the draft; publish only with the maintainer's OK (not a pre-release: the updater reads
-   `releases/latest`).
-4. Done 2026-10-28: GitHub description (the chosen line), 14 topics, Discussions on. The maintainer does in the web UI
-   (the auto-mode classifier refuses repo rulesets; no API creates Discussion categories): the "Community themes"
-   category (slug `community-themes`, used by README, CONTRIBUTING, the issue chooser and the app) and a "Protect
-   main" ruleset (block force pushes and deletion only; no pull-request rule, we push to main).
+1. Check the `ci` run of `dd3abb6` (or later): all three systems green. If macOS still fails, read the job log
+   (`gh api repos/huseyincancalti/saveprism/actions/jobs/<id>/logs`).
+2. `gh workflow run release.yml -R huseyincancalti/saveprism --ref main`; wait for all three jobs. Check the draft
+   release `v0.9.0`: setup exe, `.dmg`, `.AppImage`, `.deb`, their `.sig` files and `latest.json` with Windows,
+   Linux and macOS entries; the file names must match `scripts/release/notes-0.9.0.md` (fix the text if not).
+3. `gh release edit v0.9.0 -R huseyincancalti/saveprism --notes-file scripts/release/notes-0.9.0.md`.
+4. Ask the maintainer to publish (their explicit OK; not a pre-release, or the updater endpoint
+   `releases/latest/download/latest.json` will not find it). If the auto-mode classifier refuses the publish, the
+   maintainer presses Publish on the draft page.
 
 ## Maintainer decisions (2026-10-28)
-- Publisher "Hüseyin Can ÇALTI" (keep the surname in capitals). Windows ships as the setup exe only, no MSI.
-- README: tell the maintainer when it is final; they review it before going public.
-- First public release 0.9.0 with Linux and macOS; the community tests those; a real 1.0 after a quiet period.
-- Release: show the maintainer only the release text (short bullets of what the player gets); fill tag and title
-  yourself; publish after their OK. They saw the README and said it looks good.
-- About tagline "A save editor that runs on your PC. No account, no upload."; the GitHub description is a different,
-  search-friendly line (in `docs/research/seo-2026-10-28.md`).
-- README footer: GitHub profile only, no e-mail. Visuals: as many as fit.
-- Auto-update is expected, with Check for updates in About.
+- First public release 0.9.0 with Linux and macOS; a real 1.0 after a quiet period.
+- Windows ships as the setup exe only. Publisher "Hüseyin Can ÇALTI" (surname in capitals).
+- The author e-mail in commits stays as it is.
+- Release: show the maintainer only the release text; tag and title are ours; publish after their OK.
+- Explorer label follows the Windows display language at install time (Turkish → Turkish, else English); revisit
+  when a new UI language is added. Ask before any choice about what players see.
 
 ## Gotchas
-- Start an EVREN job: `bash .motor/start_job.sh <name>` (brief `.motor/<name>.md`). At most 2 at once, started seconds
-  apart ("database is locked").
-- The project hook refuses `git checkout -- <file>` (use `git show HEAD:<file> > <file>`), recursive deletes, forced
-  worktree removal, and any Bash command that mentions `.claude/araclar` together with file edits.
-- Visual checks snapshot and restore every `saveprism.*` localStorage key and the app folder's `background\` folder;
-  open fixture copies only; never a Windows wallpaper in published images.
-- Focus engines: Unreal, Unity, RPG Maker, Ren'Py. Never touch the maintainer's original saves.
-- The old session "SavePrism: Satisfactory merge, then polish" (`local_54de6911-…`) could not be archived (Remote
-  Control client attached); the maintainer can archive it from the sidebar.
+- The project hook stops agents from force-pushing, deleting recursively, writing any file named `LICENSE`, and
+  any Bash command that names `.claude/araclar` together with a file edit. The auto-mode classifier refuses repo
+  settings changes (pausing Actions, rulesets); the maintainer does those on the web.
+- Failed CI runs e-mail the maintainer: run `kontrol.sh rust`, `kontrol.sh web` and `cargo deny check` before a push.
+- In PowerShell `bash` is WSL; use `"C:\Program Files\Git\bin\bash.exe"` for scripts the maintainer runs.
+- Start an EVREN job: `bash .motor/start_job.sh <name>` (brief `.motor/<name>.md`), at most 2 at once.
