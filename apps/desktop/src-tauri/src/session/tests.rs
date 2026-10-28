@@ -4455,3 +4455,60 @@ fn real_satisfactory_saves_list_a_player_inventory_and_edit_one_count() {
         );
     }
 }
+
+/// Opens a Slime Rancher 2 save, raises the money and a vacpack count, saves over it and checks
+/// the backup and the reopened values.
+fn slime_rancher_edit_survives_a_save(env: &Env, path: &Path) {
+    let before = fs::read(path).unwrap();
+    let mut session = open(env, path, None).unwrap();
+    assert_eq!(
+        session.info().guard,
+        GuardLevel::Exact,
+        "{}",
+        path.display()
+    );
+    let money: i64 = row(&session, "/money").preview.parse().unwrap();
+    session
+        .edit_value("/money", &(money + 1000).to_string())
+        .unwrap();
+    let result = session.save(path.to_str().unwrap(), false, None).unwrap();
+    assert!(result.verified);
+    let backup = PathBuf::from(result.backup_path.unwrap());
+    assert!(backup.starts_with(&env.backups));
+    assert_eq!(fs::read(&backup).unwrap(), before);
+
+    let reopened = open(env, path, None).unwrap();
+    assert_eq!(reopened.info().guard, GuardLevel::Exact);
+    assert_eq!(row(&reopened, "/money").preview, (money + 1000).to_string());
+}
+
+#[test]
+fn slime_rancher_money_edit_saves_with_a_backup() {
+    let env = env();
+    let path = copy_in(&env, "synthetic/slime-rancher-2/invented_1.sav");
+    slime_rancher_edit_survives_a_save(&env, &path);
+}
+
+#[test]
+#[ignore = "reads the local, git-ignored fixtures/external/slime-rancher-2 saves"]
+fn real_slime_rancher_saves_open_exact_and_save_a_money_edit() {
+    let root = fixture("external/slime-rancher-2");
+    let Ok(entries) = fs::read_dir(&root) else {
+        eprintln!("no real Slime Rancher 2 saves under {}", root.display());
+        return;
+    };
+    let mut saves: Vec<PathBuf> = entries
+        .flatten()
+        .map(|entry| entry.path())
+        .filter(|path| path.extension().is_some_and(|ext| ext == "sav"))
+        .collect();
+    saves.sort();
+    assert!(!saves.is_empty());
+    for source in saves {
+        let env = env();
+        let path = env.work.join(source.file_name().unwrap());
+        fs::copy(&source, &path).unwrap();
+        slime_rancher_edit_survives_a_save(&env, &path);
+        eprintln!("{}: exact, money edit saved and reopened", source.display());
+    }
+}

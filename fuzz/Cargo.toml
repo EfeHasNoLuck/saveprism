@@ -357,3 +357,10 @@ path = "fuzz_targets/satisfactory.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "slime_rancher"
+path = "fuzz_targets/slime_rancher.rs"
+test = false
+doc = false
+bench = false

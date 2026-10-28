@@ -93,6 +93,10 @@ const CATALOG: &[(&str, &[&str])] = &[
         &["%LOCALAPPDATA%\\FactoryGame\\Saved\\SaveGames\\<id>"],
     ),
     (
+        "slime-rancher-2",
+        &["%USERPROFILE%\\AppData\\LocalLow\\MonomiPark\\SlimeRancher2"],
+    ),
+    (
         "terraria",
         &[
             "%USERPROFILE%\\Documents\\My Games\\Terraria\\Players",

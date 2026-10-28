@@ -52,6 +52,7 @@ pub mod rocksdb;
 pub mod rpgmaker;
 pub mod satisfactory;
 pub mod scs_sii;
+pub mod slime_rancher;
 pub mod sol;
 pub mod sqlite;
 pub mod terraria;
@@ -96,6 +97,7 @@ pub fn register_all(reg: &mut Registry) {
     rpgmaker::register(reg);
     satisfactory::register(reg);
     scs_sii::register(reg);
+    slime_rancher::register(reg);
     es3::register(reg);
     gamemaker::register(reg);
     csv_text::register(reg);

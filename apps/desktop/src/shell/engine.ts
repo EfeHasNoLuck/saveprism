@@ -107,6 +107,7 @@ const CODEC_LABELS: Record<string, string> = {
   "format.naninovel": "Naninovel",
   "format.witcher3": "The Witcher 3",
   "format.satisfactory": "Satisfactory",
+  "format.slime-rancher-2": "Slime Rancher 2",
   "format.terraria-player": "Terraria",
   "format.terraria-world": "Terraria",
   "format.xml": "XML",
