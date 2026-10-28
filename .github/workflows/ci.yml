@@ -34,9 +34,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Windows only for now (maintainer decision 2026-10-22). Linux and macOS come back
-        # before release: add ubuntu-24.04 and macos-latest here again.
-        os: [windows-latest]
+        os: [windows-latest, ubuntu-24.04, macos-latest]
     steps:
       - uses: actions/checkout@v4
 

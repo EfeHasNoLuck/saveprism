@@ -1,8 +1,10 @@
 # HANDOFF
 
-**State (2026-10-28, ~17:30 TR):** everything planned before the install test is done on local `main` (last work commit
-`639b13b`, then this handoff). Nothing pushed since `4214786`: GitHub Actions minutes are out until next month. Weekly
-Claude limit ~11% (resets 2026-11-04 11:00 UTC); keep visual checks in a Claude subagent (sonnet), text chores in EVREN.
+**State (2026-10-28, ~19:00 TR):** the maintainer's install test is done (what they did not try goes to the community).
+The first public release is now **0.9.0 for Windows, Linux and macOS** (maintainer's decision): version bumped, a
+`release` workflow builds all three into a draft release, README covers all three. Nothing pushed since `4214786`:
+Actions minutes for the private repo are out, but Actions are free once the repo is public. Weekly Claude limit 21%
+used (resets 2026-11-04 11:00 UTC).
 The plan and history are in `NOW.md`; this page is only what the next session needs.
 
 ## Works (with evidence)
@@ -18,14 +20,23 @@ The plan and history are in `NOW.md`; this page is only what the next session ne
   exactly in the CLI and backend; a money edit saved with a backup and reopened; the current debug CLI detects them as
   `format.slime-rancher-2`. The maintainer edited a real save in SavePrism; the game loaded it with the
   change (2026-10-28).
-- Installers rebuilt and signed on 2026-10-28 17:39 with `bash scripts/release/build.sh` from the publisher commit:
-  `target/release/bundle/nsis/SavePrism_0.1.0_x64-setup.exe` (setup exe only; the old MSI files left in
-  `target/release/bundle/msi/` are stale). Publisher "Hüseyin Can ÇALTI": the maintainer installed it and saw the name
-  in the installed apps list; the setup exe shows the app logo. It installs per user into `%LOCALAPPDATA%\SavePrism\`
-  next to the backups; Tauri's uninstaller removes only its own files there (non-recursive `RMDir`).
+- Windows installer (`09f4e89`, built as 0.1.0 before the version bump): setup exe only, no MSI (the updater only
+  serves the exe). Publisher "Hüseyin Can ÇALTI" seen by the maintainer in the installed apps list; the setup exe shows
+  the app logo. It installs per user into `%LOCALAPPDATA%\SavePrism\` next to the backups; Tauri's uninstaller removes
+  only its own files there (non-recursive `RMDir`). The maintainer checked: "Decode with SavePrism" (Turkish label),
+  the first-launch tour, a real Slime Rancher 2 edit loaded by the game.
+- 0.9.0 prep (this commit): version 0.9.0 in Cargo, package.json, tauri.conf, both CHANGELOGs, notices, bug form;
+  bundle targets `nsis, appimage, deb, app, dmg` (Tauri skips the other systems' targets); macOS ad-hoc signing
+  (`signingIdentity: "-"`); CI rust job back on Windows, Ubuntu and macOS; `.github/workflows/release.yml`
+  (tauri-action, manual run, draft release, `latest.json` for all systems); release text draft in
+  `scripts/release/notes-0.9.0.md`. Rust 3/3 and web 3/3 passed on Windows.
 
 ## Broken / not checked
-- The new installers are not installed or tried yet (the maintainer's step).
+- Linux and macOS: never built or run. The CI rust job and the release workflow on Ubuntu/macOS have not run yet
+  (first push after going public); expect small fixes. WSL Ubuntu here has no Rust and sudo needs a password.
+- Left to the community (maintainer, 2026-10-28): About → Check for updates against the real release, a real AI app over
+  MCP, a second file handed to the open window, the context menu in other languages (code: Turkish label only when the
+  installer ran in Turkish, English otherwise).
 - Slime Rancher 2: the one-row-per-slot layout is not seen in the running app; `slimerancher.cfg`/`.prf` do not open;
   Slime Rancher 1 not checked (no sample); its fuzz target is not in `.github/workflows/fuzz.yml`; cargo-fuzz is not
   installed here, so no fuzz target ran locally.
@@ -40,23 +51,25 @@ The plan and history are in `NOW.md`; this page is only what the next session ne
   (long paths): `Remove-Item -LiteralPath "\\?\<full path>" -Recurse -Force`.
 
 ## Next step
-1. The maintainer installs `SavePrism_0.1.0_x64-setup.exe` and tries: Explorer "Decode with SavePrism",
-   a second start handing the file over, the opening logo, the first-launch tour, About → Check for updates ("Could
-   not check" is expected while the repo is private), real saves (also Slime Rancher 2 slot rows), a real AI app over
-   MCP using the backup folder chosen in Settings. They also back up `%USERPROFILE%\.tauri\saveprism-updater.key`
-   (without it, installed copies can never take another update).
-2. Fix what that test finds, check it, commit.
-3. Only after the test passes, ask about publishing. Before going public: the `bed2ed9` history cleanup (real saves
-   were pushed once; needs the maintainer's OK); push when Actions minutes are back (run `cargo deny check` first,
-   then check the runs); turn on Discussions and add "Community themes"; set the GitHub description and topics
-   (`docs/research/seo-2026-10-28.md`); `bash scripts/release/build.sh`, then upload the setup exe, its `.sig` and
-   `latest.json` to release `v0.1.0`.
+1. The maintainer reviews the release text (`scripts/release/notes-0.9.0.md`, shown in chat); apply their changes to it
+   and to both CHANGELOGs if they want the in-app "What's new" to match.
+2. Ask about going public. Before: the `bed2ed9` history cleanup (real saves were pushed once; needs the maintainer's
+   OK); `cargo deny check`. Then push; Actions are free for public repos: fix what the Ubuntu/macOS CI runs show.
+3. The secret `TAURI_SIGNING_PRIVATE_KEY` (text of `%USERPROFILE%\.tauri\saveprism-updater.key`): the maintainer adds
+   it in GitHub → Settings → Secrets → Actions, or `gh secret set` with their OK (also make sure they keep a backup
+   copy of that file). Then Actions → release → Run
+   workflow; check the draft has the setup exe, dmg, AppImage, deb, their `.sig` files and `latest.json`; put the
+   approved text on the draft; publish only with the maintainer's OK (not a pre-release: the updater reads
+   `releases/latest`).
+4. Turn on Discussions and add "Community themes"; set the GitHub description and topics
+   (`docs/research/seo-2026-10-28.md`).
 
 ## Maintainer decisions (2026-10-28)
 - Publisher "Hüseyin Can ÇALTI" (keep the surname in capitals). Windows ships as the setup exe only, no MSI.
 - README: tell the maintainer when it is final; they review it before going public.
-- Release: fill in every field of the GitHub release (title, tag, notes) as a draft and wait for the maintainer's OK.
-  Notes are short bullets of what the player gets, easy to scan.
+- First public release 0.9.0 with Linux and macOS; the community tests those; a real 1.0 after a quiet period.
+- Release: show the maintainer only the release text (short bullets of what the player gets); fill tag and title
+  yourself; publish after their OK. They saw the README and said it looks good.
 - About tagline "A save editor that runs on your PC. No account, no upload."; the GitHub description is a different,
   search-friendly line (in `docs/research/seo-2026-10-28.md`).
 - README footer: GitHub profile only, no e-mail. Visuals: as many as fit.

@@ -3,7 +3,8 @@
 @AGENTS.md
 
 ## The one goal right now
-Windows v0.1 that a normal player can install: a local, polished replacement for saveeditonline.com (nothing less than it can do),
+Release 0.9.0 that a normal player can install (Windows tested by the maintainer; Linux/macOS built by CI and tested by
+the community, user 2026-10-28): a local, polished replacement for saveeditonline.com (nothing less than it can do),
 with customization and an AI bridge (user, 2026-10-23). The todo list is in `NOW.md`; anything in its "Later" waits.
 
 ## Files
@@ -41,4 +42,5 @@ with customization and an AI bridge (user, 2026-10-23). The todo list is in `NOW
 Real downloaded saves live in `fixtures/external/` (git-ignored, never pushed).
 
 ## Project facts
-Node 22 · pnpm 11 · Python 3.11 · Rust 1.99 (MSVC) · WebView2. Windows only until v0.1 ships; Linux/macOS at the end.
+Node 22 · pnpm 11 · Python 3.11 · Rust 1.99 (MSVC) · WebView2. Windows is hand-tested; Linux/macOS ship in 0.9.0 untested
+and get fixed from issues.

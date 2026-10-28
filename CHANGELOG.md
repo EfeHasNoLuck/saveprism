@@ -2,9 +2,9 @@
 
 Player-facing notes for each release. The app shows the section of the running version.
 
-## 0.1.0
+## 0.9.0
 
-SavePrism 0.1.0 is the first Windows release.
+SavePrism 0.9.0 is the first public release: Windows, plus the first Linux and macOS builds.
 
 ### Open and edit
 - Open saves from RPG Maker, Unity, Unreal Engine, Ren'Py, Twine, Godot and many more engines and formats.

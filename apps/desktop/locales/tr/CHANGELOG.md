@@ -2,9 +2,9 @@
 
 Her sürüm için oyunculara yönelik notlar. Uygulama, çalışan sürümün bölümünü gösterir.
 
-## 0.1.0
+## 0.9.0
 
-SavePrism 0.1.0 ilk Windows sürümüdür.
+SavePrism 0.9.0 ilk herkese açık sürümdür: Windows ve ilk Linux ve macOS derlemeleri.
 
 ### Aç ve düzenle
 - RPG Maker, Unity, Unreal Engine, Ren'Py, Twine, Godot ve daha birçok motor ve biçimdeki kayıtları aç.

@@ -47,19 +47,31 @@ VS Code can open and edit a save with the same checks.
 
 ## Download
 
-Get `SavePrism_<version>_x64-setup.exe` from **[Releases](https://github.com/huseyincancalti/saveprism/releases/latest)**.
-Windows 10 and 11, 64-bit. It installs for your Windows user only, so it does not ask for administrator rights.
+Pick the file for your system from **[Releases](https://github.com/huseyincancalti/saveprism/releases/latest)**:
 
-- The installer is not code-signed yet, so Windows SmartScreen may say "Windows protected your PC": choose
-  **More info → Run anyway**.
-- SavePrism needs Microsoft Edge WebView2. Windows 10 and 11 already have it; the installer fetches it if it is missing.
+| System | File |
+|---|---|
+| Windows 10 and 11, 64-bit | `SavePrism_<version>_x64-setup.exe` |
+| macOS, Intel and Apple silicon | `SavePrism_<version>_universal.dmg` |
+| Linux, 64-bit | `SavePrism_<version>_amd64.AppImage` or `SavePrism_<version>_amd64.deb` |
+
+Windows is tested by hand. The Linux and macOS builds are new and not yet tried on real machines; if something is off,
+please [open an issue](https://github.com/huseyincancalti/saveprism/issues/new/choose).
+
+- **Windows:** the installer is not code-signed yet, so SmartScreen may say "Windows protected your PC": choose
+  **More info → Run anyway**. It installs for your Windows user only, so it does not ask for administrator rights.
+  SavePrism needs Microsoft Edge WebView2; Windows 10 and 11 already have it, and the installer fetches it if missing.
+- **macOS:** the app is not notarized by Apple, so the first start says macOS cannot check it. Open **System Settings →
+  Privacy & Security** and press **Open Anyway**, or run `xattr -cr /Applications/SavePrism.app` once.
+- **Linux:** run `chmod +x SavePrism_*.AppImage` and start the file, or install the `.deb`.
 - SavePrism tells you when a new version is out and installs it when you say so (**Check for updates** in Settings →
-  About looks right away).
+  About looks right away). On Linux this works for the AppImage; with the `.deb`, install the new `.deb`.
 
 ## Quick start
 
 1. Open SavePrism and drop a save on the window, or press **Open file**. You can also right-click a save in Explorer and
-   choose **Decode with SavePrism** (Windows 11: under **Show more options**), or paste a save code with **Ctrl+V**.
+   choose **Decode with SavePrism** (Windows only; on Windows 11 under **Show more options**), or paste a save code
+   with **Ctrl+V**.
 2. Not sure where the game keeps its saves? **Where is my save?** on the start screen lists the usual folders by engine.
 3. Change values. Every change shows as *old → new*, and **Ctrl+Z** takes it back.
 4. Save. By default **Save as…** writes a new file and leaves the original as it was. **Overwrite current file** (in the
@@ -70,25 +82,25 @@ Windows 10 and 11, 64-bit. It installs for your Windows user only, so it does no
 
 | You need | Version |
 |---|---|
-| Windows | 10 or 11, 64-bit |
+| A 64-bit system | Windows 10 or 11, macOS, or Linux |
 | [Node.js](https://nodejs.org) | 22 or newer |
 | [pnpm](https://pnpm.io) | 11 (`corepack enable` picks the version from `package.json`) |
-| [Rust](https://rustup.rs) | 1.99 or newer, stable, MSVC toolchain |
-| [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/) | Visual Studio Build Tools with "Desktop development with C++"; WebView2 |
+| [Rust](https://rustup.rs) | 1.99 or newer, stable (the MSVC toolchain on Windows) |
+| [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/) | Windows: Visual Studio Build Tools with "Desktop development with C++" and WebView2. macOS: Xcode Command Line Tools. Linux: WebKitGTK 4.1 and the other packages listed there |
 
 ```bash
 git clone https://github.com/huseyincancalti/saveprism.git
 cd saveprism
 pnpm install
 pnpm dev      # the app, with hot reload
-pnpm build --no-sign    # the setup exe in target/release/bundle/nsis/
+pnpm build --no-sign    # installers in target/release/bundle/ (the setup exe in nsis/ on Windows)
 ```
 
 There is nothing to configure: no `.env` file, no API keys, no accounts. `--no-sign` skips the update signature:
 without it, `pnpm build` still makes the installer but then stops with "A public key has been found, but no private
-key". Release builds (maintainer only) run `bash scripts/release/build.sh`, which signs the setup exe with the updater
-key from outside the repo (`%USERPROFILE%\.tauri\saveprism-updater.key`) and writes `latest.json` next to it. Upload the
-setup exe, its `.sig` and `latest.json` to the GitHub release tagged `v<version>`.
+key". Releases (maintainer only) come from the `release` workflow (**Actions → release → Run workflow**): it builds all
+three systems, signs the update files with the `TAURI_SIGNING_PRIVATE_KEY` secret and uploads them with `latest.json` to
+a draft release tagged `v<version>`. `bash scripts/release/build.sh` makes the same signed Windows build locally.
 
 ## AI and MCP
 
@@ -367,8 +379,10 @@ online games, anti-cheat and DRM are out of scope.
 | Found keys, with where they came from | `%LOCALAPPDATA%\SavePrism\keys.json` | next to the backup folder |
 | Theme files | wherever you export them (`*.saveprism-theme.json`) | |
 
-The installer puts the program in `%LOCALAPPDATA%\SavePrism\` as well. Uninstalling removes only the program files:
-backups, pasted codes, keys and your photo stay.
+The paths above are for Windows. On macOS the same folders are in `~/Library/Application Support/SavePrism/`, on
+Linux in `~/.local/share/saveprism/` (or `$XDG_DATA_HOME/saveprism/`). On Windows the installer puts the program in
+`%LOCALAPPDATA%\SavePrism\` as well; uninstalling removes only the program files: backups, pasted codes, keys and your
+photo stay.
 
 The only network request SavePrism makes is the version check to GitHub releases (at start, which you can turn off in
 Settings → General, and when you press **Check for updates** in Settings → About). Save data is never sent.
