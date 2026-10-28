@@ -77,10 +77,14 @@ the facts against the code; or Claude writes it directly if the limit allows (it
    localStorage, so this needs a small shared settings file the app writes and the MCP reads).
 2. Auto-update (maintainer expects it, 2026-10-28; not built): `tauri-plugin-updater`, signing key outside the repo,
    `latest.json` on GitHub Releases (reachable only once the repo or a releases repo is public); a quiet "new version"
-   notice with one Update button, What's new after the restart (already there).
-3. A fresh MSI/NSIS build for the maintainer to install and try (Explorer entry, second-start hand-off, opening logo,
+   notice with one Update button, a "Check for updates" button in About, What's new after the restart (already there).
+3. Crash screen (old plan M3-13, never built): no React error boundary today, so a render error leaves a blank
+   window. Add one with "Something went wrong" + Copy report (no paths) + Reload; pending edits are lost, say so.
+4. A fresh MSI/NSIS build for the maintainer to install and try (Explorer entry, second-start hand-off, opening logo,
    first-launch tour, What's new after an update, real saves, a real AI client over MCP).
-4. Only then ask about publishing (release / public repo).
+5. Only then ask about publishing (release / public repo). Before going public: the `bed2ed9` history cleanup (needs
+   the maintainer's OK); push the local commits once Actions minutes are back. No release workflow exists
+   (`release.yml` in `docs/MAP.md` was never written): build locally and upload by hand for v0.1.
 
 ## Gotchas
 - Start an EVREN job: `bash .motor/start_job.sh <name>` (brief `.motor/<name>.md`; `VCHECK=vcheck-1028` copies those

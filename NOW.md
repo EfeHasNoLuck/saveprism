@@ -242,7 +242,8 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
      `open_code` (+ `open_save` uses the key finder; MCP should use the backup folder chosen in Settings) and
      `docs/ai.md`; then auto-update (not built yet: `tauri-plugin-updater`, a signing key kept outside the repo,
      `latest.json` on GitHub Releases; it can only reach a public repo's releases; the maintainer expects it,
-     2026-10-28); then a fresh MSI to install and try.
+     2026-10-28) with a "Check for updates" button in About; then a crash screen (no React error boundary yet:
+     a render error leaves a blank window); then a fresh MSI to install and try.
    - Gap for the MCP follow-up: a backup folder changed in Settings is not known to the MCP server (it always uses
      `%LOCALAPPDATA%\SavePrism\backups`).
 
