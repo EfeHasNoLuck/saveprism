@@ -253,8 +253,8 @@
 :root[data-glass] .on-photo button {
   text-shadow: inherit;
 }
-:root[data-glass] .on-photo.text-muted-foreground,
-:root[data-glass] .on-photo .text-muted-foreground {
+:root[data-glass] .on-photo:is(.text-muted-foreground, .text-foreground-variant),
+:root[data-glass] .on-photo :is(.text-muted-foreground, .text-foreground-variant) {
   color: var(--foreground);
 }
 :root[data-glass] .bg-chrome {
