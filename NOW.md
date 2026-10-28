@@ -227,6 +227,10 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
      (`9c0ea31`, `dff0665`, `e93cac9`), re-checked OK. Screenshots for the maintainer: `.motor/vcheck-1028b/m-*.png`.
      Not checked: a real background photo, the Copy setup clipboard, real native dialogs; the Explorer entry is not
      tested on an installed app yet (the next MSI test).
+   - 2026-10-28, maintainer's 4 follow-ups: done = one "Where is my save?" on the start screen, About shows only the
+     version (`1af2100`); GitHub description line chosen (`docs/research/seo-2026-10-28.md`). EVREN: `w8-photo`
+     (photo click/drop) finished, not merged; `w8-appcolor` (App color: presets, Windows accent, monochrome, custom,
+     in theme files) running. Then the README/GitHub showcase (`HANDOFF.md`, `.motor/readme-vision-tr.md`).
    - Next (HANDOFF order): the maintainer looks at the screenshots; then MCP tools `compare_saves`, `save_locations`,
      `open_code` (+ `open_save` uses the key finder; MCP should use the backup folder chosen in Settings) and
      `docs/ai.md`; then a fresh MSI to install and try.
