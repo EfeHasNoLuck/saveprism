@@ -237,7 +237,11 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
      theme color ("Fade"), Card opacity slider (`e30c3c2`), text right on the photo has a thin contour + short shadow; measured ≥ 4.5:1 on the real test photo except the
      light active sidebar tab at the photo's darkest spot (4.0). Not fixed: the Settings Preview red "Health" row is
      4.0:1 in dark (not caused by glass).
-     Then the README/GitHub showcase (`HANDOFF.md`, `.motor/readme-vision-tr.md`).
+     README/GitHub showcase done 2026-10-28 (`c23e720`, `9d776ec`): hero with badges and a demo GIF, AI and MCP
+     first, dark/light screenshots per feature (`docs/images/`, synthetic save, generated photo), two Mermaid
+     diagrams (rendered without errors), CONTRIBUTING (language, theme, format, MCP tool), forms `add_language`,
+     Discussions `community-themes` (needs that category once Discussions is on), feature request with an AI/MCP
+     field. Not seen on GitHub yet (nothing pushed). Footer: GitHub profile only (maintainer, no e-mail).
    - Next (HANDOFF order): the maintainer looks at the screenshots; then MCP tools `compare_saves`, `save_locations`,
      `open_code` (+ `open_save` uses the key finder; MCP should use the backup folder chosen in Settings) and
      `docs/ai.md`; then auto-update (not built yet: `tauri-plugin-updater`, a signing key kept outside the repo,

@@ -61,8 +61,9 @@ Windows 10 and 11, 64-bit.
    choose **Decode with SavePrism** (Windows 11: under **Show more options**), or paste a save code with **Ctrl+V**.
 2. Not sure where the game keeps its saves? **Where is my save?** on the start screen lists the usual folders by engine.
 3. Change values. Every change shows as *old → new*, and **Ctrl+Z** takes it back.
-4. Press **Save**. SavePrism makes a backup, replaces the file in one step and reads it back to check every change.
-   **Backups** in the bottom bar puts an older copy back.
+4. Save. By default **Save as…** writes a new file and leaves the original as it was. **Overwrite current file** (in the
+   save menu, or the main button if you pick it in Settings) makes a backup first, then replaces the file in one step.
+   Every write is read back and checked; **Backups** in the bottom bar puts an older copy back.
 
 ### Build from source
 
@@ -155,7 +156,7 @@ reads to its own online model: keep that in mind for saves with player names or 
   names from the game's own data folder; Twine story variables; Unreal and Palworld properties; Satisfactory
   inventories with item names; The Witcher 3 Gwent collection and decks.
 - **Edits that fit the file:** numbers keep their size and range, true/false values are a choice, text stays in the
-  file's encoding. An edit the format cannot hold is refused right away, not at save time.
+  file's encoding. An edit the format cannot hold is refused before it can reach the file.
 - **Lists that scale:** search, filters and pages on every list, add and remove entries where the format allows,
   **Set all** for RPG Maker lists, undo and redo, and a JSON view with **Apply** and **Export .json**.
 
@@ -187,8 +188,8 @@ flowchart LR
 ```
 
 - Saves are read as data and never run: no Python unpickling, no Ruby eval, no .NET BinaryFormatter deserialization.
-- Backups live in SavePrism's own folder, never next to the save. Keep 1 to 50 per save; **Backups** restores one and
-  backs up the current file first.
+- Backups live in SavePrism's own folder, never next to the save: 1 to 50 per save, for up to 30 days. **Backups**
+  restores one and backs up the current file first.
 - A file that changed on disk after you opened it is never overwritten (`SP-APP-023`): save under another name or open it
   again.
 - Parsers limit sizes and depths and are fuzz-tested, because a save from the internet is untrusted input.
