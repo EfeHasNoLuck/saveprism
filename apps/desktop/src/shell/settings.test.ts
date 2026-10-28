@@ -41,6 +41,17 @@ describe("parseSettings", () => {
     });
   });
 
+  it("checks for updates at start by default and keeps a stored choice", () => {
+    expect(DEFAULT_SETTINGS.checkUpdatesAtStart).toBe(true);
+    expect(parseSettings(JSON.stringify({})).checkUpdatesAtStart).toBe(true);
+    expect(parseSettings(JSON.stringify({ checkUpdatesAtStart: false })).checkUpdatesAtStart).toBe(
+      false,
+    );
+    expect(parseSettings(JSON.stringify({ checkUpdatesAtStart: "no" })).checkUpdatesAtStart).toBe(
+      true,
+    );
+  });
+
   it("keeps 10 backups by default and clamps the number to 1..50", () => {
     expect(DEFAULT_SETTINGS.keepBackups).toBe(10);
     expect(parseSettings(JSON.stringify({ keepBackups: 0 })).keepBackups).toBe(1);

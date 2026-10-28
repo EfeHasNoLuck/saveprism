@@ -20,9 +20,11 @@ import {
   Image as ImageIcon,
   Info,
   Keyboard,
+  LoaderCircle,
   MessageSquare,
   Palette,
   Pipette,
+  RefreshCw,
   RotateCcw,
   Scale,
   Search,
@@ -88,6 +90,7 @@ import {
 import { searchSettings, type SettingsTab } from "./settingsSearch";
 import { MCP_CLIENTS, mcpSnippet, type McpClient } from "./setup";
 import { ShortcutSettings } from "./ShortcutSettings";
+import type { UpdateCheck } from "./update";
 import {
   buildThemeFile,
   DEFAULT_THEME_NAME,
@@ -257,11 +260,19 @@ function Row({
 export function SettingsPage({
   onClose,
   onShowTour,
+  updateCheck,
+  onCheckUpdates,
+  onUpdate,
   photoDropActive,
   photoVersion,
 }: {
   onClose: () => void;
   onShowTour: () => void;
+  /** The state of the version check that About shows. */
+  updateCheck: UpdateCheck;
+  onCheckUpdates: () => void;
+  /** Downloads and installs the newer version (asking first when a file has unsaved changes). */
+  onUpdate: () => void;
   /** A dragged file is over the Photo card's drop zone. */
   photoDropActive: boolean;
   /** Bumped when a dropped photo replaced the file, so the preview reads it again. */
@@ -829,6 +840,18 @@ export function SettingsPage({
                       aria-label={t("settings.showNotifications")}
                     />
                   </Row>
+                  <Row
+                    id="general.updates"
+                    label={t("settings.checkUpdatesAtStart")}
+                    description={t("settings.checkUpdatesAtStartInfo")}
+                    highlight={highlight === "general.updates"}
+                  >
+                    <Switch
+                      checked={settings.checkUpdatesAtStart}
+                      onCheckedChange={(checked) => update({ checkUpdatesAtStart: checked })}
+                      aria-label={t("settings.checkUpdatesAtStart")}
+                    />
+                  </Row>
                 </Group>
               </Section>
             </div>
@@ -1377,6 +1400,7 @@ export function SettingsPage({
               </p>
               <div className="mt-4 flex w-[440px] max-w-full flex-col gap-3">
                 <Group>
+                  <UpdateRow check={updateCheck} onCheck={onCheckUpdates} onUpdate={onUpdate} />
                   <AboutAction
                     icon={<Gift className="size-3.5" />}
                     label={t("about.whatsNew", { version })}
@@ -1479,6 +1503,71 @@ function AboutAction({
       <span className="ml-auto flex items-center gap-1.5 text-xs text-muted-foreground">
         {value}
         <ChevronRight className="size-3.5 shrink-0" />
+      </span>
+    </button>
+  );
+}
+
+/** About's version check: a button while idle, then its result; "Update" when a newer one exists. */
+function UpdateRow({
+  check,
+  onCheck,
+  onUpdate,
+}: {
+  check: UpdateCheck;
+  onCheck: () => void;
+  onUpdate: () => void;
+}) {
+  const { t } = useTranslation();
+  const checking = check.status === "checking";
+  const status =
+    check.status === "checking"
+      ? t("update.checking")
+      : check.status === "current"
+        ? t("update.current")
+        : check.status === "failed"
+          ? t("update.checkFailed")
+          : null;
+  const icon = (
+    <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-surface-high text-primary">
+      {checking ? (
+        <LoaderCircle className="size-3.5 animate-spin motion-reduce:animate-none" />
+      ) : (
+        <RefreshCw className="size-3.5" />
+      )}
+    </span>
+  );
+
+  if (check.status === "available") {
+    return (
+      <div className="flex h-11 w-full items-center gap-3 border-t border-border px-3.5 text-[0.84375rem] first:border-t-0">
+        {icon}
+        <span role="status" className="min-w-0 truncate font-medium">
+          {t("update.available", { version: check.version })}
+        </span>
+        <Button size="sm" className="ml-auto" onClick={onUpdate}>
+          {t("update.update")}
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={onCheck}
+      disabled={checking}
+      className="flex h-11 w-full items-center gap-3 border-t border-border px-3.5 text-left text-[0.84375rem] outline-none first:border-t-0 hover:bg-surface-high focus-visible:bg-surface-high disabled:hover:bg-transparent"
+    >
+      {icon}
+      <span className="shrink-0">{t("update.check")}</span>
+      <span
+        role="status"
+        className={`ml-auto min-w-0 truncate text-right text-xs ${
+          check.status === "failed" ? "text-destructive" : "text-muted-foreground"
+        }`}
+      >
+        {status}
       </span>
     </button>
   );

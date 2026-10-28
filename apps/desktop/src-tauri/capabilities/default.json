@@ -8,6 +8,8 @@
     "core:window:allow-destroy",
     "opener:default",
     "opener:allow-reveal-item-in-dir",
-    "dialog:default"
+    "dialog:default",
+    "updater:default",
+    "process:allow-restart"
   ]
 }

@@ -30,6 +30,7 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "createUpdaterArtifacts": true,
     "resources": {
       "../../../THIRD_PARTY_NOTICES.md": "THIRD_PARTY_NOTICES.md"
     },
@@ -54,5 +55,16 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ]
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEVEODdBRTI4RTU4MkEzRkMKUldUOG80TGxLSzZIN1RTbzdtaFcrb25MdmhMdnoraThhc0ZkQTczcGZhSmJyVXBQclBXaDU2SzQK",
+      "endpoints": [
+        "https://github.com/huseyincancalti/saveprism/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
+    }
   }
 }

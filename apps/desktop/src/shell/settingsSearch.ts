@@ -15,6 +15,7 @@ export const SETTINGS_INDEX: readonly SettingEntry[] = [
   { tab: "general", id: "general.language", labelKey: "settings.language" },
   { tab: "general", id: "general.theme", labelKey: "settings.theme" },
   { tab: "general", id: "general.notifications", labelKey: "settings.showNotifications" },
+  { tab: "general", id: "general.updates", labelKey: "settings.checkUpdatesAtStart" },
   { tab: "appearance", id: "appearance.appColor", labelKey: "settings.appColor" },
   { tab: "appearance", id: "appearance.textSize", labelKey: "settings.textSize" },
   { tab: "appearance", id: "appearance.changed", labelKey: "settings.changedColor" },
