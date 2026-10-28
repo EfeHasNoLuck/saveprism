@@ -1509,11 +1509,20 @@ mod tests {
         assert!(il2cpp_strings(b"not metadata").is_empty());
     }
 
+    /// `Users\me\AppData\LocalLow\Studio\MyGame\save.es3`, built with this system's separator.
+    fn local_low_save() -> std::path::PathBuf {
+        [
+            "Users", "me", "AppData", "LocalLow", "Studio", "MyGame", "save.es3",
+        ]
+        .iter()
+        .collect()
+    }
+
     #[test]
     fn a_local_low_save_names_its_company_and_product() {
-        let save = Path::new("C:\\Users\\me\\AppData\\LocalLow\\Studio\\MyGame\\save.es3");
+        let save = local_low_save();
         assert_eq!(
-            local_low_parts(save),
+            local_low_parts(&save),
             Some(("Studio".to_string(), "MyGame".to_string()))
         );
         assert_eq!(local_low_parts(Path::new("C:\\Games\\save.es3")), None);
@@ -1537,8 +1546,7 @@ mod tests {
         );
         let finder =
             KeyFinder::for_test(root.path().join("keys.json")).with_steam_root(steam.clone());
-        let save = Path::new("C:\\Users\\me\\AppData\\LocalLow\\Studio\\MyGame\\save.es3");
-        let candidates = finder.search(save);
+        let candidates = finder.search(&local_low_save());
         assert_eq!(candidates.len(), 1);
         assert_eq!(candidates.first().unwrap().key(), "GameSecret42");
         assert_eq!(

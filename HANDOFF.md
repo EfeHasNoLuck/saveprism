@@ -66,8 +66,10 @@ The plan and history are in `NOW.md`; this page is only what the next session ne
    workflow; check the draft has the setup exe, dmg, AppImage, deb, their `.sig` files and `latest.json`; put the
    approved text on the draft; publish only with the maintainer's OK (not a pre-release: the updater reads
    `releases/latest`).
-4. Turn on Discussions and add "Community themes"; set the GitHub description and topics
-   (`docs/research/seo-2026-10-28.md`).
+4. Done 2026-10-28: GitHub description (the chosen line), 14 topics, Discussions on. The maintainer does in the web UI
+   (the auto-mode classifier refuses repo rulesets; no API creates Discussion categories): the "Community themes"
+   category (slug `community-themes`, used by README, CONTRIBUTING, the issue chooser and the app) and a "Protect
+   main" ruleset (block force pushes and deletion only; no pull-request rule, we push to main).
 
 ## Maintainer decisions (2026-10-28)
 - Publisher "Hüseyin Can ÇALTI" (keep the surname in capitals). Windows ships as the setup exe only, no MSI.
