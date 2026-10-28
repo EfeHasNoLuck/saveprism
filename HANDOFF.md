@@ -1,8 +1,9 @@
 # HANDOFF
 
-**State (2026-10-28, ~12:00 TR):** the maintainer's polish list and their 4 follow-ups are all done and merged on
-`main`, checked in the running app over CDP. Everything is committed locally, NOT pushed (GitHub Actions minutes are
-out until next month; last pushed `4214786`). Weekly Claude limit was ~94% (resets 2026-10-28 11:00 UTC); keep
+**State (2026-10-28, ~17:00 TR):** MCP gaps, auto-update and the crash screen are done and merged on `main`; a fresh
+signed MSI/NSIS waits for the maintainer's install test (Next 4). Earlier today: the polish list and its follow-ups,
+checked in the running app over CDP. Everything is committed locally, NOT pushed (GitHub Actions minutes are
+out until next month; last pushed `4214786`). Weekly Claude limit 11% at ~15:30 TR (resets 2026-11-04 11:00 UTC); keep
 visual checks in a Claude subagent (model sonnet), text chores in EVREN.
 
 ## Done today, second half (local commits on main)
@@ -51,13 +52,17 @@ Slime Rancher 2 (maintainer, 2026-10-28): own binary tagged-record format, not e
    running app wrote the file (NOW.md). Pre-existing test leak seen: `session/compare.rs`
    `an_rpgmaker_mv_pair_reports_the_edited_value` saves with the default backup root, so every `cargo test` drops a
    small synthetic backup into the real `%LOCALAPPDATA%\SavePrism\backups` (not fixed).
-2. Auto-update (maintainer expects it, 2026-10-28; not built): `tauri-plugin-updater`, signing key outside the repo,
-   `latest.json` on GitHub Releases (reachable only once the repo or a releases repo is public); a quiet "new version"
-   notice with one Update button, a "Check for updates" button in About, What's new after the restart (already there).
-3. Crash screen (old plan M3-13, never built): no React error boundary today, so a render error leaves a blank
-   window. Add one with "Something went wrong" + Copy report (no paths) + Reload; pending edits are lost, say so.
-4. A fresh MSI/NSIS build for the maintainer to install and try (Explorer entry, second-start hand-off, opening logo,
-   first-launch tour, What's new after an update, real saves, a real AI client over MCP).
+2. Done 2026-10-28: auto-update (`6e9176e`, merge `1de6afd`). Signing key outside the repo:
+   `%USERPROFILE%\.tauri\saveprism-updater.key` (+ `.pub`, no password). The maintainer must back it up: without it,
+   installed copies can never take another update. Release: `bash scripts/release/build.sh` (signed installers +
+   `target/release/bundle/nsis/latest.json`); upload the setup exe, its `.sig`, the MSI and `latest.json` to the
+   GitHub release `v<version>`. Without the key: `pnpm build --no-sign`. Not verified: a real download → install →
+   restart (needs a public release).
+3. Done 2026-10-28: crash screen (`7493570`), checked in the running app (`.motor/crash-1028/`).
+4. Built 2026-10-28 from `1de6afd` (signed): `target/release/bundle/msi/SavePrism_0.1.0_x64_en-US.msi` and `_tr-TR.msi`
+   (10.25 MiB), `target/release/bundle/nsis/SavePrism_0.1.0_x64-setup.exe` (6.56 MiB). Waiting for the maintainer to
+   install and try (Explorer entry, second-start hand-off, opening logo, first-launch tour, Check for updates in
+   About, real saves, a real AI client over MCP, Settings backup folder used by the MCP).
 5. Only then ask about publishing (release / public repo). Before going public: the `bed2ed9` history cleanup (needs
    the maintainer's OK); push the local commits once Actions minutes are back. No release workflow exists
    (`release.yml` in `docs/MAP.md` was never written): build locally and upload by hand for v0.1.

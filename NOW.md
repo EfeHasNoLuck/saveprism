@@ -258,10 +258,23 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
      backup (original bytes) landed in the chosen folder, compare_saves showed `party · _gold`, a SugarCube code
      opened from the chosen app folder and copy_code gave it back unchanged. The running app (`pnpm dev`) wrote
      `settings.json` at start with the maintainer's choices (defaults, 10 backups, 30 days).
-   - Next (HANDOFF order): auto-update (not built yet: `tauri-plugin-updater`, a signing key kept outside the repo,
-     `latest.json` on GitHub Releases; it can only reach a public repo's releases; the maintainer expects it,
-     2026-10-28) with a "Check for updates" button in About; then a crash screen (no React error boundary yet:
-     a render error leaves a blank window); then a fresh MSI to install and try.
+   - Auto-update done 2026-10-28 (`6e9176e`, merged `1de6afd`; Claude subagent): `tauri-plugin-updater` +
+     `tauri-plugin-process` (MIT/Apache; pulls reqwest/rustls/ring, ISC already allowed), endpoint
+     `releases/latest/download/latest.json` on GitHub (fails quietly while the repo is private), start check once
+     4 s after load (switch in General, on by default), one "SavePrism X is ready to install" toast with Update
+     (asks through the discard guard when edits are pending, progress dialog, passive NSIS install, relaunch),
+     About → Check for updates. Signing key outside the repo (`%USERPROFILE%\.tauri\saveprism-updater.key`, no
+     password); `bash scripts/release/build.sh` builds signed installers and `latest.json`; `pnpm build --no-sign`
+     without the key. Checked in the running app over CDP (screenshots `.motor/update-1028/`): real URL silent at
+     start and "Could not check" in About; a local mock showed the toast, About "0.2.0 is available", the discard
+     guard and progress. Not verified: a real download → install → restart (needs a public release).
+   - Crash screen done 2026-10-28 (`7493570`; Claude subagent): error boundary outside the providers, "Something
+     went wrong", unsaved changes are lost, Copy report (version, error, component stack, date; every path
+     stripped, 27 tests) and Reload; English fallback when i18n failed; dev-only `?crash` trigger. Checked in the
+     running app over CDP (dark/light, EN/TR, contrast ≥ 6.4:1, copied report holds no path; `.motor/crash-1028/`).
+     Small style gaps left: 13 px buttons without icons, flat background.
+   - Fresh signed MSI (EN, TR) and NSIS setup built 2026-10-28 from `1de6afd`; next: the maintainer installs and tries
+     them (HANDOFF Next 4), then the publishing question.
 
 ## Known gaps
 - A zip save with several JSON entries opens only the largest (Shapez 2: `local-player.json`, not `research.json` or
