@@ -25,7 +25,7 @@ SavePrism 0.1.0 ilk Windows sürümüdür.
 - Kaç yedek tutulacağını ve nereye gideceğini seç.
 
 ### Yapay zekâ yardımı
-- "AI'a sor", herhangi bir sohbet botu için bir liste kopyalar; yapay zekâ uygulamaları MCP sunucusu üzerinden kayıtları açıp düzenleyebilir.
+- "AI'a sor", herhangi bir sohbet botu için bir liste kopyalar; yapay zekâ uygulamaları MCP sunucusu üzerinden kayıtları ve yapıştırılan kodları açıp karşılaştırabilir ve düzenleyebilir; yedekler seçtiğiniz klasöre gider.
 
 ### Bu sürüm
 - Aramalı Ayarlar, uygulama içi üçüncü taraf bildirimleri sayfası ve bu "Yenilikler" penceresi.

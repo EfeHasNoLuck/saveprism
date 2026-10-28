@@ -59,14 +59,14 @@ fn run_raw(lines: &[String], backup_root: Option<PathBuf>) -> String {
         input.push(b'\n');
     }
     let mut output = Vec::new();
-    serve(Cursor::new(input), &mut output, backup_root).unwrap();
+    serve(Cursor::new(input), &mut output, backup_root, None).unwrap();
     String::from_utf8(output).unwrap()
 }
 
 /// Runs raw input bytes through `serve` and returns the parsed reply objects, in order.
 fn run_bytes(input: &[u8], backup_root: Option<PathBuf>) -> Vec<Value> {
     let mut output = Vec::new();
-    serve(Cursor::new(input), &mut output, backup_root).unwrap();
+    serve(Cursor::new(input), &mut output, backup_root, None).unwrap();
     String::from_utf8(output)
         .unwrap()
         .lines()
@@ -171,10 +171,10 @@ fn a_notification_gets_no_reply() {
 }
 
 #[test]
-fn tools_list_has_sixteen_tools_with_object_schemas() {
+fn tools_list_has_twenty_tools_with_object_schemas() {
     let responses = run(&[request(1, "tools/list", json!({}))], None);
     let tools = reply(&responses, 1)["result"]["tools"].as_array().unwrap();
-    assert_eq!(tools.len(), 16);
+    assert_eq!(tools.len(), 20);
     for tool in tools {
         assert!(tool["name"].as_str().is_some());
         assert!(tool["title"].as_str().is_some());
@@ -518,4 +518,177 @@ fn a_panic_closes_the_save_and_the_server_goes_on() {
     assert_eq!(reply(&responses, 2)["error"]["code"], -32603);
     assert_eq!(tool_json(reply(&responses, 3))["code"], "SP-APP-002");
     assert_eq!(reply(&responses, 4)["result"], json!({}));
+}
+
+/// Writes a shared settings file next to the work directory and returns its path.
+fn write_settings(env: &Env, settings: &Value) -> PathBuf {
+    let path = env.work.parent().unwrap().join("settings.json");
+    fs::write(&path, serde_json::to_vec(settings).unwrap()).unwrap();
+    path
+}
+
+/// [`run`] with the shared settings file at `settings`.
+fn run_with_settings(
+    requests: &[Value],
+    backup_root: Option<PathBuf>,
+    settings: PathBuf,
+) -> Vec<Value> {
+    let mut input = Vec::new();
+    for request in requests {
+        input.extend_from_slice(&serde_json::to_vec(request).unwrap());
+        input.push(b'\n');
+    }
+    let mut output = Vec::new();
+    serve(Cursor::new(input), &mut output, backup_root, Some(settings)).unwrap();
+    String::from_utf8(output)
+        .unwrap()
+        .lines()
+        .map(|line| serde_json::from_str(line).unwrap())
+        .collect()
+}
+
+/// Number of `.bak` files below `root`.
+fn backup_files(root: &Path) -> usize {
+    if !root.exists() {
+        return 0;
+    }
+    fs::read_dir(root)
+        .unwrap()
+        .flatten()
+        .map(|entry| {
+            let path = entry.path();
+            if path.is_dir() {
+                backup_files(&path)
+            } else {
+                usize::from(path.extension().is_some_and(|ext| ext == "bak"))
+            }
+        })
+        .sum()
+}
+
+#[test]
+fn backups_go_to_the_folder_and_count_chosen_in_settings() {
+    let env = env();
+    let path = write_save(&env);
+    let chosen = env.work.parent().unwrap().join("chosen");
+    let settings = write_settings(
+        &env,
+        &json!({"backupFolders": [chosen.to_str().unwrap()], "keepBackups": 2}),
+    );
+    let mut requests = vec![tool_call(
+        1,
+        "open_save",
+        json!({"path": path.to_str().unwrap()}),
+    )];
+    for round in 0..3_i64 {
+        let id = 10 + round * 2;
+        requests.push(tool_call(
+            id,
+            "propose_edits",
+            json!({"edits": [{"path": "/gold", "value": (100 + round).to_string()}]}),
+        ));
+        requests.push(tool_call(id + 1, "save_changes", json!({})));
+    }
+    requests.push(tool_call(20, "list_backups", json!({})));
+    let responses = run_with_settings(&requests, Some(env.backups.clone()), settings);
+    for response in &responses {
+        assert!(!is_tool_error(response), "{response}");
+    }
+    assert_eq!(backup_files(&env.backups), 0);
+    assert_eq!(backup_files(&chosen), 2);
+    assert_eq!(
+        tool_json(reply(&responses, 20)).as_array().unwrap().len(),
+        2
+    );
+}
+
+#[test]
+fn open_code_keeps_the_code_in_the_app_folder_and_copy_code_hands_it_back() {
+    let env = env();
+    let app = env.work.parent().unwrap().join("app");
+    let settings = write_settings(
+        &env,
+        &json!({
+            "appFolder": app.to_str().unwrap(),
+            "backupFolders": [env.backups.to_str().unwrap()]
+        }),
+    );
+    let note = "n".repeat(30_000);
+    let code = json!({"gold": 5, "note": note}).to_string();
+    let requests = vec![
+        tool_call(1, "open_code", json!({"code": code})),
+        tool_call(
+            2,
+            "propose_edits",
+            json!({"edits": [{"path": "/gold", "value": "77"}]}),
+        ),
+        tool_call(3, "copy_code", json!({})),
+        tool_call(4, "copy_code", json!({"offset": 25_000})),
+    ];
+    let responses = run_with_settings(&requests, None, settings);
+    for response in &responses {
+        assert!(!is_tool_error(response), "{response}");
+    }
+    assert_eq!(fs::read_dir(app.join("pasted")).unwrap().count(), 1);
+    let first = tool_json(reply(&responses, 3));
+    let second = tool_json(reply(&responses, 4));
+    assert_eq!(first["more"], true);
+    assert_eq!(second["more"], false);
+    let joined = format!(
+        "{}{}",
+        first["code"].as_str().unwrap(),
+        second["code"].as_str().unwrap()
+    );
+    assert_eq!(first["totalChars"], joined.chars().count());
+    let back: Value = serde_json::from_str(&joined).unwrap();
+    assert_eq!(back["gold"], 77);
+    assert_eq!(back["note"], note);
+}
+
+#[test]
+fn compare_saves_pages_the_differences_with_names() {
+    let env = env();
+    let path = write_save(&env);
+    let other = env.work.join("other.json");
+    fs::write(&other, br#"{"name":"Ada","level":7,"gold":5,"bonus":true}"#).unwrap();
+    let other = other.to_str().unwrap();
+    let requests = vec![
+        tool_call(1, "open_save", json!({"path": path.to_str().unwrap()})),
+        tool_call(2, "compare_saves", json!({"path": other})),
+        tool_call(
+            3,
+            "compare_saves",
+            json!({"path": other, "offset": 1, "limit": 1}),
+        ),
+    ];
+    let responses = run(&requests, Some(env.backups.clone()));
+    let all = tool_json(reply(&responses, 2));
+    assert_eq!(all["total"], 2);
+    assert_eq!(all["truncated"], false);
+    assert_eq!(all["otherFileName"], "other.json");
+    let rows = all["rows"].as_array().unwrap();
+    let level = rows.iter().find(|row| row["path"] == "/level").unwrap();
+    assert_eq!(level["kind"], "different");
+    assert_eq!(level["here"], "1");
+    assert_eq!(level["there"], "7");
+    assert_eq!(level["label"], "level");
+    let bonus = rows.iter().find(|row| row["path"] == "/bonus").unwrap();
+    assert_eq!(bonus["kind"], "onlyThere");
+    let page = tool_json(reply(&responses, 3));
+    assert_eq!(page["total"], 2);
+    assert_eq!(page["offset"], 1);
+    assert_eq!(page["rows"].as_array().unwrap().len(), 1);
+}
+
+#[test]
+fn save_locations_lists_the_usual_folders() {
+    let responses = run(&[tool_call(1, "save_locations", json!({}))], None);
+    let locations = tool_json(&responses[0]);
+    let unity = locations
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|location| location["engine"] == "unity")
+        .unwrap();
+    assert!(!unity["paths"].as_array().unwrap().is_empty());
 }

@@ -137,16 +137,20 @@ of your SavePrism program:
 
 | Tool | What it does | Writes files |
 |---|---|---|
-| `open_save` | Opens a save (password for encrypted Easy Save 3 and Terraria files) and runs the round-trip check | no |
+| `save_locations` | Lists the usual save folders per engine and which ones exist on this PC | no |
+| `open_save` | Opens a save and runs the round-trip check; keys of encrypted Easy Save 3 and Terraria files are found in the game's own files (or given as a game folder or password) | no |
+| `open_code`, `copy_code` | Opens a save code pasted into the chat and hands the edited code back, every changed value checked | no |
 | `game_view`, `list_values`, `search_values`, `field_info` | Reads the app's view (RPG Maker sections with names, story variables, the Values list), the full tree, search results and each value's limits | no |
+| `compare_saves` | Lists what differs between the open save and another save, with the names the app shows | no |
 | `set_data_folder` | Reads names from an RPG Maker data folder | no |
 | `propose_edits`, `add_value`, `add_inventory`, `remove_value` | Changes values in memory; everything is checked first, and on any error nothing changes | no |
 | `pending_changes`, `undo`, `discard_changes` | Shows every change (old → new) or takes changes back | no |
 | `save_changes` | Backup, replace in one step, read back; only the open file or a new file next to it | **yes** |
 | `list_backups`, `restore_backup` | Lists the open save's backups and puts one back (the current file is backed up first) | restore: **yes** |
 
-The two writing tools are marked as destructive, so AI apps ask you before they run. The AI app may send the values it
-reads to its own online model: keep that in mind for saves with player names or account ids. Details: [docs/ai.md](docs/ai.md).
+The two writing tools are marked as destructive, so AI apps ask you before they run. Backups follow the folder and
+counts chosen in Settings. The AI app may send the values it reads to its own online model: keep that in mind for
+saves with player names or account ids. Details: [docs/ai.md](docs/ai.md).
 
 ## Features
 

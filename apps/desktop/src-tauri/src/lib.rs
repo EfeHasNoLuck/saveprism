@@ -12,6 +12,7 @@ use std::path::{Path as FsPath, PathBuf};
 use std::sync::{Mutex, MutexGuard, PoisonError};
 
 use session::folders::{self, BackgroundImage, DefaultPaths};
+use session::shared_settings::{self, SharedSettings};
 use session::{
     ApiError, BackupRow, Change, CompareResult, Field, FieldKind, FileReport, GameView,
     HistoryResult, HistoryState, NodeRow, OpenInfo, Page, SaveLocation, SaveResult, Session,
@@ -485,6 +486,14 @@ fn default_paths() -> Result<DefaultPaths, ApiError> {
     folders::default_paths()
 }
 
+/// Writes the Settings choices the MCP server needs (backup folders, app folder, backups to keep)
+/// to the shared settings file, so `saveprism-desktop.exe mcp` uses the same folders as the window.
+#[tauri::command]
+fn share_settings(settings: SharedSettings) -> Result<(), ApiError> {
+    let file = shared_settings::default_file().ok_or_else(ApiError::internal)?;
+    shared_settings::write(&file, &settings)
+}
+
 /// Checks a folder picked for the backups and returns the folder list to store: the new folder
 /// first, then every folder used before (and the default), so older backups stay listed.
 #[tauri::command]
@@ -649,6 +658,7 @@ pub fn run() {
             restore_backup,
             mcp_command,
             default_paths,
+            share_settings,
             set_backup_folder,
             set_app_folder,
             open_folder,

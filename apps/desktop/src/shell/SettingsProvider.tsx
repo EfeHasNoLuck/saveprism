@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useState, type ReactNode } from "react";
-import { appAccentColor } from "@/api/commands";
+import { appAccentColor, shareSettings } from "@/api/commands";
 import {
   applyAppColor,
   applyColors,
@@ -52,6 +52,13 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       window.removeEventListener("focus", read);
     };
   }, [settings.appColor.kind]);
+
+  // The MCP server cannot read this storage, so the folders and backup counts it needs go to a
+  // small shared file. A failure stays quiet: the MCP server then uses the default folders.
+  const { backupFolders, appFolder, keepBackups, keepBackupDays } = settings;
+  useEffect(() => {
+    shareSettings({ backupFolders, appFolder, keepBackups, keepBackupDays }).catch(() => undefined);
+  }, [backupFolders, appFolder, keepBackups, keepBackupDays]);
 
   useLayoutEffect(() => {
     applyTextScale(settings.textScale);

@@ -25,7 +25,7 @@ SavePrism 0.1.0 is the first Windows release.
 - Choose how many backups to keep and where they go.
 
 ### AI help
-- Ask AI copies a list for any chatbot; AI apps can also open and edit saves through the MCP server.
+- Ask AI copies a list for any chatbot; AI apps can also open, compare and edit saves and pasted codes through the MCP server, with the backup folder you chose.
 
 ### This release
 - Settings with a search box, an in-app third-party notices page, and this What's new dialog.

@@ -45,10 +45,12 @@ Slime Rancher 2 (maintainer, 2026-10-28): own binary tagged-record format, not e
 `fixtures/external/slime-rancher-2/`; a "Slime Rancher 2 save support" session card was proposed (not started).
 
 ## Next (in order)
-1. MCP gaps: `compare_saves`, `save_locations`, `open_code` tools (read-only, same Session code, documented in
-   `docs/ai.md`); check `open_save` uses the automatic key finder; the MCP server should use the backup folder chosen in
-   Settings (today it always uses `%LOCALAPPDATA%\SavePrism\backups`; the UI keeps folder choices in WebView
-   localStorage, so this needs a small shared settings file the app writes and the MCP reads).
+1. Done 2026-10-28: MCP gaps. `save_locations`, `compare_saves`, `open_code` + `copy_code`, `open_save` takes
+   `gameFolder`; the window shares backup/app folders and backup counts in `%LOCALAPPDATA%\SavePrism\settings.json`
+   (`session/shared_settings.rs`), read by the MCP server. Checks pass; real Claude Code round trip passed and the
+   running app wrote the file (NOW.md). Pre-existing test leak seen: `session/compare.rs`
+   `an_rpgmaker_mv_pair_reports_the_edited_value` saves with the default backup root, so every `cargo test` drops a
+   small synthetic backup into the real `%LOCALAPPDATA%\SavePrism\backups` (not fixed).
 2. Auto-update (maintainer expects it, 2026-10-28; not built): `tauri-plugin-updater`, signing key outside the repo,
    `latest.json` on GitHub Releases (reachable only once the repo or a releases repo is public); a quiet "new version"
    notice with one Update button, a "Check for updates" button in About, What's new after the restart (already there).

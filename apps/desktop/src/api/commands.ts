@@ -809,6 +809,19 @@ export function defaultPaths(): Promise<DefaultPaths> {
   return invoke<DefaultPaths>("default_paths");
 }
 
+/** The Settings choices the MCP server needs; it runs as its own process and reads them from a file. */
+export interface SharedSettings {
+  backupFolders: string[];
+  appFolder: string | null;
+  keepBackups: number;
+  keepBackupDays: number;
+}
+
+/** Writes the Settings choices the MCP server needs to the shared settings file. */
+export function shareSettings(settings: SharedSettings): Promise<void> {
+  return invoke<void>("share_settings", { settings });
+}
+
 /**
  * Checks a folder picked for the backups and returns the folder list to store: the new folder
  * first, then the folders used before, so older backups stay listed and restorable.

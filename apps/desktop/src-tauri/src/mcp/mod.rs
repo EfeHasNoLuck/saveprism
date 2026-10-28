@@ -18,20 +18,23 @@ use std::path::PathBuf;
 
 use serde_json::{Value, json};
 
-use crate::session::{ApiError, Session, app_codes};
+use crate::session::{ApiError, Session, app_codes, shared_settings};
 
 /// Protocol versions this server knows, newest first.
 const PROTOCOL_VERSIONS: [&str; 4] = ["2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05"];
 
 /// The instructions shown to the client after `initialize`.
-const INSTRUCTIONS: &str = "Open a save with open_save; read it with game_view (named RPG Maker sections), list_values and search_values. Change values with propose_edits, which changes memory only, then show pending_changes to the user and call save_changes only after the user agreed. Every save makes a backup first and is verified. Paths are the JSON Pointers the read tools return.";
+const INSTRUCTIONS: &str = "Open a save with open_save (save_locations lists the usual save folders), or a save code the user pasted with open_code; read it with game_view (named RPG Maker sections), list_values and search_values, and compare it with another save with compare_saves. Change values with propose_edits, which changes memory only, then show pending_changes to the user and call save_changes only after the user agreed (for an opened code, give the user copy_code instead). Every save makes a backup first and is verified. Paths are the JSON Pointers the read tools return.";
 
-/// The one open document and the backup folder (tests pass their own).
+/// The one open document and where the settings come from (tests pass their own).
 pub(super) struct ServerState {
     /// The open document, if any.
     pub(super) session: Option<Session>,
     /// The backup folder passed to [`Session::open`]; `None` uses the app's default.
     pub(super) backup_root: Option<PathBuf>,
+    /// The settings file the window shares (backup folders, app folder, backups to keep); `None`
+    /// reads none.
+    pub(super) settings_file: Option<PathBuf>,
 }
 
 /// The message of a tool result when handling one line panicked.
@@ -81,11 +84,17 @@ impl From<RpcError> for CallError {
     }
 }
 
-/// Runs the MCP server on the process's stdin and stdout and returns the exit code.
+/// Runs the MCP server on the process's stdin and stdout and returns the exit code. It uses the
+/// folders the player chose in the window's Settings.
 pub fn run_stdio() -> i32 {
     let stdin = std::io::stdin();
     let stdout = std::io::stdout();
-    match serve(stdin.lock(), &mut stdout.lock(), None) {
+    match serve(
+        stdin.lock(),
+        &mut stdout.lock(),
+        None,
+        shared_settings::default_file(),
+    ) {
         Ok(()) => 0,
         Err(error) => {
             eprintln!("SP-APP-001: the MCP server stopped: {error}");
@@ -96,15 +105,17 @@ pub fn run_stdio() -> i32 {
 
 /// Serves newline-delimited JSON-RPC 2.0 until `input` ends. Every reply is one compact JSON object
 /// on its own line, flushed at once; notifications get no reply. A line that is not UTF-8 gets a
-/// parse error and the loop goes on.
+/// parse error and the loop goes on. `settings_file` is the settings file the window shares.
 pub fn serve(
     mut input: impl BufRead,
     output: &mut impl Write,
     backup_root: Option<PathBuf>,
+    settings_file: Option<PathBuf>,
 ) -> std::io::Result<()> {
     let mut state = ServerState {
         session: None,
         backup_root,
+        settings_file,
     };
     let mut buffer = Vec::new();
     loop {

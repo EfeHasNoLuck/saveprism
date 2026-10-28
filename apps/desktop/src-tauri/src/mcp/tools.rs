@@ -1,18 +1,21 @@
 //! The tool list and the dispatch of one `tools/call` to the [`Session`] methods.
 //!
 //! Every tool is described with a JSON Schema so the client can check its arguments; the server
-//! checks them again here. A tool that only reads files or changes memory is marked read-only;
-//! only `save_changes` and `restore_backup` write files and are marked destructive.
+//! checks them again here. A tool that only reads files or changes memory is marked read-only
+//! (`open_code` also keeps the pasted code as SavePrism's own file in its app folder, as the window
+//! does); only `save_changes` and `restore_backup` write save files and are marked destructive.
+//! Folders and backup counts come from the settings file the window shares.
 
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use serde::Serialize;
 use serde_json::{Map, Value, json};
 
+use crate::session::shared_settings::{self, SharedSettings};
 use crate::session::{
-    ApiError, Entry, FieldKind, GameView, GwentCard, InventoryKind, NamedId, SatisfactoryInventory,
-    Session, ValueRow, app_codes,
+    ApiError, CompareRow, Entry, FieldKind, GameView, GwentCard, InventoryKind, NamedId,
+    SatisfactoryInventory, Session, ValueRow, app_codes, save_locations,
 };
 
 use super::{CallError, RpcError, ServerState, bad_arguments, bad_value};
@@ -23,6 +26,8 @@ const MAX_RESULT_CHARS: usize = 80_000;
 const MAX_EDITS: usize = 10_000;
 /// Most pending changes one `propose_edits` result lists.
 const PENDING_PREVIEW: usize = 100;
+/// Characters of a save code one `copy_code` result holds (escaped JSON stays under the cap).
+const CODE_PART_CHARS: usize = 25_000;
 
 /// The `tools/list` result.
 pub(super) fn list() -> Value {
@@ -72,18 +77,46 @@ fn count(description: &str, default: usize) -> Value {
     })
 }
 
+/// The `keepBackups` property. It has no default: a missing value means the number chosen in
+/// SavePrism's Settings.
+fn keep_property() -> Value {
+    json!({
+        "type": "integer",
+        "description": "Number of backups to keep for the file (1 to 50); missing uses the number chosen in SavePrism's Settings.",
+        "minimum": 1,
+        "maximum": 50
+    })
+}
+
 /// Every tool this server offers, in a stable order.
 fn definitions() -> Vec<Value> {
     vec![
         tool(
             "open_save",
             "Open a save file",
-            "Opens a save file and replaces the open document. An optional password is used for encrypted Easy Save 3 files and for encrypted Terraria player files (.plr).",
+            "Opens a save file and replaces the open document. The key of an encrypted Easy Save 3 file or Terraria player file (.plr) is looked for in the game's own files first; when it is not found, ask the user for the game's folder (gameFolder) or the password.",
             json!({
                 "path": text("Full path of the save file."),
-                "password": text("Password of an encrypted Easy Save 3 file, or the 8 character key of a Terraria player file, when the game uses one.")
+                "password": text("Password of an encrypted Easy Save 3 file, or the 8 character key of a Terraria player file, when the game uses one."),
+                "gameFolder": text("The game's own folder, searched for the key of an encrypted save that was not found automatically.")
             }),
             json!(["path"]),
+            (true, false, true),
+        ),
+        tool(
+            "open_code",
+            "Open a save code",
+            "Opens a save code the user pasted (the text a browser or idle game exports) and replaces the open document. SavePrism keeps the code as its own file in its app folder (the newest 10). Read and edit it like a save; to hand the edited code back, call copy_code.",
+            json!({"code": text("The save code text, as the game gave it.")}),
+            json!(["code"]),
+            (true, false, false),
+        ),
+        tool(
+            "save_locations",
+            "Where saves usually are",
+            "Lists the usual save folders of each engine on Windows and whether each folder exists on this PC. <game>, <company> and <game folder> stand for the game's own names. Nothing is searched.",
+            json!({}),
+            json!([]),
             (true, false, true),
         ),
         tool(
@@ -128,6 +161,18 @@ fn definitions() -> Vec<Value> {
             "Value details",
             "Returns the type, limits and original value of one value.",
             json!({"path": text("JSON Pointer of the value.")}),
+            json!(["path"]),
+            (true, false, true),
+        ),
+        tool(
+            "compare_saves",
+            "Compare with another save",
+            "Compares the open document (pending edits included) with another save file and returns one page of the differences. The other file is only read; an encrypted one is refused. At most 5,000 differences are listed; total counts all of them.",
+            json!({
+                "path": text("Full path of the other save file."),
+                "offset": count("Index of the first difference to return.", 0),
+                "limit": count("Most differences to return (capped at 500).", 100)
+            }),
             json!(["path"]),
             (true, false, true),
         ),
@@ -245,10 +290,18 @@ fn definitions() -> Vec<Value> {
             "Writes the save file. A backup is made first and every edited value is checked in the written file; only call it after the user agreed. A target must be a new file name in the folder of the open save; an existing file is never replaced.",
             json!({
                 "target": text("Absolute new file name in the folder of the open save; missing writes the open file."),
-                "keepBackups": count("Number of backups to keep for the file (1 to 50).", 10)
+                "keepBackups": keep_property()
             }),
             json!([]),
             (false, true, false),
+        ),
+        tool(
+            "copy_code",
+            "Copy save code",
+            "Returns the open document as a save code with the pending edits, every edited value checked first. Only text formats can be copied. Nothing is written. A long code comes in parts of 25,000 characters: while more is true, call again with the next offset and join the parts.",
+            json!({"offset": count("Character index where this part starts.", 0)}),
+            json!([]),
+            (true, false, true),
         ),
         tool(
             "list_backups",
@@ -264,7 +317,7 @@ fn definitions() -> Vec<Value> {
             "Puts a backup back in place of the open file and opens it again. Pending edits are lost; only call it after the user agreed.",
             json!({
                 "name": text("Backup file name from list_backups."),
-                "keepBackups": count("Number of backups to keep for the file (1 to 50).", 10)
+                "keepBackups": keep_property()
             }),
             json!(["name"]),
             (false, true, false),
@@ -308,10 +361,13 @@ fn call(
 ) -> Result<Value, CallError> {
     match name {
         "open_save" => open_save(state, args),
+        "open_code" => open_code(state, args),
+        "save_locations" => to_value(&save_locations()),
         "list_values" => list_values(state, args),
         "search_values" => search_values(state, args),
         "game_view" => game_view(state, args),
         "field_info" => field_info(state, args),
+        "compare_saves" => compare_saves(state, args),
         "set_data_folder" => set_data_folder(state, args),
         "propose_edits" => propose_edits(state, args),
         "add_value" => add_value(state, args),
@@ -321,6 +377,7 @@ fn call(
         "undo" => undo(state),
         "discard_changes" => discard_changes(state),
         "save_changes" => save_changes(state, args),
+        "copy_code" => copy_code(state, args),
         "list_backups" => list_backups(state),
         "restore_backup" => restore_backup(state, args),
         #[cfg(test)]
@@ -424,16 +481,88 @@ fn rows_value<'a, T: Serialize + 'a>(
     Ok(Value::Array(out))
 }
 
-fn open_save(state: &mut ServerState, args: &Map<String, Value>) -> Result<Value, CallError> {
-    let path = required_text(args, "path")?;
-    let password = optional_text(args, "password")?;
-    let session = Session::open(&path, password, state.backup_root.clone())?;
+/// The Settings choices the window shares (the defaults when there is no file).
+fn shared(state: &ServerState) -> SharedSettings {
+    state
+        .settings_file
+        .as_deref()
+        .map(shared_settings::read)
+        .unwrap_or_default()
+}
+
+/// A `keepBackups` argument, else the number chosen in Settings, else the session's default.
+fn keep_backups(
+    args: &Map<String, Value>,
+    settings: &SharedSettings,
+) -> Result<Option<usize>, CallError> {
+    match args.get("keepBackups") {
+        None | Some(Value::Null) => Ok(settings.keep_backups()),
+        Some(_) => Ok(Some(optional_count(args, "keepBackups", 10)?)),
+    }
+}
+
+/// Keeps `session` as the open document and returns its details.
+fn opened(state: &mut ServerState, session: Session) -> Result<Value, CallError> {
     let mut value = to_value(&session.info())?;
     if let Some(object) = value.as_object_mut() {
         object.insert("pendingCount".to_string(), json!(0));
     }
     state.session = Some(session);
     Ok(value)
+}
+
+fn open_save(state: &mut ServerState, args: &Map<String, Value>) -> Result<Value, CallError> {
+    let path = required_text(args, "path")?;
+    let password = optional_text(args, "password")?;
+    let game_folder = optional_text(args, "gameFolder")?.filter(|folder| !folder.trim().is_empty());
+    let backup_root = state.backup_root.clone();
+    let mut session = match game_folder {
+        Some(folder) => {
+            Session::open_with_game_folder(&path, password, backup_root, PathBuf::from(folder))?
+        }
+        None => Session::open(&path, password, backup_root)?,
+    };
+    session.set_backup_roots(&shared(state).backup_roots());
+    opened(state, session)
+}
+
+fn open_code(state: &mut ServerState, args: &Map<String, Value>) -> Result<Value, CallError> {
+    let code = required_text(args, "code")?;
+    let settings = shared(state);
+    let mut roots = settings.backup_roots();
+    if roots.is_empty() {
+        roots.extend(state.backup_root.clone());
+    }
+    let session = Session::open_code_in(&code, settings.app_dir(), &roots)?;
+    opened(state, session)
+}
+
+fn compare_saves(state: &ServerState, args: &Map<String, Value>) -> Result<Value, CallError> {
+    let path = required_text(args, "path")?;
+    let offset = optional_count(args, "offset", 0)?;
+    let limit = optional_count(args, "limit", 100)?.min(500);
+    let session = session(state)?;
+    let result = session.compare_with(&path)?;
+    let page: Vec<&CompareRow> = result.rows.iter().skip(offset).take(limit).collect();
+    // The names the window's Compare shows, so the client can tell the user what differs.
+    let paths: Vec<String> = page.iter().map(|row| row.path.clone()).collect();
+    let labels = session.value_labels(&paths);
+    let mut rows = Vec::with_capacity(page.len());
+    for (row, label) in page.into_iter().zip(labels) {
+        let mut value = to_value(row)?;
+        if let Some(object) = value.as_object_mut() {
+            object.insert("label".to_string(), json!(label));
+        }
+        rows.push(value);
+    }
+    Ok(json!({
+        "otherFileName": result.other_file_name,
+        "total": result.total,
+        "listed": result.rows.len(),
+        "truncated": result.truncated,
+        "offset": offset,
+        "rows": rows
+    }))
 }
 
 fn list_values(state: &ServerState, args: &Map<String, Value>) -> Result<Value, CallError> {
@@ -561,11 +690,10 @@ fn discard_changes(state: &mut ServerState) -> Result<Value, CallError> {
 
 fn save_changes(state: &mut ServerState, args: &Map<String, Value>) -> Result<Value, CallError> {
     let target = optional_text(args, "target")?;
-    let keep_backups = match args.get("keepBackups") {
-        None | Some(Value::Null) => None,
-        Some(_) => Some(optional_count(args, "keepBackups", 10)?),
-    };
+    let settings = shared(state);
+    let keep_backups = keep_backups(args, &settings)?;
     let session = session_mut(state)?;
+    session.set_backup_roots(&settings.backup_roots());
     let open = session.info().path;
     let target = match target {
         Some(target) => {
@@ -579,7 +707,20 @@ fn save_changes(state: &mut ServerState, args: &Map<String, Value>) -> Result<Va
         }
         None => open,
     };
-    to_value(&session.save(&target, false, keep_backups)?)
+    to_value(&session.save_with_days(&target, false, keep_backups, settings.keep_days())?)
+}
+
+fn copy_code(state: &ServerState, args: &Map<String, Value>) -> Result<Value, CallError> {
+    let offset = optional_count(args, "offset", 0)?;
+    let code = session(state)?.copy_code()?;
+    let total = code.chars().count();
+    let part: String = code.chars().skip(offset).take(CODE_PART_CHARS).collect();
+    Ok(json!({
+        "code": part,
+        "offset": offset,
+        "totalChars": total,
+        "more": offset.saturating_add(CODE_PART_CHARS) < total
+    }))
 }
 
 /// True when `target` is an absolute path whose folder is the open file's folder.
@@ -599,17 +740,20 @@ fn writes_next_to(target: &Path, open: &Path) -> bool {
     }
 }
 
-fn list_backups(state: &ServerState) -> Result<Value, CallError> {
-    to_value(&session(state)?.backups()?)
+fn list_backups(state: &mut ServerState) -> Result<Value, CallError> {
+    let roots = shared(state).backup_roots();
+    let session = session_mut(state)?;
+    session.set_backup_roots(&roots);
+    to_value(&session.backups()?)
 }
 
 fn restore_backup(state: &mut ServerState, args: &Map<String, Value>) -> Result<Value, CallError> {
     let name = required_text(args, "name")?;
-    let keep_backups = match args.get("keepBackups") {
-        None | Some(Value::Null) => None,
-        Some(_) => Some(optional_count(args, "keepBackups", 10)?),
-    };
-    let restored = session(state)?.restore_backup(&name, keep_backups)?;
+    let settings = shared(state);
+    let keep_backups = keep_backups(args, &settings)?;
+    let session = session_mut(state)?;
+    session.set_backup_roots(&settings.backup_roots());
+    let restored = session.restore_backup_with_days(&name, keep_backups, settings.keep_days())?;
     let info = restored.info();
     state.session = Some(restored);
     to_value(&info)

@@ -248,14 +248,20 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
      diagrams (rendered without errors), CONTRIBUTING (language, theme, format, MCP tool), forms `add_language`,
      Discussions `community-themes` (needs that category once Discussions is on), feature request with an AI/MCP
      field. Not seen on GitHub yet (nothing pushed). Footer: GitHub profile only (maintainer, no e-mail).
-   - Next (HANDOFF order): the maintainer looks at the screenshots; then MCP tools `compare_saves`, `save_locations`,
-     `open_code` (+ `open_save` uses the key finder; MCP should use the backup folder chosen in Settings) and
-     `docs/ai.md`; then auto-update (not built yet: `tauri-plugin-updater`, a signing key kept outside the repo,
+   - MCP gaps closed 2026-10-28 (20 tools): `save_locations`, `compare_saves` (paged, with the app's names),
+     `open_code` + `copy_code` (long codes in 25,000-character parts); `open_save` already used the automatic key
+     finder and now also takes `gameFolder` like the app's "Pick the game folder". The window writes its backup
+     folders, app folder, backups to keep and their age to `%LOCALAPPDATA%\SavePrism\settings.json`
+     (`share_settings`), and the MCP server reads it before each open, save, backup list and restore.
+     Rust 3/3, web 3/3, cargo deny ok. Real client: Claude Code (sonnet) over the debug exe with a scratch
+     `LOCALAPPDATA` ran save_locations, open_save on a copy of the MV fixture, gold 1250 → 4321, save verified, the
+     backup (original bytes) landed in the chosen folder, compare_saves showed `party · _gold`, a SugarCube code
+     opened from the chosen app folder and copy_code gave it back unchanged. The running app (`pnpm dev`) wrote
+     `settings.json` at start with the maintainer's choices (defaults, 10 backups, 30 days).
+   - Next (HANDOFF order): auto-update (not built yet: `tauri-plugin-updater`, a signing key kept outside the repo,
      `latest.json` on GitHub Releases; it can only reach a public repo's releases; the maintainer expects it,
      2026-10-28) with a "Check for updates" button in About; then a crash screen (no React error boundary yet:
      a render error leaves a blank window); then a fresh MSI to install and try.
-   - Gap for the MCP follow-up: a backup folder changed in Settings is not known to the MCP server (it always uses
-     `%LOCALAPPDATA%\SavePrism\backups`).
 
 ## Known gaps
 - A zip save with several JSON entries opens only the largest (Shapez 2: `local-player.json`, not `research.json` or

@@ -53,21 +53,26 @@ copies the one for the app you picked. Saving always makes a backup first.
 
 | Tool | What it does | Writes files |
 |---|---|---|
-| `open_save` | Opens a save (password for encrypted Easy Save 3 files and Terraria player files). Runs the same round-trip check as the app. | no |
+| `save_locations` | Lists the usual save folders of each engine on Windows and which of them exist on this PC (the app's "Where is my save?"). | no |
+| `open_save` | Opens a save and runs the same round-trip check as the app. The key of an encrypted Easy Save 3 or Terraria player file is looked for in the game's own files first, like in the app; when it is not found, the AI can pass the game's folder (`gameFolder`) or the password. | no |
+| `open_code` | Opens a save code you pasted into the chat (the text a browser or idle game exports). Like **Paste code** in the app, SavePrism keeps the code as its own file in its app folder (the newest 10). | its own copy only |
 | `game_view` | The app's view: RPG Maker sections with names (gold, characters, items, variables, switches), the story variables of a Twine save, or the Values list. Filter and page through long lists. | no |
 | `list_values` | The children of one value in the full tree, a page at a time. | no |
 | `search_values` | Finds values by path or value text. | no |
 | `field_info` | Type and limits of one value. | no |
+| `compare_saves` | Compares the open save (with its pending changes) with another save: values that differ and entries only one of them has, with the names the app shows, a page at a time. The other file is only read; an encrypted one is refused. | no |
 | `set_data_folder` | Reads names from a game data folder (RPG Maker). | no |
 | `propose_edits` | Changes values in memory. Everything is checked first; on any error nothing changes. | no |
 | `add_value`, `add_inventory`, `remove_value` | Adds or removes entries where the format allows it, in memory. | no |
 | `pending_changes` | Lists every change since opening: old value → new value. | no |
 | `undo`, `discard_changes` | Takes back the last change, or all of them. | no |
 | `save_changes` | Writes the changes to the open file, or to a new file in the same folder. A backup is made first, the file is replaced in one step, and every changed value is read back and checked. | **yes** |
+| `copy_code` | Gives the open save back as a save code with the changes, every changed value checked first (text formats only). Long codes come in parts of 25,000 characters. | no |
 | `list_backups`, `restore_backup` | Lists the backups of the open save and puts one back (the current file is backed up first). | restore: **yes** |
 
-Only `save_changes` and `restore_backup` write files; both are marked as destructive, so AI apps ask you before they run
-them. Let the AI show you `pending_changes` before you allow a save.
+Only `save_changes` and `restore_backup` write save files; both are marked as destructive, so AI apps ask you before
+they run them. Let the AI show you `pending_changes` before you allow a save. For a pasted code there is nothing to save:
+the AI hands you the edited code with `copy_code`, and you paste it back into the game.
 
 ### Good to know
 
@@ -81,3 +86,7 @@ them. Let the AI show you `pending_changes` before you allow a save.
   a smaller page, a section or a filter.
 - Backups live in SavePrism's own data folder (`%LOCALAPPDATA%\SavePrism\backups`), never next to the save; the AI can list
   them with `list_backups`.
+- The MCP server follows **Settings → Saving & backups**: the backup folder you picked, the folders you used before (for
+  listing and restoring), the number of backups to keep and their age, and the app folder for pasted codes. SavePrism
+  writes these choices to `%LOCALAPPDATA%\SavePrism\settings.json` whenever they change, because the MCP server runs as
+  its own program and cannot read the window's settings. Without that file (SavePrism never opened) it uses the defaults.

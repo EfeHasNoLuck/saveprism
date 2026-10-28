@@ -52,6 +52,7 @@ mod renpy;
 mod report;
 mod rgss;
 mod satisfactory;
+pub mod shared_settings;
 mod structure;
 mod sugarcube;
 pub(crate) mod theme_file;
