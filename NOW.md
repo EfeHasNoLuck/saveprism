@@ -228,9 +228,10 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
      Not checked: a real background photo, the Copy setup clipboard, real native dialogs; the Explorer entry is not
      tested on an installed app yet (the next MSI test).
    - 2026-10-28, maintainer's 4 follow-ups: done = one "Where is my save?" on the start screen, About shows only the
-     version (`1af2100`); GitHub description line chosen (`docs/research/seo-2026-10-28.md`). EVREN: `w8-photo`
-     (photo click/drop) and `w8-appcolor` (App color: presets, Windows accent, monochrome, custom,
-     in theme files) both finished, not merged. Then the README/GitHub showcase (`HANDOFF.md`, `.motor/readme-vision-tr.md`).
+     version (`1af2100`); GitHub description line chosen (`docs/research/seo-2026-10-28.md`). EVREN, merged
+     2026-10-28 (rust 3/3, web 3/3, cargo deny ok, ignored desktop tests ok): App color with presets, Windows accent,
+     monochrome, custom, in theme files; neutral opening cover (`ac70822`); photo preview click/drop (`f2d9cca`).
+     Then the README/GitHub showcase (`HANDOFF.md`, `.motor/readme-vision-tr.md`).
    - Next (HANDOFF order): the maintainer looks at the screenshots; then MCP tools `compare_saves`, `save_locations`,
      `open_code` (+ `open_save` uses the key finder; MCP should use the backup folder chosen in Settings) and
      `docs/ai.md`; then a fresh MSI to install and try.
