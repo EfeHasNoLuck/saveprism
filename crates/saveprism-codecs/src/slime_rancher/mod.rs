@@ -37,10 +37,13 @@
 //! | `format_version` | `Int` (I32), the root record version | no |
 //! | `save_name`, `game_version` | `Str` from the summary | no |
 //! | `money` | `Int` (I32), the player's newbucks | yes |
-//! | `vacpack` | `Array` of `SR2:slot` objects | `count` of a filled slot |
-//! | `storage` | `Array` of slot groups (plots, ...) | `count` of a filled slot |
+//! | `vacpack` | `Object` `SR2:slots`, one count per slot | counts of filled slots |
+//! | `storage` | `Object` of slot groups (`Storage 1`, ...: plots and the like) | counts of filled slots |
 //!
-//! A slot object has `item` (the `IdentifiableType` name, `Null` for an empty slot) and `count`.
+//! A slot is one `Int` (I32) count under the key `Slot <n>: <item>`; the item is the
+//! `IdentifiableType` name made readable (`SlimeDefinition.Tabby` → `Tabby Slime`,
+//! `IdentifiableType.PhosphorPlort` → `Phosphor Plort`) or `empty`. An empty slot's count is
+//! read-only.
 //!
 //! # Exact writing
 //!

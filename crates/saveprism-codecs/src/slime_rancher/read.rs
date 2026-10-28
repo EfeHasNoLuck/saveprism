@@ -133,11 +133,12 @@ pub(crate) fn read_all(input: &[u8], ctx: &DecodeCtx<'_>) -> Result<(SaveDoc, Op
         if Some(index) == vacpack {
             entries.push(("vacpack".to_owned(), id));
         } else {
-            storage.push(id);
+            let name = format!("Storage {}", storage.len().saturating_add(1));
+            storage.push((name, id));
         }
     }
     if !storage.is_empty() {
-        let id = push(&mut doc, Value::Array(storage), "storage", None, true)?;
+        let id = push(&mut doc, Value::Object(storage), "storage", None, true)?;
         entries.push(("storage".to_owned(), id));
     }
     let root = push(&mut doc, Value::Object(entries), "save", None, true)?;
@@ -156,25 +157,39 @@ fn int(v: i32) -> Value {
     }
 }
 
+/// One row per slot, `"Slot <n>: <item>"` → count, so the Values list reads like the vacpack.
 fn slots_node(doc: &mut SaveDoc, group: &SlotGroup, items: &[String]) -> Result<NodeId> {
     let mut slots = Vec::with_capacity(group.slots.len());
-    for slot in &group.slots {
+    for (index, slot) in group.slots.iter().enumerate() {
         let filled = slot.item >= 0;
         let item = match usize::try_from(slot.item).ok() {
-            Some(index) => Value::Str(
-                items
-                    .get(index)
-                    .cloned()
-                    .unwrap_or_else(|| format!("#{index}")),
-            ),
-            None => Value::Null,
+            Some(item) => items
+                .get(item)
+                .map_or_else(|| format!("Item #{item}"), |name| item_label(name)),
+            None => "empty".to_owned(),
         };
-        let item = push(doc, item, "item", None, true)?;
         let count = push(doc, int(slot.count), "count", Some(slot.count_at), !filled)?;
-        let object = Value::Object(vec![("item".to_owned(), item), ("count".to_owned(), count)]);
-        slots.push(push(doc, object, "slot", None, true)?);
+        slots.push((format!("Slot {}: {item}", index.saturating_add(1)), count));
     }
-    push(doc, Value::Array(slots), "slots", None, true)
+    push(doc, Value::Object(slots), "slots", None, true)
+}
+
+/// `SlimeDefinition.Tabby` → `Tabby Slime`, `IdentifiableType.PhosphorPlort` → `Phosphor Plort`.
+pub(crate) fn item_label(name: &str) -> String {
+    let (kind, short) = name.split_once('.').unwrap_or(("", name));
+    let mut words = String::with_capacity(short.len().saturating_add(8));
+    let mut previous_lower = false;
+    for ch in short.chars() {
+        if ch.is_uppercase() && previous_lower {
+            words.push(' ');
+        }
+        previous_lower = ch.is_lowercase();
+        words.push(ch);
+    }
+    if kind == "SlimeDefinition" {
+        words.push_str(" Slime");
+    }
+    words
 }
 
 /// The first `INDXTBLLKUP`: table names and their entries.

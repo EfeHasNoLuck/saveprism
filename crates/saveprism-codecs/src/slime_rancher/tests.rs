@@ -111,24 +111,29 @@ fn the_invented_save_round_trips_and_shows_what_is_known() {
         Some(Value::Str("0.0.0 [invented]".to_owned()))
     );
     assert_eq!(value(&decoded, "/money"), int(1234));
-    assert_eq!(
-        value(&decoded, "/vacpack/0/item"),
-        Some(Value::Str("IdentifiableType.InventedPlort".to_owned()))
-    );
-    assert_eq!(value(&decoded, "/vacpack/0/count"), int(12));
-    assert_eq!(
-        value(&decoded, "/vacpack/1/item"),
-        Some(Value::Str("SlimeDefinition.Invented".to_owned()))
-    );
-    assert_eq!(value(&decoded, "/vacpack/2/item"), Some(Value::Null));
-    assert_eq!(value(&decoded, "/vacpack/4"), None);
+    assert_eq!(value(&decoded, "/vacpack/Slot 1: Invented Plort"), int(12));
+    assert_eq!(value(&decoded, "/vacpack/Slot 2: Invented Slime"), int(3));
+    assert_eq!(value(&decoded, "/vacpack/Slot 3: empty"), int(0));
+    assert_eq!(value(&decoded, "/vacpack/Slot 4: empty"), int(0));
+    let root = decoded.doc.resolve(&Path::parse("/vacpack").unwrap());
+    assert_eq!(decoded.doc.children(root.unwrap()).len(), 4);
     // The plot's group is storage; the run behind a wrong count is not shown at all.
     assert_eq!(
-        value(&decoded, "/storage/0/0/item"),
-        Some(Value::Str("IdentifiableType.InventedVeggie".to_owned()))
+        value(&decoded, "/storage/Storage 1/Slot 1: Invented Veggie"),
+        int(40)
     );
-    assert_eq!(value(&decoded, "/storage/0/0/count"), int(40));
-    assert_eq!(value(&decoded, "/storage/1"), None);
+    assert_eq!(value(&decoded, "/storage/Storage 2"), None);
+}
+
+#[test]
+fn item_names_are_made_readable() {
+    assert_eq!(read::item_label("SlimeDefinition.Tabby"), "Tabby Slime");
+    assert_eq!(
+        read::item_label("IdentifiableType.PhosphorPlort"),
+        "Phosphor Plort"
+    );
+    assert_eq!(read::item_label("ToyDefinition.YarnBall"), "Yarn Ball");
+    assert_eq!(read::item_label("NoPrefix"), "No Prefix");
 }
 
 #[test]
@@ -166,12 +171,20 @@ fn the_summary_copy_is_left_alone_when_it_differed() {
 fn slot_counts_of_filled_slots_are_editable() {
     let bytes = fixture();
     let mut decoded = decode(&bytes);
-    set(&mut decoded, "/vacpack/1/count", 30).unwrap();
-    set(&mut decoded, "/storage/0/0/count", 0).unwrap();
+    set(&mut decoded, "/vacpack/Slot 2: Invented Slime", 30).unwrap();
+    set(
+        &mut decoded,
+        "/storage/Storage 1/Slot 1: Invented Veggie",
+        0,
+    )
+    .unwrap();
     let written = encode(&decoded);
     let again = decode(&written);
-    assert_eq!(value(&again, "/vacpack/1/count"), int(30));
-    assert_eq!(value(&again, "/storage/0/0/count"), int(0));
+    assert_eq!(value(&again, "/vacpack/Slot 2: Invented Slime"), int(30));
+    assert_eq!(
+        value(&again, "/storage/Storage 1/Slot 1: Invented Veggie"),
+        int(0)
+    );
     assert_eq!(value(&again, "/money"), int(1234));
 }
 
@@ -180,8 +193,8 @@ fn unknown_and_empty_values_are_read_only() {
     let mut decoded = decode(&fixture());
     for path in [
         "/format_version",
-        "/vacpack/2/count",
-        "/vacpack/0/item",
+        "/vacpack/Slot 3: empty",
+        "/game_version",
         "/save_name",
     ] {
         let error = apply_edits(
@@ -198,7 +211,7 @@ fn unknown_and_empty_values_are_read_only() {
     let error = apply_edits(
         &mut decoded.doc,
         &[Edit::Remove {
-            path: Path::parse("/vacpack/0").unwrap(),
+            path: Path::parse("/vacpack/Slot 1: Invented Plort").unwrap(),
         }],
         &Limits::default(),
     )
@@ -298,7 +311,14 @@ fn real_saves_round_trip_and_edit_the_money() {
         let Some(Value::Int { v: money, .. }) = value(&decoded, "/money") else {
             panic!("{} has no money", path.display());
         };
-        assert!(value(&decoded, "/vacpack/0/count").is_some());
+        let vacpack = decoded
+            .doc
+            .resolve(&Path::parse("/vacpack").unwrap())
+            .and_then(|id| decoded.doc.get(id))
+            .map(|node| node.value.clone());
+        let Some(Value::Object(slots)) = vacpack else {
+            panic!("{} has no vacpack", path.display());
+        };
         set(&mut decoded, "/money", money + 1000).unwrap();
         let written = encode(&decoded);
         let changed = differences(&bytes, &written);
@@ -309,14 +329,16 @@ fn real_saves_round_trip_and_edit_the_money() {
             changed.len()
         );
         assert_eq!(value(&decode(&written), "/money"), int(money + 1000));
-        eprintln!(
-            "{}: money {money}, vacpack {:?}",
-            path.display(),
-            (0..7)
-                .filter_map(|i| value(&decoded, &format!("/vacpack/{i}/item"))
-                    .zip(value(&decoded, &format!("/vacpack/{i}/count"))))
-                .collect::<Vec<_>>()
-        );
+        let rows: Vec<String> = slots
+            .iter()
+            .map(
+                |(key, id)| match decoded.doc.get(*id).map(|node| &node.value) {
+                    Some(Value::Int { v, .. }) => format!("{key} = {v}"),
+                    _ => key.clone(),
+                },
+            )
+            .collect();
+        eprintln!("{}: money {money}, vacpack {rows:?}", path.display());
     }
 }
 

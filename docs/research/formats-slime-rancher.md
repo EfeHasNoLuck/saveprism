@@ -100,7 +100,9 @@ save needs its own look at real bytes.
 
 ## What the codec shows and edits
 
-- Read-only: root version, save name, game version, item names.
+- Read-only: root version, save name, game version.
 - Editable: the player's money (the summary copy follows when it was equal), the count of every filled ammo slot.
+  Each slot is one row `Slot <n>: <item>` with the item name made readable (`SlimeDefinition.Tabby` → `Tabby Slime`,
+  `IdentifiableType.PhosphorPlort` → `Phosphor Plort`, `empty`); other slot groups are `Storage 1`, `Storage 2` ...
 - Only records found by their exact header bytes and parsed to their end mark are used; everything else is copied
   byte for byte. An unchanged document writes the original file exactly.
