@@ -25,8 +25,8 @@ Screenshots the maintainer saw: `.motor/vcheck-1028b/m-*.png` (local).
 - The photo preview in Appearance must be clickable and accept a dropped image → job `w8-photo`.
 - After these: "Ben başka bir şey göremiyorum, sonra release düşünürüz", and the README/GitHub showcase (below).
 
-## EVREN jobs: w8-photo FINISHED (report written, both gates 3/3 by its own run, not merged yet); w8-appcolor RUNNING
-(started ~09:00-09:10 TR as background Bash of the session that wrote this)
+## EVREN jobs: BOTH FINISHED (~09:50 TR), not merged yet. Each wrote its report and says rust 3/3 + web 3/3 in its
+own worktree; no `opencode.exe` is left. First step of the next session: merge them (below).
 | job | worktree | brief | report (inside the worktree) | opencode session |
 |---|---|---|---|---|
 | w8-appcolor | `../saveprism-wt/w8-appcolor` | `.motor/w8-appcolor.md` | `.motor/w8-appcolor-report.md` | `ses_e7ed91988ffeUmOKEMXYhwmKTj` |
