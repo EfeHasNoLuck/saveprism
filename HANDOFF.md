@@ -2,25 +2,25 @@
 
 **State (2026-10-28, ~19:00 TR):** the maintainer's install test is done (what they did not try goes to the community).
 The first public release is now **0.9.0 for Windows, Linux and macOS** (maintainer's decision): version bumped, a
-`release` workflow builds all three into a draft release, README covers all three. Nothing pushed since `4214786`:
+`release` workflow builds all three into a draft release, README covers all three. Nothing pushed since `f96e98c`:
 Actions minutes for the private repo are out, but Actions are free once the repo is public. Weekly Claude limit 21%
 used (resets 2026-11-04 11:00 UTC).
 The plan and history are in `NOW.md`; this page is only what the next session needs.
 
 ## Works (with evidence)
-- README/GitHub showcase (`c23e720`, `9d776ec`): both Mermaid diagrams render with mermaid 11.4.1, every form YAML
+- README/GitHub showcase (`8d94e39`, `9eb850e`): both Mermaid diagrams render with mermaid 11.4.1, every form YAML
   parses, all 18 images in `docs/images/` reviewed (synthetic save, generated photo, no real data, no user name).
-- MCP gaps (`ea9f664`, `145db26`): 20 tools; rust 3/3, web 3/3, cargo deny ok; a real Claude Code round trip on a
+- MCP gaps (`3734bd6`, `82b9b2f`): 20 tools; rust 3/3, web 3/3, cargo deny ok; a real Claude Code round trip on a
   fixture copy; the running app writes `%LOCALAPPDATA%\SavePrism\settings.json` for the MCP server; a full Rust test
   run leaves the real backup folder untouched.
-- Auto-update (`6e9176e`, `1de6afd`): checked over CDP with a local mock (toast, About "0.2.0 is available", discard
+- Auto-update (`b4b1a3b`, `b6732c8`): checked over CDP with a local mock (toast, About "0.2.0 is available", discard
   guard, progress); the real endpoint stays silent while the repo is private (`.motor/update-1028/`).
-- Crash screen (`7493570`): checked over CDP, dark/light, EN/TR; the copied report holds no path (`.motor/crash-1028/`).
-- Slime Rancher 2 (`33c0857`, `86019d5`): the maintainer's 5 saves (`fixtures/external/slime-rancher-2/`) round-trip
+- Crash screen (`5c8884e`): checked over CDP, dark/light, EN/TR; the copied report holds no path (`.motor/crash-1028/`).
+- Slime Rancher 2 (`ad3987e`, `354e444`): the maintainer's 5 saves (`fixtures/external/slime-rancher-2/`) round-trip
   exactly in the CLI and backend; a money edit saved with a backup and reopened; the current debug CLI detects them as
   `format.slime-rancher-2`. The maintainer edited a real save in SavePrism; the game loaded it with the
   change (2026-10-28).
-- Windows installer (`09f4e89`, built as 0.1.0 before the version bump): setup exe only, no MSI (the updater only
+- Windows installer (`2d12d3e`, built as 0.1.0 before the version bump): setup exe only, no MSI (the updater only
   serves the exe). Publisher "Hüseyin Can ÇALTI" seen by the maintainer in the installed apps list; the setup exe shows
   the app logo. It installs per user into `%LOCALAPPDATA%\SavePrism\` next to the backups; Tauri's uninstaller removes
   only its own files there (non-recursive `RMDir`). The maintainer checked: "Decode with SavePrism" (Turkish label),
@@ -56,7 +56,7 @@ The plan and history are in `NOW.md`; this page is only what the next session ne
 ## Next step
 1. Release text `scripts/release/notes-0.9.0.md`: approved by the maintainer (2026-10-28).
 2. Going public (asked 2026-10-28; needs the maintainer's yes): rewrite history once with git-filter-repo (not
-   installed: `pip install git-filter-repo`) to drop `fixtures/external/` (added in `bed2ed9`, removed in `fbfc90e`:
+   installed: `pip install git-filter-repo`) to drop `fixtures/external/` (added in `a973589`, removed in `4712fe9`:
    saves from other public repos) and to replace the author e-mail `hsyncalti2@gmail.com` (all 317 commits) with
    `116316749+huseyincancalti@users.noreply.github.com`; set that address as `user.email` here; `cargo deny check`;
    force-push; make the repo public. Actions are then free: fix what the Ubuntu/macOS CI runs show.
