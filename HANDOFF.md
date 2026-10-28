@@ -32,18 +32,11 @@ The plan and history are in `NOW.md`; this page is only what the next session ne
   `scripts/release/notes-0.9.0.md`. Rust 3/3 and web 3/3 passed on Windows.
 
 ## Broken / not checked
-- CI on all three systems (2026-10-28, `8b07c46`): Windows and Ubuntu green. macOS: 7 tests fail, all GVAS saves that
-  need struct type hints (`crates/saveprism-codecs/tests/gvas_hints.rs`: 3 tests on `map-struct-keys.sav`;
-  `session::values::tests` gvas_* and search/labels: SP-DET-001). The hint search ends empty-handed on macOS: the
-  gvas_hints binary takes 11 s there and 0.01 s on Linux, so the 3 s `MAX_TIME` in `gvas/infer.rs` is the likely
-  stop. Diagnosis run (side branch, deleted): single-threaded the tests pass on macOS but take 5.7 s debug and
-  3.4 s release, against 0.02 s / 0.00 s on `ubuntu-24.04-arm`, so it is macOS, not ARM, and release is slow too.
-  Likely cause (not proven): during the hint search, wrong guesses make uesave 0.7.1 read garbage lengths and
-  allocate zeroed buffers of up to 2 GB (`read_string`: `vec![0; len]`; its buffered reader: `vec![0; needed]`).
-  Linux hands back fresh zero pages for free; macOS libmalloc reuses cached large blocks and must memset them.
-  Ideas: skip a guess when a length read from the file is larger than the bytes left (pre-check before handing
-  the guess to uesave), or a global allocator on macOS (mimalloc, MIT). Prove it first on CI with a counting
-  allocator. main stays red on macOS until fixed (each push sends a failure e-mail).
+- macOS GVAS fix (2026-10-28): a counting allocator showed uesave allocating 5.3 GB of zeroed buffers (3 blocks,
+  up to 1.8 GB) while the hint search tried wrong guesses on a 379-byte save; macOS zeroes reused large blocks, so
+  the 3 s search budget ran out there. `vendor/uesave` is uesave 0.7.1 (MIT, `COPYING`) with two read fixes
+  (`PATCHES.md`), used through `[patch.crates-io]`; the same save now makes no allocation over 1 MiB. Rust 3/3 and
+  cargo deny ok on Windows; macOS CI result after the push decides.
 - Left to the community (maintainer, 2026-10-28; public text must invite feedback warmly, never "you test it"):
   About → Check for updates against the real release, a real AI app over MCP, a second file handed to the open window.
 - Explorer label language: the installer has no language picker; NSIS runs it in the Windows display language

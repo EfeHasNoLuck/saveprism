@@ -5294,8 +5294,6 @@ dependencies = [
 [[package]]
 name = "uesave"
 version = "0.7.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ac9909553256ee99ff7ca12594fbf3b9aa47811e775b535edfaa4edf7065f620"
 dependencies = [
  "bitflags 2.13.2",
  "byteorder",

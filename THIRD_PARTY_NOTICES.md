@@ -5658,7 +5658,7 @@ Used by:
 - tauri-plugin-process 2.4.0 (https://github.com/tauri-apps/plugins-workspace)
 - tauri-plugin-single-instance 2.5.4 (https://github.com/tauri-apps/plugins-workspace)
 - tauri-plugin-updater 2.14.1 (https://github.com/tauri-apps/plugins-workspace)
-- uesave 0.7.1 (https://github.com/trumank/uesave)
+- uesave 0.7.1 (https://github.com/trumank/uesave; patched copy in vendor/uesave, see PATCHES.md there)
 - webview2-com-macros 0.8.1 (https://github.com/wravery/webview2-rs)
 - webview2-com-sys 0.39.1 (https://github.com/wravery/webview2-rs)
 - webview2-com 0.39.1 (https://github.com/wravery/webview2-rs)

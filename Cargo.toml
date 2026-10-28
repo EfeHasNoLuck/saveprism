@@ -1,7 +1,7 @@
 [workspace]
 resolver = "3"
 members = ["apps/desktop/src-tauri", "crates/*"]
-exclude = ["fuzz"]
+exclude = ["fuzz", "vendor/uesave"]
 
 [workspace.dependencies]
 thiserror = "2.0"
@@ -68,3 +68,7 @@ opt-level = 3
 # with catch_unwind, which needs unwinding; "abort" would turn it into a process crash.
 panic = "unwind"
 strip = true
+
+# uesave 0.7.1 with two read fixes for garbage lengths (see vendor/uesave/PATCHES.md).
+[patch.crates-io]
+uesave = { path = "vendor/uesave" }
