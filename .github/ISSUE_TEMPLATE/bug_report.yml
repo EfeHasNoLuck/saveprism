@@ -45,8 +45,10 @@ body:
   - type: textarea
     id: diagnostic
     attributes:
-      label: Diagnostic Report
-      description: Paste the report from the app, if available. Check it for personal data first.
+      label: Error message or file report
+      description: |
+        Paste the error message (it ends with a code such as `SP-APP-023`), or for a file SavePrism does not know, the
+        text from **Copy file report**. Check it for personal data first.
       render: text
     validations:
       required: false

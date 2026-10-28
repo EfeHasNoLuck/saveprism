@@ -1,0 +1,48 @@
+title: "[Theme] "
+labels: ["theme"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Share a SavePrism theme. Make one in **Settings → Appearance → Export theme…**; others use **Import theme…**.
+        A theme file is data only (colors, app color, text size, background). The photo itself is not part of the file:
+        if your theme uses a photo, say where people can get it, and only share a photo you may share.
+  - type: input
+    id: name
+    attributes:
+      label: Theme name
+      placeholder: "Blue night"
+    validations:
+      required: true
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Made for
+      options:
+        - Dark
+        - Light
+        - Both
+    validations:
+      required: true
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: Screenshot
+      description: Drop one or two screenshots here. Show no save with personal data.
+    validations:
+      required: true
+  - type: textarea
+    id: file
+    attributes:
+      label: Theme file
+      description: Paste the contents of your `.saveprism-theme.json` file.
+      render: json
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Anything else, for example the photo you used and where to get it.
+    validations:
+      required: false

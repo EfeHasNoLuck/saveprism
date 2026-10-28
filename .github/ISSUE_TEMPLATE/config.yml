@@ -1,5 +1,11 @@
 blank_issues_enabled: false
 contact_links:
+  - name: Share a theme
+    url: https://github.com/huseyincancalti/saveprism/discussions/categories/community-themes
+    about: Themes are shared in Discussions → Community themes, not as issues.
+  - name: Ask a question
+    url: https://github.com/huseyincancalti/saveprism/discussions
+    about: Questions, tips and notes on how to open a game's saves.
   - name: Report a security vulnerability
     url: https://github.com/huseyincancalti/saveprism/blob/main/SECURITY.md
     about: Do not open a public issue. Follow SECURITY.md and use the private "Report a vulnerability" form.

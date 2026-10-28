@@ -1,0 +1,52 @@
+name: Add a language
+description: Translate SavePrism into a new language, or fix a translation.
+labels: ["translation"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping! The steps for a translation pull request are in
+        [CONTRIBUTING.md → Add a language](https://github.com/huseyincancalti/saveprism/blob/main/CONTRIBUTING.md#add-a-language).
+        Not a coder? Fill in this form and we will set up the files with you.
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What is it?
+      options:
+        - A new language
+        - A wrong or missing translation in an existing language
+    validations:
+      required: true
+  - type: input
+    id: language
+    attributes:
+      label: Language
+      description: Its English name and its own name.
+      placeholder: "German (Deutsch)"
+    validations:
+      required: true
+  - type: input
+    id: code
+    attributes:
+      label: Language code
+      description: A language tag such as `de`, `es`, `pt-BR` or `zh-CN`.
+      placeholder: "de"
+    validations:
+      required: true
+  - type: dropdown
+    id: help
+    attributes:
+      label: How do you want to help?
+      options:
+        - I will open a pull request with the translation
+        - I will translate if someone sets up the files
+        - I am only asking for this language
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: Details
+      description: For a fix, which text is wrong (a screenshot helps) and what it should say.
+    validations:
+      required: false

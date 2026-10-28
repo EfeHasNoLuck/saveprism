@@ -1,7 +1,24 @@
 name: Feature request
-description: Suggest a change or addition.
+description: Suggest a change or addition, including a new AI/MCP tool.
 labels: ["enhancement"]
 body:
+  - type: markdown
+    attributes:
+      value: |
+        For a game or save format SavePrism cannot open, use **Game or format support** instead.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Editing saves
+        - Finding, comparing or unlocking saves
+        - AI and MCP tools
+        - Look, themes and settings
+        - Languages
+        - Something else
+    validations:
+      required: true
   - type: textarea
     id: problem
     attributes:
@@ -15,6 +32,15 @@ body:
       label: Proposed solution
     validations:
       required: true
+  - type: textarea
+    id: mcp
+    attributes:
+      label: For an AI/MCP tool
+      description: |
+        What should the AI be able to ask or do? Which AI app do you use (Claude Desktop, Claude Code, Cursor,
+        VS Code, ...)? Does the tool only read, or does it change files? The current tools are listed in docs/ai.md.
+    validations:
+      required: false
   - type: textarea
     id: alternatives
     attributes:

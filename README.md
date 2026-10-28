@@ -1,53 +1,272 @@
+<div align="center">
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/brand/SavePrism-logo-on-dark.png">
-  <img alt="SavePrism" src="docs/brand/SavePrism-logo-on-light.png" width="320">
+  <img alt="SavePrism" src="docs/brand/SavePrism-logo-on-light.png" width="360">
 </picture>
 
-# SavePrism
+**Save editor for PC games. Runs on your PC: no account, no upload.**
 
-A free, local, MIT-licensed desktop app for editing game save files. Open a save from RPG Maker, Unity, Unreal Engine,
-Ren'Py, Twine and more, change values like gold, stats, items, variables and switches, and save it back **in its original
-format**. Your files never leave your computer.
+[![Windows 10 | 11](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?logo=windows&logoColor=white)](#download)
+[![License: MIT](https://img.shields.io/badge/license-MIT-2EA043)](LICENSE)
+[![MCP server](https://img.shields.io/badge/MCP-server-6E56CF?logo=modelcontextprotocol&logoColor=white)](#ai-and-mcp)
+<br>
+[![Rust](https://img.shields.io/badge/Rust-1.99-B7410E?logo=rust&logoColor=white)](https://www.rust-lang.org)
+[![Tauri 2](https://img.shields.io/badge/Tauri-2-24C8DB?logo=tauri&logoColor=white)](https://v2.tauri.app)
+[![React 19](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![Tailwind CSS 4](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
+[![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)](https://vite.dev)
+[![pnpm](https://img.shields.io/badge/pnpm-11-F69220?logo=pnpm&logoColor=white)](https://pnpm.io)
 
-**Status:** v0.1 for Windows.
+</div>
 
----
+SavePrism opens a save from Unity, Unreal Engine, RPG Maker, Ren'Py, Godot and 60+ other formats, lets you change gold,
+items, stats and story variables, and writes the file back **in its original format**. Online save editors upload your
+file to their server and limit how often you may use them; SavePrism does the same work locally. Before you can edit, it
+encodes the save back and checks that every byte comes out the same, so it never writes a file it does not fully
+understand. Every save makes a backup first. Your AI app can use it too: SavePrism is an MCP server, so Claude, Cursor or
+VS Code can open and edit a save with the same checks.
 
-## Install (Windows 10 and 11)
+<div align="center">
 
-1. Download `SavePrism_0.1.0_x64-setup.exe` (or `SavePrism_0.1.0_x64_en-US.msi`) from the Releases page.
-2. Run it. The installer is not code-signed yet, so Windows SmartScreen may say "Windows protected your PC":
-   choose **More info → Run anyway**.
-3. Open SavePrism, then drop a save file on the window or press **Open file**. You can also paste a save code.
+**[Download](#download)** · **[Quick start](#quick-start)** · **[AI and MCP](#ai-and-mcp)** ·
+**[Report a bug](https://github.com/huseyincancalti/saveprism/issues/new?template=bug_report.yml)** ·
+**[Ask for a game](https://github.com/huseyincancalti/saveprism/issues/new?template=game_support.yml)** ·
+**[Share a theme](https://github.com/huseyincancalti/saveprism/discussions/categories/community-themes)** ·
+**[Add a language](https://github.com/huseyincancalti/saveprism/issues/new?template=add_language.yml)**
 
-SavePrism needs Microsoft Edge WebView2, which Windows 10 and 11 already have; the installer fetches it if it is missing.
+<br>
 
-## Why
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/demo-dark.gif">
+  <img alt="Opening a save, changing gold and an item, and saving it with a backup" src="docs/images/demo-light.gif" width="860">
+</picture>
 
-1. **Online editors have limits:** upload caps, waiting times, paywalls, and your file goes to someone else's server.
-2. **Open-source tools are scattered:** one CLI per engine, and the best desktop editors cover only a few engines.
-3. **Nothing round-trips safely:** SavePrism decodes a save, re-encodes it unchanged and checks the result before it lets
-   you edit. Every write makes a backup first (kept in `%LOCALAPPDATA%\SavePrism\backups`, never next to the save) and is
-   read back and checked afterwards.
+</div>
+
+## Download
+
+Get `SavePrism_<version>_x64-setup.exe` (or the `.msi`) from **[Releases](https://github.com/huseyincancalti/saveprism/releases/latest)**.
+Windows 10 and 11, 64-bit.
+
+- The installer is not code-signed yet, so Windows SmartScreen may say "Windows protected your PC": choose
+  **More info → Run anyway**.
+- SavePrism needs Microsoft Edge WebView2. Windows 10 and 11 already have it; the installer fetches it if it is missing.
+- To update, install the new version over the old one.
+
+## Quick start
+
+1. Open SavePrism and drop a save on the window, or press **Open file**. You can also right-click a save in Explorer and
+   choose **Decode with SavePrism** (Windows 11: under **Show more options**), or paste a save code with **Ctrl+V**.
+2. Not sure where the game keeps its saves? **Where is my save?** on the start screen lists the usual folders by engine.
+3. Change values. Every change shows as *old → new*, and **Ctrl+Z** takes it back.
+4. Press **Save**. SavePrism makes a backup, replaces the file in one step and reads it back to check every change.
+   **Backups** in the bottom bar puts an older copy back.
+
+### Build from source
+
+| You need | Version |
+|---|---|
+| Windows | 10 or 11, 64-bit |
+| [Node.js](https://nodejs.org) | 22 or newer |
+| [pnpm](https://pnpm.io) | 11 (`corepack enable` picks the version from `package.json`) |
+| [Rust](https://rustup.rs) | 1.99 or newer, stable, MSVC toolchain |
+| [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/) | Visual Studio Build Tools with "Desktop development with C++"; WebView2 |
+
+```bash
+git clone https://github.com/huseyincancalti/saveprism.git
+cd saveprism
+pnpm install
+pnpm dev      # the app, with hot reload
+pnpm build    # installers in target/release/bundle/ (nsis/ and msi/)
+```
+
+There is nothing to configure: no `.env` file, no API keys, no accounts.
+
+## AI and MCP
+
+SavePrism does not call any AI model and has no API keys. It works with the AI app you already use, in two ways:
+
+| | Ask AI | MCP server |
+|---|---|---|
+| **Works with** | any AI chat | AI apps that run tools: Claude Desktop, Claude Code, Cursor, VS Code and others |
+| **How** | **Ask AI** on a list copies its values with their limits. Paste them into the chat, ask, then make the changes in SavePrism. | The AI app starts `saveprism-desktop.exe mcp` and talks to it over standard input and output. No window, no network port. |
+| **Who edits** | you | the AI, with the same round-trip check and backups as the app; it asks you before it saves |
+
+```mermaid
+flowchart LR
+    you(["You: 'give me 99 potions'"]) --> app["AI app<br/>Claude Desktop · Claude Code · Cursor · VS Code"]
+    app <-->|"MCP over stdio"| mcp["saveprism-desktop.exe mcp"]
+    mcp -->|"open_save · game_view · propose_edits"| mem[("The save, in memory")]
+    mcp -->|"save_changes, after you approve"| file[("Your save file")]
+    mcp -.->|"backup first"| bak[("SavePrism backups")]
+```
+
+### Connect your AI app
+
+Open **Settings → AI connection**, pick your AI app and press **Copy setup**. The copied entry already has the real path
+of your SavePrism program:
+
+```json
+{
+  "mcpServers": {
+    "saveprism": {
+      "command": "C:\\Program Files\\SavePrism\\saveprism-desktop.exe",
+      "args": ["mcp"]
+    }
+  }
+}
+```
+
+- **Claude Desktop:** Settings → Developer → Edit Config, paste the entry into `mcpServers` of
+  `claude_desktop_config.json`, restart Claude Desktop.
+- **Claude Code:** `claude mcp add saveprism -- "C:\Program Files\SavePrism\saveprism-desktop.exe" mcp`
+- **Cursor:** Customize → MCP, or `%USERPROFILE%\.cursor\mcp.json`.
+- **VS Code:** `.vscode/mcp.json` under `servers` with `"type": "stdio"` (Copy setup gives you this shape).
+
+<div align="center">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/ai-dark.png">
+  <img alt="Settings, AI connection tab with the setup code for the chosen AI app" src="docs/images/ai-light.png" width="760">
+</picture>
+</div>
+
+### What the AI can do
+
+| Tool | What it does | Writes files |
+|---|---|---|
+| `open_save` | Opens a save (password for encrypted Easy Save 3 and Terraria files) and runs the round-trip check | no |
+| `game_view`, `list_values`, `search_values`, `field_info` | Reads the app's view (RPG Maker sections with names, story variables, the Values list), the full tree, search results and each value's limits | no |
+| `set_data_folder` | Reads names from an RPG Maker data folder | no |
+| `propose_edits`, `add_value`, `add_inventory`, `remove_value` | Changes values in memory; everything is checked first, and on any error nothing changes | no |
+| `pending_changes`, `undo`, `discard_changes` | Shows every change (old → new) or takes changes back | no |
+| `save_changes` | Backup, replace in one step, read back; only the open file or a new file next to it | **yes** |
+| `list_backups`, `restore_backup` | Lists the open save's backups and puts one back (the current file is backed up first) | restore: **yes** |
+
+The two writing tools are marked as destructive, so AI apps ask you before they run. The AI app may send the values it
+reads to its own online model: keep that in mind for saves with player names or account ids. Details: [docs/ai.md](docs/ai.md).
+
+## Features
+
+### Edit like a player
+
+- **Sections, not a byte dump:** RPG Maker gold, characters, items, weapons, armors, variables and switches with the
+  names from the game's own data folder; Twine story variables; Unreal and Palworld properties; Satisfactory
+  inventories with item names; The Witcher 3 Gwent collection and decks.
+- **Edits that fit the file:** numbers keep their size and range, true/false values are a choice, text stays in the
+  file's encoding. An edit the format cannot hold is refused right away, not at save time.
+- **Lists that scale:** search, filters and pages on every list, add and remove entries where the format allows,
+  **Set all** for RPG Maker lists, undo and redo, and a JSON view with **Apply** and **Export .json**.
+
+<table>
+  <tr>
+    <td width="50%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/images/editor-dark.png">
+        <img alt="An RPG Maker save open on its sections: gold, characters and items with names" src="docs/images/editor-light.png">
+      </picture>
+    </td>
+    <td width="50%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/images/changes-dark.png">
+        <img alt="Pending changes shown as old and new values, listed in the bottom bar" src="docs/images/changes-light.png">
+      </picture>
+    </td>
+  </tr>
+</table>
+
+### Safe by design
+
+```mermaid
+flowchart LR
+    open["Open a save"] --> check{"Encode it back:<br/>same bytes?"}
+    check -- "yes" --> edit["Edit"]
+    check -- "no" --> ro["Read-only,<br/>with a warning"]
+    edit --> backup["Backup in<br/>SavePrism's folder"] --> write["Temp file,<br/>then replace"] --> verify["Read back and check<br/>every changed value"]
+```
+
+- Saves are read as data and never run: no Python unpickling, no Ruby eval, no .NET BinaryFormatter deserialization.
+- Backups live in SavePrism's own folder, never next to the save. Keep 1 to 50 per save; **Backups** restores one and
+  backs up the current file first.
+- A file that changed on disk after you opened it is never overwritten (`SP-APP-023`): save under another name or open it
+  again.
+- Parsers limit sizes and depths and are fuzz-tested, because a save from the internet is untrusted input.
+- Still keep your own copy of a save you care about: a game update can change its format.
+
+<div align="center">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/backups-dark.png">
+  <img alt="The Backups dialog listing earlier copies of the open save" src="docs/images/backups-light.png" width="760">
+</picture>
+</div>
+
+### Find, compare, unlock
+
+- **Where is my save?** Search by game or engine and see where saves usually live.
+- **Compare with another save:** what is only here, only there, or different between two saves.
+- **Encrypted and packed saves:** Easy Save 3 passwords and the Terraria player key are found in the game's own files on
+  your PC (with a note of where they came from); simple XOR is undone automatically; gzip, zstd, xz, LZ4, Brotli, zip,
+  tar and other layers are found by content, whatever the file extension.
+- **Save codes:** paste a code (SugarCube, Base64, hex), edit it, and **Copy code** gives the new one.
+- **Unknown file?** **Copy file report** gives a short report (extension, size, first bytes and a hash; never the file or
+  its path) to paste into a [game request](https://github.com/huseyincancalti/saveprism/issues/new?template=game_support.yml).
+
+<table>
+  <tr>
+    <td width="50%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/images/where-dark.png">
+        <img alt="Where is my save? with a search typed and the matching save folders" src="docs/images/where-light.png">
+      </picture>
+    </td>
+    <td width="50%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/images/compare-dark.png">
+        <img alt="Two saves compared, with the values that differ" src="docs/images/compare-light.png">
+      </picture>
+    </td>
+  </tr>
+</table>
+
+### Make it yours
+
+- Light, dark or the Windows setting; an app color (six presets, your Windows accent, monochrome or any color); text size
+  from 80 to 140 %; your own colors for changed values, the accent and errors.
+- A background pattern, or your own photo behind frosted glass (blur, fade and card opacity).
+- Keyboard shortcuts you can change; English and Turkish.
+- **Theme files:** export your look, share it in
+  [Community themes](https://github.com/huseyincancalti/saveprism/discussions/categories/community-themes), import
+  someone else's. A theme file is data only and is checked before anything changes.
+
+<table>
+  <tr>
+    <td width="50%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/images/appearance-dark.png">
+        <img alt="Settings, Appearance with a photo background and the frosted glass look" src="docs/images/appearance-light.png">
+      </picture>
+    </td>
+    <td width="50%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/images/start-dark.png">
+        <img alt="The start screen over a photo background" src="docs/images/start-light.png">
+      </picture>
+    </td>
+  </tr>
+</table>
 
 ## Supported formats
+
+The most asked:
 
 | Engine or format | Files | What you can edit |
 |---|---|---|
 | RPG Maker MV / MZ | `.rpgsave`, `.rmmzsave` | gold, characters, items, weapons, armors, variables, switches, with names from the game's `data` folder |
 | RPG Maker XP / VX / VX Ace | `.rxdata`, `.rvdata`, `.rvdata2` | the same sections, names from the `Data` folder |
 | RPG Maker 2000 / 2003 | `.lsd` | the same sections, names from `RPG_RT.ldb`; Shift-JIS or Windows-1252 text (also from `RPG_RT.ini`) |
-| Wolf RPG Editor | `.sav` (not encrypted) | switches, variables, the variable database |
-| Adventure Game Studio | `agssave.000` ... `agssave.999` | description, engine and game title; 3.x script globals read-only |
-| NScripter / ONScripter | `save*.dat`, `global.sav` / `gloval.sav` | global numbers and Shift-JIS strings; the slot description (the slot body stays read-only) |
-| AliceSoft System 3.x / 4 | `.asd`, `.as2`, `.asdbak` | System 3.x numbers and fixed-length Shift-JIS strings; System 4 globals (numbers, booleans, floats, fixed-length strings); encrypted System 4 saves are read-only |
-| Artemis Engine | `save/*.dat`, `saveg.dat` | detected (magic, version and the decompressed body); the body is read-only because its inner layout has no public description |
-| Emuera / eraMaker | binary `saveNN.sav`, `global.sav`, `var_*.dat`, `chara_*.dat` | variables and character arrays by name; text-format saves are not opened |
 | Unity · Easy Save 3 | `.es3` | plain, GZip and AES (password needed) |
-| Unity · Odin Serializer | Odin binary (`BinaryDataWriter`) saves | primitives, strings and arrays (type tables and references read-only) |
 | Unity · PlayerPrefs | registry export `.reg` | ints, floats, strings |
-| Unity · Adventure Creator | save files in the persistent data folder (JSON, XML and Base64 BinaryFormatter parts joined by `||`) | values in every part; one part is rewritten at a time |
-| Unity · Pixel Crushers Save System | `save<N>.dat` (JSON `SavedGameData`) | saver data as nested JSON; Dialogue System Lua variables and quests (read as data, never run) |
 | Unity / .NET BinaryFormatter | `.dat`, RAGS `.rsv` | values (read as data, never run) |
 | Unreal Engine | `.sav` (GVAS) | values |
 | Palworld | `.sav` (PlZ) | values (PlM/Oodle not supported) |
@@ -55,6 +274,24 @@ SavePrism needs Microsoft Edge WebView2, which Windows 10 and 11 already have; t
 | Godot | ConfigFile text (`.cfg`, `.ini`, `.save`), `store_var` binary, JSON, text resources (`.tres`), binary resources (`.res`, `RSRC` and `RSCC`) | values (references, typed containers, strings in binary resources and encrypted files stay read-only or are refused) |
 | Ren'Py | `.save`, `persistent` | store variables (read as data, never run) |
 | Twine · SugarCube 2 | save files and save codes | story variables |
+| Terraria | player `.plr` (key from the game's own `Terraria.exe`), world `.wld` | name, difficulty, play time, life/mana, inventory; world name, seed, size, ids and flags (tiles and the rest read-only) |
+| The Witcher 3 | `.sav` | orens, item quantities |
+| JSON and text | `.json`, zip- or gzip-packed JSON | values; add and remove entries |
+
+<details>
+<summary><b>Every other format</b> (RPG Maker relatives, visual novel engines, BioWare, FromSoftware, consoles and emulators, databases, data formats)</summary>
+
+| Engine or format | Files | What you can edit |
+|---|---|---|
+| Wolf RPG Editor | `.sav` (not encrypted) | switches, variables, the variable database |
+| Adventure Game Studio | `agssave.000` ... `agssave.999` | description, engine and game title; 3.x script globals read-only |
+| NScripter / ONScripter | `save*.dat`, `global.sav` / `gloval.sav` | global numbers and Shift-JIS strings; the slot description (the slot body stays read-only) |
+| AliceSoft System 3.x / 4 | `.asd`, `.as2`, `.asdbak` | System 3.x numbers and fixed-length Shift-JIS strings; System 4 globals (numbers, booleans, floats, fixed-length strings); encrypted System 4 saves are read-only |
+| Artemis Engine | `save/*.dat`, `saveg.dat` | detected (magic, version and the decompressed body); the body is read-only because its inner layout has no public description |
+| Emuera / eraMaker | binary `saveNN.sav`, `global.sav`, `var_*.dat`, `chara_*.dat` | variables and character arrays by name; text-format saves are not opened |
+| Unity · Odin Serializer | Odin binary (`BinaryDataWriter`) saves | primitives, strings and arrays (type tables and references read-only) |
+| Unity · Adventure Creator | save files in the persistent data folder (JSON, XML and Base64 BinaryFormatter parts joined by `||`) | values in every part; one part is rewritten at a time |
+| Unity · Pixel Crushers Save System | `save<N>.dat` (JSON `SavedGameData`) | saver data as nested JSON; Dialogue System Lua variables and quests (read as data, never run) |
 | TyranoScript | `.sav` | values |
 | Naninovel | save slots | custom variables |
 | QSP | `.sav` | values; Windows-1251 and KOI8-R legacy saves |
@@ -63,8 +300,6 @@ SavePrism needs Microsoft Edge WebView2, which Windows 10 and 11 already have; t
 | Pixel Game Maker MV | `play_LOADFILE*.json` | values (plain JSON) |
 | Flash | `.sol` (AMF0 / AMF3) | values |
 | Pokémon Gen 3 | `.sav` | money, coins, bag, party EXP / IVs / EVs / stats |
-| The Witcher 3 | `.sav` | orens, item quantities |
-| Terraria | player `.plr` (key from the game's own `Terraria.exe`), world `.wld` | name, difficulty, play time, life/mana, inventory; world name, seed, size, ids and flags (tiles and the rest read-only) |
 | BioWare GFF V3.2 | `.bic`, `.ifo`, `.git`, `.are`, `.uti`, `.utc`, `.dlg`, `.jrl` (Neverwinter Nights, KOTOR, Jade Empire, The Witcher) | numbers and same-length strings; structs and lists stay read-only |
 | BioWare ERF containers | `.erf`, `.mod`, `.hak`, `.sav` (Neverwinter Nights, KOTOR `SAVEGAME.sav`) | one resource inside; the others stay byte-identical |
 | Dragon Age: Origins / II GFF V4 | `.das` | values shown read-only (the V4 layout is not rewritten) |
@@ -73,7 +308,6 @@ SavePrism needs Microsoft Edge WebView2, which Windows 10 and 11 already have; t
 | LevelDB | `.ldb`, `.sst` (tables) and `.log` (write-ahead log) | keys and values as text or hex; read-only |
 | RocksDB | `.sst` (block-based tables) | keys and values; read-only |
 | LiteDB | `.db` (LiteDB 4 and 5 datafiles) | collection documents; fixed-size integers, doubles and booleans are editable |
-| JSON and text | `.json`, zip- or gzip-packed JSON | values; add and remove entries |
 | MessagePack | `.msgpack`, `.msgp` | values (extension payloads are read-only) |
 | Protocol Buffers | `.pb`, `.pbf`, `.protobuf`, `.protobin`, `.bytes` | field numbers, varints, fixed values and strings; nested message lengths are recomputed (groups read-only) |
 | Bitser (LÖVE) | `.dat`, `.save`, `.bin` by content | numbers, booleans and strings; tables, references, resources and class data stay read-only |
@@ -105,47 +339,101 @@ SavePrism needs Microsoft Edge WebView2, which Windows 10 and 11 already have; t
 | RetroArch save states | `.state`, `.state1` ... (uncompressed `RASTATE`) | blocks shown read-only; RZIP-compressed states open with a hint to turn off state compression |
 | RetroArch battery saves | `.srm` | raw save RAM (fixed size) |
 
-A file that does not survive the round-trip check opens read-only with a warning. Easy Save 2 files are not opened: Moodkie
-publishes no byte-level layout for them, so SavePrism does not guess.
+</details>
 
-If SavePrism does not know a file, press **Copy file report** on the message and paste it into a new issue with the game's
-name (extension, size, first bytes and a hash only; never the file or its path, and nothing is uploaded).
+A file that does not pass the round-trip check opens read-only with a warning. Easy Save 2 files are not opened: Moodkie
+publishes no byte-level layout for them, so SavePrism does not guess. Made for single-player saves of games you own;
+online games, anti-cheat and DRM are out of scope.
 
-## Use it with AI
+## Where SavePrism keeps things
 
-- **Ask AI** on every list copies the values with a short note, ready to paste into any AI chat.
-- **MCP server:** `saveprism-desktop.exe mcp` lets AI apps such as Claude Desktop, Claude Code or Cursor open and edit saves through
-  SavePrism, with the same checks and backups. **Settings → AI tools → Copy setup** gives you the entry to paste.
-
-See [docs/ai.md](docs/ai.md).
-
-## Platforms
-
-Windows first. Linux and macOS builds come later.
+| What | Where | Change it in |
+|---|---|---|
+| Settings (theme, colors, shortcuts, language) | inside the app | Settings |
+| Backups | `%LOCALAPPDATA%\SavePrism\backups\` | Settings → Saving & backups → Backup folder |
+| Pasted save codes (newest 10) | `%LOCALAPPDATA%\SavePrism\pasted\` | Settings → Saving & backups → App folder |
+| Your background photo | `%LOCALAPPDATA%\SavePrism\background\` | Settings → Saving & backups → App folder |
+| Found keys, with where they came from | `%LOCALAPPDATA%\SavePrism\keys.json` | next to the backup folder |
+| Theme files | wherever you export them (`*.saveprism-theme.json`) | |
 
 ## Command line
 
-The `saveprism` command line tool (built from `crates/saveprism-cli`) detects every format above; `decode` and `encode`
-work for JSON, RPG Maker MV/MZ, Easy Save 3 and GVAS.
+The `saveprism` tool (`crates/saveprism-cli`; `cargo run -p saveprism-cli -- <command>`) detects every format above;
+`decode` and `encode` work for JSON, RPG Maker MV/MZ, Easy Save 3 and GVAS.
 
-```
+```bash
 saveprism inspect <save>                                   # detected format and round-trip result
 saveprism decode <save> -o save.json                       # save → JSON + save.json.recipe.toml
 saveprism encode save.json --recipe <recipe> -o <save>     # JSON → save (backup first)
 saveprism keys try <save> --candidates <list.txt>          # find the password of an encrypted ES3 save
 ```
 
-## Documentation
+## Themes and languages
 
-| File | Contents |
+- **A theme** is a small JSON file: export it in **Settings → Appearance → Theme files**, change the name, colors, app
+  color, text size or background, and share it in
+  [Community themes](https://github.com/huseyincancalti/saveprism/discussions/categories/community-themes). The file
+  format and how the colors work: [docs/themes.md](docs/themes.md).
+- **A language** is two JSON files and a changelog under `apps/desktop/locales/<code>/`, plus a few lines in
+  `apps/desktop/src/i18n/`. A test fails on any missing key, so you cannot miss one. Steps:
+  [CONTRIBUTING.md](CONTRIBUTING.md#add-a-language). Not a coder? Open an
+  [Add a language](https://github.com/huseyincancalti/saveprism/issues/new?template=add_language.yml) request.
+
+<details>
+<summary><b>Repository structure</b></summary>
+
+```text
+apps/desktop/                 the Windows app (Tauri 2)
+├── src/                      React + TypeScript UI
+│   ├── editor/               the save views: sections, lists, values, JSON, compare
+│   ├── shell/                start screen, header, Settings, dialogs, appearance, shortcuts
+│   ├── i18n/                 language detection, names and flags
+│   └── theme/                light, dark and system theme
+├── src-tauri/src/
+│   ├── session/              open, edit, save, backups, key finder, save locations
+│   └── mcp/                  the MCP server (saveprism-desktop.exe mcp)
+└── locales/<code>/           UI text: common.json, editor.json, CHANGELOG.md
+crates/
+├── saveprism-core/           value tree, format detection, round-trip guard, limits, backup + atomic write
+├── saveprism-codecs/         one module per format (rpgmaker, es3, gvas, renpy, godot, ...)
+└── saveprism-cli/            the saveprism command line tool
+fuzz/                         cargo-fuzz targets for the parsers
+fixtures/                     synthetic test saves, expected output, fixture generators
+docs/                         ai.md, themes.md, architecture, research notes, brand assets
+scripts/                      third-party notices generator, CDP helpers for checks
+```
+
+</details>
+
+## Contributing
+
+Bug reports, game requests, translations, themes and code are all welcome. [CONTRIBUTING.md](CONTRIBUTING.md) has the
+setup, the checks to run and the rules (clean room, no GPL-family dependencies, parsers that never panic).
+
+```bash
+cargo fmt --all
+cargo clippy --workspace --all-targets -- -D warnings
+cargo test --workspace
+pnpm typecheck && pnpm lint && pnpm test
+```
+
+| I want to | Go to |
 |---|---|
-| [NOW.md](NOW.md) | Current state and the next step |
-| [docs/ai.md](docs/ai.md) | Ask AI and the MCP server |
-| [docs/themes.md](docs/themes.md) | Colors and themes |
-| [docs/architecture/MIMARI.md](docs/architecture/MIMARI.md) | Architecture (Turkish) |
-| [CONTRIBUTING.md](CONTRIBUTING.md) | How to build and contribute |
+| Report something that does not work | [Bug report](https://github.com/huseyincancalti/saveprism/issues/new?template=bug_report.yml) |
+| Ask for a game or save format | [Game or format support](https://github.com/huseyincancalti/saveprism/issues/new?template=game_support.yml) |
+| Suggest a feature or an AI/MCP tool | [Feature request](https://github.com/huseyincancalti/saveprism/issues/new?template=feature_request.yml) |
+| Translate SavePrism | [Add a language](https://github.com/huseyincancalti/saveprism/issues/new?template=add_language.yml) |
+| Share a theme | [Community themes](https://github.com/huseyincancalti/saveprism/discussions/categories/community-themes) |
+| Report a security problem | [SECURITY.md](SECURITY.md) (privately, not as an issue) |
 
 ## License
 
-[MIT](LICENSE). Third-party licenses: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Made for single-player saves of
-games you own. Online games, anti-cheat and DRM are out of scope.
+[MIT](LICENSE). Third-party licenses: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). What SavePrism is and is not for:
+[DISCLAIMER.md](DISCLAIMER.md). SavePrism's own code is written from public documentation and its own tests; no code,
+tables or keys are copied from closed-source tools.
+
+<br>
+
+<div align="center">
+<sub>Made by <a href="https://github.com/huseyincancalti">Hüseyin Can ÇALTI</a>. If SavePrism saved your run, a ⭐ helps other players find it.</sub>
+</div>
