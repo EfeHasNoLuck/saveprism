@@ -22,8 +22,10 @@ Checks after each: web 3/3 (rust 3/3, cargo deny, ignored desktop tests after th
 screenshots: `.motor/vcheck-1028c/`, `-1028d/`, `-1028e/` (briefs `.motor/vcheck-1028c.md`, `d`, `e`).
 Known leftovers: Settings Preview red "Health" row 4.0:1 in dark (old, not glass); light active sidebar tab 4.0:1 at
 the photo's darkest spot; a dropped non-image shows "(SP-APP-029)" in its toast like other error toasts.
-Worktree leftovers the maintainer may delete by hand: `../saveprism-wt/{satisfactory,w4-settings,w6-shortcuts,
-w7-settings-fix,w7-screens-fix,w8-appcolor,w8-photo}` (branches `wt/w8-*` are merged).
+Leftover folders the koruma hook stops me from deleting (no longer git worktrees; their branches are merged and
+deleted; `git config core.longpaths true` is set now, so a later `git worktree remove` deletes long paths itself):
+`.claude/worktrees/agent-*` (7) and `../saveprism-wt/{satisfactory,w4-settings,w6-shortcuts,w7-screens-fix,
+w7-settings-fix}`. The maintainer deletes them in their own terminal.
 
 ## Maintainer decisions today
 - About keeps the short tagline "A save editor that runs on your PC. No account, no upload." (TR too). The GitHub
@@ -49,9 +51,8 @@ Slime Rancher 2 (maintainer, 2026-10-28): own binary tagged-record format, not e
 1. Done 2026-10-28: MCP gaps. `save_locations`, `compare_saves`, `open_code` + `copy_code`, `open_save` takes
    `gameFolder`; the window shares backup/app folders and backup counts in `%LOCALAPPDATA%\SavePrism\settings.json`
    (`session/shared_settings.rs`), read by the MCP server. Checks pass; real Claude Code round trip passed and the
-   running app wrote the file (NOW.md). Pre-existing test leak seen: `session/compare.rs`
-   `an_rpgmaker_mv_pair_reports_the_edited_value` saves with the default backup root, so every `cargo test` drops a
-   small synthetic backup into the real `%LOCALAPPDATA%\SavePrism\backups` (not fixed).
+   running app wrote the file (NOW.md). Fixed after (`145db26`): a `session/compare.rs` test wrote backups into
+   the real `%LOCALAPPDATA%\SavePrism\backups`; now a whole Rust test run leaves that folder untouched (checked).
 2. Done 2026-10-28: auto-update (`6e9176e`, merge `1de6afd`). Signing key outside the repo:
    `%USERPROFILE%\.tauri\saveprism-updater.key` (+ `.pub`, no password). The maintainer must back it up: without it,
    installed copies can never take another update. Release: `bash scripts/release/build.sh` (signed installers +
