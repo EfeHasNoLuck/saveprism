@@ -14,7 +14,8 @@ frosted glass over a background photo (maintainer chose B from `.motor/vcheck-10
 88 % light, header/bottom bar/Settings sidebar blur, photo fades toward `--background` (slider renamed "Fade"),
 `.on-photo` full text color on headings, group labels, slogan, Reset to default · `e30c3c2` Card opacity slider
 (Appearance → Photo, `glassOpacity` 0-100, default 85, theme-file `glass`); the maintainer found the wide halo
-too much, so text on the photo now has a thin contour + short lower-right shadow (their wish). Trade-off measured:
+too much, so text on the photo now has a thin contour + short lower-right shadow in dark only; light has none
+(`ddeb633`, the pale shadow looked like a stray highlight; light top Reset to default 3.8:1). Trade-off measured:
 dark Settings labels over the photo's bright grey part are 3.1-4.0:1 (light theme passes).
 Checks after each: web 3/3 (rust 3/3, cargo deny, ignored desktop tests after the merges). Visual reports and
 screenshots: `.motor/vcheck-1028c/`, `-1028d/`, `-1028e/` (briefs `.motor/vcheck-1028c.md`, `d`, `e`).
