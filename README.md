@@ -47,13 +47,14 @@ VS Code can open and edit a save with the same checks.
 
 ## Download
 
-Get `SavePrism_<version>_x64-setup.exe` (or the `.msi`) from **[Releases](https://github.com/huseyincancalti/saveprism/releases/latest)**.
-Windows 10 and 11, 64-bit.
+Get `SavePrism_<version>_x64-setup.exe` from **[Releases](https://github.com/huseyincancalti/saveprism/releases/latest)**.
+Windows 10 and 11, 64-bit. It installs for your Windows user only, so it does not ask for administrator rights.
 
 - The installer is not code-signed yet, so Windows SmartScreen may say "Windows protected your PC": choose
   **More info → Run anyway**.
 - SavePrism needs Microsoft Edge WebView2. Windows 10 and 11 already have it; the installer fetches it if it is missing.
-- To update, install the new version over the old one.
+- SavePrism tells you when a new version is out and installs it when you say so (**Check for updates** in Settings →
+  About looks right away).
 
 ## Quick start
 
@@ -80,14 +81,14 @@ git clone https://github.com/huseyincancalti/saveprism.git
 cd saveprism
 pnpm install
 pnpm dev      # the app, with hot reload
-pnpm build --no-sign    # installers in target/release/bundle/ (nsis/ and msi/)
+pnpm build --no-sign    # the setup exe in target/release/bundle/nsis/
 ```
 
 There is nothing to configure: no `.env` file, no API keys, no accounts. `--no-sign` skips the update signature:
-without it, `pnpm build` still makes the installers but then stops with "A public key has been found, but no private
+without it, `pnpm build` still makes the installer but then stops with "A public key has been found, but no private
 key". Release builds (maintainer only) run `bash scripts/release/build.sh`, which signs the setup exe with the updater
 key from outside the repo (`%USERPROFILE%\.tauri\saveprism-updater.key`) and writes `latest.json` next to it. Upload the
-setup exe, its `.sig`, the MSI files and `latest.json` to the GitHub release tagged `v<version>`.
+setup exe, its `.sig` and `latest.json` to the GitHub release tagged `v<version>`.
 
 ## AI and MCP
 
@@ -365,6 +366,9 @@ online games, anti-cheat and DRM are out of scope.
 | Your background photo | `%LOCALAPPDATA%\SavePrism\background\` | Settings → Saving & backups → App folder |
 | Found keys, with where they came from | `%LOCALAPPDATA%\SavePrism\keys.json` | next to the backup folder |
 | Theme files | wherever you export them (`*.saveprism-theme.json`) | |
+
+The installer puts the program in `%LOCALAPPDATA%\SavePrism\` as well. Uninstalling removes only the program files:
+backups, pasted codes, keys and your photo stay.
 
 The only network request SavePrism makes is the version check to GitHub releases (at start, which you can turn off in
 Settings → General, and when you press **Check for updates** in Settings → About). Save data is never sent.

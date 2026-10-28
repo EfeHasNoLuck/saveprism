@@ -1,7 +1,7 @@
 # NOW
 
 **Goal:** Windows v0.1 — a local, polished replacement for saveeditonline.com: everything it can do, nothing less (more is fine
-when it adds function, not complexity), plus customization and a way for AI tools to use it. Installable `.msi`/`.exe`.
+when it adds function, not complexity), plus customization and a way for AI tools to use it. Installable setup `.exe` (no MSI: maintainer, 2026-10-28).
 The app's job is input → good output; no history screens (user, 2026-10-23: no "recent files").
 
 ## Done (verified)
@@ -274,8 +274,9 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
      stripped, 27 tests) and Reload; English fallback when i18n failed; dev-only `?crash` trigger. Checked in the
      running app over CDP (dark/light, EN/TR, contrast ≥ 6.4:1, copied report holds no path; `.motor/crash-1028/`).
      Small style gaps left: 13 px buttons without icons, flat background.
-   - Fresh signed MSI (EN, TR) and NSIS setup built 2026-10-28 from `1de6afd`; next: the maintainer installs and tries
-     them (HANDOFF Next 4), then the publishing question.
+   - Fresh signed NSIS setup built 2026-10-28 (logo on the exe, publisher "Hüseyin Can ÇALTI"); the maintainer
+     installed it and saw the publisher; MSI dropped (setup exe only; the updater only serves the exe). Next: the
+     rest of the install test (HANDOFF Next), the README review with the maintainer, then the publishing question.
 
 ## Known gaps
 - A zip save with several JSON entries opens only the largest (Shapez 2: `local-player.json`, not `research.json` or

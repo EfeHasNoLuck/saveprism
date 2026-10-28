@@ -19,9 +19,10 @@ The plan and history are in `NOW.md`; this page is only what the next session ne
   `format.slime-rancher-2`. The maintainer edited a real save in SavePrism; the game loaded it with the
   change (2026-10-28).
 - Installers rebuilt and signed on 2026-10-28 17:39 with `bash scripts/release/build.sh` from the publisher commit:
-  `target/release/bundle/msi/SavePrism_0.1.0_x64_{en-US,tr-TR}.msi`, `target/release/bundle/nsis/
-  SavePrism_0.1.0_x64-setup.exe`. Publisher "Hüseyin Can ÇALTI" (maintainer's choice; read back from both MSIs; keep
-  the surname in capitals: a lowercase "ı" is not in the en-US MSI's code page 1252); the setup exe shows the app logo.
+  `target/release/bundle/nsis/SavePrism_0.1.0_x64-setup.exe` (setup exe only; the old MSI files left in
+  `target/release/bundle/msi/` are stale). Publisher "Hüseyin Can ÇALTI": the maintainer installed it and saw the name
+  in the installed apps list; the setup exe shows the app logo. It installs per user into `%LOCALAPPDATA%\SavePrism\`
+  next to the backups; Tauri's uninstaller removes only its own files there (non-recursive `RMDir`).
 
 ## Broken / not checked
 - The new installers are not installed or tried yet (the maintainer's step).
@@ -39,7 +40,7 @@ The plan and history are in `NOW.md`; this page is only what the next session ne
   (long paths): `Remove-Item -LiteralPath "\\?\<full path>" -Recurse -Force`.
 
 ## Next step
-1. The maintainer installs `SavePrism_0.1.0_x64-setup.exe` (or a MSI) and tries: Explorer "Decode with SavePrism",
+1. The maintainer installs `SavePrism_0.1.0_x64-setup.exe` and tries: Explorer "Decode with SavePrism",
    a second start handing the file over, the opening logo, the first-launch tour, About → Check for updates ("Could
    not check" is expected while the repo is private), real saves (also Slime Rancher 2 slot rows), a real AI app over
    MCP using the backup folder chosen in Settings. They also back up `%USERPROFILE%\.tauri\saveprism-updater.key`
@@ -48,10 +49,14 @@ The plan and history are in `NOW.md`; this page is only what the next session ne
 3. Only after the test passes, ask about publishing. Before going public: the `bed2ed9` history cleanup (real saves
    were pushed once; needs the maintainer's OK); push when Actions minutes are back (run `cargo deny check` first,
    then check the runs); turn on Discussions and add "Community themes"; set the GitHub description and topics
-   (`docs/research/seo-2026-10-28.md`); `bash scripts/release/build.sh`, then upload the setup exe, its `.sig`, the
-   MSI and `latest.json` to release `v0.1.0`.
+   (`docs/research/seo-2026-10-28.md`); `bash scripts/release/build.sh`, then upload the setup exe, its `.sig` and
+   `latest.json` to release `v0.1.0`.
 
 ## Maintainer decisions (2026-10-28)
+- Publisher "Hüseyin Can ÇALTI" (keep the surname in capitals). Windows ships as the setup exe only, no MSI.
+- README: tell the maintainer when it is final; they review it before going public.
+- Release: fill in every field of the GitHub release (title, tag, notes) as a draft and wait for the maintainer's OK.
+  Notes are short bullets of what the player gets, easy to scan.
 - About tagline "A save editor that runs on your PC. No account, no upload."; the GitHub description is a different,
   search-friendly line (in `docs/research/seo-2026-10-28.md`).
 - README footer: GitHub profile only, no e-mail. Visuals: as many as fit.

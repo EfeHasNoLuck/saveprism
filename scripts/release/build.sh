@@ -2,7 +2,7 @@
 # Builds the signed Windows installers and writes latest.json for the in-app updater.
 # The updater key stays outside the repo: %USERPROFILE%\.tauri\saveprism-updater.key (no password),
 # or the file named by SAVEPRISM_UPDATER_KEY. Run from anywhere: bash scripts/release/build.sh
-# Upload to the GitHub release tagged v<version>: the NSIS setup exe, its .sig, the MSI and latest.json.
+# Upload to the GitHub release tagged v<version>: the NSIS setup exe, its .sig and latest.json (no MSI: 2026-10-28).
 set -euo pipefail
 
 here="$(cd "$(dirname "$0")" && pwd)"

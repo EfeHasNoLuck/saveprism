@@ -29,7 +29,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": ["nsis"],
     "publisher": "Hüseyin Can ÇALTI",
     "createUpdaterArtifacts": true,
     "resources": {
@@ -40,14 +40,6 @@
         "installerIcon": "icons/icon.ico",
         "installerHooks": "./windows/hooks.nsh",
         "languages": ["English", "Turkish"]
-      },
-      "wix": {
-        "fragmentPaths": ["./windows/fragments/context-menu.wxs"],
-        "componentRefs": ["SavePrismDecodeContextMenu"],
-        "language": {
-          "en-US": { "localePath": "./windows/locales/en-US.wxl" },
-          "tr-TR": { "localePath": "./windows/locales/tr-TR.wxl" }
-        }
       }
     },
     "icon": [
