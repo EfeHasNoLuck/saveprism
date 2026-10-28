@@ -75,9 +75,12 @@ the facts against the code; or Claude writes it directly if the limit allows (it
    `docs/ai.md`); check `open_save` uses the automatic key finder; the MCP server should use the backup folder chosen in
    Settings (today it always uses `%LOCALAPPDATA%\SavePrism\backups`; the UI keeps folder choices in WebView
    localStorage, so this needs a small shared settings file the app writes and the MCP reads).
-2. A fresh MSI/NSIS build for the maintainer to install and try (Explorer entry, second-start hand-off, opening logo,
+2. Auto-update (maintainer expects it, 2026-10-28; not built): `tauri-plugin-updater`, signing key outside the repo,
+   `latest.json` on GitHub Releases (reachable only once the repo or a releases repo is public); a quiet "new version"
+   notice with one Update button, What's new after the restart (already there).
+3. A fresh MSI/NSIS build for the maintainer to install and try (Explorer entry, second-start hand-off, opening logo,
    first-launch tour, What's new after an update, real saves, a real AI client over MCP).
-3. Only then ask about publishing (release / public repo).
+4. Only then ask about publishing (release / public repo).
 
 ## Gotchas
 - Start an EVREN job: `bash .motor/start_job.sh <name>` (brief `.motor/<name>.md`; `VCHECK=vcheck-1028` copies those
