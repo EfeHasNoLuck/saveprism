@@ -16,7 +16,8 @@ The plan and history are in `NOW.md`; this page is only what the next session ne
 - Crash screen (`7493570`): checked over CDP, dark/light, EN/TR; the copied report holds no path (`.motor/crash-1028/`).
 - Slime Rancher 2 (`33c0857`, `86019d5`): the maintainer's 5 saves (`fixtures/external/slime-rancher-2/`) round-trip
   exactly in the CLI and backend; a money edit saved with a backup and reopened; the current debug CLI detects them as
-  `format.slime-rancher-2`.
+  `format.slime-rancher-2`. The maintainer edited a real save in SavePrism; the game loaded it with the
+  change (2026-10-28).
 - Installers built from `1de6afd` and signed (reported by the MCP session): `target/release/bundle/msi/
   SavePrism_0.1.0_x64_{en-US,tr-TR}.msi`, `target/release/bundle/nsis/SavePrism_0.1.0_x64-setup.exe`.
 

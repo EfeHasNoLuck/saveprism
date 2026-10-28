@@ -205,7 +205,8 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
      (the load-screen copy follows) and ammo slot counts editable, one row per slot ("Slot 2: Rock Slime"), every
      other record kept byte for byte. The 5 real saves: exact in `saveprism inspect` and the desktop backend, money
      edit saved with a backup and reopened; checked in the running app (dark, EN) before the slot rows were
-     flattened. Rust 3/3, web 3/3, cargo deny ok. Slime Rancher 1 not checked (no sample).
+     flattened. Rust 3/3, web 3/3, cargo deny ok. The maintainer edited a real save in SavePrism, and the
+     game loaded it with the change (2026-10-28). Slime Rancher 1 not checked (no sample).
    - Wave 2, first: auto-unlock (user idea, 2026-10-24): every layer tried by content whatever the extension; simple XOR
      obfuscation broken automatically from the expected start of the inner format (`{`, `<?xml`, `PK`...); a key finder
      that reads candidate passwords from the game's own files (Unity `Assembly-CSharp.dll` strings, IL2CPP
