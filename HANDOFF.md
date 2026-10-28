@@ -34,9 +34,12 @@ The plan and history are in `NOW.md`; this page is only what the next session ne
 ## Broken / not checked
 - Linux and macOS: never built or run. The CI rust job and the release workflow on Ubuntu/macOS have not run yet
   (first push after going public); expect small fixes. WSL Ubuntu here has no Rust and sudo needs a password.
-- Left to the community (maintainer, 2026-10-28): About → Check for updates against the real release, a real AI app over
-  MCP, a second file handed to the open window, the context menu in other languages (code: Turkish label only when the
-  installer ran in Turkish, English otherwise).
+- Left to the community (maintainer, 2026-10-28; public text must invite feedback warmly, never "you test it"):
+  About → Check for updates against the real release, a real AI app over MCP, a second file handed to the open window.
+- Explorer label language: the installer has no language picker; NSIS runs it in the Windows display language
+  (checked in the NSIS docs), so Turkish Windows gets "SavePrism ile çöz", every other language "Decode with
+  SavePrism". Someone who changes the Windows language later keeps the old label until the next install or update.
+  The maintainer questioned this rule; explained, no change asked yet.
 - Slime Rancher 2: the one-row-per-slot layout is not seen in the running app; `slimerancher.cfg`/`.prf` do not open;
   Slime Rancher 1 not checked (no sample); its fuzz target is not in `.github/workflows/fuzz.yml`; cargo-fuzz is not
   installed here, so no fuzz target ran locally.
@@ -51,10 +54,12 @@ The plan and history are in `NOW.md`; this page is only what the next session ne
   (long paths): `Remove-Item -LiteralPath "\\?\<full path>" -Recurse -Force`.
 
 ## Next step
-1. The maintainer reviews the release text (`scripts/release/notes-0.9.0.md`, shown in chat); apply their changes to it
-   and to both CHANGELOGs if they want the in-app "What's new" to match.
-2. Ask about going public. Before: the `bed2ed9` history cleanup (real saves were pushed once; needs the maintainer's
-   OK); `cargo deny check`. Then push; Actions are free for public repos: fix what the Ubuntu/macOS CI runs show.
+1. Release text `scripts/release/notes-0.9.0.md`: approved by the maintainer (2026-10-28).
+2. Going public (asked 2026-10-28; needs the maintainer's yes): rewrite history once with git-filter-repo (not
+   installed: `pip install git-filter-repo`) to drop `fixtures/external/` (added in `bed2ed9`, removed in `fbfc90e`:
+   saves from other public repos) and to replace the author e-mail `hsyncalti2@gmail.com` (all 317 commits) with
+   `116316749+huseyincancalti@users.noreply.github.com`; set that address as `user.email` here; `cargo deny check`;
+   force-push; make the repo public. Actions are then free: fix what the Ubuntu/macOS CI runs show.
 3. The secret `TAURI_SIGNING_PRIVATE_KEY` (text of `%USERPROFILE%\.tauri\saveprism-updater.key`): the maintainer adds
    it in GitHub → Settings → Secrets → Actions, or `gh secret set` with their OK (also make sure they keep a backup
    copy of that file). Then Actions → release → Run
