@@ -393,7 +393,8 @@ async fn history_state(state: State<'_, AppState>) -> Result<HistoryState, ApiEr
     state.with_session(|session| Ok(session.history_state()))
 }
 
-/// Where saves usually are on Windows, per engine, with the folders that exist on this PC.
+/// Where saves usually are on this system (Windows, macOS or Linux), per engine, with the folders
+/// that exist on this PC.
 #[tauri::command]
 fn save_location_list() -> Vec<SaveLocation> {
     save_locations()

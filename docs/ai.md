@@ -53,7 +53,7 @@ copies the one for the app you picked. Saving always makes a backup first.
 
 | Tool | What it does | Writes files |
 |---|---|---|
-| `save_locations` | Lists the usual save folders of each engine on Windows and which of them exist on this PC (the app's "Where is my save?"). | no |
+| `save_locations` | Lists the usual save folders of each engine on the system SavePrism runs on (Windows, macOS or Linux) and which of them exist on this PC (the app's "Where is my save?"). | no |
 | `open_save` | Opens a save and runs the same round-trip check as the app. The key of an encrypted Easy Save 3 or Terraria player file is looked for in the game's own files first, like in the app; when it is not found, the AI can pass the game's folder (`gameFolder`) or the password. | no |
 | `open_code` | Opens a save code you pasted into the chat (the text a browser or idle game exports). Like **Paste code** in the app, SavePrism keeps the code as its own file in its app folder (the newest 10). | its own copy only |
 | `game_view` | The app's view: RPG Maker sections with names (gold, characters, items, variables, switches), the story variables of a Twine save, or the Values list. Filter and page through long lists. | no |

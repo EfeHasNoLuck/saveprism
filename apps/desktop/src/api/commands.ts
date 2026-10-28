@@ -703,7 +703,7 @@ export function saveLocations(): Promise<SaveLocation[]> {
   return invoke<SaveLocation[]>("save_location_list");
 }
 
-/** Opens a folder from {@link saveLocations} in File Explorer; the host refuses any other path. */
+/** Opens a folder from {@link saveLocations} in the file manager; the host refuses any other path. */
 export function openSaveLocation(folder: string): Promise<void> {
   return invoke<void>("open_save_location", { folder });
 }

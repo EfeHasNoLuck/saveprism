@@ -114,7 +114,7 @@ fn definitions() -> Vec<Value> {
         tool(
             "save_locations",
             "Where saves usually are",
-            "Lists the usual save folders of each engine on Windows and whether each folder exists on this PC. <game>, <company> and <game folder> stand for the game's own names. Nothing is searched.",
+            "Lists the usual save folders of each engine on the system SavePrism runs on (Windows, macOS or Linux) and whether each folder exists on this PC. <game>, <company> and <game folder> stand for the game's own names. Nothing is searched.",
             json!({}),
             json!([]),
             (true, false, true),

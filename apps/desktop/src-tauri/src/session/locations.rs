@@ -2,10 +2,14 @@
 //!
 //! The paths are written from public documentation (Unity's `Application.persistentDataPath`
 //! page, Godot's "File paths in Godot projects", Ren'Py's `config.savedir`, Unreal's "Saving and
-//! Loading Your Game", and the game/engine guides for the rest). Environment variables are
-//! expanded here, so the UI only shows text. A path with an unknown `<game>` or `<company>` part
-//! opens the folder above that part; a relative path (inside the game's own folder) has no button.
-//! Nothing is searched: only the returned candidate folders are checked for existence.
+//! Loading Your Game", GameMaker's "The File System", and the game/engine guides for the rest).
+//! Each system has its own list: Windows paths use `%APPDATA%`-style variables and `\`; macOS and
+//! Linux paths start at `%HOME%` (or, where the program reads it, an XDG base folder) and use `/`.
+//! On Linux, games made only for Windows are listed inside the Proton prefix Steam makes for them.
+//! Environment variables are expanded here, so the UI only shows text. A path with an unknown
+//! `<game>` or `<company>` part opens the folder above that part; a relative path (inside the
+//! game's own folder) has no button. Nothing is searched: only the returned candidate folders are
+//! checked for existence.
 
 use std::path::PathBuf;
 
@@ -46,9 +50,41 @@ impl SaveLocationPath {
     }
 }
 
+/// The systems with a list of their own.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Platform {
+    Windows,
+    MacOs,
+    Linux,
+}
+
+impl Platform {
+    /// The system this build runs on; other Unix systems use the Linux (XDG) list.
+    fn current() -> Self {
+        if cfg!(windows) {
+            Self::Windows
+        } else if cfg!(target_os = "macos") {
+            Self::MacOs
+        } else {
+            Self::Linux
+        }
+    }
+}
+
 /// The engines and their usual folders. A path is either absolute (after environment expansion)
 /// or relative to the game's folder.
-const CATALOG: &[(&str, &[&str])] = &[
+type Catalog = &'static [(&'static str, &'static [&'static str])];
+
+/// The list of one system.
+fn catalog(platform: Platform) -> Catalog {
+    match platform {
+        Platform::Windows => WINDOWS,
+        Platform::MacOs => MACOS,
+        Platform::Linux => LINUX,
+    }
+}
+
+const WINDOWS: Catalog = &[
     (
         "rpgmaker-mv",
         &["<game folder>\\www\\save", "<game folder>\\save"],
@@ -136,9 +172,183 @@ const CATALOG: &[(&str, &[&str])] = &[
     ),
 ];
 
-/// The usual save folders of every engine the dialog names.
+/// Games made only for Windows are left out: they run in a Wine or CrossOver bottle there, whose
+/// folder depends on the tool.
+const MACOS: Catalog = &[
+    (
+        "rpgmaker-mv",
+        &["<game folder>/www/save", "<game folder>/save"],
+    ),
+    ("rpgmaker-classic", &["<game folder>", "<game folder>/Save"]),
+    ("wolf-rpg", &["<game folder>/Save"]),
+    ("ags", &["<game folder>"]),
+    ("nscripter", &["<game folder>", "<game folder>/sav"]),
+    ("emuera", &["<game folder>", "<game folder>/sav"]),
+    ("alicesoft", &["<game folder>/SaveData", "<game folder>"]),
+    ("artemis", &["<game folder>/save"]),
+    ("construct", &[]),
+    (
+        "unity",
+        &[
+            "%HOME%/Library/Application Support/<company>/<game>",
+            "%HOME%/Library/Application Support/unity.<company>.<game>",
+            "%HOME%/Library/Preferences/unity.<company>.<game>.plist",
+        ],
+    ),
+    (
+        "unreal",
+        &["%HOME%/Library/Application Support/Epic/<game>/Saved/SaveGames"],
+    ),
+    ("gamemaker", &["%HOME%/Library/Application Support/<game>"]),
+    (
+        "renpy",
+        &["%HOME%/Library/RenPy/<game>", "<game folder>/game/saves"],
+    ),
+    (
+        "godot",
+        &["%HOME%/Library/Application Support/Godot/app_userdata/<game>"],
+    ),
+    ("twine", &[]),
+    (
+        "flash",
+        &["%HOME%/Library/Preferences/Macromedia/Flash Player/#SharedObjects"],
+    ),
+    (
+        "terraria",
+        &[
+            "%HOME%/Library/Application Support/Terraria/Players",
+            "%HOME%/Library/Application Support/Terraria/Worlds",
+        ],
+    ),
+    (
+        "neverwinter-nights",
+        &[
+            "%HOME%/Documents/Neverwinter Nights/saves",
+            "<game folder>/saves",
+        ],
+    ),
+    ("kotor", &["<game folder>/saves"]),
+    (
+        "ets2",
+        &["%HOME%/Library/Application Support/Euro Truck Simulator 2/profiles"],
+    ),
+    (
+        "ats",
+        &["%HOME%/Library/Application Support/American Truck Simulator/profiles"],
+    ),
+    (
+        "retroarch",
+        &[
+            "%HOME%/Documents/RetroArch/states",
+            "%HOME%/Documents/RetroArch/saves",
+            "%HOME%/Library/Application Support/RetroArch/states",
+            "%HOME%/Library/Application Support/RetroArch/saves",
+        ],
+    ),
+];
+
+/// A folder inside the Proton prefix Steam makes for a Windows game: `$app_id` is the game's Steam
+/// id and `$rest` the Windows path under the user's folder. `~/.steam/steam` points at Steam's own
+/// folder wherever the distribution installed it.
+macro_rules! proton {
+    ($app_id:literal, $rest:literal) => {
+        concat!(
+            "%HOME%/.steam/steam/steamapps/compatdata/",
+            $app_id,
+            "/pfx/drive_c/users/steamuser/",
+            $rest
+        )
+    };
+}
+
+const LINUX: Catalog = &[
+    (
+        "rpgmaker-mv",
+        &["<game folder>/www/save", "<game folder>/save"],
+    ),
+    ("rpgmaker-classic", &["<game folder>", "<game folder>/Save"]),
+    ("wolf-rpg", &["<game folder>/Save"]),
+    ("ags", &["<game folder>"]),
+    ("nscripter", &["<game folder>", "<game folder>/sav"]),
+    ("emuera", &["<game folder>", "<game folder>/sav"]),
+    ("alicesoft", &["<game folder>/SaveData", "<game folder>"]),
+    ("artemis", &["<game folder>/save"]),
+    ("construct", &[]),
+    ("unity", &["%XDG_CONFIG_HOME%/unity3d/<company>/<game>"]),
+    ("unreal", &["%HOME%/.config/Epic/<game>/Saved/SaveGames"]),
+    ("gamemaker", &["%HOME%/.config/<game>"]),
+    (
+        "renpy",
+        &["%HOME%/.renpy/<game>", "<game folder>/game/saves"],
+    ),
+    ("godot", &["%XDG_DATA_HOME%/godot/app_userdata/<game>"]),
+    ("twine", &[]),
+    ("flash", &["%HOME%/.macromedia/Flash_Player/#SharedObjects"]),
+    (
+        "witcher3",
+        &[proton!("292030", "Documents/The Witcher 3/gamesaves")],
+    ),
+    (
+        "palworld",
+        &[proton!("1623730", "AppData/Local/Pal/Saved/SaveGames")],
+    ),
+    (
+        "satisfactory",
+        &[proton!(
+            "526870",
+            "AppData/Local/FactoryGame/Saved/SaveGames/<id>"
+        )],
+    ),
+    (
+        "slime-rancher-2",
+        &[proton!(
+            "1657630",
+            "AppData/LocalLow/MonomiPark/SlimeRancher2"
+        )],
+    ),
+    (
+        "terraria",
+        &[
+            "%XDG_DATA_HOME%/Terraria/Players",
+            "%XDG_DATA_HOME%/Terraria/Worlds",
+        ],
+    ),
+    (
+        "neverwinter-nights",
+        &[
+            "%HOME%/.local/share/Neverwinter Nights/saves",
+            "<game folder>/saves",
+        ],
+    ),
+    ("kotor", &["<game folder>/saves"]),
+    (
+        "elden-ring",
+        &[proton!("1245620", "AppData/Roaming/EldenRing")],
+    ),
+    (
+        "dark-souls-3",
+        &[proton!("374320", "AppData/Roaming/DarkSoulsIII")],
+    ),
+    (
+        "ets2",
+        &["%HOME%/.local/share/Euro Truck Simulator 2/profiles"],
+    ),
+    (
+        "ats",
+        &["%HOME%/.local/share/American Truck Simulator/profiles"],
+    ),
+    (
+        "retroarch",
+        &[
+            "%XDG_CONFIG_HOME%/retroarch/states",
+            "%XDG_CONFIG_HOME%/retroarch/saves",
+        ],
+    ),
+];
+
+/// The usual save folders of every engine the dialog names, on the system this build runs on.
 pub fn save_locations() -> Vec<SaveLocation> {
-    CATALOG
+    catalog(Platform::current())
         .iter()
         .map(|(engine, templates)| SaveLocation {
             engine,
@@ -152,6 +362,12 @@ pub fn save_locations() -> Vec<SaveLocation> {
 
 /// Expands `%NAME%` environment variables; a missing variable keeps its `%NAME%` text.
 fn expand_env(text: &str) -> String {
+    expand_vars(text, &|name| std::env::var(name).ok())
+}
+
+/// Expands `%NAME%` variables with the values `lookup` gives (see [`var_value`]); a variable
+/// without a value keeps its `%NAME%` text.
+fn expand_vars(text: &str, lookup: &dyn Fn(&str) -> Option<String>) -> String {
     let mut out = String::with_capacity(text.len());
     let mut rest = text;
     while let Some(start) = rest.find('%') {
@@ -160,9 +376,9 @@ fn expand_env(text: &str) -> String {
         match after.find('%') {
             Some(end) => {
                 let name = &after[..end];
-                match std::env::var(name) {
-                    Ok(value) if !name.is_empty() && !value.is_empty() => out.push_str(&value),
-                    _ => {
+                match var_value(name, lookup) {
+                    Some(value) => out.push_str(&value),
+                    None => {
                         out.push('%');
                         out.push_str(name);
                         out.push('%');
@@ -180,18 +396,33 @@ fn expand_env(text: &str) -> String {
     out
 }
 
+/// The value of one variable, when it is set and not empty. An XDG base folder that is not set
+/// falls back to its default under `HOME`, as the XDG Base Directory Specification says.
+fn var_value(name: &str, lookup: &dyn Fn(&str) -> Option<String>) -> Option<String> {
+    let set = |key: &str| lookup(key).filter(|value| !key.is_empty() && !value.is_empty());
+    set(name).or_else(|| {
+        let default = match name {
+            "XDG_CONFIG_HOME" => ".config",
+            "XDG_DATA_HOME" => ".local/share",
+            _ => return None,
+        };
+        set("HOME").map(|home| format!("{}/{default}", home.trim_end_matches('/')))
+    })
+}
+
 /// The folder to open for a shown path, if this PC has it. When a `<...>` placeholder is in the
-/// path, the folder just above the first placeholder is used (the player picks the game's folder).
+/// path, the folder just above the part holding the first placeholder is used (the player picks
+/// the game's folder). Both `\` and `/` end a part, so one rule serves the list of every system.
 fn open_folder(shown: &str) -> Option<PathBuf> {
     if !PathBuf::from(shown).is_absolute() {
         return None;
     }
-    let parts: Vec<&str> = shown.split('\\').collect();
-    let first_unknown = parts.iter().position(|part| part.contains('<'));
-    let candidate = match first_unknown {
-        Some(index) if index > 0 => parts.get(..index)?.join("\\"),
-        Some(_) => return None,
-        None => shown.trim_end_matches('\\').to_string(),
+    let candidate = match shown.find('<') {
+        Some(index) => {
+            let cut = shown.get(..index)?.rfind(['\\', '/'])?;
+            shown.get(..cut)?
+        }
+        None => shown.trim_end_matches(['\\', '/']),
     };
     let path = PathBuf::from(candidate);
     path.is_dir().then_some(path)
@@ -201,17 +432,37 @@ fn open_folder(shown: &str) -> Option<PathBuf> {
 mod tests {
     use super::*;
 
+    const PLATFORMS: [Platform; 3] = [Platform::Windows, Platform::MacOs, Platform::Linux];
+
+    /// Games made only for Windows; Linux lists them in their Proton prefix.
+    const WINDOWS_ONLY: [&str; 6] = [
+        "witcher3",
+        "palworld",
+        "satisfactory",
+        "slime-rancher-2",
+        "elden-ring",
+        "dark-souls-3",
+    ];
+
+    fn engines(platform: Platform) -> Vec<&'static str> {
+        catalog(platform)
+            .iter()
+            .map(|(engine, _)| *engine)
+            .collect()
+    }
+
     #[test]
     fn every_engine_has_paths_except_browser_storage() {
-        let locations = save_locations();
-        for location in &locations {
-            if location.engine == "twine" || location.engine == "construct" {
-                assert!(location.paths.is_empty());
-            } else {
-                assert!(!location.paths.is_empty(), "{}", location.engine);
+        for platform in PLATFORMS {
+            for (engine, templates) in catalog(platform) {
+                if *engine == "twine" || *engine == "construct" {
+                    assert!(templates.is_empty(), "{platform:?} {engine}");
+                } else {
+                    assert!(!templates.is_empty(), "{platform:?} {engine}");
+                }
             }
         }
-        let engines: Vec<&str> = locations.iter().map(|location| location.engine).collect();
+        let engines = engines(Platform::Windows);
         for engine in [
             "rpgmaker-mv",
             "rpgmaker-classic",
@@ -241,9 +492,74 @@ mod tests {
     }
 
     #[test]
+    fn macos_and_linux_list_the_windows_engines_in_the_same_order() {
+        let windows = engines(Platform::Windows);
+        assert_eq!(engines(Platform::Linux), windows);
+        let without_windows_only: Vec<&str> = windows
+            .iter()
+            .copied()
+            .filter(|engine| !WINDOWS_ONLY.contains(engine))
+            .collect();
+        assert_eq!(engines(Platform::MacOs), without_windows_only);
+    }
+
+    #[test]
+    fn each_list_uses_the_paths_of_its_system() {
+        for (engine, templates) in catalog(Platform::Windows) {
+            for template in *templates {
+                assert!(!template.contains('/'), "{engine}: {template}");
+            }
+        }
+        for platform in [Platform::MacOs, Platform::Linux] {
+            for (engine, templates) in catalog(platform) {
+                for template in *templates {
+                    assert!(
+                        !template.contains('\\'),
+                        "{platform:?} {engine}: {template}"
+                    );
+                    // An absolute path starts at the home folder or an XDG base folder, so it
+                    // expands to an absolute path; anything else is inside the game's folder.
+                    assert!(
+                        [
+                            "%HOME%/",
+                            "%XDG_CONFIG_HOME%/",
+                            "%XDG_DATA_HOME%/",
+                            "<game folder>"
+                        ]
+                        .iter()
+                        .any(|start| template.starts_with(start)),
+                        "{platform:?} {engine}: {template}"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn windows_only_games_are_in_their_proton_prefix_on_linux() {
+        for (engine, templates) in catalog(Platform::Linux) {
+            if WINDOWS_ONLY.contains(engine) {
+                for template in *templates {
+                    assert!(
+                        template.starts_with("%HOME%/.steam/steam/steamapps/compatdata/"),
+                        "{engine}: {template}"
+                    );
+                    assert!(
+                        template.contains("/pfx/drive_c/users/steamuser/"),
+                        "{engine}: {template}"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
     fn relative_paths_have_no_folder() {
         let path = SaveLocationPath::new("<game folder>\\save");
         assert_eq!(path.shown, "<game folder>\\save");
+        assert!(path.folder.is_none());
+        assert!(!path.exists);
+        let path = SaveLocationPath::new("<game folder>/save");
         assert!(path.folder.is_none());
         assert!(!path.exists);
     }
@@ -258,6 +574,24 @@ mod tests {
             Some(root.path().to_string_lossy().as_ref())
         );
         assert!(path.exists);
+    }
+
+    #[test]
+    fn a_placeholder_after_a_slash_opens_the_folder_above_it() {
+        let root = tempfile::tempdir().unwrap();
+        for rest in ["/<company>/<game>", "/unity.<company>.<game>.plist"] {
+            let template = format!("{}{rest}", root.path().display());
+            let path = SaveLocationPath::new(&template);
+            assert_eq!(
+                path.folder.as_deref(),
+                Some(root.path().to_string_lossy().as_ref()),
+                "{rest}"
+            );
+            assert!(path.exists, "{rest}");
+        }
+        // The folder above the placeholder does not exist here.
+        let template = format!("{}/Epic/<game>/Saved", root.path().display());
+        assert!(SaveLocationPath::new(&template).folder.is_none());
     }
 
     #[test]
@@ -282,5 +616,39 @@ mod tests {
             expand_env("%SAVEPRISM_NOT_SET%\\x"),
             "%SAVEPRISM_NOT_SET%\\x"
         );
+    }
+
+    #[test]
+    fn xdg_folders_fall_back_to_their_defaults_under_home() {
+        let only_home = |name: &str| (name == "HOME").then(|| "/home/player".to_string());
+        assert_eq!(
+            expand_vars("%XDG_CONFIG_HOME%/unity3d", &only_home),
+            "/home/player/.config/unity3d"
+        );
+        assert_eq!(
+            expand_vars("%XDG_DATA_HOME%/godot", &only_home),
+            "/home/player/.local/share/godot"
+        );
+
+        let custom = |name: &str| match name {
+            "HOME" => Some("/home/player/".to_string()),
+            "XDG_DATA_HOME" => Some("/data".to_string()),
+            "XDG_CONFIG_HOME" => Some(String::new()),
+            _ => None,
+        };
+        assert_eq!(expand_vars("%XDG_DATA_HOME%/godot", &custom), "/data/godot");
+        // An empty variable counts as not set.
+        assert_eq!(
+            expand_vars("%XDG_CONFIG_HOME%/retroarch", &custom),
+            "/home/player/.config/retroarch"
+        );
+
+        // Without HOME there is nothing to fall back to, and other variables have no default.
+        let nothing = |_: &str| -> Option<String> { None };
+        assert_eq!(
+            expand_vars("%XDG_DATA_HOME%/godot", &nothing),
+            "%XDG_DATA_HOME%/godot"
+        );
+        assert_eq!(expand_vars("%HOME%/.renpy", &nothing), "%HOME%/.renpy");
     }
 }
