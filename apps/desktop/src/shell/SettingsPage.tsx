@@ -37,7 +37,6 @@ import licenseText from "../../../../LICENSE?raw";
 import {
   backgroundImage,
   chooseBackground,
-  coreVersion,
   defaultPaths,
   exportThemeFile,
   importThemeFile,
@@ -274,7 +273,6 @@ export function SettingsPage({
   const [busy, setBusy] = useState<FolderPicker | "photo" | null>(null);
   const [themeBusy, setThemeBusy] = useState(false);
   const [version, setVersion] = useState("—");
-  const [core, setCore] = useState("—");
   const [exePath, setExePath] = useState<string | null>(null);
   const [copiedClient, setCopiedClient] = useState<McpClient | null>(null);
   const [noticesPage, setNoticesPage] = useState(false);
@@ -293,9 +291,6 @@ export function SettingsPage({
       .catch(() => undefined);
     getVersion()
       .then((value) => !cancelled && setVersion(value))
-      .catch(() => undefined);
-    coreVersion()
-      .then((value) => !cancelled && setCore(value))
       .catch(() => undefined);
     return () => {
       cancelled = true;
@@ -1305,14 +1300,8 @@ export function SettingsPage({
                 <Logo className="size-14" />
               </span>
               <h3 className="mt-3.5 text-[22px] font-semibold tracking-[-0.02em]">SavePrism</h3>
-              <p className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+              <p className="mt-1 text-xs text-muted-foreground">
                 {t("about.versionLine", { version })}
-                <span className="rounded-full bg-surface-high px-2 py-0.5 text-[0.6875rem] font-semibold">
-                  {t("about.licenseTag")}
-                </span>
-              </p>
-              <p className="mt-1 text-[0.6875rem] text-muted-foreground">
-                {t("about.coreVersion", { version: core })}
               </p>
               <p className="mt-2.5 max-w-md text-center text-[0.8125rem] text-foreground-variant">
                 {t("about.tagline")}

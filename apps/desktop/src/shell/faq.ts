@@ -1,6 +1,6 @@
 /** The start screen's questions. The text lives in the locale files. */
 
-export type FaqIcon = "saves" | "shield" | "games" | "help" | "ai" | "undo";
+export type FaqIcon = "shield" | "games" | "help" | "ai" | "undo";
 
 export interface FaqItem {
   id: string;
@@ -12,7 +12,6 @@ export interface FaqItem {
 }
 
 export const FAQ_ITEMS: readonly FaqItem[] = [
-  { id: "saves", icon: "saves", questionKey: "start.faq.saves.question", answerKey: "start.faq.saves.answer" },
   {
     id: "original",
     icon: "shield",

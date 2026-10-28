@@ -58,11 +58,6 @@
     "slogan": "Dosyaların bilgisayarında kalır. Verilerin güvende.",
     "faq": {
       "title": "Sık sorulan sorular",
-      "saves": {
-        "question": "Kayıtlarım nerede?",
-        "answer": "Çoğu PC oyunu kayıtlarını kullanıcı klasöründe tutar; örneğin Belgeler\\My Games ya da AppData\\LocalLow\\<şirket>\\<oyun>. Bazıları kendi oyun klasöründe tutar. SavePrism bilgisayarını taramaz; olağan klasörleri gösterir.",
-        "link": "Her oyun türü için olağan klasörü gör"
-      },
       "original": {
         "question": "Orijinal kaydım değişir mi?",
         "answer": "Yalnızca Geçerli dosyanın üzerine yaz'ı seçersen. Varsayılan Yeni dosya olarak kaydet'tir, böylece orijinal olduğu gibi kalır. Bir dosya değiştirilmeden önce SavePrism, Yedekler'den geri yükleyebileceğin bir kopya saklar."
@@ -867,11 +862,9 @@
     "notices": "Üçüncü taraf bildirimleri",
     "noticesFailed": "Bildirimler okunamadı",
     "versionLine": "Sürüm {{version}}",
-    "licenseTag": "MIT License",
     "licenseShort": "MIT",
     "licenseBody": "SavePrism, MIT Lisansı ile yayımlanır. Tam metin aşağıda.",
     "tagline": "Bilgisayarında çalışan bir kayıt düzenleyici. Hesap yok, yükleme yok.",
-    "coreVersion": "Çekirdek {{version}}",
     "whatsNew": "{{version}} sürümünde yeniler",
     "showTour": "Turu yeniden göster",
     "copyright": "© 2026 SavePrism katkıda bulunanlar",

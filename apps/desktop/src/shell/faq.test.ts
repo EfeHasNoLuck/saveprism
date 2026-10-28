@@ -12,9 +12,8 @@ function read(source: Record<string, unknown>, key: string): unknown {
 }
 
 describe("start screen FAQ", () => {
-  it("has the six questions the brief names", () => {
+  it("has the five questions (Where is my save? lives on the drop card)", () => {
     expect(FAQ_ITEMS.map((item) => item.id)).toEqual([
-      "saves",
       "original",
       "games",
       "notOpen",
@@ -33,12 +32,6 @@ describe("start screen FAQ", () => {
         expect(String(question).trim(), item.questionKey).not.toBe("");
         expect(String(answer).trim(), item.answerKey).not.toBe("");
       }
-    }
-  });
-
-  it("keeps the where-is-my-save link text in both locales", () => {
-    for (const source of [en, tr]) {
-      expect(String(read(source, "start.faq.saves.link")).trim()).not.toBe("");
     }
   });
 });

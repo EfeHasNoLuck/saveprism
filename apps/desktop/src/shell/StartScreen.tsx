@@ -27,7 +27,6 @@ interface StartScreenProps {
 }
 
 const FAQ_ICONS: Record<FaqIcon, ComponentType<{ className?: string }>> = {
-  saves: FolderSearch,
   shield: ShieldCheck,
   games: HardDrive,
   help: HelpCircle,
@@ -42,7 +41,7 @@ export function StartScreen({
   onWhereSaves,
 }: StartScreenProps) {
   const { t } = useTranslation();
-  const [openId, setOpenId] = useState<string | null>("saves");
+  const [openId, setOpenId] = useState<string | null>("original");
 
   return (
     <div className="dense-scroll relative z-10 flex flex-1 flex-col items-center overflow-y-auto px-6 py-10">
@@ -143,15 +142,6 @@ export function StartScreen({
                           {line}
                         </p>
                       ))}
-                    {item.id === "saves" ? (
-                      <button
-                        type="button"
-                        onClick={onWhereSaves}
-                        className="mt-2 inline-flex items-center gap-1 text-[0.8125rem] font-medium text-primary outline-none hover:text-primary/80 focus-visible:ring-2 focus-visible:ring-ring/60"
-                      >
-                        {t("start.faq.saves.link")}
-                      </button>
-                    ) : null}
                   </div>
                 ) : null}
               </div>

@@ -58,11 +58,6 @@
     "slogan": "Your files stay on your PC. Your data is safe.",
     "faq": {
       "title": "Frequently asked questions",
-      "saves": {
-        "question": "Where are my saves?",
-        "answer": "Most PC games keep saves in your user folder, for example Documents\\My Games or AppData\\LocalLow\\<company>\\<game>. Some keep them inside the game's own folder. SavePrism does not scan your PC; it shows the usual folders.",
-        "link": "See the usual folder for each kind of game"
-      },
       "original": {
         "question": "Is my original save changed?",
         "answer": "Only if you choose Overwrite current file. The default is Save as a new file, so the original stays as it was. Before any file is replaced, SavePrism keeps a copy you can put back from Backups."
@@ -867,11 +862,9 @@
     "notices": "Third-party notices",
     "noticesFailed": "The notices could not be read",
     "versionLine": "Version {{version}}",
-    "licenseTag": "MIT License",
     "licenseShort": "MIT",
     "licenseBody": "SavePrism is released under the MIT License. The full text is below.",
     "tagline": "A save editor that runs on your PC. No account, no upload.",
-    "coreVersion": "Core {{version}}",
     "whatsNew": "What's new in {{version}}",
     "showTour": "Show the tour again",
     "copyright": "© 2026 SavePrism contributors",

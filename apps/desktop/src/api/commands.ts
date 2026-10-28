@@ -177,10 +177,6 @@ export function isApiError(value: unknown): value is ApiError {
   );
 }
 
-export function coreVersion(): Promise<string> {
-  return invoke<string>("core_version");
-}
-
 /**
  * Opens a file. `password` is only needed for encrypted Easy Save 3 files. `backupFolders` are the
  * folders the player used in Settings: the first gets the new backups, all are listed.
