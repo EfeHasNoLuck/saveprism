@@ -46,6 +46,7 @@ const MAX_DLC_FOLDERS: usize = 64;
 /// Most directory entries one listing may return.
 const MAX_DIR_ENTRIES: usize = 4096;
 /// Most GOG game keys read from the registry.
+#[cfg(windows)]
 const MAX_GOG_KEYS: usize = 512;
 /// Folder names a Steam install of the game uses.
 const STEAM_FOLDERS: &[&str] = &[

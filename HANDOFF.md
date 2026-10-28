@@ -2,8 +2,8 @@
 
 **State (2026-10-28, ~19:00 TR):** the maintainer's install test is done (what they did not try goes to the community).
 The first public release is now **0.9.0 for Windows, Linux and macOS** (maintainer's decision): version bumped, a
-`release` workflow builds all three into a draft release, README covers all three. Nothing pushed since `f96e98c`:
-Actions minutes for the private repo are out, but Actions are free once the repo is public. Weekly Claude limit 21%
+`release` workflow builds all three into a draft release, README covers all three. The repo is public now and
+Actions are free. Weekly Claude limit 21%
 used (resets 2026-11-04 11:00 UTC).
 The plan and history are in `NOW.md`; this page is only what the next session needs.
 
@@ -55,14 +55,11 @@ The plan and history are in `NOW.md`; this page is only what the next session ne
 
 ## Next step
 1. Release text `scripts/release/notes-0.9.0.md`: approved by the maintainer (2026-10-28).
-2. Going public (maintainer said yes, 2026-10-28; the author e-mail stays as it is, their choice). Done: a history
-   scan found no keys, tokens or passwords; `git-filter-repo` (MIT, pip) removed `fixtures/external/` from every
-   commit in a bare copy (GitHub branches + local main); local `main` now points at that rewritten history (same
-   files; commit ids in NOW/HANDOFF updated); `cargo deny check` ok. The project hook stops agents from force-pushing
-   and the auto-mode classifier refused pausing Actions, so the maintainer runs `go-public.sh` (session scratchpad,
-   next to the rewritten bare copy `rewrite.git`): pause Actions, push main and the 8 `dependabot/*` branches with
-   exact leases, make the repo public, turn Actions back on. If the scratchpad is gone, redo the filter-repo run on a
-   fresh bare clone. After it: check the remote, run `ci` and `deny` by hand, fix what Ubuntu/macOS show.
+2. Public since 2026-10-28 ~19:05 TR. A history scan found no keys, tokens or passwords; `git-filter-repo` (MIT,
+   pip) removed `fixtures/external/` from every commit; the maintainer pushed main and the 8 `dependabot/*` branches
+   with exact leases (the project hook stops agents from force-pushing), made the repo public and turned Actions back
+   on; every `refs/pull/*/head` now points at the rewritten history. The author e-mail stays (maintainer's choice).
+   Commit ids in NOW/HANDOFF were updated to the new history. Next: fix what the Ubuntu/macOS CI runs show.
 3. The secret `TAURI_SIGNING_PRIVATE_KEY` (text of `%USERPROFILE%\.tauri\saveprism-updater.key`): the maintainer adds
    it in GitHub → Settings → Secrets → Actions, or `gh secret set` with their OK (also make sure they keep a backup
    copy of that file). Then Actions → release → Run
