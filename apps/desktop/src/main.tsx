@@ -6,6 +6,8 @@ import { applyStoredTheme, ThemeProvider } from "@/theme";
 import { initI18n } from "@/i18n";
 import { applyStoredAppearance } from "./shell/appearance";
 import { BootGate } from "./shell/BootGate";
+import { CrashBoundary } from "./shell/CrashBoundary";
+import { DevCrashTrigger } from "./shell/devCrash";
 import { NotifyProvider } from "./shell/NotifyProvider";
 import { SettingsProvider } from "./shell/SettingsProvider";
 
@@ -22,13 +24,16 @@ if (!container) {
 
 createRoot(container).render(
   <StrictMode>
-    <BootGate />
-    <ThemeProvider>
-      <SettingsProvider>
-        <NotifyProvider>
-          <App />
-        </NotifyProvider>
-      </SettingsProvider>
-    </ThemeProvider>
+    <CrashBoundary>
+      {import.meta.env.DEV ? <DevCrashTrigger /> : null}
+      <BootGate />
+      <ThemeProvider>
+        <SettingsProvider>
+          <NotifyProvider>
+            <App />
+          </NotifyProvider>
+        </SettingsProvider>
+      </ThemeProvider>
+    </CrashBoundary>
   </StrictMode>,
 );

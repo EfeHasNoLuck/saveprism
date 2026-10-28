@@ -927,5 +927,13 @@
       "title": "Settings",
       "body": "Theme, backups and the rest of SavePrism live here."
     }
+  },
+  "crash": {
+    "title": "Something went wrong",
+    "body": "SavePrism hit an unexpected error. Changes you have not saved yet are lost.",
+    "copy": "Copy report",
+    "reload": "Reload",
+    "copied": "Report copied.",
+    "copyFailed": "Could not copy. Select the text below and copy it by hand."
   }
 }

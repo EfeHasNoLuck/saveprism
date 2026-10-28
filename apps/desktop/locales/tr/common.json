@@ -927,5 +927,13 @@
       "title": "Ayarlar",
       "body": "Tema, yedekler ve SavePrism'in geri kalanı burada."
     }
+  },
+  "crash": {
+    "title": "Bir şeyler ters gitti",
+    "body": "SavePrism beklenmedik bir hata ile karşılaştı. Henüz kaydetmediğin değişiklikler kaybolur.",
+    "copy": "Raporu kopyala",
+    "reload": "Yeniden yükle",
+    "copied": "Rapor kopyalandı.",
+    "copyFailed": "Kopyalanamadı. Aşağıdaki metni seçip elle kopyala."
   }
 }
