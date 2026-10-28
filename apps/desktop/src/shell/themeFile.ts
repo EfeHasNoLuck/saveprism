@@ -215,7 +215,9 @@ export function defaultThemeFileName(name: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
-  return `${slug || "saveprism-theme"}${THEME_SUFFIX}`;
+  const base = slug || "saveprism-theme";
+  // The default theme is already named "…-theme"; do not write the suffix twice.
+  return base.endsWith("saveprism-theme") ? `${base}.json` : `${base}${THEME_SUFFIX}`;
 }
 
 /** Adds the theme suffix when the player typed a name without it. */

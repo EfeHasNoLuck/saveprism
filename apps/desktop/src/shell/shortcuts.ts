@@ -198,11 +198,16 @@ function keyOf(input: KeyInput): string | null {
   return CODE_KEYS[code] ?? null;
 }
 
-/** The combination of a key press, or `null` when it has no usable key (Enter and Esc included). */
+/**
+ * The combination of a key press, or `null` when it has no usable key (Enter and Esc included).
+ * The Windows key (metaKey) is never recorded: Windows handles its combinations before the app
+ * sees them, so it cannot be part of a shortcut here.
+ */
 export function combinationFromInput(input: KeyInput): ParsedCombination | null {
+  if (input.metaKey) return null;
   const key = keyOf(input);
   if (key === null || key === "Enter" || key === "Escape") return null;
-  return { ctrl: input.ctrlKey || input.metaKey, shift: input.shiftKey, alt: input.altKey, key };
+  return { ctrl: input.ctrlKey, shift: input.shiftKey, alt: input.altKey, key };
 }
 
 /** The canonical text of a combination (`Ctrl+Shift+S`). */

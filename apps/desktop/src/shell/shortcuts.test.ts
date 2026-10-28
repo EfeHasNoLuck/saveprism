@@ -55,6 +55,11 @@ describe("formatCombination / parseCombination", () => {
     expect(combinationFromInput(press("Enter"))).toBeNull();
     expect(combinationFromInput(press("Escape"))).toBeNull();
   });
+
+  it("never records the Windows key", () => {
+    expect(combinationFromInput(press("k", { ctrlKey: false, metaKey: true }))).toBeNull();
+    expect(combinationFromInput(press("k", { metaKey: true }))).toBeNull();
+  });
 });
 
 describe("validateCombination", () => {
@@ -113,8 +118,9 @@ describe("shortcutFor", () => {
     expect(shortcutFor(press("s", { altKey: true }))).toBeNull();
   });
 
-  it("accepts Cmd and a letter key on a layout without Latin letters", () => {
-    expect(shortcutFor(press("z", { ctrlKey: false, metaKey: true }))).toBe("undo");
+  it("ignores the Windows key (metaKey) and reads a non-Latin layout by its physical key", () => {
+    expect(shortcutFor(press("z", { ctrlKey: false, metaKey: true }))).toBeNull();
+    expect(shortcutFor(press("k", { ctrlKey: false, metaKey: true }))).toBeNull();
     expect(shortcutFor(press("я", { code: "KeyZ" }))).toBe("undo");
     expect(shortcutFor(press("ы", { code: "KeyS", shiftKey: true }))).toBe("saveAs");
     expect(shortcutFor(press("я", { code: "Digit1" }))).toBeNull();
