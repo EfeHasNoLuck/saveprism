@@ -1,58 +1,31 @@
 # HANDOFF
 
-**State (2026-10-28, ~09:45 TR):** the maintainer's polish list (`docs/design/polish-v0.1.md`, todo 7 in `NOW.md`)
-is built, checked in the running app over CDP, fixed and re-checked. The maintainer then asked for 4 more changes; 2 are
-done, 2 run in EVREN right now (below). Everything is committed locally on `main`, NOT pushed (GitHub Actions minutes
-are out until next month; last pushed `4214786`). The weekly Claude limit was ~90%: EVREN builds, Claude merges,
-checks and does visual checks through a Claude subagent (model sonnet).
+**State (2026-10-28, ~12:00 TR):** the maintainer's polish list and their 4 follow-ups are all done and merged on
+`main`, checked in the running app over CDP. Everything is committed locally, NOT pushed (GitHub Actions minutes are
+out until next month; last pushed `4214786`). Weekly Claude limit was ~94% (resets 2026-10-28 11:00 UTC); keep
+visual checks in a Claude subagent (model sonnet), text chores in EVREN.
 
-## Done today (local commits on main)
-`ce44aca` start screen + FAQ + header + Where is my save + scrollbar · `c649106` Settings page (General, Appearance,
-Saving & backups; app-folder move fixed to move only SavePrism's own files) · `f04f7d7` AI connection tab ·
-`5a5db1d` About + in-app notices + What's new (`CHANGELOG.md`) + first-launch tour · `7f89bad` rebindable shortcuts ·
-`01027c7` opening logo, Explorer "Decode with SavePrism" (NSIS + MSI) + single instance, theme files · `9c0ea31`,
-`dff0665`, `e93cac9` fixes from the visual check (11 problems, re-checked OK) · `1af2100` one "Where is my save?" on
-the start screen (FAQ item removed, the drop-card link stays), About shows only the version under the name ·
-`d4c5c5f` + the handoff commit: search research `docs/research/seo-2026-10-28.md`.
-Screenshots the maintainer saw: `.motor/vcheck-1028b/m-*.png` (local).
+## Done today, second half (local commits on main)
+`ac70822` App color (Blue/Violet/Teal/Green/Amber/Rose, Windows accent, Monochrome, Custom; theme-file `appColor`;
+neutral grey opening cover) · `f2d9cca` photo preview click/drop (drops in Settings never open a save) ·
+`5ce3552` fixes from the visual check (dark borders now follow the app color, empty photo zone shows one drop label,
+last Windows accent cached so no blue start, accent swatch shows the accent) · `09408b6`, `2c24efd`, `a623039`
+frosted glass over a background photo (maintainer chose B from `.motor/vcheck-1028d/ab-*.png`): cards 80 % dark /
+88 % light, header/bottom bar/Settings sidebar blur, photo fades toward `--background` (slider renamed "Fade"),
+`.on-photo` halo + full text color on headings, group labels, slogan, Reset to default.
+Checks after each: web 3/3 (rust 3/3, cargo deny, ignored desktop tests after the merges). Visual reports and
+screenshots: `.motor/vcheck-1028c/`, `-1028d/`, `-1028e/` (briefs `.motor/vcheck-1028c.md`, `d`, `e`).
+Known leftovers: Settings Preview red "Health" row 4.0:1 in dark (old, not glass); light active sidebar tab 4.0:1 at
+the photo's darkest spot; a dropped non-image shows "(SP-APP-029)" in its toast like other error toasts.
+Worktree leftovers the maintainer may delete by hand: `../saveprism-wt/{satisfactory,w4-settings,w6-shortcuts,
+w7-settings-fix,w7-screens-fix,w8-appcolor,w8-photo}` (branches `wt/w8-*` are merged).
 
 ## Maintainer decisions today
 - About keeps the short tagline "A save editor that runs on your PC. No account, no upload." (TR too). The GitHub
   "About" description is a DIFFERENT, search-friendly line: "Save editor for PC games. Edit Unity, Unreal, RPG Maker,
   Ren'Py and Godot saves offline, with automatic backups." GitHub topics list: `docs/research/seo-2026-10-28.md`.
-- The app's own color must be changeable (blue everywhere can bore people), with dynamic / monochrome / pick-a-color,
-  and customization left to the community (theme files) → job `w8-appcolor`.
-- The photo preview in Appearance must be clickable and accept a dropped image → job `w8-photo`.
-- After these: "Ben başka bir şey göremiyorum, sonra release düşünürüz", and the README/GitHub showcase (below).
-
-## EVREN jobs: BOTH FINISHED (~09:50 TR), not merged yet. Each wrote its report and says rust 3/3 + web 3/3 in its
-own worktree; no `opencode.exe` is left. First step of the next session: merge them (below).
-| job | worktree | brief | report (inside the worktree) | opencode session |
-|---|---|---|---|---|
-| w8-appcolor | `../saveprism-wt/w8-appcolor` | `.motor/w8-appcolor.md` | `.motor/w8-appcolor-report.md` | `ses_e7ed91988ffeUmOKEMXYhwmKTj` |
-| w8-photo | `../saveprism-wt/w8-photo` | `.motor/w8-photo.md` | `.motor/w8-photo-report.md` | `ses_e7ed8a90fffeTmvuV2I33uAte5` |
-- Done when the report file exists AND no `opencode.exe` is left in `tasklist` (a job may keep working a while after
-  writing its report). `opencode.exe` survives the Claude session; the logs `.motor/w8-*.log` stay empty while running.
-- Stopped without a report (EVREN daily limit resets 00:00 UTC = 03:00 TR, or a refused path): resume from the worktree
-  root: `OPENCODE_CONFIG=<main>/opencode.json opencode run --session <id> -m evren/deepseek-v4.1-flash --agent build
-  "Continue the task in .motor/<name>.md ... write .motor/<name>-report.md" < /dev/null | cat > <main>/.motor/<name>-resume.log`
-  (pattern in `.motor/resume_job.sh`, which still assumes `w3-` names).
-- Merge each: `python -I .motor/merge_wt.py <name> "<subject>"`. Both touch `SettingsPage.tsx` (Appearance: App color
-  group vs Photo card), the locales and maybe `App.tsx`. CAREFUL: merge_wt resolves EVERY conflict by joining both
-  sides; for `.tsx` that is often wrong. Rebuild the hunks with `git merge-file -p ours base theirs` (see how it was done
-  for SettingsPage on 2026-10-28) and resolve by hand. Then `cargo fmt --all`, `bash .claude/araclar/kontrol.sh web`
-  and `rust` (run kontrol in its own Bash call: the hook refuses a command that also edits files), `cargo deny check`,
-  `cargo test -p saveprism-desktop -- --ignored`, commit (Conventional Commit + Co-Authored-By trailer).
-- What to check in the results: Blue writes NO overrides (today's look exact); every preset / Windows accent / Monochrome
-  / Custom has readable text on primary in dark and light; the theme file `appColor` field validates; `boot.js` does
-  not flash blue for a non-blue color; Windows accent re-read on window focus. Photo: click and Enter open the picker;
-  a drop on the zone imports the photo; any drop in Settings never opens a save; drops on the start screen and with a
-  save open still open files.
-- Then a visual re-check through a Claude subagent: copy `.motor/vcheck-1028b.md` (setup and localStorage rule are in
-  `.motor/vcheck-1028.md`; CDP scripts in `.motor/vcheck-1028/`), list the new items (app color choices in both themes,
-  photo click/drop, 5-item FAQ, About version-only), and a fresh screenshot set; show the maintainer.
-- Worktree leftovers that `git worktree remove` could not delete (long paths), the maintainer may delete by hand:
-  `../saveprism-wt/{satisfactory,w4-settings,w6-shortcuts,w7-settings-fix,w7-screens-fix}`.
+- App color changeable, customization left to the community (theme files). Glass look in Photo mode (B).
+- "Ben başka bir şey göremiyorum, sonra release düşünürüz", then the README/GitHub showcase (below).
 
 ## NEXT: README and GitHub showcase (maintainer's request, 2026-10-28)
 The maintainer's full vision prompt (Turkish, written with Gemini, kept verbatim): `.motor/readme-vision-tr.md`. They
@@ -111,3 +84,5 @@ the facts against the code; or Claude writes it directly if the limit allows (it
 - The old session "SavePrism: Satisfactory merge, then polish" (`local_54de6911-…`) could not be archived (Remote
   Control client attached); the maintainer can archive it from the sidebar.
 - Focus engines: Unreal, Unity, RPG Maker, Ren'Py. Never touch the maintainer's original saves.
+- Visual checks that pick a background photo also snapshot and restore the app folder's `background\` folder (it did
+  not exist on the dev PC; the checks deleted it again). Test photo: a copy of `C:\Windows\Web\Wallpaper\Windows\img0.jpg`.

@@ -231,6 +231,12 @@ The app's job is input → good output; no history screens (user, 2026-10-23: no
      version (`1af2100`); GitHub description line chosen (`docs/research/seo-2026-10-28.md`). EVREN, merged
      2026-10-28 (rust 3/3, web 3/3, cargo deny ok, ignored desktop tests ok): App color with presets, Windows accent,
      monochrome, custom, in theme files; neutral opening cover (`ac70822`); photo preview click/drop (`f2d9cca`).
+     Checked in the running app over CDP; fixes `5ce3552` (dark borders follow the app color, clearer drop label,
+     no blue start with Windows accent) re-checked OK. Frosted glass over a background photo (maintainer picked B
+     from A/B screenshots `.motor/vcheck-1028d/ab-*.png`): `09408b6`, `2c24efd`, next commit; photo fades toward the
+     theme color ("Fade"), text right on the photo has a halo; measured ≥ 4.5:1 on the real test photo except the
+     light active sidebar tab at the photo's darkest spot (4.0). Not fixed: the Settings Preview red "Health" row is
+     4.0:1 in dark (not caused by glass).
      Then the README/GitHub showcase (`HANDOFF.md`, `.motor/readme-vision-tr.md`).
    - Next (HANDOFF order): the maintainer looks at the screenshots; then MCP tools `compare_saves`, `save_locations`,
      `open_code` (+ `open_save` uses the key finder; MCP should use the backup folder chosen in Settings) and
