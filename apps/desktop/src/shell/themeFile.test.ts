@@ -165,6 +165,12 @@ describe("parseThemeFile", () => {
     expect(
       parse({ ...valid, background: { kind: "photo", fit: "fit", blur: 101, darken: 20 } }),
     ).toEqual({ ok: false, reason: "background" });
+    expect(
+      parse({
+        ...valid,
+        background: { kind: "photo", fit: "fit", blur: 10, darken: 20, glass: 101 },
+      }),
+    ).toEqual({ ok: false, reason: "background" });
     expect(parse({ ...valid, background: "photo" })).toEqual({
       ok: false,
       reason: "background",
@@ -201,10 +207,18 @@ describe("theme files from settings", () => {
 
   it("builds a photo theme from the photo settings", () => {
     const theme = buildThemeFile(
-      { ...settings, backgroundMode: "photo", photoFit: "fit", photoBlur: 12, photoDarken: 65 },
+      {
+        ...settings,
+        backgroundMode: "photo",
+        photoFit: "fit",
+        photoBlur: 12,
+        photoDarken: 65,
+        glassOpacity: 40,
+      },
       "Photo",
     );
-    expect(theme.background).toEqual({ kind: "photo", fit: "fit", blur: 12, darken: 65 });
+    expect(theme.background).toEqual({ kind: "photo", fit: "fit", blur: 12, darken: 65, glass: 40 });
+    expect(parseThemeFile(serializeThemeFile(theme))).toEqual({ ok: true, theme });
   });
 });
 
@@ -229,7 +243,7 @@ describe("themeSettingsPatch", () => {
   it("keeps the current photo for a photo theme", () => {
     const theme: ThemeFile = {
       ...valid,
-      background: { kind: "photo" as const, fit: "fit" as const, blur: 5, darken: 70 },
+      background: { kind: "photo" as const, fit: "fit" as const, blur: 5, darken: 70, glass: 30 },
     };
     const patch = themeSettingsPatch(theme, {
       ...DEFAULT_SETTINGS,
@@ -240,7 +254,16 @@ describe("themeSettingsPatch", () => {
       photoFit: "fit",
       photoBlur: 5,
       photoDarken: 70,
+      glassOpacity: 30,
     });
+  });
+
+  it("keeps the player's card opacity for an older photo theme without it", () => {
+    const theme: ThemeFile = {
+      ...valid,
+      background: { kind: "photo" as const, fit: "fit" as const, blur: 5, darken: 70 },
+    };
+    expect(themeSettingsPatch(theme, DEFAULT_SETTINGS)).not.toHaveProperty("glassOpacity");
   });
 
   it("uses the Default pattern for a photo theme when there is no photo", () => {

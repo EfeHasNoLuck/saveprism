@@ -766,6 +766,7 @@
     "fill": "Doldur",
     "blur": "Bulanıklık",
     "darken": "Soldurma",
+    "glass": "Kart opaklığı",
     "preview": "Önizleme",
     "previewTip": "Ayarları kapatmadan seçimlerini gösterir. Renkli satırlardaki yazı okunaklı kalmak için kendiliğinden değişir.",
     "backupsSection": "Yedekler",

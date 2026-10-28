@@ -124,6 +124,8 @@ describe("parseSettings", () => {
     expect(parseSettings(JSON.stringify({ patternStrength: -5 })).patternStrength).toBe(0);
     expect(parseSettings(JSON.stringify({ photoBlur: 900 })).photoBlur).toBe(100);
     expect(parseSettings(JSON.stringify({ photoDarken: -5 })).photoDarken).toBe(0);
+    expect(parseSettings(JSON.stringify({ glassOpacity: 140 })).glassOpacity).toBe(100);
+    expect(parseSettings(JSON.stringify({})).glassOpacity).toBe(85);
   });
 
   it("turns the old off pattern into the faintest pattern", () => {

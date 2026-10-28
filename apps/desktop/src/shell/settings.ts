@@ -53,6 +53,8 @@ export interface Settings {
   photoBlur: number;
   /** 0 to 100; how dark the photo is made so text stays readable. 40 by default. */
   photoDarken: number;
+  /** 0 to 100; how opaque cards and bars are over the photo (0 clear glass, 100 solid). 85 by default. */
+  glassOpacity: number;
   /** The file name of the copied photo, so a new choice reloads it. */
   photoName: string | null;
   /** Backup folders the player used, newest first (empty: the default folder). */
@@ -81,6 +83,7 @@ export const DEFAULT_SETTINGS: Settings = {
   photoFit: "fill",
   photoBlur: 30,
   photoDarken: 40,
+  glassOpacity: 85,
   photoName: null,
   backupFolders: [],
   appFolder: null,
@@ -216,6 +219,10 @@ export function parseSettings(raw: string | null): Settings {
       typeof record.photoDarken === "number"
         ? clampStrength(record.photoDarken)
         : DEFAULT_SETTINGS.photoDarken,
+    glassOpacity:
+      typeof record.glassOpacity === "number"
+        ? clampStrength(record.glassOpacity)
+        : DEFAULT_SETTINGS.glassOpacity,
     photoName: typeof record.photoName === "string" ? record.photoName : null,
     backupFolders: parseFolders(record.backupFolders),
     appFolder:

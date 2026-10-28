@@ -23,7 +23,7 @@ const MAX_NAME_CHARS = 64;
 
 export type ThemeBackground =
   | { kind: "pattern"; pattern: PatternKind; strength: number }
-  | { kind: "photo"; fit: PhotoFit; blur: number; darken: number };
+  | { kind: "photo"; fit: PhotoFit; blur: number; darken: number; glass?: number };
 
 export interface ThemeFile {
   format: typeof THEME_FORMAT;
@@ -83,6 +83,7 @@ export function buildThemeFile(settings: Settings, name: string): ThemeFile {
           fit: settings.photoFit,
           blur: settings.photoBlur,
           darken: settings.photoDarken,
+          glass: settings.glassOpacity,
         }
       : {
           kind: "pattern",
@@ -161,7 +162,8 @@ export function parseThemeFile(text: string): ThemeParseResult {
     if (
       !isPhotoFit(background.fit) ||
       !isIntegerIn(background.blur, 0, 100) ||
-      !isIntegerIn(background.darken, 0, 100)
+      !isIntegerIn(background.darken, 0, 100) ||
+      (background.glass !== undefined && !isIntegerIn(background.glass, 0, 100))
     ) {
       return { ok: false, reason: "background" };
     }
@@ -170,6 +172,7 @@ export function parseThemeFile(text: string): ThemeParseResult {
       fit: background.fit,
       blur: background.blur,
       darken: background.darken,
+      ...(background.glass !== undefined ? { glass: background.glass } : {}),
     };
   } else {
     return { ok: false, reason: "background" };
@@ -211,6 +214,8 @@ export function themeSettingsPatch(
     patch.photoFit = background.fit;
     patch.photoBlur = background.blur;
     patch.photoDarken = background.darken;
+    // Older theme files have no glass value: the player's own stays.
+    if (background.glass !== undefined) patch.glassOpacity = background.glass;
     if (current.photoName) {
       patch.backgroundMode = "photo";
     } else {

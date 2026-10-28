@@ -64,12 +64,16 @@ export function BackgroundPattern() {
   const glass = settings.backgroundMode === "photo" && photo !== null;
   useEffect(() => {
     const root = document.documentElement;
-    if (glass) root.dataset.glass = "";
-    else delete root.dataset.glass;
+    if (glass) {
+      root.dataset.glass = "";
+      root.style.setProperty("--glass-opacity", `${settings.glassOpacity}%`);
+    } else {
+      delete root.dataset.glass;
+    }
     return () => {
       delete root.dataset.glass;
     };
-  }, [glass]);
+  }, [glass, settings.glassOpacity]);
 
   if (settings.backgroundMode === "photo") {
     if (!photo) return null;

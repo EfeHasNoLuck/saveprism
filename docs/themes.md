@@ -89,7 +89,9 @@ image — and is validated before anything changes.
 ```
 
 A photo background uses
-`{ "kind": "photo", "fit": "fit" | "fill", "blur": 0..100, "darken": 0..100 }`. Colors are a
+`{ "kind": "photo", "fit": "fit" | "fill", "blur": 0..100, "darken": 0..100, "glass": 0..100 }`
+(`darken` is the Fade slider; `glass` is Card opacity, optional: a file without it keeps the
+player's own). Colors are a
 preset id of their group (`violet`, `rose`, `cyan`, …) or a `#rrggbb` value; `appColor` is one of
 the four forms above and is optional (a file without it means Blue); `textSize` is an integer
 percent from 80 to 140. Unknown keys are ignored; a wrong type, an unknown preset or a value

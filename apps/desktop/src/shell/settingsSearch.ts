@@ -26,6 +26,7 @@ export const SETTINGS_INDEX: readonly SettingEntry[] = [
   { tab: "appearance", id: "appearance.fit", labelKey: "settings.photoFit" },
   { tab: "appearance", id: "appearance.blur", labelKey: "settings.blur" },
   { tab: "appearance", id: "appearance.darken", labelKey: "settings.darken" },
+  { tab: "appearance", id: "appearance.glass", labelKey: "settings.glass" },
   { tab: "appearance", id: "appearance.themeFile", labelKey: "settings.themeFile.label" },
   { tab: "backups", id: "backups.action", labelKey: "settings.defaultAction" },
   { tab: "backups", id: "backups.keep", labelKey: "settings.keepBackups" },

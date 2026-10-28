@@ -1041,6 +1041,12 @@ export function SettingsPage({
                         value={settings.photoDarken}
                         onChange={(photoDarken) => update({ photoDarken })}
                       />
+                      <MiniSlider
+                        id="appearance.glass"
+                        label={t("settings.glass")}
+                        value={settings.glassOpacity}
+                        onChange={(glassOpacity) => update({ glassOpacity })}
+                      />
                     </BackgroundCard>
                   </div>
                 </Section>

@@ -222,33 +222,29 @@
 }
 
 /*
- * Frosted glass over a background photo (`data-glass` on <html>, set by BackgroundPattern).
- * The photo is already blurred by its own setting, so cards only turn translucent (cheap with
- * many cards); the header, bottom bar and Settings sidebar also blur what scrolls under them.
- * Unlayered, so it wins over the Tailwind utilities.
+ * Frosted glass over a background photo (`data-glass` on <html>, set by BackgroundPattern, with
+ * `--glass-opacity` from Appearance -> Photo -> Card opacity). The photo is already blurred by its own
+ * setting, so cards only turn translucent (cheap with many cards); the header, bottom bar and
+ * Settings sidebar also blur what scrolls under them. Unlayered, so it wins over the utilities.
  */
 :root[data-glass] .bg-card {
-  background-color: color-mix(in srgb, var(--card) 80%, transparent);
+  background-color: color-mix(in srgb, var(--card) var(--glass-opacity, 85%), transparent);
 }
-/* Dark text in the light theme needs a denser card over a dark part of the photo. */
-:root[data-glass]:not(.dark) .bg-card {
-  background-color: color-mix(in srgb, var(--card) 88%, transparent);
-}
-:root[data-glass]:not(.dark) .bg-chrome {
-  background-color: color-mix(in srgb, var(--chrome) 82%, transparent);
+:root[data-glass] .bg-chrome {
+  background-color: color-mix(in srgb, var(--chrome) var(--glass-opacity, 85%), transparent);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  backdrop-filter: blur(14px) saturate(1.2);
 }
 /*
- * Text that sits right on the photo (headings, group labels, the slogan) gets a soft halo, and
- * muted text there uses the full text colour: muted grey over a bright photo stays unreadable.
- * Buttons reset text-shadow in the browser's own styles, so they inherit it here.
+ * Text that sits right on the photo (headings, group labels, the slogan) gets a thin contour and a
+ * tight shadow to the lower right, and muted text there uses the full text colour: muted grey
+ * over a bright photo stays unreadable. Buttons reset text-shadow in the browser's own styles, so
+ * they inherit it here.
  */
 :root[data-glass] .on-photo {
   text-shadow:
-    0 0 2px var(--background),
-    0 0 4px var(--background),
-    0 0 8px var(--background),
-    0 0 8px var(--background),
-    0 0 16px var(--background);
+    0 0 1px var(--background),
+    1px 1px 1px var(--background);
 }
 :root[data-glass] .on-photo button {
   text-shadow: inherit;
@@ -256,11 +252,6 @@
 :root[data-glass] .on-photo:is(.text-muted-foreground, .text-foreground-variant),
 :root[data-glass] .on-photo :is(.text-muted-foreground, .text-foreground-variant) {
   color: var(--foreground);
-}
-:root[data-glass] .bg-chrome {
-  background-color: color-mix(in srgb, var(--chrome) 70%, transparent);
-  -webkit-backdrop-filter: blur(14px) saturate(1.2);
-  backdrop-filter: blur(14px) saturate(1.2);
 }
 
 /*
