@@ -42,6 +42,26 @@ blocks; the defaults write nothing and leave `index.css` as it is. `shell/appear
 `applyColors` puts that CSS into a `<style id="saveprism-colors">` element, at startup and on
 every settings change.
 
+## App colour
+
+`apps/desktop/src/shell/appColor.ts` holds the app-wide tint. The choice is
+`{ "kind": "preset", "id": "blue" | "violet" | "teal" | "green" | "amber" | "rose" }`,
+`{ "kind": "system" }` (the Windows accent), `{ "kind": "mono" }` (neutral greys) or
+`{ "kind": "custom", "hex": "#rrggbb" }`.
+
+The generator measures the OKLCH lightness and chroma of every surface and action token in
+`index.css` (`APP_COLOR_BASE`), then writes the same lightness with the chosen hue and a scaled
+chroma, for `:root` and `.dark`. Monochrome is the same palette with zero chroma. Text on
+`--primary` and the primary container is picked for at least 4.5:1 contrast. Blue, the default,
+writes no override, so the `index.css` values stay exactly as they are. The changed, accent and
+error groups of `shell/colors.ts` keep their own setting and are not touched.
+
+`shell/appearance.ts` `applyAppColor` puts the result into a `<style id="saveprism-appcolor">`
+element, live. For the Windows accent the window calls the `app_accent_color` command (DWM
+`AccentColor`, falling back to `ColorizationColor`) and reads it again whenever the window gets
+focus. The opening cover in `index.html` is neutral in every theme, so a non-blue choice never
+flashes blue before it is applied.
+
 ## Theme files
 
 Settings → Appearance can export the current look as a file and import one made by someone else
@@ -62,6 +82,7 @@ image — and is validated before anything changes.
   "version": 1,
   "name": "Blue night",
   "colors": { "changed": "violet", "accent": "#123abc", "error": "red" },
+  "appColor": { "kind": "preset", "id": "violet" },
   "textSize": 110,
   "background": { "kind": "pattern", "pattern": "dots", "strength": 70 }
 }
@@ -69,9 +90,19 @@ image — and is validated before anything changes.
 
 A photo background uses
 `{ "kind": "photo", "fit": "fit" | "fill", "blur": 0..100, "darken": 0..100 }`. Colors are a
-preset id of their group (`violet`, `rose`, `cyan`, …) or a `#rrggbb` value; `textSize` is an
-integer percent from 80 to 140. Unknown keys are ignored; a wrong type, an unknown preset or a
-value outside its range refuses the whole file with a short reason.
+preset id of their group (`violet`, `rose`, `cyan`, …) or a `#rrggbb` value; `appColor` is one of
+the four forms above and is optional (a file without it means Blue); `textSize` is an integer
+percent from 80 to 140. Unknown keys are ignored; a wrong type, an unknown preset or a value
+outside its range refuses the whole file with a short reason.
+
+## Make and share a theme
+
+1. Set Appearance the way you like it and press **Export theme…**.
+2. Open the `.saveprism-theme.json` file in a text editor: change the name, the colours, the app
+   colour, the text size or the background. Keep `format` and `version` as they are.
+3. Share the file in GitHub Discussions → **Community themes**. Others press **Import theme…**
+   and pick it. Never share a theme that points at a script or an archive; only the JSON data is
+   read.
 
 ## Adding a high-contrast theme
 

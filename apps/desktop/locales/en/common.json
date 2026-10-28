@@ -645,6 +645,19 @@
       "normal": "Normal",
       "large": "Large"
     },
+    "appColor": "App color",
+    "appColorHint": "Tints the whole app: backgrounds, buttons and highlights.",
+    "appColorPresets": {
+      "blue": "Blue",
+      "violet": "Violet",
+      "teal": "Teal",
+      "green": "Green",
+      "amber": "Amber",
+      "rose": "Rose"
+    },
+    "appColorSystem": "Windows accent",
+    "appColorMono": "Monochrome",
+    "appColorCustom": "Custom app color",
     "colors": "Colors",
     "changedColor": "Changed values",
     "accentColor": "Accent",
@@ -828,6 +841,7 @@
         "version": "Its version is not supported.",
         "name": "Its name is missing or too long.",
         "colors": "One of its colors is not a preset id or a #rrggbb value.",
+        "appColor": "Its app color is not a valid preset, system, monochrome or #rrggbb value.",
         "textSize": "Its text size is outside 80–140%.",
         "background": "Its background settings are not valid."
       }

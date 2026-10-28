@@ -3,6 +3,7 @@
  * with a fake or a broken storage object. Theme and language keep their own keys and modules.
  */
 
+import { DEFAULT_APP_COLOR, parseAppColor, type AppColor } from "./appColor";
 import { DEFAULT_COLORS, isColorChoice, type ColorChoices, type ColorGroup } from "./colors";
 import { DEFAULT_MCP_CLIENT, isMcpClient, type McpClient } from "./setup";
 import { defaultShortcuts, parseStoredShortcuts, type ShortcutBindings } from "./shortcuts";
@@ -36,6 +37,8 @@ export interface Settings {
   keepBackupDays: number;
   /** Root font size in percent of the default 16 px; 80 to 140. */
   textScale: number;
+  /** The app-wide tint: a preset, the Windows accent, greys or a custom colour. */
+  appColor: AppColor;
   /** Preset id or custom `#rrggbb` for the changed, accent and error colours. */
   colors: ColorChoices;
   /** 0 to 100; 50 is the default strength. */
@@ -70,6 +73,7 @@ export const DEFAULT_SETTINGS: Settings = {
   keepBackups: 10,
   keepBackupDays: 30,
   textScale: DEFAULT_TEXT_SCALE,
+  appColor: DEFAULT_APP_COLOR,
   colors: DEFAULT_COLORS,
   patternStrength: 50,
   patternKind: "default",
@@ -190,6 +194,7 @@ export function parseSettings(raw: string | null): Settings {
         ? clampKeepDays(record.keepBackupDays)
         : DEFAULT_SETTINGS.keepBackupDays,
     textScale: parseTextScale(record.textScale ?? record.textSize),
+    appColor: parseAppColor(record.appColor),
     colors: {
       changed: parseColor(record.colors, "changed"),
       accent: parseColor(record.colors, "accent"),

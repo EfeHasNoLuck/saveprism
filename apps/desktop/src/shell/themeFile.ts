@@ -4,6 +4,7 @@
  * every field before anything changes (unknown keys are ignored).
  */
 
+import { DEFAULT_APP_COLOR, normalizeAppColor, type AppColor } from "./appColor";
 import { COLOR_GROUPS, isColorChoice, type ColorChoices } from "./colors";
 import {
   parseTextScale,
@@ -29,6 +30,8 @@ export interface ThemeFile {
   version: typeof THEME_VERSION;
   name: string;
   colors: ColorChoices;
+  /** The app-wide tint; a file without it means the blue default. */
+  appColor: AppColor;
   /** Text size in percent, 80 to 140. */
   textSize: number;
   background: ThemeBackground;
@@ -42,6 +45,7 @@ export type ThemeFileError =
   | "version"
   | "name"
   | "colors"
+  | "appColor"
   | "textSize"
   | "background";
 
@@ -90,6 +94,7 @@ export function buildThemeFile(settings: Settings, name: string): ThemeFile {
     version: THEME_VERSION,
     name: name.trim() || DEFAULT_THEME_NAME,
     colors: { ...settings.colors },
+    appColor: { ...settings.appColor },
     textSize: settings.textScale,
     background,
   };
@@ -127,6 +132,11 @@ export function parseThemeFile(text: string): ThemeParseResult {
     if (!isColorChoice(group, value)) return { ok: false, reason: "colors" };
     colors[group] = value;
   }
+
+  // The field is optional: a file made before it existed means the blue default.
+  const appColor =
+    data.appColor === undefined ? { ...DEFAULT_APP_COLOR } : normalizeAppColor(data.appColor);
+  if (!appColor) return { ok: false, reason: "appColor" };
 
   if (!isIntegerIn(data.textSize, 80, 140)) {
     return { ok: false, reason: "textSize" };
@@ -172,6 +182,7 @@ export function parseThemeFile(text: string): ThemeParseResult {
       version: THEME_VERSION,
       name,
       colors,
+      appColor,
       textSize: data.textSize,
       background: parsedBackground,
     },
@@ -188,6 +199,7 @@ export function themeSettingsPatch(
 ): Partial<Settings> {
   const patch: Partial<Settings> = {
     colors: { ...theme.colors },
+    appColor: { ...theme.appColor },
     textScale: parseTextScale(theme.textSize),
   };
   const background = theme.background;

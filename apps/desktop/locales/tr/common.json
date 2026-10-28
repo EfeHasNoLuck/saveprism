@@ -645,6 +645,19 @@
       "normal": "Normal",
       "large": "Büyük"
     },
+    "appColor": "Uygulama rengi",
+    "appColorHint": "Tüm uygulamayı renklendirir: arka planlar, düğmeler ve vurgular.",
+    "appColorPresets": {
+      "blue": "Mavi",
+      "violet": "Mor",
+      "teal": "Turkuaz",
+      "green": "Yeşil",
+      "amber": "Amber",
+      "rose": "Gül"
+    },
+    "appColorSystem": "Windows vurgu rengi",
+    "appColorMono": "Tek renk",
+    "appColorCustom": "Özel uygulama rengi",
     "colors": "Renkler",
     "changedColor": "Değişen değerler",
     "accentColor": "Vurgu",
@@ -828,6 +841,7 @@
         "version": "Sürümü desteklenmiyor.",
         "name": "Adı eksik ya da çok uzun.",
         "colors": "Renklerden biri bir hazır ayar kimliği ya da #rrggbb değeri değil.",
+        "appColor": "Uygulama rengi geçerli bir hazır ayar, sistem, tek renk ya da #rrggbb değeri değil.",
         "textSize": "Yazı boyutu %80–140 aralığının dışında.",
         "background": "Arka plan ayarları geçerli değil."
       }

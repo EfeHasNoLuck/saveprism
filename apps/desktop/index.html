@@ -9,7 +9,8 @@
       /*
        * The opening cover is painted by index.html, before the React bundle runs. It shows the
        * logo drawing itself with a plain SVG stroke animation (no library). React removes it
-       * after its first commit (see src/shell/boot.ts).
+       * after its first commit (see src/shell/boot.ts). The cover is neutral, not blue: a
+       * non-blue app colour must not flash the default blue before it is applied.
        */
       html,
       body {
@@ -22,13 +23,13 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        background: #eff4ff;
+        background: #f4f5f7;
         pointer-events: none;
         opacity: 1;
         transition: opacity 150ms ease-out;
       }
       html.dark #boot-cover {
-        background: #031427;
+        background: #111418;
       }
       #boot-cover.is-done {
         opacity: 0;
