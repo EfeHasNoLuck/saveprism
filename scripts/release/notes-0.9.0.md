@@ -15,9 +15,9 @@ A free save editor that runs on your PC. No account, no upload.
 ### Download
 | System | File |
 |---|---|
-| Windows 10 and 11 | `SavePrism_0.9.0_x64-setup.exe` |
-| macOS (Intel and Apple silicon) | `SavePrism_0.9.0_universal.dmg` |
-| Linux | `SavePrism_0.9.0_amd64.AppImage` or `SavePrism_0.9.0_amd64.deb` |
+| Windows 10 and 11 | [SavePrism_0.9.0_x64-setup.exe](https://github.com/huseyincancalti/saveprism/releases/download/v0.9.0/SavePrism_0.9.0_x64-setup.exe) |
+| macOS (Intel and Apple silicon) | [SavePrism_0.9.0_universal.dmg](https://github.com/huseyincancalti/saveprism/releases/download/v0.9.0/SavePrism_0.9.0_universal.dmg) |
+| Linux | [SavePrism_0.9.0_amd64.AppImage](https://github.com/huseyincancalti/saveprism/releases/download/v0.9.0/SavePrism_0.9.0_amd64.AppImage) or [SavePrism_0.9.0_amd64.deb](https://github.com/huseyincancalti/saveprism/releases/download/v0.9.0/SavePrism_0.9.0_amd64.deb) |
 
 ### Good to know
 - The Linux and macOS builds are new and not yet tried on real machines. Found a problem? Please open an issue.
