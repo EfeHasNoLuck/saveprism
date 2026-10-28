@@ -30,6 +30,7 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "publisher": "Hüseyin Can ÇALTI",
     "createUpdaterArtifacts": true,
     "resources": {
       "../../../THIRD_PARTY_NOTICES.md": "THIRD_PARTY_NOTICES.md"

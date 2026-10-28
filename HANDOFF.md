@@ -18,8 +18,10 @@ The plan and history are in `NOW.md`; this page is only what the next session ne
   exactly in the CLI and backend; a money edit saved with a backup and reopened; the current debug CLI detects them as
   `format.slime-rancher-2`. The maintainer edited a real save in SavePrism; the game loaded it with the
   change (2026-10-28).
-- Installers built from `1de6afd` and signed (reported by the MCP session): `target/release/bundle/msi/
-  SavePrism_0.1.0_x64_{en-US,tr-TR}.msi`, `target/release/bundle/nsis/SavePrism_0.1.0_x64-setup.exe`.
+- Installers rebuilt and signed on 2026-10-28 17:39 with `bash scripts/release/build.sh` from the publisher commit:
+  `target/release/bundle/msi/SavePrism_0.1.0_x64_{en-US,tr-TR}.msi`, `target/release/bundle/nsis/
+  SavePrism_0.1.0_x64-setup.exe`. Publisher "Hüseyin Can ÇALTI" (maintainer's choice; read back from both MSIs; keep
+  the surname in capitals: a lowercase "ı" is not in the en-US MSI's code page 1252); the setup exe shows the app logo.
 
 ## Broken / not checked
 - The new installers are not installed or tried yet (the maintainer's step).
