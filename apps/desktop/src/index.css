@@ -234,12 +234,28 @@
 :root[data-glass]:not(.dark) .bg-card {
   background-color: color-mix(in srgb, var(--card) 88%, transparent);
 }
-/* Text that sits right on the photo (headings, group labels, the slogan) gets a soft halo. */
+:root[data-glass]:not(.dark) .bg-chrome {
+  background-color: color-mix(in srgb, var(--chrome) 82%, transparent);
+}
+/*
+ * Text that sits right on the photo (headings, group labels, the slogan) gets a soft halo, and
+ * muted text there uses the full text colour: muted grey over a bright photo stays unreadable.
+ * Buttons reset text-shadow in the browser's own styles, so they inherit it here.
+ */
 :root[data-glass] .on-photo {
   text-shadow:
     0 0 2px var(--background),
-    0 0 6px var(--background),
-    0 0 12px var(--background);
+    0 0 4px var(--background),
+    0 0 8px var(--background),
+    0 0 8px var(--background),
+    0 0 16px var(--background);
+}
+:root[data-glass] .on-photo button {
+  text-shadow: inherit;
+}
+:root[data-glass] .on-photo.text-muted-foreground,
+:root[data-glass] .on-photo .text-muted-foreground {
+  color: var(--foreground);
 }
 :root[data-glass] .bg-chrome {
   background-color: color-mix(in srgb, var(--chrome) 70%, transparent);
