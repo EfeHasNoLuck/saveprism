@@ -81,7 +81,7 @@ interface PasswordRequest {
 function App() {
   const { t } = useTranslation();
   const { settings } = useSettings();
-  const { notify } = useNotify();
+  const { notify, dismissTopic } = useNotify();
 
   const [file, setFile] = useState<OpenInfo | null>(null);
   const [changeCount, setChangeCount] = useState(0);
@@ -136,13 +136,14 @@ function App() {
   }, []);
 
   const notifyError = useCallback(
-    (title: string, error: unknown, action?: ToastAction) => {
+    (title: string, error: unknown, action?: ToastAction, topic?: string) => {
       const { reason, fix } = describeError(error, t);
       notify({
         kind: "error",
         title,
         detail: t("toast.errorDetail", { reason, fix }).trim(),
         action,
+        topic,
       });
     },
     [notify, t],
@@ -189,6 +190,7 @@ function App() {
         setInvalid(false);
         setEditorKey((key) => key + 1);
         setPasswordRequest(null);
+        dismissTopic("open");
         notify({
           kind: "opened",
           title: t("bell.opened", { name: info.fileName }),
@@ -215,6 +217,7 @@ function App() {
             unknownFormat
               ? { label: t("toast.copyReport"), run: () => void copyFileReport(path) }
               : undefined,
+            "open",
           );
         }
       } finally {
@@ -223,7 +226,7 @@ function App() {
         setBusy(false);
       }
     },
-    [copyFileReport, notify, notifyError, resetChanges, settings.backupFolders, t],
+    [copyFileReport, dismissTopic, notify, notifyError, resetChanges, settings.backupFolders, t],
   );
 
   /**
@@ -320,7 +323,7 @@ function App() {
       const picked = await openDialog({ multiple: false, directory: false, title: t("dialog.openTitle") });
       if (typeof picked === "string") requestOpen(picked);
     } catch (error) {
-      notifyError(t("toast.openFailed"), error);
+      notifyError(t("toast.openFailed"), error, undefined, "open");
     }
   }, [busy, notifyError, requestOpen, t]);
 

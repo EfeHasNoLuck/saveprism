@@ -227,7 +227,7 @@
     "tellUsFailed": "Sorun sayfası açılamadı",
     "openFolder": "Klasörü aç",
     "notFound": "Bu bilgisayarda yok",
-    "inBrowser": "Tarayıcının kendi deposunda",
+    "inBrowser": "Tarayıcıda kaydedilir",
     "placeholder": {
       "gameFolder": "oyun klasörü",
       "game": "oyun",

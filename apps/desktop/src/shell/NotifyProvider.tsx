@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useRef, useState, type ReactNode } from "react";
 import {
+  dismissToastsForTopic,
   NotifyContext,
   type AppEvent,
   type NotifyContextValue,
@@ -25,6 +26,10 @@ export function NotifyProvider({ children }: { children: ReactNode }) {
     setToasts((current) => current.filter((toast) => toast.id !== id));
   }, []);
 
+  const dismissTopic = useCallback((topic: string) => {
+    setToasts((current) => dismissToastsForTopic(current, topic));
+  }, []);
+
   const notify = useCallback(
     (input: NotifyInput) => {
       const id = nextId.current;
@@ -47,6 +52,7 @@ export function NotifyProvider({ children }: { children: ReactNode }) {
           title: input.title,
           detail: input.detail,
           action: input.action,
+          topic: input.topic,
         };
         setToasts((current) => [...current, toast].slice(-4));
         window.setTimeout(() => dismissToast(id), kind === "error" ? TOAST_ERROR_MS : TOAST_MS);
@@ -60,8 +66,8 @@ export function NotifyProvider({ children }: { children: ReactNode }) {
   const unseen = useMemo(() => events.filter((event) => event.id > seenId).length, [events, seenId]);
 
   const value = useMemo<NotifyContextValue>(
-    () => ({ events, unseen, markSeen, toasts, notify, dismissToast, clearEvents }),
-    [events, unseen, markSeen, toasts, notify, dismissToast, clearEvents],
+    () => ({ events, unseen, markSeen, toasts, notify, dismissToast, dismissTopic, clearEvents }),
+    [events, unseen, markSeen, toasts, notify, dismissToast, dismissTopic, clearEvents],
   );
   return <NotifyContext.Provider value={value}>{children}</NotifyContext.Provider>;
 }

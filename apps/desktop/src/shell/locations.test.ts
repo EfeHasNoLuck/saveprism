@@ -1,11 +1,14 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
 import {
+  engineGroup,
   engineInitials,
   filterLocations,
+  groupRank,
   hasPathPlaceholder,
   highlightText,
   isRegistryPath,
+  orderLocations,
   tokenizePath,
   translatePathPlaceholders,
 } from "./locations";
@@ -97,6 +100,56 @@ describe("filterLocations", () => {
 
   it("returns nothing when no engine matches", () => {
     expect(filterLocations(ITEMS, "renpy", "all")).toEqual([]);
+  });
+});
+
+describe("orderLocations", () => {
+  const ITEMS = [
+    { engine: "construct" },
+    { engine: "unity" },
+    { engine: "witcher3" },
+    { engine: "godot" },
+    { engine: "unreal" },
+    { engine: "rpgmaker-mv" },
+    { engine: "rpgmaker-classic" },
+    { engine: "renpy" },
+    { engine: "gamemaker" },
+    { engine: "twine" },
+  ];
+
+  it("follows the chip order and keeps the host order inside a group", () => {
+    expect(orderLocations(ITEMS).map((item) => item.engine)).toEqual([
+      "unity",
+      "unreal",
+      "rpgmaker-mv",
+      "rpgmaker-classic",
+      "renpy",
+      "godot",
+      "gamemaker",
+      "construct",
+      "witcher3",
+      "twine",
+    ]);
+  });
+
+  it("ranks groups by the chip row, with other last", () => {
+    expect(engineGroup("unity")).toBe("unity");
+    expect(engineGroup("witcher3")).toBe("other");
+    expect(groupRank("unity")).toBeLessThan(groupRank("gamemaker"));
+    expect(groupRank("other")).toBe(groupRank("witcher3"));
+  });
+
+  it("keeps search results in the same grouped order", () => {
+    const results = filterLocations(
+      [
+        { engine: "witcher3", name: "The Witcher 3", hint: "saves", paths: [] },
+        { engine: "godot", name: "Godot", hint: "saves", paths: [] },
+        { engine: "unity", name: "Unity", hint: "saves", paths: [] },
+      ],
+      "saves",
+      "all",
+    );
+    expect(results.map((item) => item.engine)).toEqual(["unity", "godot", "witcher3"]);
   });
 });
 

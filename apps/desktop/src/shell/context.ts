@@ -42,6 +42,8 @@ export interface ToastItem {
   title: string;
   detail?: string;
   action?: ToastAction;
+  /** Lets a later event dismiss the older toasts of the same topic (for example "open"). */
+  topic?: string;
 }
 
 export interface NotifyInput {
@@ -53,6 +55,16 @@ export interface NotifyInput {
   action?: ToastAction;
   /** Keep the line out of the bell (default false). */
   skipBell?: boolean;
+  /** Groups toasts so a success can dismiss the earlier errors of the same action. */
+  topic?: string;
+}
+
+/** The toasts left after every toast of `topic` is removed; other topics keep their timing. */
+export function dismissToastsForTopic(
+  toasts: readonly ToastItem[],
+  topic: string,
+): ToastItem[] {
+  return toasts.filter((toast) => toast.topic !== topic);
 }
 
 export interface NotifyContextValue {
@@ -64,6 +76,8 @@ export interface NotifyContextValue {
   toasts: ToastItem[];
   notify: (input: NotifyInput) => void;
   dismissToast: (id: number) => void;
+  /** Dismisses every toast of `topic`; other toasts keep their timing. */
+  dismissTopic: (topic: string) => void;
   clearEvents: () => void;
 }
 

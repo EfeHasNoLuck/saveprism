@@ -227,7 +227,7 @@
     "tellUsFailed": "The issue page could not be opened",
     "openFolder": "Open folder",
     "notFound": "Not found on this PC",
-    "inBrowser": "In the browser's own storage",
+    "inBrowser": "Saved in the browser",
     "placeholder": {
       "gameFolder": "game folder",
       "game": "game",
