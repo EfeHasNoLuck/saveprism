@@ -56,7 +56,6 @@ pnpm test
 - Never run content from a save file (no unpickling, no Ruby eval, no BinaryFormatter deserialization). Parse to a tree
   only.
 - Error codes are stable and look like `SP-<AREA>-<NNN>`. Never reuse or renumber one.
-- Every new module gets a row in `docs/MAP.md`.
 - Everything in the repository is English: code, comments, docs, UI text in `locales/en/`, commit messages.
 
 ## Add a language
@@ -92,7 +91,7 @@ The file format and how the color variables work: [docs/themes.md](docs/themes.m
 
 1. Open a [game request](https://github.com/huseyincancalti/saveprism/issues/new?template=game_support.yml) first, so
    we agree on scope.
-2. Write down how the format behaves (a short spec in `docs/research/`), from your own saves and public documentation.
+2. Write down how the format behaves (a short spec in `docs/formats/`), from your own saves and public documentation.
 3. Add a module in `crates/saveprism-codecs/src/<format>/` and register it in `register_all` in
    `crates/saveprism-codecs/src/lib.rs`. Decoding then encoding an unchanged save must give the same bytes.
 4. Add synthetic fixtures in `fixtures/synthetic/<format>/` with their expectations (see `fixtures/README.md`), a fuzz

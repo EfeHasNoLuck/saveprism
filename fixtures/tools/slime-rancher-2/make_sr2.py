@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Generate an invented Slime Rancher 2 save from the behavioral spec.
 
-The layout follows docs/research/formats-slime-rancher.md; names and values are made up and no
+The layout follows docs/formats/slime-rancher.md; names and values are made up and no
 bytes of a real save are copied. Only records the codec reads are complete; the rest are small
 stand-ins the codec must leave alone (an unknown record, a world actor `SRAD` version 4, a slot
 run whose count does not match).

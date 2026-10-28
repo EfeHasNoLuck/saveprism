@@ -6,14 +6,10 @@ on:
     paths-ignore:
       - "docs/**"
       - "**/*.md"
-      - "handoff/**"
-      - ".fabrika/**"
   pull_request:
     paths-ignore:
       - "docs/**"
       - "**/*.md"
-      - "handoff/**"
-      - ".fabrika/**"
   workflow_dispatch:
 
 permissions:

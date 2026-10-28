@@ -23,18 +23,24 @@ Thumbs.db
 .vscode/*
 !.vscode/extensions.json
 
-# Fabrika: yerel durum ve geçici dosyalar (kartlar, raporlar, münazaralar ve handoff commit'lenir)
-.fabrika/durum/*
-!.fabrika/durum/.gitkeep
-.fabrika/gecici/
-.fabrika/diff/*
-!.fabrika/diff/.gitkeep
-.fabrika/raporlar/*.log
-.fabrika/raporlar/*.xml
-.claude/settings.local.json
-
 # Real game saves for local testing only; never pushed (user, 2026-10-22)
 fixtures/external/
 
-# External engine briefs, logs and reports (dis-motor skill)
+# The maintainer's local working notes and tool settings; not part of the program
+.claude/
+.fabrika/
 .motor/
+handoff/
+AGENTS.md
+CLAUDE.md
+HANDOFF.md
+NOW.md
+skills-lock.json
+docs/architecture/
+docs/archive/
+docs/design/
+docs/research/
+docs/FABRIKA.md
+docs/MAP.md
+docs/RISKS.md
+docs/ROADMAP.md

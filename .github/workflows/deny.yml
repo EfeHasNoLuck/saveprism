@@ -1,5 +1,5 @@
-# cargo-deny kapısı: GPL-ailesi lisans veya bilinen güvenlik açığı varsa kontrol kırmızı olur.
-# Kaynak: AGENTS.md kural 5, ADR-006, QUALITY.md §4. Politika: deny.toml.
+# cargo-deny gate: the check turns red on a GPL-family license or a known vulnerability.
+# Source: CONTRIBUTING.md, "Licenses". Policy: deny.toml.
 name: cargo-deny
 
 on:
@@ -15,7 +15,7 @@ on:
       - "Cargo.lock"
       - "deny.toml"
       - ".github/workflows/deny.yml"
-  # Yeni güvenlik bildirimleri kod değişmeden de yakalansın diye haftalık çalışır (Pazartesi 06:00 UTC).
+  # Runs weekly so new advisories are caught even without code changes (Monday 06:00 UTC).
   schedule:
     - cron: "0 6 * * 1"
   workflow_dispatch:

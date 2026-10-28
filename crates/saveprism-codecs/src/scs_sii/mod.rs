@@ -41,7 +41,7 @@
 //! `BSII`/`SIIB` binary saves open as a read-only tree (version and the whole payload). `ScsC` /
 //! `SrcC` saves are encrypted: they open read-only with a `hint` node that tells the player to set
 //! `g_save_format` to 2 (or 3) in the game, load and save once, and open the resulting plain text.
-//! No key is built into SavePrism (AGENTS.md rule 7); the game itself writes the plain text.
+//! No key is built into SavePrism (CONTRIBUTING.md, "Clean room"); the game itself writes the plain text.
 
 mod read;
 mod write;

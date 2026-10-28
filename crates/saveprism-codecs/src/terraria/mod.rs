@@ -14,8 +14,8 @@
 //! both key and IV. The game's writer pads with PKCS7 (the default); its reader uses no padding
 //! and stops after the player data, so bytes behind the data are ignored. This crate never holds
 //! that constant: the `crypto.terraria-plr` layer takes it from the recipe hint `password`, and
-//! the desktop key finder reads the `#US` heap of the player's own `Terraria.exe` (AGENTS.md
-//! rule 7).
+//! the desktop key finder reads the `#US` heap of the player's own `Terraria.exe` (CONTRIBUTING.md,
+//! "Clean room").
 //!
 //! After decryption, the player document starts with a little-endian `i32` version. Version 135
 //! and later add a Re-Logic header: `u64` (low 56 bits `0x006369676f6c6572` = the bytes

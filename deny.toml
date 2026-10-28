@@ -1,15 +1,15 @@
-# cargo-deny politikası (SavePrism) — cargo-deny 0.18+ biçimi (version = 2).
+# cargo-deny policy (SavePrism), cargo-deny 0.18+ format (version = 2).
 #
-# Kaynak: AGENTS.md kural 5, docs/architecture/kararlar.md ADR-006, docs/architecture/QUALITY.md §4.
+# Source: CONTRIBUTING.md, "Licenses".
 #
-# Lisans politikası:
-#   - Yalnız aşağıdaki izinli (permissive) lisanslar kabul edilir. Listede olmayan her lisans reddedilir.
-#   - GPL, AGPL, LGPL, SSPL, EUPL, CDDL listeye ASLA eklenmez (ADR-006: copyleft bağımlılık MIT'i bozar).
-#   - MPL-2.0 kabul edilir; ancak MPL-2.0 bileşen dağıtılırken NOTICE dosyasında belirtilmesi gerekir.
-#   - Apache-2.0 da NOTICE koşuluyla kullanılabilir.
+# License policy:
+#   - Only the permissive licenses below are accepted. Any license not on the list is rejected.
+#   - GPL, AGPL, LGPL, SSPL, EUPL and CDDL are NEVER added (a copyleft dependency breaks MIT).
+#   - MPL-2.0 is accepted, but a shipped MPL-2.0 component must be named in the NOTICE file.
+#   - Apache-2.0 is allowed under the same NOTICE condition.
 
 [graph]
-# Tüm özelliklerle çözümlenen bağımlılık ağacı denetlenir (özelliğe bağlı GPL bağımlılık gizlenmesin).
+# The tree is resolved with all features, so a GPL dependency behind a feature cannot hide.
 all-features = true
 
 [licenses]
@@ -31,37 +31,37 @@ allow = [
     "BSL-1.0",
     "CDLA-Permissive-2.0",
 ]
-# Lisans tespiti bu eşiğin altındaysa hata verilir (belirsiz metinli lisanslara karşı).
+# License detection below this confidence is an error (guards against unclear license texts).
 confidence-threshold = 0.93
 
 [licenses.private]
-# Kendi crate'lerimiz de denetlensin (hepsi MIT). Yanlışlıkla GPL'li yerel crate yakalanır.
+# Our own crates are checked too (all MIT), so a local crate marked GPL by mistake is caught.
 ignore = false
 
 [advisories]
 version = 2
-# Bilinen güvenlik açıkları (vulnerability) cargo-deny tarafından her zaman hata sayılır.
-# Yanked crate'ler uyarı verir.
+# Known vulnerabilities are always an error in cargo-deny.
+# Yanked crates give a warning.
 yanked = "warn"
-# Tauri'nin Linux GTK3 ağacındaki bakımsız dolaylı crate'ler kırmızı yapmasın diye
-# yalnız workspace'in doğrudan bağımlılıkları bakımsızlık açısından kontrol edilir.
+# Only the workspace's direct dependencies are checked for being unmaintained, so unmaintained
+# indirect crates in Tauri's Linux GTK3 tree do not turn the check red.
 unmaintained = "workspace"
-# Gerekçeli istisnalar buraya tek tek, RUSTSEC kimliği ve neden ile yazılır. Şu an yok.
+# Exceptions go here one by one, with the RUSTSEC id and the reason. None at the moment.
 ignore = []
 
 [bans]
-# Aynı crate'in birden fazla sürümü uyarıdır (Tauri ağacında kaçınılmaz olabilir).
+# Several versions of one crate is a warning (hard to avoid in the Tauri tree).
 multiple-versions = "warn"
-# Sürümsüz (`*`) bağımlılık reddedilir.
+# Dependencies without a version (`*`) are rejected.
 wildcards = "deny"
-# Workspace içi `path` bağımlılıklarında wildcard kabul edilir.
+# Wildcards are fine for `path` dependencies inside the workspace.
 allow-wildcard-paths = true
 deny = []
 skip = []
 skip-tree = []
 
 [sources]
-# Bilinmeyen registry ve git kaynakları reddedilir (tedarik zinciri).
+# Unknown registries and git sources are rejected (supply chain).
 unknown-registry = "deny"
 unknown-git = "deny"
 allow-registry = ["https://github.com/rust-lang/crates.io-index"]

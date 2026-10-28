@@ -2,7 +2,7 @@
 //!
 //! Written from the bytes of the maintainer's own saves (game 1.3.0, 2026-10-28); no public format
 //! description was found and no game or tool code was used. The full behavioral spec is in
-//! `docs/research/formats-slime-rancher.md`. Nothing in a save is executed.
+//! `docs/formats/slime-rancher.md`. Nothing in a save is executed.
 //!
 //! # Layout
 //!
