@@ -8,6 +8,7 @@ import { listen } from "@tauri-apps/api/event";
 import { Info, TriangleAlert } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import {
+  chooseBackground,
   closeFile,
   copyCode,
   discardChanges,
@@ -57,6 +58,7 @@ import {
   writeStored,
 } from "./shell/onboarding";
 import { PasswordDialog } from "./shell/PasswordDialog";
+import { isOverPhotoDrop, routeDrop } from "./shell/photoDrop";
 import { SaveLocationsDialog } from "./shell/SaveLocationsDialog";
 import { SettingsPage } from "./shell/SettingsPage";
 import { firstListSearch, isTextEditing, shortcutFor } from "./shell/shortcuts";
@@ -80,7 +82,7 @@ interface PasswordRequest {
 
 function App() {
   const { t } = useTranslation();
-  const { settings } = useSettings();
+  const { settings, update } = useSettings();
   const { notify, dismissTopic } = useNotify();
 
   const [file, setFile] = useState<OpenInfo | null>(null);
@@ -92,6 +94,10 @@ function App() {
   const [editorKey, setEditorKey] = useState(0);
   const [busy, setBusy] = useState(false);
   const [dragging, setDragging] = useState(false);
+  /** A dragged file is over the Photo card's drop zone in Settings. */
+  const [photoDropActive, setPhotoDropActive] = useState(false);
+  /** Bumped when a dropped photo replaced the file, so Settings shows the new one. */
+  const [photoVersion, setPhotoVersion] = useState(0);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [tourRunning, setTourRunning] = useState(() => !tourSeen());
   /** The version whose "What's new" dialog is open, else null. */
@@ -347,27 +353,74 @@ function App() {
     window.requestAnimationFrame(() => editorRef.current?.reveal(path));
   }, []);
 
+  /** Uses a dropped image as the background photo, through the same command and checks as the button. */
+  const importDroppedPhoto = useCallback(
+    async (path: string) => {
+      try {
+        const image = await chooseBackground(path, settings.appFolder);
+        update({ backgroundMode: "photo", photoName: image.name });
+        setPhotoVersion((version) => version + 1);
+        notify({ kind: "saved", title: t("settings.imageCopied") });
+      } catch (error) {
+        notifyError(t("settings.imageFailed"), error);
+      }
+    },
+    [notify, notifyError, settings.appFolder, t, update],
+  );
+
   // Drag and drop of a file onto the window (the host reports real paths).
   const openPathRef = useRef(requestOpen);
   useEffect(() => {
     openPathRef.current = requestOpen;
   }, [requestOpen]);
 
+  const importPhotoRef = useRef(importDroppedPhoto);
+  useEffect(() => {
+    importPhotoRef.current = importDroppedPhoto;
+  }, [importDroppedPhoto]);
+
+  const settingsOpenRef = useRef(settingsOpen);
+  useEffect(() => {
+    settingsOpenRef.current = settingsOpen;
+  }, [settingsOpen]);
+
   useEffect(() => {
     const handle: { stop: (() => void) | null } = { stop: null };
     let disposed = false;
+    const elementAt = (x: number, y: number) => document.elementFromPoint(x, y);
     try {
       void getCurrentWebview()
         .onDragDropEvent((event) => {
           const payload = event.payload;
+          const ratio = window.devicePixelRatio;
           if (payload.type === "enter") {
-            setDragging(true);
+            if (settingsOpenRef.current) {
+              setPhotoDropActive(isOverPhotoDrop(payload.position, ratio, elementAt));
+            } else {
+              setDragging(true);
+            }
+          } else if (payload.type === "over") {
+            if (settingsOpenRef.current) {
+              setPhotoDropActive(isOverPhotoDrop(payload.position, ratio, elementAt));
+            }
           } else if (payload.type === "leave") {
             setDragging(false);
+            setPhotoDropActive(false);
           } else if (payload.type === "drop") {
             setDragging(false);
-            const first = payload.paths[0];
-            if (first) openPathRef.current(first);
+            setPhotoDropActive(false);
+            const path = payload.paths[0];
+            const overPhotoZone = isOverPhotoDrop(payload.position, ratio, elementAt);
+            const route = routeDrop({
+              path,
+              settingsOpen: settingsOpenRef.current,
+              overPhotoZone,
+            });
+            if (route === "photo" && path) {
+              void importPhotoRef.current(path);
+            } else if (route === "open-save" && path) {
+              openPathRef.current(path);
+            }
           }
         })
         .then((stop) => {
@@ -935,11 +988,22 @@ function App() {
           file={file}
           onCloseFile={requestCloseFile}
           onWhereSaves={() => setLocationsOpen(true)}
-          onOpenSettings={() => setSettingsOpen(true)}
+          onOpenSettings={() => {
+            setPhotoDropActive(false);
+            setSettingsOpen(true);
+          }}
         />
 
         {settingsOpen ? (
-          <SettingsPage onClose={() => setSettingsOpen(false)} onShowTour={showTourAgain} />
+          <SettingsPage
+            onClose={() => {
+              setPhotoDropActive(false);
+              setSettingsOpen(false);
+            }}
+            onShowTour={showTourAgain}
+            photoDropActive={photoDropActive}
+            photoVersion={photoVersion}
+          />
         ) : (
           <>
             {readOnly ? (

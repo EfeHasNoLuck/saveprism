@@ -256,9 +256,15 @@ function Row({
 export function SettingsPage({
   onClose,
   onShowTour,
+  photoDropActive,
+  photoVersion,
 }: {
   onClose: () => void;
   onShowTour: () => void;
+  /** A dragged file is over the Photo card's drop zone. */
+  photoDropActive: boolean;
+  /** Bumped when a dropped photo replaced the file, so the preview reads it again. */
+  photoVersion: number;
 }) {
   const { t, i18n } = useTranslation();
   const { notify } = useNotify();
@@ -352,7 +358,7 @@ export function SettingsPage({
     return () => {
       cancelled = true;
     };
-  }, [settings.backgroundMode, settings.appFolder, settings.photoName]);
+  }, [settings.backgroundMode, settings.appFolder, settings.photoName, photoVersion]);
 
   const results = useMemo(
     () => searchSettings(query, (key) => t(key), language),
@@ -933,20 +939,46 @@ export function SettingsPage({
                       title={t("settings.photo")}
                       onSelect={() => update({ backgroundMode: "photo" })}
                     >
-                      <div className="flex items-center gap-2.5">
-                        <span className="flex h-11 w-18 shrink-0 items-center justify-center overflow-hidden rounded-md border border-input border-dashed text-muted-foreground">
-                          {photo ? (
-                            <img src={photo.dataUrl} alt="" className="size-full object-cover" />
-                          ) : (
-                            <ImageIcon className="size-4" />
-                          )}
-                        </span>
-                        <div className="min-w-0 text-xs text-muted-foreground">
-                          <b className="block truncate text-[0.78rem] font-medium text-foreground">
-                            {photo?.name ?? t("settings.noImage")}
-                          </b>
-                          {t("settings.imageCopiedHint")}
-                        </div>
+                      <button
+                        type="button"
+                        data-photo-drop
+                        onClick={() => void pickPhoto()}
+                        disabled={busy === "photo"}
+                        aria-label={photo ? t("settings.changeImage") : t("settings.chooseImage")}
+                        className={`group relative flex h-24 w-full items-center justify-center overflow-hidden rounded-md border-2 border-dashed text-muted-foreground outline-none transition-colors duration-150 ease-out focus-visible:ring-2 focus-visible:ring-ring/60 disabled:opacity-60 motion-reduce:transition-none ${
+                          photoDropActive
+                            ? "border-primary bg-primary/12 text-primary"
+                            : "border-input hover:border-primary/60 hover:bg-surface-high/40"
+                        }`}
+                      >
+                        {photo ? (
+                          <>
+                            <img
+                              src={photo.dataUrl}
+                              alt=""
+                              className="absolute inset-0 size-full object-cover"
+                            />
+                            <span className="absolute inset-x-0 bottom-0 flex items-center justify-center bg-black/60 py-1 text-[0.6875rem] font-medium text-white opacity-0 transition-opacity duration-150 ease-out group-hover:opacity-100 group-focus-visible:opacity-100 motion-reduce:transition-none">
+                              {t("settings.changeImage")}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="flex flex-col items-center gap-1">
+                            <ImageIcon className="size-5" />
+                            <span className="text-[0.6875rem]">{t("settings.dropHint")}</span>
+                          </span>
+                        )}
+                        {photoDropActive ? (
+                          <span className="absolute inset-0 flex items-center justify-center bg-primary/25 text-[0.6875rem] font-semibold">
+                            {t("settings.dropActive")}
+                          </span>
+                        ) : null}
+                      </button>
+                      <div className="mt-2 min-w-0 text-xs text-muted-foreground">
+                        <b className="block truncate text-[0.78rem] font-medium text-foreground">
+                          {photo?.name ?? t("settings.noImage")}
+                        </b>
+                        {t("settings.imageCopiedHint")}
                       </div>
                       <div
                         data-setting="appearance.fit"

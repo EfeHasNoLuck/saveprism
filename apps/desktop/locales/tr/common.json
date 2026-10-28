@@ -735,6 +735,8 @@
     "chooseImage": "Görsel seç…",
     "changeImage": "Görseli değiştir…",
     "noImage": "Henüz görsel yok",
+    "dropHint": "Görsele tıkla veya bırak",
+    "dropActive": "Bu görseli kullanmak için bırak",
     "imageCopied": "Görsel uygulama klasörüne kopyalandı",
     "imageCopiedHint": "Uygulama klasörüne kopyalanır.",
     "imageFailed": "Görsel kullanılamadı",
