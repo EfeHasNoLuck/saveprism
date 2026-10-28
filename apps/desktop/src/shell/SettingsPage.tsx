@@ -176,7 +176,7 @@ function Slider({
       value={value}
       onChange={(event) => onChange(Number(event.target.value))}
       aria-label={label}
-      className="w-48 accent-primary"
+      className="w-48 min-w-0 shrink accent-primary"
     />
   );
 }
@@ -247,7 +247,7 @@ function Row({
           </span>
         ) : null}
       </div>
-      <div className="ml-auto flex shrink-0 items-center gap-2">{children}</div>
+      <div className="ml-auto flex min-w-0 max-w-full flex-wrap items-center justify-end gap-2">{children}</div>
     </div>
   );
 }
@@ -905,7 +905,7 @@ export function SettingsPage({
                 <Section title={t("settings.background")}>
                   <div
                     data-setting="appearance.background"
-                    className={`grid grid-cols-2 gap-3 ${highlight === "appearance.background" ? "rounded-lg ring-2 ring-primary/40" : ""}`}
+                    className={`grid grid-cols-[repeat(auto-fit,minmax(min(100%,11rem),1fr))] gap-3 ${highlight === "appearance.background" ? "rounded-lg ring-2 ring-primary/40" : ""}`}
                   >
                     <BackgroundCard
                       id="appearance.pattern"
@@ -950,7 +950,7 @@ export function SettingsPage({
                       </div>
                       <div
                         data-setting="appearance.fit"
-                        className="mt-2.5 flex items-center justify-between gap-2"
+                        className="mt-2.5 flex flex-wrap items-center justify-between gap-2"
                       >
                         <Button
                           variant="secondary"
