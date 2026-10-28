@@ -71,6 +71,7 @@ import { LanguageFlag } from "@/i18n/flags";
 import { languageName } from "@/i18n/language";
 import { useTheme, type ThemePreference } from "@/theme";
 import { APP_COLOR_PRESETS, appColorSwatch, DEFAULT_APP_COLOR, type AppColor } from "./appColor";
+import { storedAccent } from "./appearance";
 import { COLOR_PRESETS, DEFAULT_COLORS, isHexColor, textColorFor, tonesFor, type ColorGroup } from "./colors";
 import { useNotify, useSettings } from "./context";
 import { describeError } from "./errors";
@@ -213,7 +214,7 @@ function Section({
 
 function Group({ children }: { children: ReactNode }) {
   return (
-    <div className="overflow-hidden rounded-lg border border-border bg-card dark:border-[#1d2d42]">
+    <div className="overflow-hidden rounded-lg border border-border bg-card">
       {children}
     </div>
   );
@@ -235,7 +236,7 @@ function Row({
   return (
     <div
       data-setting={id}
-      className={`flex min-h-14 flex-wrap items-center gap-x-4 gap-y-2 border-t border-border px-4 py-2.5 first:border-t-0 dark:border-[#1d2d42] ${
+      className={`flex min-h-14 flex-wrap items-center gap-x-4 gap-y-2 border-t border-border px-4 py-2.5 first:border-t-0 ${
         highlight ? "bg-primary/8" : ""
       }`}
     >
@@ -688,7 +689,7 @@ export function SettingsPage({
                 </span>
               </div>
 
-              <div className="mt-3 overflow-hidden rounded-lg border border-border bg-card dark:border-[#1d2d42]">
+              <div className="mt-3 overflow-hidden rounded-lg border border-border bg-card">
                 {noticeFailed ? (
                   <p className="px-4 py-3 text-xs text-muted-foreground">
                     {t("about.noticesFailed")}
@@ -708,7 +709,7 @@ export function SettingsPage({
                     return (
                       <div
                         key={id}
-                        className={index > 0 ? "border-t border-border dark:border-[#1d2d42]" : undefined}
+                        className={index > 0 ? "border-t border-border" : undefined}
                       >
                         <button
                           type="button"
@@ -737,7 +738,7 @@ export function SettingsPage({
                           </span>
                         </button>
                         {open ? (
-                          <pre className="dense-scroll mx-3.5 mb-3 max-h-72 overflow-auto rounded-sm border border-border bg-field p-3 font-mono text-[0.6875rem] leading-5 break-words whitespace-pre-wrap text-foreground-variant dark:border-[#26364a]">
+                          <pre className="dense-scroll mx-3.5 mb-3 max-h-72 overflow-auto rounded-sm border border-border bg-field p-3 font-mono text-[0.6875rem] leading-5 break-words whitespace-pre-wrap text-foreground-variant dark:border-surface-highest">
                             {item.text || t("about.noticeNoText")}
                           </pre>
                         ) : null}
@@ -958,6 +959,7 @@ export function SettingsPage({
                       current={settings.backgroundMode}
                       title={t("settings.photo")}
                       onSelect={() => update({ backgroundMode: "photo" })}
+                      highlight={photoDropActive}
                     >
                       <button
                         type="button"
@@ -965,7 +967,7 @@ export function SettingsPage({
                         onClick={() => void pickPhoto()}
                         disabled={busy === "photo"}
                         aria-label={photo ? t("settings.changeImage") : t("settings.chooseImage")}
-                        className={`group relative flex h-24 w-full items-center justify-center overflow-hidden rounded-md border-2 border-dashed text-muted-foreground outline-none transition-colors duration-150 ease-out focus-visible:ring-2 focus-visible:ring-ring/60 disabled:opacity-60 motion-reduce:transition-none ${
+                        className={`group relative flex h-24 w-full items-center justify-center overflow-hidden rounded-md border-2 border-dashed text-muted-foreground outline-none transition-colors duration-150 ease-out focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60 motion-reduce:transition-none ${
                           photoDropActive
                             ? "border-primary bg-primary/12 text-primary"
                             : "border-input hover:border-primary/60 hover:bg-surface-high/40"
@@ -985,11 +987,15 @@ export function SettingsPage({
                         ) : (
                           <span className="flex flex-col items-center gap-1">
                             <ImageIcon className="size-5" />
-                            <span className="text-[0.6875rem]">{t("settings.dropHint")}</span>
+                            <span
+                              className={`text-[0.6875rem] ${photoDropActive ? "font-semibold" : ""}`}
+                            >
+                              {t(photoDropActive ? "settings.dropActive" : "settings.dropHint")}
+                            </span>
                           </span>
                         )}
-                        {photoDropActive ? (
-                          <span className="absolute inset-0 flex items-center justify-center bg-primary/25 text-[0.6875rem] font-semibold">
+                        {photo && photoDropActive ? (
+                          <span className="absolute inset-0 flex items-center justify-center bg-black/60 text-[0.6875rem] font-semibold text-white">
                             {t("settings.dropActive")}
                           </span>
                         ) : null}
@@ -1155,7 +1161,7 @@ export function SettingsPage({
                     />
                     <span className="text-xs text-muted-foreground">{t("settings.days")}</span>
                   </Row>
-                  <div className="flex items-start gap-2.5 border-t border-border bg-primary/7 px-4 py-2.5 text-xs text-foreground dark:border-[#1d2d42]">
+                  <div className="flex items-start gap-2.5 border-t border-border bg-primary/7 px-4 py-2.5 text-xs text-foreground">
                     <ShieldCheck className="mt-px size-4 shrink-0 text-primary" />
                     {t("settings.latestKeptNote")}
                   </div>
@@ -1220,7 +1226,7 @@ export function SettingsPage({
 
           {tab === "ai" ? (
             <div className="mt-4 flex flex-col gap-3">
-              <div className="rounded-lg border border-border bg-card px-4 py-3.5 dark:border-[#1d2d42]">
+              <div className="rounded-lg border border-border bg-card px-4 py-3.5">
                 <div className="flex items-start gap-3">
                   <span className="flex size-[34px] shrink-0 items-center justify-center rounded-lg bg-surface-high text-primary">
                     <MessageSquare className="size-[18px]" />
@@ -1256,7 +1262,7 @@ export function SettingsPage({
                   ]}
                 />
               </div>
-              <div className="rounded-lg border border-border bg-card px-4 py-3.5 dark:border-[#1d2d42]">
+              <div className="rounded-lg border border-border bg-card px-4 py-3.5">
                 <div className="flex items-start gap-3">
                   <span className="flex size-[34px] shrink-0 items-center justify-center rounded-lg bg-surface-high text-primary">
                     <Bot className="size-[18px]" />
@@ -1293,7 +1299,7 @@ export function SettingsPage({
                     },
                   ]}
                 />
-                <div className="mt-3 border-t border-border pt-3 dark:border-[#1d2d42]">
+                <div className="mt-3 border-t border-border pt-3">
                   <div
                     role="radiogroup"
                     aria-label={t("settings.mcpYourApp")}
@@ -1315,7 +1321,7 @@ export function SettingsPage({
                           className={
                             selected
                               ? "inline-flex h-[26px] items-center gap-1.5 rounded-full border border-primary bg-primary/12 px-2.5 text-xs font-semibold text-primary outline-none transition-colors duration-150 ease-out focus-visible:ring-2 focus-visible:ring-ring/60 motion-reduce:transition-none"
-                              : "inline-flex h-[26px] items-center gap-1.5 rounded-full border border-border bg-card px-2.5 text-xs text-foreground-variant outline-none transition-colors duration-150 ease-out hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60 motion-reduce:transition-none dark:border-[#26364a] dark:bg-[#0b1c30]"
+                              : "inline-flex h-[26px] items-center gap-1.5 rounded-full border border-border bg-card px-2.5 text-xs text-foreground-variant outline-none transition-colors duration-150 ease-out hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60 motion-reduce:transition-none dark:border-surface-highest"
                           }
                         >
                           {selected ? <Check className="size-3" strokeWidth={3} /> : null}
@@ -1325,7 +1331,7 @@ export function SettingsPage({
                     })}
                   </div>
                   <div className="relative">
-                    <pre className="overflow-x-auto rounded-md border border-border bg-field py-2.5 pr-32 pl-3 font-mono text-[11.5px] leading-4 whitespace-pre text-foreground-variant dark:border-[#26364a]">
+                    <pre className="overflow-x-auto rounded-md border border-border bg-field py-2.5 pr-32 pl-3 font-mono text-[11.5px] leading-4 whitespace-pre text-foreground-variant dark:border-surface-highest">
                       {snippet}
                     </pre>
                     <Button
@@ -1429,7 +1435,7 @@ export function SettingsPage({
               <DialogTitle>{t("about.license")}</DialogTitle>
               <DialogDescription>{t("about.licenseBody")}</DialogDescription>
             </DialogHeader>
-            <pre className="dense-scroll max-h-[60vh] overflow-auto rounded-sm border border-border bg-field p-3 font-mono text-[0.6875rem] leading-5 whitespace-pre-wrap text-foreground-variant dark:border-[#26364a]">
+            <pre className="dense-scroll max-h-[60vh] overflow-auto rounded-sm border border-border bg-field p-3 font-mono text-[0.6875rem] leading-5 whitespace-pre-wrap text-foreground-variant dark:border-surface-highest">
               {licenseText}
             </pre>
           </DialogContent>
@@ -1458,7 +1464,7 @@ function AboutAction({
     <button
       type="button"
       onClick={onClick}
-      className="flex h-11 w-full items-center gap-3 border-t border-border px-3.5 text-left text-[0.84375rem] outline-none first:border-t-0 hover:bg-surface-high focus-visible:bg-surface-high dark:border-[#1d2d42]"
+      className="flex h-11 w-full items-center gap-3 border-t border-border px-3.5 text-left text-[0.84375rem] outline-none first:border-t-0 hover:bg-surface-high focus-visible:bg-surface-high"
     >
       <span className="flex size-7 items-center justify-center rounded-md bg-surface-high text-primary">
         {icon}
@@ -1485,7 +1491,7 @@ function AboutExternal({
     <button
       type="button"
       onClick={onClick}
-      className="flex h-11 w-full items-center gap-3 border-t border-border px-3.5 text-left text-[0.84375rem] outline-none first:border-t-0 hover:bg-surface-high focus-visible:bg-surface-high dark:border-[#1d2d42]"
+      className="flex h-11 w-full items-center gap-3 border-t border-border px-3.5 text-left text-[0.84375rem] outline-none first:border-t-0 hover:bg-surface-high focus-visible:bg-surface-high"
     >
       <span className="flex size-7 items-center justify-center rounded-md bg-surface-high text-primary">
         {icon}
@@ -1697,7 +1703,8 @@ function AppColorRow({
           appColorSwatch({ kind: "system" }, dark),
           t("settings.appColorSystem"),
           () => onChange({ kind: "system" }),
-          "conic-gradient(#4a7fd6, #4cd7f6, #6fdba8, #ffc27a, #ffafd5, #d0bcff, #4a7fd6)",
+          // The accent seen on the last read, else Windows' default blue: unlike the Custom rainbow.
+          storedAccent() ?? "#0078d4",
         )}
         {swatch(
           "mono",
@@ -1760,6 +1767,7 @@ function BackgroundCard({
   current,
   title,
   onSelect,
+  highlight = false,
   children,
 }: {
   id: string;
@@ -1767,14 +1775,16 @@ function BackgroundCard({
   current: BackgroundMode;
   title: string;
   onSelect: () => void;
+  /** Shown at full strength even when not selected (a file is dragged over it). */
+  highlight?: boolean;
   children: ReactNode;
 }) {
   const selected = current === mode;
   return (
     <div
       data-setting={id}
-      className={`rounded-lg border bg-card px-3.5 py-3 dark:border-[#1d2d42] ${
-        selected ? "border-primary ring-1 ring-primary" : "border-border"
+      className={`rounded-lg border bg-card px-3.5 py-3 ${
+        selected ? "border-primary ring-1 ring-primary dark:border-border" : "border-border"
       }`}
     >
       <button
@@ -1793,7 +1803,7 @@ function BackgroundCard({
         </span>
         {title}
       </button>
-      <div className={selected ? "" : "opacity-50"}>{children}</div>
+      <div className={selected || highlight ? "" : "opacity-50"}>{children}</div>
     </div>
   );
 }
@@ -1861,7 +1871,7 @@ function PatternTiles({
           >
             <span
               className={`relative block h-13 w-full overflow-hidden rounded-md border bg-background ${
-                selected ? "border-primary ring-1 ring-primary" : "border-border"
+                selected ? "border-primary ring-1 ring-primary dark:border-border" : "border-border"
               }`}
             >
               {tile.preview}
@@ -1924,11 +1934,11 @@ function PreviewCard({ photo }: { photo: BackgroundImageData | null }) {
   const errorFill = isHexColor(settings.colors.error) ? settings.colors.error : error.main;
 
   return (
-    <div className="sticky top-0 self-start rounded-lg border border-border bg-card p-3 dark:border-[#1d2d42]">
+    <div className="sticky top-0 self-start rounded-lg border border-border bg-card p-3">
       <div className="mb-2.5 flex items-center justify-between text-[0.6875rem] font-semibold tracking-[0.06em] text-muted-foreground uppercase">
         {t("settings.preview")}
       </div>
-      <div className="relative h-49 overflow-hidden rounded-md border border-border dark:border-[#26364a]">
+      <div className="relative h-49 overflow-hidden rounded-md border border-border dark:border-surface-highest">
         {settings.backgroundMode === "photo" && photo ? (
           <>
             <div
@@ -1979,10 +1989,10 @@ function PreviewCard({ photo }: { photo: BackgroundImageData | null }) {
             )}
           </div>
         )}
-        <div className="absolute inset-x-0 top-0 flex h-4.5 items-center gap-1.5 border-b border-border bg-chrome px-1.5 text-[0.5625rem] font-semibold dark:border-[#1d2d42]">
+        <div className="absolute inset-x-0 top-0 flex h-4.5 items-center gap-1.5 border-b border-border bg-chrome px-1.5 text-[0.5625rem] font-semibold">
           SavePrism
         </div>
-        <div className="absolute top-6 right-2.5 left-2.5 overflow-hidden rounded border border-border bg-card text-[0.6875rem] dark:border-[#1d2d42]">
+        <div className="absolute top-6 right-2.5 left-2.5 overflow-hidden rounded border border-border bg-card text-[0.6875rem]">
           <div className="flex h-5 items-center bg-table-head px-2 text-[0.5625rem] font-semibold tracking-wide text-muted-foreground uppercase">
             <span className="flex-1">Name</span>
             <span>Value</span>
@@ -2009,7 +2019,7 @@ function PreviewCard({ photo }: { photo: BackgroundImageData | null }) {
         <Legend color={accent.main} label={t("settings.accentColor")} />
         <Legend color={error.main} label={t("settings.errorColor")} />
       </div>
-      <p className="mt-2.5 border-t border-border pt-2.5 text-[0.71875rem] leading-4 text-muted-foreground dark:border-[#1d2d42]">
+      <p className="mt-2.5 border-t border-border pt-2.5 text-[0.71875rem] leading-4 text-muted-foreground">
         {t("settings.previewTip")}
       </p>
     </div>
@@ -2029,7 +2039,7 @@ function PreviewRow({
 }) {
   return (
     <div
-      className="flex h-6 items-center border-t border-border px-2 first:border-t-0 dark:border-[#1d2d42]"
+      className="flex h-6 items-center border-t border-border px-2 first:border-t-0"
       style={{ backgroundColor: background }}
     >
       <span className="flex-1 text-foreground-variant">{label}</span>

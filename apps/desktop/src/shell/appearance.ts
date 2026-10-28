@@ -41,10 +41,32 @@ export function applyAppColor(choice: AppColor, accentHex?: string | null): void
   style.textContent = appColorCss(choice, accentHex);
 }
 
+const ACCENT_KEY = "saveprism.windowsAccent";
+
+/** The Windows accent read on the last run, so the system choice paints before the host answers. */
+export function storedAccent(): string | null {
+  try {
+    return browserStorage()?.getItem(ACCENT_KEY) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** Keeps the Windows accent for the next start; null forgets it. */
+export function rememberAccent(hex: string | null): void {
+  try {
+    const storage = browserStorage();
+    if (hex) storage?.setItem(ACCENT_KEY, hex);
+    else storage?.removeItem(ACCENT_KEY);
+  } catch {
+    // Storage may be blocked; the accent is read again at the next start.
+  }
+}
+
 /** Applies the stored text size and colours synchronously, before the first paint. */
 export function applyStoredAppearance(): void {
   const settings: Settings = loadSettings(browserStorage());
   applyTextScale(settings.textScale);
-  applyAppColor(settings.appColor);
+  applyAppColor(settings.appColor, storedAccent());
   applyColors(settings.colors);
 }

@@ -199,7 +199,7 @@ export function ShortcutSettings() {
             <h3 className="mb-1.5 text-[0.6875rem] font-semibold tracking-[0.06em] text-muted-foreground uppercase">
               {t(`shortcuts.groups.${group}`)}
             </h3>
-            <div className="overflow-hidden rounded-lg border border-border bg-card dark:border-[#1d2d42]">
+            <div className="overflow-hidden rounded-lg border border-border bg-card">
               {actions.map((action, index) => {
                 const keys = bindings[action];
                 return (
@@ -207,7 +207,7 @@ export function ShortcutSettings() {
                     key={action}
                     data-setting={`shortcuts.${action}`}
                     className={`flex min-h-12 items-center gap-4 px-4 py-2 text-[0.8125rem] ${
-                      index === 0 ? "" : "border-t border-border dark:border-[#1d2d42]"
+                      index === 0 ? "" : "border-t border-border"
                     }`}
                   >
                     <span className="w-52 shrink-0 font-medium">{t(`shortcuts.${action}`)}</span>
@@ -271,7 +271,7 @@ export function ShortcutSettings() {
         ))}
       </div>
 
-      <div className="mt-3 flex items-start gap-2.5 rounded-lg border border-border bg-primary/7 px-4 py-2.5 text-xs leading-[17px] text-foreground dark:border-[#1d2d42]">
+      <div className="mt-3 flex items-start gap-2.5 rounded-lg border border-border bg-primary/7 px-4 py-2.5 text-xs leading-[17px] text-foreground">
         <Info className="mt-px size-4 shrink-0 text-primary" />
         <span>{t("settings.shortcutsNote")}</span>
       </div>

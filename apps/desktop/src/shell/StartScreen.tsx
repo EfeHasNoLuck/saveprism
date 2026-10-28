@@ -96,7 +96,7 @@ export function StartScreen({
         <h2 className="mt-6 mb-2.5 text-[15px] font-semibold tracking-tight">
           {t("start.faq.title")}
         </h2>
-        <div className="overflow-hidden rounded-md border border-border bg-card dark:border-[#1d2d42]">
+        <div className="overflow-hidden rounded-md border border-border bg-card">
           {FAQ_ITEMS.map((item, index) => {
             const open = openId === item.id;
             const Icon = FAQ_ICONS[item.icon];

@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useState, type ReactNode } from "react";
 import { appAccentColor } from "@/api/commands";
-import { applyAppColor, applyColors, applyTextScale } from "./appearance";
+import {
+  applyAppColor,
+  applyColors,
+  applyTextScale,
+  rememberAccent,
+  storedAccent,
+} from "./appearance";
 import { SettingsContext, type SettingsContextValue } from "./context";
 import {
   browserStorage,
@@ -12,7 +18,7 @@ import {
 /** Holds the user's settings and stores them locally on every change. */
 export function SettingsProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<Settings>(() => loadSettings(browserStorage()));
-  const [accentHex, setAccentHex] = useState<string | null>(null);
+  const [accentHex, setAccentHex] = useState<string | null>(storedAccent);
 
   const update = useCallback((patch: Partial<Settings>) => {
     setSettings((current) => {
@@ -32,6 +38,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     const read = () => {
       appAccentColor()
         .then((value) => {
+          rememberAccent(value);
           if (alive) setAccentHex(value);
         })
         .catch(() => {
