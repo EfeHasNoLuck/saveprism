@@ -1,81 +1,66 @@
 # HANDOFF
 
-**State (2026-10-28, ~17:00 TR):** MCP gaps, auto-update and the crash screen are done and merged on `main`; a fresh
-signed MSI/NSIS waits for the maintainer's install test (Next 4). Earlier today: the polish list and its follow-ups,
-checked in the running app over CDP. Everything is committed locally, NOT pushed (GitHub Actions minutes are
-out until next month; last pushed `4214786`). Weekly Claude limit 11% at ~15:30 TR (resets 2026-11-04 11:00 UTC); keep
-visual checks in a Claude subagent (model sonnet), text chores in EVREN.
+**State (2026-10-28, ~17:30 TR):** everything planned before the install test is done on local `main` (last work commit
+`639b13b`, then this handoff). Nothing pushed since `4214786`: GitHub Actions minutes are out until next month. Weekly
+Claude limit ~11% (resets 2026-11-04 11:00 UTC); keep visual checks in a Claude subagent (sonnet), text chores in EVREN.
+The plan and history are in `NOW.md`; this page is only what the next session needs.
 
-## Done today, second half (local commits on main)
-`ac70822` App color (Blue/Violet/Teal/Green/Amber/Rose, Windows accent, Monochrome, Custom; theme-file `appColor`;
-neutral grey opening cover) · `f2d9cca` photo preview click/drop (drops in Settings never open a save) ·
-`5ce3552` fixes from the visual check (dark borders now follow the app color, empty photo zone shows one drop label,
-last Windows accent cached so no blue start, accent swatch shows the accent) · `09408b6`, `2c24efd`, `a623039`
-frosted glass over a background photo (maintainer chose B from `.motor/vcheck-1028d/ab-*.png`): cards 80 % dark /
-88 % light, header/bottom bar/Settings sidebar blur, photo fades toward `--background` (slider renamed "Fade"),
-`.on-photo` full text color on headings, group labels, slogan, Reset to default · `e30c3c2` Card opacity slider
-(Appearance → Photo, `glassOpacity` 0-100, default 85, theme-file `glass`); the maintainer found the wide halo
-too much, so text on the photo now has a thin contour + short lower-right shadow in dark only; light has none
-(`ddeb633`, the pale shadow looked like a stray highlight; light top Reset to default 3.8:1). Trade-off measured:
-dark Settings labels over the photo's bright grey part are 3.1-4.0:1 (light theme passes).
-Checks after each: web 3/3 (rust 3/3, cargo deny, ignored desktop tests after the merges). Visual reports and
-screenshots: `.motor/vcheck-1028c/`, `-1028d/`, `-1028e/` (briefs `.motor/vcheck-1028c.md`, `d`, `e`).
-Known leftovers: Settings Preview red "Health" row 4.0:1 in dark (old, not glass); light active sidebar tab 4.0:1 at
-the photo's darkest spot; a dropped non-image shows "(SP-APP-029)" in its toast like other error toasts.
-Leftover folders the koruma hook stops me from deleting (no longer git worktrees; their branches are merged and
-deleted; `git config core.longpaths true` is set now, so a later `git worktree remove` deletes long paths itself):
-`.claude/worktrees/agent-*` (7) and `../saveprism-wt/{satisfactory,w4-settings,w6-shortcuts,w7-screens-fix,
-w7-settings-fix}`. The maintainer deletes them in their own terminal.
+## Works (with evidence)
+- README/GitHub showcase (`c23e720`, `9d776ec`): both Mermaid diagrams render with mermaid 11.4.1, every form YAML
+  parses, all 18 images in `docs/images/` reviewed (synthetic save, generated photo, no real data, no user name).
+- MCP gaps (`ea9f664`, `145db26`): 20 tools; rust 3/3, web 3/3, cargo deny ok; a real Claude Code round trip on a
+  fixture copy; the running app writes `%LOCALAPPDATA%\SavePrism\settings.json` for the MCP server; a full Rust test
+  run leaves the real backup folder untouched.
+- Auto-update (`6e9176e`, `1de6afd`): checked over CDP with a local mock (toast, About "0.2.0 is available", discard
+  guard, progress); the real endpoint stays silent while the repo is private (`.motor/update-1028/`).
+- Crash screen (`7493570`): checked over CDP, dark/light, EN/TR; the copied report holds no path (`.motor/crash-1028/`).
+- Slime Rancher 2 (`33c0857`, `86019d5`): the maintainer's 5 saves (`fixtures/external/slime-rancher-2/`) round-trip
+  exactly in the CLI and backend; a money edit saved with a backup and reopened; the current debug CLI detects them as
+  `format.slime-rancher-2`.
+- Installers built from `1de6afd` and signed (reported by the MCP session): `target/release/bundle/msi/
+  SavePrism_0.1.0_x64_{en-US,tr-TR}.msi`, `target/release/bundle/nsis/SavePrism_0.1.0_x64-setup.exe`.
 
-## Maintainer decisions today
-- About keeps the short tagline "A save editor that runs on your PC. No account, no upload." (TR too). The GitHub
-  "About" description is a DIFFERENT, search-friendly line: "Save editor for PC games. Edit Unity, Unreal, RPG Maker,
-  Ren'Py and Godot saves offline, with automatic backups." GitHub topics list: `docs/research/seo-2026-10-28.md`.
-- App color changeable, customization left to the community (theme files). Glass look in Photo mode (B).
-- "Ben başka bir şey göremiyorum, sonra release düşünürüz", then the README/GitHub showcase (below).
+## Broken / not checked
+- The new installers are not installed or tried yet (the maintainer's step).
+- Slime Rancher 2: the one-row-per-slot layout is not seen in the running app; `slimerancher.cfg`/`.prf` do not open;
+  Slime Rancher 1 not checked (no sample); its fuzz target is not in `.github/workflows/fuzz.yml`; cargo-fuzz is not
+  installed here, so no fuzz target ran locally.
+- Auto-update: a real download → install → restart needs a public release.
+- README and forms not seen on GitHub; the Discussions "Community themes" category does not exist yet.
+- Known, not blocking: Settings Preview red "Health" row 4.0:1 in dark; light active sidebar tab 4.0:1 at the photo's
+  darkest spot; crash screen buttons plain; an MCP edit is not seen by a window with the same file open (it refuses to
+  save over it, SP-APP-023); no code signing, so SmartScreen warns.
+- Folders the project hook stops agents from deleting; the maintainer deletes them in their own PowerShell:
+  `C:\SavePrismDemo\` (made-up demo files), `.claude\worktrees\agent-*` (7) and
+  `..\saveprism-wt\{satisfactory,w4-settings,w6-shortcuts,w7-screens-fix,w7-settings-fix}`. Use the `\\?\` prefix
+  (long paths): `Remove-Item -LiteralPath "\\?\<full path>" -Recurse -Force`.
 
-## Done: README and GitHub showcase (2026-10-28, `c23e720`, `9d776ec`)
-Vision prompt: `.motor/readme-vision-tr.md`. Brainstorm: footer = GitHub profile only (no e-mail); visuals = "as many as
-fit" (hero GIF, dark/light screenshots per feature, Mermaid). README: hero (logo, badges, paragraph, quick links,
-`docs/images/demo-{dark,light}.gif`), Download, Quick start, build from source, AI and MCP first (no API keys; setup per
-app; tool table; diagram), features with 8 screenshot pairs, save-safety diagram, formats (15 most asked + the rest in
-`<details>`), where SavePrism keeps things, CLI, themes/languages, repo tree, contributing, license, footer. CONTRIBUTING:
-add a language / share a theme / add a format / add an MCP tool. Forms: `add_language.yml`, Discussions
-`community-themes.yml` (needs a "Community themes" category once Discussions is on), feature request with area + AI/MCP
-field, config links to Discussions. Visuals recorded by a subagent: `.motor/gif-1028.md`, scripts `.motor/gif-1028/`.
-Not seen on GitHub yet (nothing pushed). `C:\SavePrismDemo\` (made-up demo files) is left for the maintainer to delete.
-Slime Rancher 2 (maintainer, 2026-10-28): own binary tagged-record format, not encrypted; their saves copied to
-`fixtures/external/slime-rancher-2/`; a "Slime Rancher 2 save support" session card was proposed (not started).
+## Next step
+1. The maintainer installs `SavePrism_0.1.0_x64-setup.exe` (or a MSI) and tries: Explorer "Decode with SavePrism",
+   a second start handing the file over, the opening logo, the first-launch tour, About → Check for updates ("Could
+   not check" is expected while the repo is private), real saves (also Slime Rancher 2 slot rows), a real AI app over
+   MCP using the backup folder chosen in Settings. They also back up `%USERPROFILE%\.tauri\saveprism-updater.key`
+   (without it, installed copies can never take another update).
+2. Fix what that test finds, check it, commit.
+3. Only after the test passes, ask about publishing. Before going public: the `bed2ed9` history cleanup (real saves
+   were pushed once; needs the maintainer's OK); push when Actions minutes are back (run `cargo deny check` first,
+   then check the runs); turn on Discussions and add "Community themes"; set the GitHub description and topics
+   (`docs/research/seo-2026-10-28.md`); `bash scripts/release/build.sh`, then upload the setup exe, its `.sig`, the
+   MSI and `latest.json` to release `v0.1.0`.
 
-## Next (in order)
-1. Done 2026-10-28: MCP gaps. `save_locations`, `compare_saves`, `open_code` + `copy_code`, `open_save` takes
-   `gameFolder`; the window shares backup/app folders and backup counts in `%LOCALAPPDATA%\SavePrism\settings.json`
-   (`session/shared_settings.rs`), read by the MCP server. Checks pass; real Claude Code round trip passed and the
-   running app wrote the file (NOW.md). Fixed after (`145db26`): a `session/compare.rs` test wrote backups into
-   the real `%LOCALAPPDATA%\SavePrism\backups`; now a whole Rust test run leaves that folder untouched (checked).
-2. Done 2026-10-28: auto-update (`6e9176e`, merge `1de6afd`). Signing key outside the repo:
-   `%USERPROFILE%\.tauri\saveprism-updater.key` (+ `.pub`, no password). The maintainer must back it up: without it,
-   installed copies can never take another update. Release: `bash scripts/release/build.sh` (signed installers +
-   `target/release/bundle/nsis/latest.json`); upload the setup exe, its `.sig`, the MSI and `latest.json` to the
-   GitHub release `v<version>`. Without the key: `pnpm build --no-sign`. Not verified: a real download → install →
-   restart (needs a public release).
-3. Done 2026-10-28: crash screen (`7493570`), checked in the running app (`.motor/crash-1028/`).
-4. Built 2026-10-28 from `1de6afd` (signed): `target/release/bundle/msi/SavePrism_0.1.0_x64_en-US.msi` and `_tr-TR.msi`
-   (10.25 MiB), `target/release/bundle/nsis/SavePrism_0.1.0_x64-setup.exe` (6.56 MiB). Waiting for the maintainer to
-   install and try (Explorer entry, second-start hand-off, opening logo, first-launch tour, Check for updates in
-   About, real saves, a real AI client over MCP, Settings backup folder used by the MCP).
-5. Only then ask about publishing (release / public repo). Before going public: the `bed2ed9` history cleanup (needs
-   the maintainer's OK); push the local commits once Actions minutes are back. No release workflow exists
-   (`release.yml` in `docs/MAP.md` was never written): build locally and upload by hand for v0.1.
+## Maintainer decisions (2026-10-28)
+- About tagline "A save editor that runs on your PC. No account, no upload."; the GitHub description is a different,
+  search-friendly line (in `docs/research/seo-2026-10-28.md`).
+- README footer: GitHub profile only, no e-mail. Visuals: as many as fit.
+- Auto-update is expected, with Check for updates in About.
 
 ## Gotchas
-- Start an EVREN job: `bash .motor/start_job.sh <name>` (brief `.motor/<name>.md`; `VCHECK=vcheck-1028` copies those
-  screenshots into the worktree as `.motor/vcheck/`). At most 2 at once, started seconds apart ("database is locked").
-- The project hook refuses `git checkout -- <file>` (use `git show HEAD:<file> > <file>`), forced worktree removal,
-  and any Bash command that mentions `.claude/araclar` together with file edits.
-- The dev WebView's localStorage is the maintainer's own: visual checks snapshot and restore every `saveprism.*` key.
+- Start an EVREN job: `bash .motor/start_job.sh <name>` (brief `.motor/<name>.md`). At most 2 at once, started seconds
+  apart ("database is locked").
+- The project hook refuses `git checkout -- <file>` (use `git show HEAD:<file> > <file>`), recursive deletes, forced
+  worktree removal, and any Bash command that mentions `.claude/araclar` together with file edits.
+- Visual checks snapshot and restore every `saveprism.*` localStorage key and the app folder's `background\` folder;
+  open fixture copies only; never a Windows wallpaper in published images.
+- Focus engines: Unreal, Unity, RPG Maker, Ren'Py. Never touch the maintainer's original saves.
 - The old session "SavePrism: Satisfactory merge, then polish" (`local_54de6911-…`) could not be archived (Remote
   Control client attached); the maintainer can archive it from the sidebar.
-- Focus engines: Unreal, Unity, RPG Maker, Ren'Py. Never touch the maintainer's original saves.
-- Visual checks that pick a background photo also snapshot and restore the app folder's `background\` folder (it did
-  not exist on the dev PC; the checks deleted it again). Test photo: a copy of `C:\Windows\Web\Wallpaper\Windows\img0.jpg`.
